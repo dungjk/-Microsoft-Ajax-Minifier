@@ -33,7 +33,8 @@
     var ack = function ack() { };
     ack.bar = 10;
 
-    // But if it is, the name needs to stay (but it can be crunched)
+    // But if it is, the name needs to stay (but it CAN be crunched as long as the resulting
+    // function is named the same as the variable.) No error, though. It's all good.
     var trap = function trap() { trap(); };
     trap.bar = 11;
 
@@ -57,8 +58,10 @@ foo = function global_one_self_ref(count) { if (--count > 0) { global_one_self_r
 var ack = function ack() { };
 ack.bar = 12;
 
-// but this one DOES self-reference. But because we are detaching it from the outer variable,
-// we can crunch the name when hypercrunching.
+// but this one DOES self-reference, so we can't remove the name. We can't really rename it, either
+// because whatever we rename it to might collide with something ELSE in the global space.
+// so the best chance for cross-browser compatibility is to just leave it named "trap."
+// don't throw any errors, though -- as long as the names are the same, it's all good.
 var trap = function trap() { trap(); };
 trap.bar = 13;
 
@@ -66,12 +69,15 @@ trap.bar = 13;
 function test1()
 {
     var a1;
-    var b = function a1() {};  // ERROR, function name removed normally
+    // no error because neither scope actually reference the variable; function name removed normally
+    var b = function a1() {};  
 }
 
 function test2()
 {
-    var b = function a2() { alert(a2) }; // function name kept, still has to match var
+    // function name kept, still has to match var, but no error because although it's referenced inside
+    // the function, the outer variable is NOT referenced.
+    var b = function a2() { alert(a2) }; 
     var a2; // ERROR
 }
 
@@ -88,10 +94,23 @@ function test4()
     var b = function a4() { };
     var c = function a4() { }; // NO ERROR
     var d = function a4() { }; // NO ERROR
-    var a4; // ERROR
+
+    // no error because, although the variable is referenced in the outer scope,
+    // none of the function expressions reference their names. 
+    var a4 = 10;
+    if (b == c){alert(a4)}
 }
 
 function test5()
 {
     var a5 = function a5() { }; // NO ERROR, normally remove the function name
+}
+
+function test6()
+{
+    // no error. even though both environments reference their respective bindings,
+    // the function expression is assigned to the binding, so everything is good
+    // to go and behaves well on all browsers.
+    var a6 = function a6(x){if(x==6){a6(-1)}};
+    alert(a6);
 }

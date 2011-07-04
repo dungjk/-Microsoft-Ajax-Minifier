@@ -67,15 +67,9 @@ namespace JSUnitTest
     }
 
     [TestMethod]
-    public void Combined_hc()
-    {
-        TestHelper.Instance.RunTest("-rename:all -literals:combine");
-    }
-
-    [TestMethod]
     public void NestedCombine()
     {
-        TestHelper.Instance.RunTest("-rename:all -literals:combine");
+        TestHelper.Instance.RunTest("-rename:all");
     }
 
     [TestMethod]
@@ -105,7 +99,7 @@ namespace JSUnitTest
     [TestMethod]
     public void CombineNegs()
     {
-        TestHelper.Instance.RunTest("-literals:combine -rename:all");
+        TestHelper.Instance.RunTest("-rename:all");
     }
 
     [TestMethod]

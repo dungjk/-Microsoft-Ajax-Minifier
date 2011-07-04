@@ -26,9 +26,6 @@ namespace JSUnitTest
     {
         public UnknownScope()
         {
-            //
-            // TODO: Add constructor logic here
-            //
         }
 
         private TestContext testContextInstance;

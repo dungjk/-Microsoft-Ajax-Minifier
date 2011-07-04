@@ -57,6 +57,9 @@
 
 function test(a)
 {
+    // this with-statement contains only a single debug statement.
+    // so if debug statements are being remove (default), the with-statement
+    // will be empty.
     with(a)
     {
         $Debug.Alert(foo);

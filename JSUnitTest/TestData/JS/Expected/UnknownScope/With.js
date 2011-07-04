@@ -1,1 +1,1 @@
-﻿function test(n){with(n);}(function(){function t(n){var suffix=";",ralph;with(n)ralph="a",alert(gag(bar+ack+suffix))}function gag(n){return'"'+n+'"'}function n(){var n=" boy-howdy! ";return i+n+ack}var i="bar",ack="gag";t("alert('"+n()+"')")})()
+﻿function test(n){with(n);}(function(){function n(n){var suffix=";",ralph;with(n)ralph="a",alert(gag(bar+ack+suffix))}function gag(n){return'"'+n+'"'}function t(){var n=" boy-howdy! ";return i+n+ack}var i="bar",ack="gag";n("alert('"+t()+"')")})()

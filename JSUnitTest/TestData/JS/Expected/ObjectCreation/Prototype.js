@@ -1,1 +1,1 @@
-function array_max(){for(var max=this[0],i=1;i<this.length;i++)max<this[i]&&(max=this[i]);return max}Array.prototype.max=array_max;var x=[1,2,3,4,5,6],y=x.max()
+function array_max(){for(var n=this,max=n[0],i=1;i<n.length;i++)max<n[i]&&(max=n[i]);return max}Array.prototype.max=array_max;var x=[1,2,3,4,5,6],y=x.max()
