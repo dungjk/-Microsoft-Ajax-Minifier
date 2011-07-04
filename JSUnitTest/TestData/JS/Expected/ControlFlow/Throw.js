@@ -1,1 +1,1 @@
-﻿throw"now is the time";throw 42;throw!0;throw!1;throw new foobar;
+﻿throw"now is the time";throw 42;throw!0;throw!1;throw new foobar

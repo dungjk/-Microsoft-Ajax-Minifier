@@ -39,7 +39,7 @@ namespace JSUnitTest
         [TestMethod]
         public void Resources()
         {
-            TestHelper.Instance.RunTest("-res:Strings -rename:all");
+            TestHelper.Instance.RunTest("-res:Strings -rename:all -literals:combine");
         }
     }
 }

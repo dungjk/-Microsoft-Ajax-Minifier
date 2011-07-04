@@ -18,11 +18,7 @@ using System;
 using System.IO;
 using System.Security;
 using System.Text.RegularExpressions;
-
 using Microsoft.Ajax.Utilities;
-using Microsoft.Ajax.Utilities.Css;
-using Microsoft.Ajax.Utilities.JavaScript;
-
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -53,11 +49,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// Internal css code settings class. Used to store build task parameter values for CSS.
         /// </summary>
         private CssSettings m_cssCodeSettings = new CssSettings();
-
-        /// <summary>
-        /// internal class to hold the output settings
-        /// </summary>
-        private OutputSettings m_outputSettings = new OutputSettings();
 
         /// <summary>
         /// AjaxMin Minifier
@@ -112,6 +103,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
         }
         
         /// <summary>
+        /// <see cref="CodeSettings.CombineDuplicateLiterals"/> for more information.
+        /// </summary>
+        public bool JsCombineDuplicateLiterals
+        {
+            get { return this.m_jsCodeSettings.CombineDuplicateLiterals; }
+            set { this.m_jsCodeSettings.CombineDuplicateLiterals = value; }
+        }
+        
+        /// <summary>
         /// <see cref="CodeSettings.EvalTreatment"/> for more information.
         /// </summary>
         public string JsEvalTreatment
@@ -125,8 +125,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public int JsIndentSize
         {
-            get { return this.m_outputSettings.IndentSpaces; }
-            set { this.m_outputSettings.IndentSpaces = value; }
+            get { return this.m_jsCodeSettings.IndentSize; }
+            set { this.m_jsCodeSettings.IndentSize = value; }
         }
         
         /// <summary>
@@ -134,8 +134,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsInlineSafeStrings
         {
-            get { return this.m_outputSettings.InlineSafeStrings; }
-            set { this.m_outputSettings.InlineSafeStrings = value; }
+            get { return this.m_jsCodeSettings.InlineSafeStrings; }
+            set { this.m_jsCodeSettings.InlineSafeStrings = value; }
         }
         
         /// <summary>
@@ -182,6 +182,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
             get { return this.m_jsCodeSettings.DebugLookupList; }
             set { this.m_jsCodeSettings.DebugLookupList = value; }
         }
+        
+        /// <summary>
+        /// <see cref="CodeSettings.MacSafariQuirks"/> for more information.
+        /// </summary>
+        public bool JsMacSafariQuirks
+        {
+            get { return this.m_jsCodeSettings.MacSafariQuirks; }
+            set { this.m_jsCodeSettings.MacSafariQuirks = value; }
+        }
 
         /// <summary>
         /// <see cref="CodeSettings.IgnoreConditionalCompilation"/> for more information.
@@ -206,8 +215,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsOutputMode
         {
-            get { return this.m_outputSettings.OutputFormat.ToString(); }
-            set { this.m_outputSettings.OutputFormat = ParseEnumValue<OutputFormat>(value); }
+            get { return this.m_jsCodeSettings.OutputMode.ToString(); }
+            set { this.m_jsCodeSettings.OutputMode = ParseEnumValue<OutputMode>(value); }
         }
 
         /// <summary>

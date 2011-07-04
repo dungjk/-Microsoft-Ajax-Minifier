@@ -1,3 +1,4 @@
+
 function foo()
 {
     var a = 1,
@@ -21,7 +22,7 @@ function foo()
                 default:
                     c = c * 2
             }
-            c ? (d = d * c , a *= d) : c = 1
+            c ? (d = d * c, a *= d) : c = 1
         }
     }
     catch(e)

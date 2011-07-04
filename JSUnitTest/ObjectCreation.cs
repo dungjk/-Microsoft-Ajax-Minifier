@@ -41,6 +41,13 @@ namespace JSUnitTest
 
     [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
+    public void Object_hc()
+    {
+        TestHelper.Instance.RunTest("-rename:all -literals:combine");
+    }
+
+    [DeploymentItem("AjaxMin.exe")]
+    [TestMethod()]
     public void Object_L()
     {
       TestHelper.Instance.RunTest("-new:keep");

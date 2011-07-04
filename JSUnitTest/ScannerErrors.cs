@@ -15,8 +15,6 @@
 // limitations under the License.
 
 using Microsoft.Ajax.Utilities;
-using Microsoft.Ajax.Utilities.JavaScript;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest

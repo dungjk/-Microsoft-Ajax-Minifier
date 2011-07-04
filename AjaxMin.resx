@@ -117,29 +117,131 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Line" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="UnknownScopeType" xml:space="preserve">
+    <value>UNKNOWN SCOPE TYPE;;Unknown Scope Type: {0}</value>
+  </data>
+  <data name="FallbackEncodingFailed" xml:space="preserve">
+    <value>Fallback character encoding failed</value>
+  </data>
+  <data name="BlockScopeHeader" xml:space="preserve">
+    <value>Scope Start;;{0} Scope - starts at line {1}, col {2} {3}</value>
+  </data>
+  <data name="BlockTypeCatch" xml:space="preserve">
+    <value>Catch</value>
+  </data>
+  <data name="BlockTypeWith" xml:space="preserve">
+    <value>With</value>
+  </data>
+  <data name="CrunchedTo" xml:space="preserve">
+    <value>Renamed;;[{1} references renamed to {0}]</value>
+  </data>
   <data name="CrunchingFile" xml:space="preserve">
-    <value>Minifying file '{0}'...</value>
+    <value>Minifying file...;;Minifying file '{0}'...</value>
   </data>
   <data name="CrunchingStdIn" xml:space="preserve">
     <value>Minifying from STDIN...</value>
   </data>
+  <data name="Done" xml:space="preserve">
+    <value>Done.</value>
+  </data>
+  <data name="FuncitonScopeHasNoObject" xml:space="preserve">
+    <value>Function scope must have function object</value>
+  </data>
+  <data name="FunctionHeader" xml:space="preserve">
+    <value>Function;;{0} {1} - starts at line {2}, col {3} {4} {5}</value>
+  </data>
+  <data name="FunctionTypeFunction" xml:space="preserve">
+    <value>Function</value>
+  </data>
+  <data name="FunctionTypePropGet" xml:space="preserve">
+    <value>Property Get</value>
+  </data>
+  <data name="FunctionTypePropSet" xml:space="preserve">
+    <value>Property Set</value>
+  </data>
+  <data name="GlobalObjectsHeader" xml:space="preserve">
+    <value>Global Objects</value>
+  </data>
   <data name="InvalidArgument" xml:space="preserve">
-    <value>Invalid switch: {0}</value>
+    <value>Invalid Switch;;Invalid switch: {0}</value>
   </data>
   <data name="InvalidInputEncoding" xml:space="preserve">
-    <value>Invalid input encoding name: {0}</value>
+    <value>Invalid input encoding name;;Invalid input encoding name: {0}</value>
   </data>
   <data name="InvalidOutputEncoding" xml:space="preserve">
-    <value>Invalid output encoding name: {0}</value>
+    <value>Invalid output encoding name;;Invalid output encoding name: {0}</value>
   </data>
   <data name="InvalidWarningArg" xml:space="preserve">
-    <value>Invalid warning level: {0}</value>
+    <value>Invalid warning level;;invalid warning level: {0}</value>
+  </data>
+  <data name="MalformedGlobalsArg" xml:space="preserve">
+    <value>-GLOBAL parameter expects format: -GLOBAL:g[,g]*</value>
+  </data>
+  <data name="MemberInfoFormat" xml:space="preserve">
+    <value>Member Info;;  {0} [{1}{2}] {3}</value>
+  </data>
+  <data name="MemberInfoGlobalFunction" xml:space="preserve">
+    <value>global function</value>
+  </data>
+  <data name="MemberInfoBuiltInMethod" xml:space="preserve">
+    <value>function</value>
+  </data>
+  <data name="MemberInfoBuiltInObject" xml:space="preserve">
+    <value>object</value>
+  </data>
+  <data name="MemberInfoBuiltInProperty" xml:space="preserve">
+    <value>property</value>
+  </data>
+  <data name="MemberInfoGlobalVar" xml:space="preserve">
+    <value>global var</value>
+  </data>
+  <data name="MemberInfoLocalFunction" xml:space="preserve">
+    <value>function</value>
+  </data>
+  <data name="MemberInfoLocalLiteral" xml:space="preserve">
+    <value>literal var</value>
+  </data>
+  <data name="MemberInfoLocalVar" xml:space="preserve">
+    <value>var</value>
+  </data>
+  <data name="MemberInfoPossiblyUndefined" xml:space="preserve">
+    <value>possibly undefined</value>
+  </data>
+  <data name="MemberInfoScopeLocal" xml:space="preserve">
+    <value>local </value>
+  </data>
+  <data name="MemberInfoScopeOuter" xml:space="preserve">
+    <value>outer </value>
+  </data>
+  <data name="MemberInfoScopeGlobalObject" xml:space="preserve">
+    <value>built-in Global </value>
+  </data>
+  <data name="MemberInfoScopeWindowObject" xml:space="preserve">
+    <value>built-in Window </value>
+  </data>
+  <data name="MemberInfoScopeOtherObject" xml:space="preserve">
+    <value>built-in </value>
+  </data>
+  <data name="MemberInfoTypeArgument" xml:space="preserve">
+    <value>argument</value>
+  </data>
+  <data name="MemberInfoTypeArguments" xml:space="preserve">
+    <value>arguments array</value>
   </data>
   <data name="MultipleOutputArg" xml:space="preserve">
     <value>Output file already specified</value>
   </data>
   <data name="NoParsedCode" xml:space="preserve">
     <value>No parsed code block</value>
+  </data>
+  <data name="NotKnown" xml:space="preserve">
+    <value>NOT KNOWN</value>
   </data>
   <data name="OutputArgNeedsPath" xml:space="preserve">
     <value>-O parameter must be followed by output path</value>
@@ -148,25 +250,37 @@
     <value>Minified output is EMPTY!</value>
   </data>
   <data name="SourceFileIsFolder" xml:space="preserve">
-    <value>Source file cannot be a folder: {0}</value>
+    <value>Source file is a folder;;Source file cannot be a folder: {0}</value>
   </data>
   <data name="SourceFileNotExist" xml:space="preserve">
-    <value>Source file does not exist: {0}</value>
+    <value>Source file does not exist;;Source file does not exist: {0}</value>
   </data>
-  <data name="ReportUndefinedHeader" xml:space="preserve">
+  <data name="UndefinedGlobalHeader" xml:space="preserve">
     <value>Undefined Global References:</value>
   </data>
+  <data name="UndefinedInfo" xml:space="preserve">
+    <value>Undefined Info;;  {0} [{3}] at Line {1}, Column {2}</value>
+  </data>
+  <data name="UnexpectedArg" xml:space="preserve">
+    <value>Unexpected Argument;;Unexpected argument: {0}</value>
+  </data>
+  <data name="Unreachable" xml:space="preserve">
+    <value>UNREACHABLE</value>
+  </data>
   <data name="InvalidTabSizeArg" xml:space="preserve">
-    <value>Invalid Tab Size: {0}</value>
+    <value>Invalid Tab Size;;Invalid Tab Size: {0}</value>
   </data>
   <data name="PrettyAndEchoArgs" xml:space="preserve">
     <value>Pretty-print (-PRETTY) and Echo-input (-ECHO) switches are not compatible</value>
+  </data>
+  <data name="CrunchGroupNoSource" xml:space="preserve">
+    <value>No source files in the input group</value>
   </data>
   <data name="InputNoPathAttr" xml:space="preserve">
     <value>XML &lt;input&gt; node missing required path attribute</value>
   </data>
   <data name="InputXmlError" xml:space="preserve">
-    <value>Error processing input XML: {0}</value>
+    <value>Error processing input XML;;Error processing input XML: {0}</value>
   </data>
   <data name="MultipleXmlArgs" xml:space="preserve">
     <value>Cannot specify multiple -XML arguments</value>
@@ -175,10 +289,10 @@
     <value>No input files to process</value>
   </data>
   <data name="OutputFileError" xml:space="preserve">
-    <value>Output file returned an error code: {0}</value>
+    <value>Output file returned error;;Output file returned an error code: {0}</value>
   </data>
   <data name="OutputGroupError" xml:space="preserve">
-    <value>Output group #{0} returned an error code: {1}</value>
+    <value>Output group returned error;;Output group #{0} returned an error code: {1}</value>
   </data>
   <data name="OutputNoInputNodes" xml:space="preserve">
     <value>Output node contains no input nodes</value>
@@ -190,25 +304,25 @@
     <value>Argument -XML must be followed by XML file path</value>
   </data>
   <data name="XmlInputNotExist" xml:space="preserve">
-    <value>XML error: &lt;input&gt; file '{0}' does not exist</value>
+    <value>XML &lt;input&gt; file does not exist;;XML error: &lt;input&gt; file '{0}' does not exist</value>
   </data>
   <data name="XmlNoOutputNodes" xml:space="preserve">
     <value>Input xml does not contain any &lt;output&gt; nodes</value>
   </data>
   <data name="InvalidSwitchArg" xml:space="preserve">
-    <value>Invalid switch argument {0} for switch -{1}</value>
+    <value>Invalid switch argument;;Invalid switch argument {0} for switch -{1}</value>
   </data>
   <data name="SwitchRequiresArg" xml:space="preserve">
-    <value>Switch -{0} requires an argument</value>
+    <value>Switch requires argument;;Switch -{0} requires an argument</value>
   </data>
   <data name="EncodingArgMustHaveEncoding" xml:space="preserve">
     <value>Encoding switch must be followed by valid encoding name</value>
   </data>
   <data name="ResourceArgInvalidName" xml:space="preserve">
-    <value>Resource argument '{0}' must be valid boolean or numeric literal</value>
+    <value>Resource argument must be valid boolean or numeric literal;;Resource argument '{0}' must be valid boolean or numeric literal</value>
   </data>
   <data name="Usage" xml:space="preserve">
-    <value>Usage:
+    <value>Usage;;Usage:
 {0} [-JS [JSOPTS]|-CSS [CSSOPTS]] OPTS* ((IFILE* [-out OFILE])|(-xml XFILE [-out ODIR]))
 
 Valid OPTS are zero or more of:
@@ -329,25 +443,43 @@ Multiple IFILE files will be concatenated to the output.</value>
     <value>-RES parameter must be followed by path to existing resource file</value>
   </data>
   <data name="ReadingResourceFile" xml:space="preserve">
-    <value>Processing resource script {0}...</value>
+    <value>Processing resource script...;;Processing resource script {0}...</value>
   </data>
   <data name="ResourceNoPathAttr" xml:space="preserve">
     <value>XML &lt;resource&gt; node missing required path attribute</value>
   </data>
   <data name="XmlResourceNotExist" xml:space="preserve">
-    <value>XML error: &lt;resource&gt; file '{0}' does not exist</value>
+    <value>XML &lt;resource&gt; file does not exist;;XML error: &lt;resource&gt; file '{0}' does not exist</value>
   </data>
   <data name="MultipleResourceArgs" xml:space="preserve">
     <value>Cannot specify multiple -RES arguments</value>
   </data>
+  <data name="ResourceArgNeedsNoName" xml:space="preserve">
+    <value>Resource file of type .JS must not specify an object name on the -RES:name switch.</value>
+  </data>
   <data name="ResourceArgInvalidType" xml:space="preserve">
-    <value>Invalid resource file type: {0}. Must be .JS, .RESX, or .RESOURCES.</value>
+    <value>Invalid resource file type;;Invalid resource file type: {0}. Must be .JS, .RESX, or .RESOURCES.</value>
+  </data>
+  <data name="ResourceJSOneVar" xml:space="preserve">
+    <value>Resource JS file must be a single var statement initializing a variable to an object literal</value>
   </data>
   <data name="OutputFileErrorSubCat" xml:space="preserve">
     <value>output file</value>
   </data>
   <data name="OutputGroupErrorSubCat" xml:space="preserve">
     <value>output group</value>
+  </data>
+  <data name="MemberInfoFunctionExpression" xml:space="preserve">
+    <value>function expression</value>
+  </data>
+  <data name="FunctionInfoReferences" xml:space="preserve">
+    <value>references;;{0} references</value>
+  </data>
+  <data name="FunctionTypeExpression" xml:space="preserve">
+    <value>Function Expression</value>
+  </data>
+  <data name="MemberInfoSelfFuncExpr" xml:space="preserve">
+    <value>self-reference</value>
   </data>
   <data name="ConflictingInputType" xml:space="preserve">
     <value>Conflicting input type switches or input file extensions (JS and CSS)</value>
@@ -356,135 +488,36 @@ Multiple IFILE files will be concatenated to the output.</value>
     <value>Unknown input type. Please use either the -JS or -CSS switch.</value>
   </data>
   <data name="NoClobberError" xml:space="preserve">
-    <value>File already exists and clobber option is not set to true. Output not created: {0}</value>
+    <value>File already exists. No output created.;;File already exists and clobber option is not set to true. Output not created: {0}</value>
+  </data>
+  <data name="MemberInfoWithField" xml:space="preserve">
+    <value>object property</value>
+  </data>
+  <data name="MemberInfoWithPossibly" xml:space="preserve">
+    <value>or outer;;[or {0}{1}]</value>
   </data>
   <data name="SavingsGzipMessage" xml:space="preserve">
-    <value>Gzip of output approximately {0} bytes ({1}% compression)</value>
+    <value>;;Gzip of output approximately {0} bytes ({1}% compression)</value>
   </data>
   <data name="SavingsMessage" xml:space="preserve">
-    <value>Original Size: {0} bytes; reduced size: {1} bytes ({2}% minification)</value>
+    <value>;;Original Size: {0} bytes; reduced size: {1} bytes ({2}% minification)</value>
   </data>
   <data name="SavingsOutputMessage" xml:space="preserve">
-    <value>Output size: {0} bytes</value>
+    <value>;;Output size: {0} bytes</value>
   </data>
   <data name="InvalidKillSwitchArg" xml:space="preserve">
-    <value>Invalid kill switch value: '{0}' must be a valid decimal number</value>
+    <value>Invalid kill switch value: must be a decimal number;;Invalid kill switch value: '{0}' must be a valid decimal number</value>
   </data>
   <data name="RenameArgMissingParameterOrFilePath" xml:space="preserve">
     <value>Rename switch must either have valid parameter parts or be followed by valid file path</value>
   </data>
   <data name="InvalidRenameIdentifiers" xml:space="preserve">
-    <value>Rename identifier switch must have valid 'from' and 'to' identifiers: '{0}' and '{1}' are both invalid JavaScript identifiers.</value>
+    <value>Rename identifiers are invalid;;Rename identifier switch must have valid 'from' and 'to' identifiers: '{0}' and '{1}' are both invalid JavaScript identifiers.</value>
   </data>
   <data name="InvalidRenameFromIdentifier" xml:space="preserve">
-    <value>Rename identifier switch must have valid 'from' identifier: '{0}' is an invalid JavaScript identifier.</value>
+    <value>Rename 'from' identifier is invalid;;Rename identifier switch must have valid 'from' identifier: '{0}' is an invalid JavaScript identifier.</value>
   </data>
   <data name="InvalidRenameToIdentifier" xml:space="preserve">
-    <value>Rename identifier switch must have valid 'to' identifier: '{0}' is an invalid JavaScript identifier.</value>
-  </data>
-  <data name="AnonymousNameFormat" xml:space="preserve">
-    <value>anonymous_{0}</value>
-  </data>
-  <data name="ReportBindingFormat" xml:space="preserve">
-    <value>    {0} [{1}], {3}, {2} reference(s){4}</value>
-  </data>
-  <data name="ReportBindingRefCount" xml:space="preserve">
-    <value>, {0} reference(s)</value>
-  </data>
-  <data name="ReportBindingRenamed" xml:space="preserve">
-    <value>, renamed to "{0}"</value>
-  </data>
-  <data name="ReportCatchEnvironment" xml:space="preserve">
-    <value>Catch Environment {0}</value>
-  </data>
-  <data name="ReportCategoryArgument" xml:space="preserve">
-    <value>Argument</value>
-  </data>
-  <data name="ReportCategoryArguments" xml:space="preserve">
-    <value>Arguments Object</value>
-  </data>
-  <data name="ReportCategoryCatchArgument" xml:space="preserve">
-    <value>Catch Error Object</value>
-  </data>
-  <data name="ReportCategoryFunction" xml:space="preserve">
-    <value>Function</value>
-  </data>
-  <data name="ReportCategoryNamedFunctionExpression" xml:space="preserve">
-    <value>Function Expression</value>
-  </data>
-  <data name="ReportCategoryPredefined" xml:space="preserve">
-    <value>Predefined</value>
-  </data>
-  <data name="ReportCategoryProperty" xml:space="preserve">
-    <value>Property</value>
-  </data>
-  <data name="ReportCategoryUndefined" xml:space="preserve">
-    <value>UNDEFINED</value>
-  </data>
-  <data name="ReportCategoryVariable" xml:space="preserve">
-    <value>Variable</value>
-  </data>
-  <data name="ReportDefinedLocation" xml:space="preserve">
-    <value>defined at {0}</value>
-  </data>
-  <data name="ReportFunctionHeader" xml:space="preserve">
-    <value>Function {1} {0} {2}{3}{4}</value>
-  </data>
-  <data name="ReportGlobalEnvironment" xml:space="preserve">
-    <value>Global Environment {0}</value>
-  </data>
-  <data name="ReportLexDefines" xml:space="preserve">
-    <value>  Defines:</value>
-  </data>
-  <data name="ReportLexNoDefines" xml:space="preserve">
-    <value>  No definitions.</value>
-  </data>
-  <data name="ReportLexNoReferences" xml:space="preserve">
-    <value>  No References.</value>
-  </data>
-  <data name="ReportLexReferences" xml:space="preserve">
-    <value>  References:</value>
-  </data>
-  <data name="ReportLexUnknown" xml:space="preserve">
-    <value>  STATIC UNKNOWN (automatic renaming disabled)</value>
-  </data>
-  <data name="ReportLexUnresolvedReference" xml:space="preserve">
-    <value>    {0} unresolved reference at {1}</value>
-  </data>
-  <data name="ReportNoLocation" xml:space="preserve">
-    <value>defined at (?)</value>
-  </data>
-  <data name="ReportReferenceFormat" xml:space="preserve">
-    <value>    {0}{4} [{3}{1}] {2}</value>
-  </data>
-  <data name="ReportReferenceInner" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ReportReferenceOuter" xml:space="preserve">
-    <value>Outer </value>
-  </data>
-  <data name="ReportReferenceRenamed" xml:space="preserve">
-    <value> ({0})</value>
-  </data>
-  <data name="ReportUndefinedBinding" xml:space="preserve">
-    <value>    {0} at {1}</value>
-  </data>
-  <data name="ReportUndefinedNone" xml:space="preserve">
-    <value>    None</value>
-  </data>
-  <data name="ReportUnknownEnvironment" xml:space="preserve">
-    <value>Unknown Environment {0}</value>
-  </data>
-  <data name="ReportWithEnvironment" xml:space="preserve">
-    <value>With Environment {0}</value>
-  </data>
-  <data name="ReportReferenceProperty" xml:space="preserve">
-    <value>    {0}{1} [{2}] or reference to [{3}] {4}</value>
-  </data>
-  <data name="ReportReferencePropertyUnresolved" xml:space="preserve">
-    <value>    {0}{1} [{2}] or unresolved global reference</value>
-  </data>
-  <data name="ReportLexStrict" xml:space="preserve">
-    <value>  Strict-mode</value>
+    <value>Rename 'to' identifier is invalid;;Rename identifier switch must have valid 'to' identifier: '{0}' is an invalid JavaScript identifier.</value>
   </data>
 </root>

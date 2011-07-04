@@ -28,6 +28,9 @@ namespace JSUnitTest
 
         public AstMods()
         {
+            //
+            // TODO: Add constructor logic here
+            //
         }
 
         private TestContext testContextInstance;

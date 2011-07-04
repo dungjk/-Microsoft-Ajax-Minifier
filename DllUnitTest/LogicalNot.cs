@@ -4,9 +4,6 @@ using System.Diagnostics;
 using System.IO;
 
 using Microsoft.Ajax.Utilities;
-using Microsoft.Ajax.Utilities.JavaScript;
-using Microsoft.Ajax.Utilities.JavaScript.Visitors;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DllUnitTest
@@ -124,10 +121,10 @@ namespace DllUnitTest
                         var expression = block[0];
 
                         // create the logical-not visitor on the expression
-                        var logicalNot = new Microsoft.Ajax.Utilities.JavaScript.Visitors.LogicalNot(expression, parser);
+                        var logicalNot = new Microsoft.Ajax.Utilities.LogicalNot(expression, parser);
 
                         // get the original code
-                        var original = OutputVisitor.Output(expression);
+                        var original = expression.ToCode();
 
                         Trace.Write("ORIGINAL EXPRESSION:    ");
                         Trace.WriteLine(original);
@@ -139,7 +136,7 @@ namespace DllUnitTest
                         logicalNot.Apply();
 
                         // get the resulting code -- should still be only one statement in the block
-                        var notted = OutputVisitor.Output(block[0]);
+                        var notted = block[0].ToCode();
 
                         Trace.Write("LOGICAL-NOT EXPRESSION: ");
                         Trace.WriteLine(notted);

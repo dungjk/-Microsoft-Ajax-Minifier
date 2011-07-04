@@ -20,18 +20,23 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-using Microsoft.Ajax.Utilities.Css;
-
 namespace Microsoft.Ajax.Utilities
 {
     public partial class MainClass
     {
         #region CSS-only settings
 
-        /// <summary>
-        /// Settings to use for CSS minification
-        /// </summary>
-        private CssSettings m_cssSettings = new CssSettings();
+        // how to treat comments in the sources.
+        // by default, we want to keep important comments.
+        private CssComment m_cssComments = CssComment.Important;
+
+        // whether to use color names as possible output values
+        // (rather than always using #rrggbb or #rgb)
+        private CssColor m_colorNames;// = CssColor.Strict;
+
+        // how to treat content of expression functions
+        // default is to try to minify it.
+        private bool m_minifyExpressions = true;
 
         #endregion
 
@@ -53,8 +58,14 @@ namespace Microsoft.Ajax.Utilities
                 CssParser parser = new CssParser();
                 parser.CssError += new EventHandler<CssErrorEventArgs>(OnCssError);
                 parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
-                parser.Settings = m_cssSettings;
 
+                parser.Settings.CommentMode = m_cssComments;
+                parser.Settings.ExpandOutput = m_prettyPrint;
+                parser.Settings.IndentSpaces = m_indentSize;
+                parser.Settings.TermSemicolons = m_terminateWithSemicolon;
+                parser.Settings.ColorNames = m_colorNames;
+                parser.Settings.MinifyExpressions = m_minifyExpressions;
+				parser.Settings.AllowEmbeddedAspNetBlocks = m_allowAspNet;
                 parser.ValueReplacements = resourceStrings;
 
                 // if the kill switch was set to 1 (don't preserve important comments), then

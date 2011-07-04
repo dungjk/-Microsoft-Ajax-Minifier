@@ -28,6 +28,9 @@ namespace CssUnitTest
 
         public Errors()
         {
+            //
+            // TODO: Add constructor logic here
+            //
         }
 
         private TestContext testContextInstance;
