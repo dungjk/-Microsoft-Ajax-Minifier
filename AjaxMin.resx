@@ -520,4 +520,7 @@ Multiple IFILE files will be concatenated to the output.</value>
   <data name="InvalidRenameToIdentifier" xml:space="preserve">
     <value>Rename 'to' identifier is invalid;;Rename identifier switch must have valid 'to' identifier: '{0}' is an invalid JavaScript identifier.</value>
   </data>
+  <data name="MiniUsageMessage" xml:space="preserve">
+    <value>See the '-?' command-line option for usage details.</value>
+  </data>
 </root>

@@ -154,15 +154,27 @@ namespace Microsoft.Ajax.Utilities
         static int Main(string[] args)
         {
             int retVal;
-            try
+            if (args == null || args.Length == 0)
             {
-                MainClass app = new MainClass(args);
-                retVal = app.Run();
+                // no args -- we don't know whether to to parse JS or CSS,
+                // so no sense waiting for input from STDIN. Output a simple
+                // header that displays a message telling how to get more info.
+                Console.Out.WriteLine(GetHeaderString());
+                Console.Out.WriteLine(StringMgr.GetString("MiniUsageMessage"));
+                retVal = 0;
             }
-            catch (UsageException e)
+            else
             {
-                Usage(e);
-                retVal = 1;
+                try
+                {
+                    MainClass app = new MainClass(args);
+                    retVal = app.Run();
+                }
+                catch (UsageException e)
+                {
+                    Usage(e);
+                    retVal = 1;
+                }
             }
 
             return retVal;
@@ -174,16 +186,8 @@ namespace Microsoft.Ajax.Utilities
 
         private MainClass(string[] args)
         {
-            if (args != null && args.Length > 0)
-            {
-                // process the arguments
-                ProcessArgs(args);
-            }
-            else
-            {
-                // no args -- output the usage
-                throw new UsageException(ConsoleOutputMode.Console);
-            }
+            // process the arguments
+            ProcessArgs(args);
         }
 
         #endregion
@@ -1330,21 +1334,22 @@ namespace Microsoft.Ajax.Utilities
                 Console.Error.WriteLine(GetHeaderString());
             }
 
-            // only output the usage is we aren't silent, or if we have no error string
-            if (e.OutputMode != ConsoleOutputMode.Silent)
-            {
-                Console.Error.WriteLine(StringMgr.GetString("Usage", fileName));
-            }
-
-            // only output the message if we have one
+            // if we have a message, then only output the mini-usage message that
+            // tells the user how to get the full usage text. It's getting too long and
+            // obscuring the error messages
             if (e.Message.Length > 0)
             {
+                Console.Error.WriteLine(StringMgr.GetString("MiniUsageMessage"));
                 Console.Error.WriteLine();
                 Console.Error.WriteLine(CreateBuildError(
                     null,
                     null,
                     "AM-USAGE", // NON-LOCALIZABLE error code
                     e.Message));
+            }
+            else if (e.OutputMode != ConsoleOutputMode.Silent)
+            {
+                Console.Error.WriteLine(StringMgr.GetString("Usage", fileName));
             }
         }
 
