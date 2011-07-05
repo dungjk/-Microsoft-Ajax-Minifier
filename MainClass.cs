@@ -40,6 +40,10 @@ namespace Microsoft.Ajax.Utilities
         // default resource object name if not specified
         private const string c_defaultResourceObjectName = "Strings";
 
+        // prefix for usage messages that tell that method to not create an error string
+        // from the message, but the output it directly, as-is
+        private const string c_rawMessagePrefix = "RAWUSAGE";
+
         /// <summary>
         /// This field is initially false, and it set to true if any errors were
         /// found parsing the javascript. The return value for the application
@@ -1014,6 +1018,14 @@ namespace Microsoft.Ajax.Utilities
                             JavaScriptOnly();
                             break;
 
+                        case "VERSION":
+                            // the user just wants the version number
+                            string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+                            // the special prefix tells the Usage method to not create an error
+                            // out of the text and just output it as-is
+                            throw new UsageException(ConsoleOutputMode.Silent, c_rawMessagePrefix + version);
+
                         case "WARN":
                         case "W": // <-- old style
                             if (string.IsNullOrEmpty(paramPart))
@@ -1339,13 +1351,24 @@ namespace Microsoft.Ajax.Utilities
             // obscuring the error messages
             if (e.Message.Length > 0)
             {
-                Console.Error.WriteLine(StringMgr.GetString("MiniUsageMessage"));
-                Console.Error.WriteLine();
-                Console.Error.WriteLine(CreateBuildError(
-                    null,
-                    null,
-                    "AM-USAGE", // NON-LOCALIZABLE error code
-                    e.Message));
+                if (e.OutputMode != ConsoleOutputMode.Silent)
+                {
+                    Console.Error.WriteLine(StringMgr.GetString("MiniUsageMessage"));
+                    Console.Error.WriteLine();
+                }
+
+                if (e.Message.StartsWith(c_rawMessagePrefix, StringComparison.Ordinal))
+                {
+                    Console.Out.WriteLine(e.Message.Substring(c_rawMessagePrefix.Length));
+                }
+                else
+                {
+                    Console.Error.WriteLine(CreateBuildError(
+                        null,
+                        null,
+                        "AM-USAGE", // NON-LOCALIZABLE error code
+                        e.Message));
+                }
             }
             else if (e.OutputMode != ConsoleOutputMode.Silent)
             {
