@@ -1687,7 +1687,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     default:
-                        throw new UsageException(m_outputMode, "ConflictingInputType");
+                        throw new UsageException(m_outputMode, "UnknownInputType");
                 }
 
                 // if we are pretty-printing, add a newline
@@ -1695,213 +1695,213 @@ namespace Microsoft.Ajax.Utilities
                 {
                     outputBuilder.AppendLine();
                 }
+
+                string crunchedCode = outputBuilder.ToString();
+
+                Encoding encodingOutput = GetOutputEncoding(crunchGroup.InputType, crunchGroup.Output.EncodingName);
+
+                // now write the final output file
+                if (string.IsNullOrEmpty(crunchGroup.Output))
+                {
+                    // no output file specified - send to STDOUT
+                    // if the code is empty, don't bother outputting it to the console
+                    if (!string.IsNullOrEmpty(crunchedCode))
+                    {
+                        // set the console encoding
+                        try
+                        {
+                            // try setting the appropriate output encoding
+                            Console.OutputEncoding = encodingOutput;
+                        }
+                        catch (IOException e)
+                        {
+                            // sometimes they will error, in which case we'll just set it to ascii
+                            Debug.WriteLine(e.ToString());
+                            Console.OutputEncoding = Encoding.ASCII;
+                        }
+
+                        // however, for some reason when I set the output encoding it
+                        // STILL doesn't call the EncoderFallback to Unicode-escape characters
+                        // not supported by the encoding scheme. So instead we need to run the
+                        // translation outselves. Still need to set the output encoding, though,
+                        // so the translated bytes get displayed properly in the console.
+                        byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
+
+                        // only output the size analysis if we are in analyze mode
+                        // change: no, output the size analysis all the time.
+                        // (unless in silent mode, but WriteProgess will take care of that)
+                        ////if (m_analyze)
+                        {
+                            // output blank line before
+                            WriteProgress();
+
+                            // if we are echoing the input, don't bother reporting the
+                            // minify savings because we don't have the minified output --
+                            // we have the original output
+                            double percentage;
+                            if (!m_echoInput)
+                            {
+                                // calculate the percentage saved
+                                percentage = Math.Round((1 - ((double) encodedBytes.Length)/sourceLength)*100, 1);
+                                WriteProgress(StringMgr.GetString(
+                                                  "SavingsMessage",
+                                                  sourceLength,
+                                                  encodedBytes.Length,
+                                                  percentage
+                                                  ));
+                            }
+                            else
+                            {
+                            
+                                WriteProgress(StringMgr.GetString(
+                                    "SavingsOutputMessage",
+                                    encodedBytes.Length
+                                    ));
+                            }
+
+                            // calculate how much a simple gzip compression would compress the output
+                            long gzipLength = CalculateGzipSize(encodedBytes);
+
+                            // calculate the savings and display the result
+                            percentage = Math.Round((1 - ((double)gzipLength) / encodedBytes.Length) * 100, 1);
+                            WriteProgress(StringMgr.GetString("SavingsGzipMessage", gzipLength, percentage));
+
+                            // blank line after
+                            WriteProgress();
+                        }
+
+                        // send to console out
+                        Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
+                        //Console.Out.Write(crunchedCode);
+                    }
+                }
+                else
+                {
+                    // send output to file
+                    try
+                    {
+                        // make sure the destination folder exists
+                        FileInfo fileInfo = new FileInfo(crunchGroup.Output);
+                        DirectoryInfo destFolder = new DirectoryInfo(fileInfo.DirectoryName);
+                        if (!destFolder.Exists)
+                        {
+                            destFolder.Create();
+                        }
+
+                        if (!File.Exists(crunchGroup.Output) || m_clobber)
+                        {
+                            if (m_clobber
+                                && File.Exists(crunchGroup.Output) 
+                                && (File.GetAttributes(crunchGroup.Output) & FileAttributes.ReadOnly) != 0)
+                            {
+                                // the file exists, we said we want to clobber it, but it's marked as
+                                // read-only. Reset that flag.
+                                File.SetAttributes(
+                                    crunchGroup.Output, 
+                                    (File.GetAttributes(crunchGroup.Output) & ~FileAttributes.ReadOnly)
+                                    );
+                            }
+
+                            // create the output file using the given encoding
+                            using (StreamWriter outputStream = new StreamWriter(
+                               crunchGroup.Output,
+                               false,
+                               encodingOutput
+                               ))
+                            {
+                                outputStream.Write(crunchedCode);
+                            }
+
+                            // only output the size analysis if there is actually some output to measure
+                            if (File.Exists(crunchGroup.Output))
+                            {
+                                // get the size of the resulting file
+                                FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output);
+                                long crunchedLength = crunchedFileInfo.Length;
+                                if (crunchedLength > 0)
+                                {
+                                    // blank line before
+                                    WriteProgress();
+
+                                    // if we are just echoing the input, don't bother calculating
+                                    // the minify savings because there aren't any
+                                    double percentage;
+                                    if (!m_echoInput)
+                                    {
+                                        // calculate the percentage saved by minification
+                                        percentage = Math.Round((1 - ((double) crunchedLength)/sourceLength)*100, 1);
+                                        WriteProgress(StringMgr.GetString(
+                                                          "SavingsMessage",
+                                                          sourceLength,
+                                                          crunchedLength,
+                                                          percentage
+                                                          ));
+                                    }
+                                    else
+                                    {
+
+                                        WriteProgress(StringMgr.GetString(
+                                            "SavingsOutputMessage",
+                                            crunchedLength
+                                            ));
+                                    }
+
+                                    // compute how long a simple gzip might compress the resulting file
+                                    long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output));
+
+                                    // calculate the percentage of compression and display the results
+                                    percentage = Math.Round((1 - ((double) gzipLength)/crunchedLength)*100, 1);
+                                    WriteProgress(StringMgr.GetString("SavingsGzipMessage", gzipLength, percentage));
+
+                                    // blank line after
+                                    WriteProgress();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            retVal = 1;
+                            WriteError("AM-IO", StringMgr.GetString("NoClobberError", crunchGroup.Output));
+                        }
+
+                    }
+                    catch (ArgumentException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("AM-PATH", e.Message);
+                    }
+                    catch (UnauthorizedAccessException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("AM-AUTH", e.Message);
+                    }
+                    catch (PathTooLongException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("AM-PATH", e.Message);
+                    }
+                    catch (SecurityException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("AM-SEC", e.Message);
+                    }
+                    catch (IOException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("AM-IO", e.Message);
+                    }
+                }
             }
             catch (Exception e)
             {
                 retVal = 1;
                 System.Diagnostics.Debug.WriteLine(e.ToString());
                 WriteError("AM-EXCEPTION", e.Message);
-            }
-
-            string crunchedCode = outputBuilder.ToString();
-
-            Encoding encodingOutput = GetOutputEncoding(crunchGroup.InputType, crunchGroup.Output.EncodingName);
-
-            // now write the final output file
-            if (string.IsNullOrEmpty(crunchGroup.Output))
-            {
-                // no output file specified - send to STDOUT
-                // if the code is empty, don't bother outputting it to the console
-                if (!string.IsNullOrEmpty(crunchedCode))
-                {
-                    // set the console encoding
-                    try
-                    {
-                        // try setting the appropriate output encoding
-                        Console.OutputEncoding = encodingOutput;
-                    }
-                    catch (IOException e)
-                    {
-                        // sometimes they will error, in which case we'll just set it to ascii
-                        Debug.WriteLine(e.ToString());
-                        Console.OutputEncoding = Encoding.ASCII;
-                    }
-
-                    // however, for some reason when I set the output encoding it
-                    // STILL doesn't call the EncoderFallback to Unicode-escape characters
-                    // not supported by the encoding scheme. So instead we need to run the
-                    // translation outselves. Still need to set the output encoding, though,
-                    // so the translated bytes get displayed properly in the console.
-                    byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
-
-                    // only output the size analysis if we are in analyze mode
-                    // change: no, output the size analysis all the time.
-                    // (unless in silent mode, but WriteProgess will take care of that)
-                    ////if (m_analyze)
-                    {
-                        // output blank line before
-                        WriteProgress();
-
-                        // if we are echoing the input, don't bother reporting the
-                        // minify savings because we don't have the minified output --
-                        // we have the original output
-                        double percentage;
-                        if (!m_echoInput)
-                        {
-                            // calculate the percentage saved
-                            percentage = Math.Round((1 - ((double) encodedBytes.Length)/sourceLength)*100, 1);
-                            WriteProgress(StringMgr.GetString(
-                                              "SavingsMessage",
-                                              sourceLength,
-                                              encodedBytes.Length,
-                                              percentage
-                                              ));
-                        }
-                        else
-                        {
-                            
-                            WriteProgress(StringMgr.GetString(
-                                "SavingsOutputMessage",
-                                encodedBytes.Length
-                                ));
-                        }
-
-                        // calculate how much a simple gzip compression would compress the output
-                        long gzipLength = CalculateGzipSize(encodedBytes);
-
-                        // calculate the savings and display the result
-                        percentage = Math.Round((1 - ((double)gzipLength) / encodedBytes.Length) * 100, 1);
-                        WriteProgress(StringMgr.GetString("SavingsGzipMessage", gzipLength, percentage));
-
-                        // blank line after
-                        WriteProgress();
-                    }
-
-                    // send to console out
-                    Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
-                    //Console.Out.Write(crunchedCode);
-                }
-            }
-            else
-            {
-                // send output to file
-                try
-                {
-                    // make sure the destination folder exists
-                    FileInfo fileInfo = new FileInfo(crunchGroup.Output);
-                    DirectoryInfo destFolder = new DirectoryInfo(fileInfo.DirectoryName);
-                    if (!destFolder.Exists)
-                    {
-                        destFolder.Create();
-                    }
-
-                    if (!File.Exists(crunchGroup.Output) || m_clobber)
-                    {
-                        if (m_clobber
-                            && File.Exists(crunchGroup.Output) 
-                            && (File.GetAttributes(crunchGroup.Output) & FileAttributes.ReadOnly) != 0)
-                        {
-                            // the file exists, we said we want to clobber it, but it's marked as
-                            // read-only. Reset that flag.
-                            File.SetAttributes(
-                                crunchGroup.Output, 
-                                (File.GetAttributes(crunchGroup.Output) & ~FileAttributes.ReadOnly)
-                                );
-                        }
-
-                        // create the output file using the given encoding
-                        using (StreamWriter outputStream = new StreamWriter(
-                           crunchGroup.Output,
-                           false,
-                           encodingOutput
-                           ))
-                        {
-                            outputStream.Write(crunchedCode);
-                        }
-
-                        // only output the size analysis if there is actually some output to measure
-                        if (File.Exists(crunchGroup.Output))
-                        {
-                            // get the size of the resulting file
-                            FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output);
-                            long crunchedLength = crunchedFileInfo.Length;
-                            if (crunchedLength > 0)
-                            {
-                                // blank line before
-                                WriteProgress();
-
-                                // if we are just echoing the input, don't bother calculating
-                                // the minify savings because there aren't any
-                                double percentage;
-                                if (!m_echoInput)
-                                {
-                                    // calculate the percentage saved by minification
-                                    percentage = Math.Round((1 - ((double) crunchedLength)/sourceLength)*100, 1);
-                                    WriteProgress(StringMgr.GetString(
-                                                      "SavingsMessage",
-                                                      sourceLength,
-                                                      crunchedLength,
-                                                      percentage
-                                                      ));
-                                }
-                                else
-                                {
-
-                                    WriteProgress(StringMgr.GetString(
-                                        "SavingsOutputMessage",
-                                        crunchedLength
-                                        ));
-                                }
-
-                                // compute how long a simple gzip might compress the resulting file
-                                long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output));
-
-                                // calculate the percentage of compression and display the results
-                                percentage = Math.Round((1 - ((double) gzipLength)/crunchedLength)*100, 1);
-                                WriteProgress(StringMgr.GetString("SavingsGzipMessage", gzipLength, percentage));
-
-                                // blank line after
-                                WriteProgress();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        retVal = 1;
-                        WriteError("AM-IO", StringMgr.GetString("NoClobberError", crunchGroup.Output));
-                    }
-
-                }
-                catch (ArgumentException e)
-                {
-                    retVal = 1;
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    WriteError("AM-PATH", e.Message);
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    retVal = 1;
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    WriteError("AM-AUTH", e.Message);
-                }
-                catch (PathTooLongException e)
-                {
-                    retVal = 1;
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    WriteError("AM-PATH", e.Message);
-                }
-                catch (SecurityException e)
-                {
-                    retVal = 1;
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    WriteError("AM-SEC", e.Message);
-                }
-                catch (IOException e)
-                {
-                    retVal = 1;
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    WriteError("AM-IO", e.Message);
-                }
             }
 
             if (retVal == 0 && m_errorsFound)
