@@ -251,7 +251,10 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case PrimitiveType.String:
-                    if (Context == null || Parser.Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals))
+                    if (Parser.Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
+                        && (Context == null 
+                        || string.IsNullOrEmpty(Context.Code)
+                        || Context.Code.IndexOf("\\v", StringComparison.Ordinal) < 0))
                     {
                         // escape the string
                         str = EscapeString(
@@ -769,6 +772,11 @@ namespace Microsoft.Ajax.Utilities
                             }
                             return doubleValue;
                         }
+                        else if (Context != null && !string.IsNullOrEmpty(Context.Code)
+                            && Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0)
+                        {
+                            throw new InvalidCastException("cross-browser conversion issue with \\v escape");
+                        }
                         else
                         {
                             // not a hex number -- try doing a regular decimal float conversion
@@ -799,7 +807,12 @@ namespace Microsoft.Ajax.Utilities
                 // basically, if it's a real number or an integer not in the range
                 // where all integers can be exactly represented by a double,
                 // then we don't want to combine them.
-                return !IsNumericLiteral || NumberIsOkayToCombine((double)Value);
+                // also, we don't want to combine any strings that contain \v, since
+                // IE doesn't implement the ECMAScript standard of \v being the
+                // vertical tab character. Cross-browser difference there.
+                return (!IsStringLiteral && !IsNumericLiteral)
+                    || (IsNumericLiteral && NumberIsOkayToCombine((double)Value))
+                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && !Context.Code.Contains("\\v"));
             }
         }
 

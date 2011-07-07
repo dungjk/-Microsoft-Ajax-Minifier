@@ -17,7 +17,7 @@ for all good men";
   var combined = "now is the time " + "for all good men";
   var scriptCombined = "</scri" + "pt>";
 
-  var escapes = "\b\f\n\r\t\v\\";     // should remain the same in W3CStrict mode; \v should be escaped to \13 (octal) for IE-specific
+  var escapes = "\b\f\n\r\t\v\\";     // cross-browser differences in the way \v is handled means we should leave those string alone
   var doubleQuotes1 = "\"";           // should get switched to single-quote delimiter and no escape
   var doubleQuotes2 = '\"';           // escape should get removed
   var singleQuotes1 = "\'";           // escape should get removed

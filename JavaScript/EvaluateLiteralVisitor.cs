@@ -1126,8 +1126,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (left.IsStringLiteral && right.IsStringLiteral)
                 {
-                    // do a straight ordinal comparison of the strings
-                    newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) < 0, PrimitiveType.Boolean, null, m_parser);
+                    if (left.IsOkayToCombine && right.IsOkayToCombine)
+                    {
+                        // do a straight ordinal comparison of the strings
+                        newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) < 0, PrimitiveType.Boolean, null, m_parser);
+                    }
                 }
                 else
                 {
@@ -1157,8 +1160,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (left.IsStringLiteral && right.IsStringLiteral)
                 {
-                    // do a straight ordinal comparison of the strings
-                    newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) <= 0, PrimitiveType.Boolean, null, m_parser);
+                    if (left.IsOkayToCombine && right.IsOkayToCombine)
+                    {
+                        // do a straight ordinal comparison of the strings
+                        newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) <= 0, PrimitiveType.Boolean, null, m_parser);
+                    }
                 }
                 else
                 {
@@ -1189,8 +1195,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (left.IsStringLiteral && right.IsStringLiteral)
                 {
-                    // do a straight ordinal comparison of the strings
-                    newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) > 0, PrimitiveType.Boolean, null, m_parser);
+                    if (left.IsOkayToCombine && right.IsOkayToCombine)
+                    {
+                        // do a straight ordinal comparison of the strings
+                        newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) > 0, PrimitiveType.Boolean, null, m_parser);
+                    }
                 }
                 else
                 {
@@ -1221,8 +1230,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (left.IsStringLiteral && right.IsStringLiteral)
                 {
-                    // do a straight ordinal comparison of the strings
-                    newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) >= 0, PrimitiveType.Boolean, null, m_parser);
+                    if (left.IsOkayToCombine && right.IsOkayToCombine)
+                    {
+                        // do a straight ordinal comparison of the strings
+                        newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) >= 0, PrimitiveType.Boolean, null, m_parser);
+                    }
                 }
                 else
                 {
@@ -1269,7 +1281,10 @@ namespace Microsoft.Ajax.Utilities
 
                         case PrimitiveType.String:
                             // compare string ordinally
-                            newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) == 0, PrimitiveType.Boolean, null, m_parser);
+                            if (left.IsOkayToCombine && right.IsOkayToCombine)
+                            {
+                                newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) == 0, PrimitiveType.Boolean, null, m_parser);
+                            }
                             break;
 
                         case PrimitiveType.Number:
@@ -1335,7 +1350,10 @@ namespace Microsoft.Ajax.Utilities
 
                         case PrimitiveType.String:
                             // compare string ordinally
-                            newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) != 0, PrimitiveType.Boolean, null, m_parser);
+                            if (left.IsOkayToCombine && right.IsOkayToCombine)
+                            {
+                                newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) != 0, PrimitiveType.Boolean, null, m_parser);
+                            }
                             break;
 
                         case PrimitiveType.Number:
@@ -1401,7 +1419,10 @@ namespace Microsoft.Ajax.Utilities
 
                         case PrimitiveType.String:
                             // compare string ordinally
-                            newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) == 0, PrimitiveType.Boolean, null, m_parser);
+                            if (left.IsOkayToCombine && right.IsOkayToCombine)
+                            {
+                                newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) == 0, PrimitiveType.Boolean, null, m_parser);
+                            }
                             break;
 
                         case PrimitiveType.Number:
@@ -1457,7 +1478,10 @@ namespace Microsoft.Ajax.Utilities
 
                         case PrimitiveType.String:
                             // compare string ordinally
-                            newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) != 0, PrimitiveType.Boolean, null, m_parser);
+                            if (left.IsOkayToCombine && right.IsOkayToCombine)
+                            {
+                                newLiteral = new ConstantWrapper(string.CompareOrdinal(left.ToString(), right.ToString()) != 0, PrimitiveType.Boolean, null, m_parser);
+                            }
                             break;
 
                         case PrimitiveType.Number:

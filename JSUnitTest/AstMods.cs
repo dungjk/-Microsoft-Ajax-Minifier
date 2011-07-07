@@ -153,5 +153,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void VerticalTab()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
