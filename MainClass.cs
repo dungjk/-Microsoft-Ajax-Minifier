@@ -1406,7 +1406,7 @@ namespace Microsoft.Ajax.Utilities
                 // outputting to stdout, set the appropriate flag.
                 for (var ndxGroup = 0; ndxGroup < crunchGroups.Length; ++ndxGroup)
                 {
-                    if (string.IsNullOrEmpty(crunchGroups[ndxGroup].Output))
+                    if (string.IsNullOrEmpty(crunchGroups[ndxGroup].Output.Path))
                     {
                         // set the flag; no need to check any more
                         m_outputToStandardOut = true;
@@ -1433,9 +1433,9 @@ namespace Microsoft.Ajax.Utilities
                             string errorCode = string.Format(CultureInfo.InvariantCulture, "AM{0:D4}", crunchResult);
 
                             // if there is an output file name, use it.
-                            if (!string.IsNullOrEmpty(crunchGroup.Output))
+                            if (!string.IsNullOrEmpty(crunchGroup.Output.Path))
                             {
-                                WriteError(crunchGroup.Output,
+                                WriteError(crunchGroup.Output.Path,
                                     StringMgr.GetString("OutputFileErrorSubCat"),
                                     errorCode,
                                     StringMgr.GetString("OutputFileError", crunchResult)
@@ -1650,7 +1650,7 @@ namespace Microsoft.Ajax.Utilities
                             // process each input file
                             for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                             {
-                                retVal = ProcessCssFile(crunchGroup[ndx], crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref sourceLength);
+                                retVal = ProcessCssFile(crunchGroup[ndx].Path, crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref sourceLength);
                             }
                         }
                         break;
@@ -1694,7 +1694,7 @@ namespace Microsoft.Ajax.Utilities
                                 // process each input file in turn
                                 for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                                 {
-                                    retVal = ProcessJSFile(crunchGroup[ndx], crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
+                                    retVal = ProcessJSFile(crunchGroup[ndx].Path, crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
                                 }
                             }
                         }
@@ -1729,7 +1729,7 @@ namespace Microsoft.Ajax.Utilities
                 Encoding encodingOutput = GetOutputEncoding(crunchGroup.InputType, crunchGroup.Output.EncodingName);
 
                 // now write the final output file
-                if (string.IsNullOrEmpty(crunchGroup.Output))
+                if (string.IsNullOrEmpty(crunchGroup.Output.Path))
                 {
                     // no output file specified - send to STDOUT
                     // if the code is empty, don't bother outputting it to the console
@@ -1809,30 +1809,30 @@ namespace Microsoft.Ajax.Utilities
                     try
                     {
                         // make sure the destination folder exists
-                        FileInfo fileInfo = new FileInfo(crunchGroup.Output);
+                        FileInfo fileInfo = new FileInfo(crunchGroup.Output.Path);
                         DirectoryInfo destFolder = new DirectoryInfo(fileInfo.DirectoryName);
                         if (!destFolder.Exists)
                         {
                             destFolder.Create();
                         }
 
-                        if (!File.Exists(crunchGroup.Output) || m_clobber)
+                        if (!File.Exists(crunchGroup.Output.Path) || m_clobber)
                         {
                             if (m_clobber
-                                && File.Exists(crunchGroup.Output) 
-                                && (File.GetAttributes(crunchGroup.Output) & FileAttributes.ReadOnly) != 0)
+                                && File.Exists(crunchGroup.Output.Path) 
+                                && (File.GetAttributes(crunchGroup.Output.Path) & FileAttributes.ReadOnly) != 0)
                             {
                                 // the file exists, we said we want to clobber it, but it's marked as
                                 // read-only. Reset that flag.
                                 File.SetAttributes(
-                                    crunchGroup.Output, 
-                                    (File.GetAttributes(crunchGroup.Output) & ~FileAttributes.ReadOnly)
+                                    crunchGroup.Output.Path, 
+                                    (File.GetAttributes(crunchGroup.Output.Path) & ~FileAttributes.ReadOnly)
                                     );
                             }
 
                             // create the output file using the given encoding
                             using (StreamWriter outputStream = new StreamWriter(
-                               crunchGroup.Output,
+                               crunchGroup.Output.Path,
                                false,
                                encodingOutput
                                ))
@@ -1841,10 +1841,10 @@ namespace Microsoft.Ajax.Utilities
                             }
 
                             // only output the size analysis if there is actually some output to measure
-                            if (File.Exists(crunchGroup.Output))
+                            if (File.Exists(crunchGroup.Output.Path))
                             {
                                 // get the size of the resulting file
-                                FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output);
+                                FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output.Path);
                                 long crunchedLength = crunchedFileInfo.Length;
                                 if (crunchedLength > 0)
                                 {
@@ -1875,7 +1875,7 @@ namespace Microsoft.Ajax.Utilities
                                     }
 
                                     // compute how long a simple gzip might compress the resulting file
-                                    long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output));
+                                    long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output.Path));
 
                                     // calculate the percentage of compression and display the results
                                     percentage = Math.Round((1 - ((double) gzipLength)/crunchedLength)*100, 1);
@@ -1889,7 +1889,7 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             retVal = 1;
-                            WriteError("AM-IO", StringMgr.GetString("NoClobberError", crunchGroup.Output));
+                            WriteError("AM-IO", StringMgr.GetString("NoClobberError", crunchGroup.Output.Path));
                         }
 
                     }
@@ -1950,7 +1950,7 @@ namespace Microsoft.Ajax.Utilities
             public string EncodingName { get; set; }
 
             // implictly convert to string by returning the path
-            public static implicit operator string(FileInformation fi){return fi.Path;}
+            //public static implicit operator string(FileInformation fi){return fi.Path;}
         }
 
         private class CrunchGroup
