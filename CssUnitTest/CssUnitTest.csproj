@@ -139,6 +139,7 @@
     <Content Include="TestData\CSS\Expected\Selectors\Combinator.css" />
     <Content Include="TestData\CSS\Expected\Selectors\CSS3.css" />
     <Content Include="TestData\CSS\Expected\Selectors\Grouping.css" />
+    <Content Include="TestData\CSS\Expected\Selectors\MatchCasing.css" />
     <Content Include="TestData\CSS\Expected\Selectors\Namespace.css" />
     <Content Include="TestData\CSS\Expected\Selectors\NoSpaceUniversal.css" />
     <Content Include="TestData\CSS\Expected\Selectors\Not.css" />
@@ -202,6 +203,7 @@
     <Content Include="TestData\CSS\Input\Selectors\Combinator.css" />
     <Content Include="TestData\CSS\Input\Selectors\CSS3.css" />
     <Content Include="TestData\CSS\Input\Selectors\Grouping.css" />
+    <Content Include="TestData\CSS\Input\Selectors\MatchCasing.css" />
     <Content Include="TestData\CSS\Input\Selectors\Namespace.css" />
     <Content Include="TestData\CSS\Input\Selectors\NoSpaceUniversal.css" />
     <Content Include="TestData\CSS\Input\Selectors\Not.css" />

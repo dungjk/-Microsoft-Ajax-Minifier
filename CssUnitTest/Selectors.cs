@@ -95,5 +95,11 @@ namespace CssUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void MatchCasing()
+    {
+        TestHelper.Instance.RunTest();
+    }
   }
 }

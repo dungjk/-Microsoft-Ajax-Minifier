@@ -1650,6 +1650,11 @@ namespace Microsoft.Ajax.Utilities
                 return false;
             }
 
+            // if we get far enough in the match, we'll start queuing up the 
+            // matched characters so far, in case we end up not matching and need
+            // to push them back in the read-ahead queue.
+            StringBuilder sb = null;
+
             // we'll start peeking ahead so we have less to push
             // if we fail
             for (int ndx = 1; ndx < str.Length; ++ndx)
@@ -1659,10 +1664,22 @@ namespace Microsoft.Ajax.Utilities
                     // not this string. Push what we've matched
                     if (ndx > 1)
                     {
-                        PushString(str.Substring(0, ndx - 1));
+                        if (sb != null)
+                        {
+                            PushString(sb.ToString());
+                        }
                     }
                     return false;
                 }
+
+                if (sb == null)
+                {
+                    // create the string builder -- we need it now.
+                    // it won't be longer than the string we're trying to match.
+                    sb = new StringBuilder(str.Length);
+                }
+
+                sb.Append(m_currentChar);
                 NextChar();
             }
             NextChar();
