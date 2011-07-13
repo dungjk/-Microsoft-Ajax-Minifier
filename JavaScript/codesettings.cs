@@ -119,7 +119,10 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public void ClearRenamePairs()
         {
-            m_identifierReplacementMap.Clear();
+            if (m_identifierReplacementMap != null)
+            {
+                m_identifierReplacementMap.Clear();
+            }
         }
 
         /// <summary>
@@ -192,6 +195,10 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                 }
+                else
+                {
+                    ClearRenamePairs();
+                }
             }
         }
 
@@ -262,6 +269,10 @@ namespace Microsoft.Ajax.Utilities
                 {
                     SetNoAutoRename(value.Split(','));
                 }
+                else
+                {
+                    SetNoAutoRename(null);
+                }
             }
         }
 
@@ -331,6 +342,10 @@ namespace Microsoft.Ajax.Utilities
                 if (!string.IsNullOrEmpty(value))
                 {
                     SetKnownGlobalNames(value.Split(','));
+                }
+                else
+                {
+                    SetKnownGlobalNames(null);
                 }
             }
         }
@@ -403,6 +418,10 @@ namespace Microsoft.Ajax.Utilities
                 if (!string.IsNullOrEmpty(value))
                 {
                     SetPreprocessorDefines(value.Split(','));
+                }
+                else
+                {
+                    SetPreprocessorDefines(null);
                 }
             }
         }
@@ -503,6 +522,10 @@ namespace Microsoft.Ajax.Utilities
                 if (!string.IsNullOrEmpty(value))
                 {
                     SetDebugLookups(value.Split(','));
+                }
+                else
+                {
+                    SetDebugLookups(null);
                 }
             }
         }
