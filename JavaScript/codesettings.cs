@@ -522,6 +522,7 @@ namespace Microsoft.Ajax.Utilities
         /// deprecated setting
         /// </summary>
         [Obsolete("This property is obsolete and no longer used")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool CatchAsLocal
         {
             get; set;
@@ -553,6 +554,7 @@ namespace Microsoft.Ajax.Utilities
         /// False is the equivalent to EvalTreament.MakeAllSafe
         /// </summary>
         [Obsolete("This property is deprecated; use EvalTreatment instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool EvalsAreSafe
         {
             get
@@ -721,6 +723,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         [Obsolete("This property is obsolete and no longer used")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool W3Strict
         {
             get; set;

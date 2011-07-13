@@ -58,6 +58,7 @@ namespace Microsoft.Ajax.Utilities
         /// Deprecated; do not use this collection. Use the ErrorList collection instead.
         /// </summary>
         [Obsolete("This property is deprecated; use ErrorList instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ICollection<string> Errors
         {
             get 
@@ -240,6 +241,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="globalNames"></param>
         /// <returns></returns>
         [Obsolete("This method is deprecated; use the CodeSettings object to pass known global names")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string MinifyJavaScript(string source, CodeSettings codeSettings, params string[] globalNames)
         {
             if (codeSettings != null && codeSettings.KnownGlobalNames == null && globalNames != null)
@@ -257,6 +259,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="globalNames">array of known global object names</param>
         /// <returns>minified Javascript</returns>
         [Obsolete("This method is deprecated; use the CodeSettings object to pass known global names")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string MinifyJavaScript(string source, params string[] globalNames)
         {
             // just pass in default settings
@@ -278,6 +281,7 @@ namespace Microsoft.Ajax.Utilities
     /// Please use Microsoft.Ajax.Utilities.Minifier instead.
     /// </summary>
     [Obsolete("This class is deprecated; use Microsoft.Ajax.Utilities.Minifier instead")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public class ScriptCruncher : Minifier
     {
         /// <summary>
@@ -288,6 +292,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="source">source Javascript</param>
         /// <returns>crunched Javascript</returns>
         [Obsolete("This API is deprecated; use Microsoft.Ajax.Utilties.Minifier.MinifyJavaScript instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string Crunch(string source)
         {
             // just pass in default settings
@@ -303,6 +308,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="codeSettings">code minification settings</param>
         /// <returns>crunched Javascript</returns>
         [Obsolete("This API is deprecated; use Microsoft.Ajax.Utilties.Minifier.MinifyJavaScript instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string Crunch(string source, CodeSettings codeSettings)
         {
             // just pass in default settings

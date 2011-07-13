@@ -217,6 +217,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="source">JavaScript source to parse</param>
         /// <param name="globalVars">Obsolete - parameter IGNORED</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "globalVars"), Obsolete("This constructor is obsolete - set known global names via the CodeSettings object")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public JSParser(string source, string[] globalVars)
             : this(source)
         {
