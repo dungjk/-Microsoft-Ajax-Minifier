@@ -12,7 +12,7 @@
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
     <AssemblyName>AjaxMin</AssemblyName>
-    <AssemblyOriginatorKeyFile>AjaxMin.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\AjaxMin.snk</AssemblyOriginatorKeyFile>
     <DefaultClientScript>JScript</DefaultClientScript>
     <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
     <DefaultTargetSchema>IE50</DefaultTargetSchema>
@@ -418,7 +418,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AjaxMin.snk" />
     <None Include="Migrated rules for AjaxMinDll.ruleset" />
   </ItemGroup>
   <ItemGroup>

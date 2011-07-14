@@ -44,7 +44,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AjaxMin.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\AjaxMin.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Build.Framework" />
@@ -68,7 +68,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AjaxMin.snk" />
     <None Include="AjaxMin.tasks">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
