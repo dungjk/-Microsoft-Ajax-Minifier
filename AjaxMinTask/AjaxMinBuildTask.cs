@@ -69,6 +69,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool TreatWarningsAsErrors { get; set; }
 
+        /// <summary>
+        /// Whether to attempt to over-write read-only files (default is false)
+        /// </summary>
+        public bool Clobber { get; set; }
+
         #endregion
 
         #region JavaScript parameters
@@ -461,8 +466,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
                 else
                 {
-                    // log a MESSAGE that the minification was skipped -- don't break the build
-                    Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    // log a WARNING that the minification was skipped -- don't break the build
+                    //Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                 }
             }
         }
@@ -509,8 +515,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
                 else
                 {
-                    // log a MESSAGE that the minification was skipped -- don't break the build
-                    Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    // log a WARNING that the minification was skipped -- don't break the build
+                    //Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                 }
             }
         }
@@ -591,10 +598,25 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region Utility methods
 
-        private static bool FileIsWritable(string path)
+        private bool FileIsWritable(string path)
         {
+            // the file is writable if it doesn't exist, or is NOT marked readonly
             var fileInfo = new FileInfo(path);
-            return !(fileInfo.Exists && fileInfo.IsReadOnly);
+            var writable = !fileInfo.Exists || !fileInfo.IsReadOnly;
+
+            // BUT, if it exists and isn't writable, check the clobber flag. If we want to clobber
+            // the file...
+            if (fileInfo.Exists && !writable && Clobber)
+            {
+                // try resetting the read-only flag
+                fileInfo.Attributes &= ~FileAttributes.ReadOnly; 
+
+                // and check again
+                writable = !fileInfo.IsReadOnly;
+            }
+
+            // return the flag
+            return writable;
         }
 
         /// <summary>
