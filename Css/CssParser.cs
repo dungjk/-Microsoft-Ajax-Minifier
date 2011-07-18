@@ -40,6 +40,7 @@ namespace Microsoft.Ajax.Utilities
         private string m_lastOutputString;
         private bool m_mightNeedSpace;
         private bool m_expressionContainsErrors;
+        private bool m_skippedSpace;
 
         // this is used to make sure we don't output two newlines in a row.
         // start it as true so we don't start off with a blank line
@@ -2419,22 +2420,30 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private void SkipSpace()
         {
+            // reset the skipped-space flag
+            m_skippedSpace = false;
+
             // move to the next token
             NextToken();
             // while space, keep stepping
             while (CurrentTokenType == TokenType.Space)
             {
+                m_skippedSpace = true;
                 NextToken();
             }
         }
 
         private void SkipSpaceComment()
         {
+            // reset the skipped-space flag
+            m_skippedSpace = false;
+
             // move to the next token
             if (NextRawToken() == TokenType.Space)
             {
                 // starts with whitespace! If the next token is a comment, we want to make sure that
                 // whitespace is preserved. Keep going until we find something that isn't a space
+                m_skippedSpace = true;
                 while (NextRawToken() == TokenType.Space)
                 {
                     // iteration is in the condition
@@ -2477,10 +2486,14 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>true if space was skipped; false if the current token is not space</returns>
         private bool SkipIfSpace()
         {
+            // reset the skipped-space flag
+            m_skippedSpace = false;
+
             bool tokenIsSpace = CurrentTokenType == TokenType.Space;
             // while space, keep stepping
             while (CurrentTokenType == TokenType.Space)
             {
+                m_skippedSpace = true;
                 NextToken();
             }
             return tokenIsSpace;
@@ -2582,6 +2595,10 @@ namespace Microsoft.Ajax.Utilities
 
                 default:
                     throw new ArgumentException("invalid closing match");
+            }
+            if (m_skippedSpace && CurrentTokenText != "{")
+            {
+                Append(' ');
             }
             AppendCurrent();
             NextToken();

@@ -153,6 +153,7 @@
     <Content Include="TestData\CSS\Expected\Syntax\Escapes.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Expr.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Expression.css" />
+    <Content Include="TestData\CSS\Expected\Syntax\FontNames.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Function_f.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Function.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Important.css" />
@@ -215,6 +216,7 @@
     <Content Include="TestData\CSS\Input\Syntax\Escapes.css" />
     <Content Include="TestData\CSS\Input\Syntax\Expr.css" />
     <Content Include="TestData\CSS\Input\Syntax\Expression.css" />
+    <Content Include="TestData\CSS\Input\Syntax\FontNames.css" />
     <Content Include="TestData\CSS\Input\Syntax\Function.css" />
     <Content Include="TestData\CSS\Input\Syntax\Important.css" />
     <Content Include="TestData\CSS\Input\Errors\ParsingErrors.css" />

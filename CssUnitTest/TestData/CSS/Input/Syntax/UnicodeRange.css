@@ -7,6 +7,9 @@
 
 foo
 {
+	unicode-range: u+???; /* as if prefixed with a zero */
+	unicode-range: u+0???; /* don't need the prefixed zero */
+	unicode-range: u+??????; /* still valid */
 	unicode-range: u+a5; /* single code point for yen/yuan symbol */
 	unicode-range: u+0000-7f; /* code range for basic ASCII characters */
 	unicode-range: u+590-5ff; /* code range for hebrew characters */
@@ -19,4 +22,5 @@ foo
   first: U+11????; /* first number is invalid (over 10ffff) */
   second: U+1234-110000; /* second number is invalid */
   order: u+4321-1234; /* second number less than the first (out of order) */
+  another: u+0??????; /* too many digits with the prefixed zero, so althogh technically invalid, get rid of the zero to make it valid */
 }
