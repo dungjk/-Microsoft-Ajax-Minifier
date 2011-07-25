@@ -194,7 +194,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.26.4223.19651, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.26.4223.20296, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                     "_078EC7FE11AE2A35394EC8E911418097"
@@ -402,7 +402,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
         "ProductCode" = "8:{443CFD7F-BB3E-4D80-842B-DABAAD209CBF}"
-        "PackageCode" = "8:{BA3240E5-B013-4698-9A44-114FC7B2DB32}"
+        "PackageCode" = "8:{D5DA5CE9-3D87-4762-B62A-AC8769DCF5A2}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
