@@ -3734,7 +3734,7 @@ namespace Microsoft.Ajax.Utilities
                                     else
                                     {
                                         // throw an error but use it anyway, since that's what the developer has going on
-                                        ReportError(JSError.NoMemberIdentifier, true);
+                                        ReportError(JSError.NoMemberIdentifier, m_currentToken.Clone(), true);
                                         field = new ObjectLiteralField(m_currentToken.Code, PrimitiveType.String, m_currentToken.Clone(), this);
                                     }
                                     break;
