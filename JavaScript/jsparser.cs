@@ -3733,8 +3733,9 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                     else
                                     {
-                                        ReportError(JSError.NoMemberIdentifier);
-                                        field = new ObjectLiteralField("_#Missing_Field#_" + s_cDummyName++, PrimitiveType.String, CurrentPositionContext(), this);
+                                        // throw an error but use it anyway, since that's what the developer has going on
+                                        ReportError(JSError.NoMemberIdentifier, true);
+                                        field = new ObjectLiteralField(m_currentToken.Code, PrimitiveType.String, m_currentToken.Clone(), this);
                                     }
                                     break;
                             }
