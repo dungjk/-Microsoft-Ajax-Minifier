@@ -121,31 +121,37 @@ namespace Microsoft.Ajax.Utilities
         {
             if (CompilerError != null)
             {
-                // get the offending line
-                string line = se.LineText;
-
-                // get the offending context
-                string context = se.ErrorSegment;
-
-                // if the context is empty, use the whole line
-                if (string.IsNullOrEmpty(context))
+                // format the error code
+                string errorCode = string.Format(CultureInfo.InvariantCulture, "JS{0}", (se.Error & (0xffff)));
+                if (m_settings != null && (m_settings.IgnoreErrors == null || !m_settings.IgnoreErrors.Contains(errorCode)))
                 {
-                    context = line;
-                }
+                    // get the offending line
+                    string line = se.LineText;
 
-                CompilerError(this, new JScriptExceptionEventArgs(se, new ContextError(
-                    se.IsError,
-                    se.Severity,
-                    GetSeverityString(se.Severity),
-                    string.Format(CultureInfo.InvariantCulture, "JS{0}", (se.Error & (0xffff))),
-                    se.HelpLink,
-                    se.FileContext,
-                    se.Line,
-                    se.Column,
-                    se.EndLine,
-                    se.EndColumn,
-                    se.Message + ": " + context)));
+                    // get the offending context
+                    string context = se.ErrorSegment;
+
+                    // if the context is empty, use the whole line
+                    if (string.IsNullOrEmpty(context))
+                    {
+                        context = line;
+                    }
+
+                    CompilerError(this, new JScriptExceptionEventArgs(se, new ContextError(
+                        se.IsError,
+                        se.Severity,
+                        GetSeverityString(se.Severity),
+                        errorCode,
+                        se.HelpLink,
+                        se.FileContext,
+                        se.Line,
+                        se.Column,
+                        se.EndLine,
+                        se.EndColumn,
+                        se.Message + ": " + context)));
+                }
             }
+
             //true means carry on with compilation.
             return se.CanRecover;
         }

@@ -832,8 +832,7 @@ namespace Microsoft.Ajax.Utilities
             ContextError error = e.Error;
             // ignore severity values greater than our severity level
             // also ignore errors that are in our ignore list (if any)
-            if (error.Severity <= m_warningLevel
-                && (m_ignoreErrors == null || !m_ignoreErrors.Contains(error.ErrorCode)))
+            if (error.Severity <= m_warningLevel)
             {
                 // we found an error
                 m_errorsFound = true;
