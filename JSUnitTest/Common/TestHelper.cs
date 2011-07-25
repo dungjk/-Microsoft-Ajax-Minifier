@@ -376,7 +376,7 @@ namespace JSUnitTest
             Trace.WriteLine("AJAXMIN Debug Spew:");
 
             // call Main directly
-            int retValue = Microsoft_Ajax_Utilities_MainClassAccessor.Main(mainArguments);
+            int retValue = Microsoft.Ajax.Utilities.MainClass.Main(mainArguments);
 
             Trace.Write("RETURN CODE: ");
             Trace.WriteLine(retValue);
@@ -391,6 +391,9 @@ namespace JSUnitTest
                   outputFile,
                   false
                   );
+
+                Trace.WriteLine(string.Empty);
+                Trace.WriteLine("odd \"" + expectedPath + "\" \"" + outputPath + "\"");
 
                 Trace.WriteLine(string.Empty);
                 Trace.WriteLine("EXPECTED OUTPUT FILE:");

@@ -83,7 +83,6 @@ namespace Microsoft.Ajax.Utilities
         private CodeSettings m_settings;// = null;
 
         private int m_breakRecursion;// = 0;
-        private static int s_cDummyName;
         private int m_severity;
 
         public event EventHandler<JScriptExceptionEventArgs> CompilerError;

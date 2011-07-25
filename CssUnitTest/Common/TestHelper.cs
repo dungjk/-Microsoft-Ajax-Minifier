@@ -284,7 +284,7 @@ namespace CssUnitTest
             // call the CSSCRUNCH main function
             Trace.WriteLine(string.Empty);
             Trace.WriteLine("CSSCRUNCH Debug:");
-            int retValue = Microsoft_Ajax_Utilities_MainClassAccessor.Main(mainArguments);
+            int retValue = Microsoft.Ajax.Utilities.MainClass.Main(mainArguments);
 
             // after the run, the output file BETTER exist...
             if (File.Exists(outputPath))
@@ -296,6 +296,9 @@ namespace CssUnitTest
                   outputFile,
                   true
                   );
+
+                Trace.WriteLine(string.Empty);
+                Trace.WriteLine("odd \"" + expectedPath + "\" \"" + outputPath + "\"");
 
                 Trace.WriteLine(string.Empty);
                 Trace.WriteLine("EXPECTED OUTPUT FILE:");

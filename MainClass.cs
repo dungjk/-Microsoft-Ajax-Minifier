@@ -62,6 +62,11 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private List<string> m_defines;
 
+        /// <summary>
+        /// Optional list of error codes to ignore
+        /// </summary>
+        private List<string> m_ignoreErrors;
+
         #endregion
 
         #region common settings
@@ -155,7 +160,7 @@ namespace Microsoft.Ajax.Utilities
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             int retVal;
             if (args == null || args.Length == 0)
@@ -585,6 +590,31 @@ namespace Microsoft.Ajax.Utilities
                         case "?":
                             // just show usage
                             throw new UsageException(m_outputMode);
+
+                        case "IGNORE":
+                            // list of error codes to ignore (not report)
+                            // the parts can be a comma-separate list of identifiers
+                            if (string.IsNullOrEmpty(paramPart))
+                            {
+                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
+                            }
+
+                            // use parts[1] rather than paramParts because paramParts has been forced to upper-case
+                            foreach (string errorCode in parts[1].Split(','))
+                            {
+                                // if we haven't created the list yet, do it now
+                                if (m_ignoreErrors == null)
+                                {
+                                    m_ignoreErrors = new List<string>();
+                                }
+
+                                // don't add duplicates
+                                if (!m_ignoreErrors.Contains(errorCode))
+                                {
+                                    m_ignoreErrors.Add(errorCode);
+                                }
+                            }
+                            break;
 
                         case "INLINE":
                             // set safe for inline to the same boolean.

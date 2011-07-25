@@ -53,6 +53,9 @@ namespace Microsoft.Ajax.Utilities
         public ICollection<ContextError> ErrorList { get { return m_errorList; } }
         private List<ContextError> m_errorList; // = null;
 
+        // optional collection of errors to ignore
+        private ICollection<string> m_ignoreErrors; // = null;
+
         /// <summary>
         /// Collection of any error strings found during the crunch process.
         /// Deprecated; do not use this collection. Use the ErrorList collection instead.
@@ -102,6 +105,9 @@ namespace Microsoft.Ajax.Utilities
 
             // reset the errors builder
             m_errorList = new List<ContextError>();
+
+            codeSettings = codeSettings ?? new CodeSettings();
+            m_ignoreErrors = codeSettings.IgnoreErrors;
 
             // create the parser from the source string.
             // pass null for the assumed globals array
@@ -221,7 +227,8 @@ namespace Microsoft.Ajax.Utilities
         private void OnJavaScriptError(object sender, JScriptExceptionEventArgs e)
         {
             ContextError error = e.Error;
-            if (error.Severity <= WarningLevel)
+            if (error.Severity <= WarningLevel
+                && (m_ignoreErrors == null || !m_ignoreErrors.Contains(error.ErrorCode)))
             {
                 m_errorList.Add(error);
             }

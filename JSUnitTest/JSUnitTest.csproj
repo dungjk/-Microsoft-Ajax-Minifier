@@ -89,7 +89,6 @@
     <Compile Include="Switch.cs" />
     <Compile Include="Syntax.cs" />
     <Compile Include="UnknownScope.cs" />
-    <Compile Include="VSCodeGenAccessors.cs" />
     <Compile Include="XmlInput.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -464,12 +463,6 @@
     <Content Include="TestData\JS\Input\XmlInput\XmlOneOutputFile.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AjaxMin.csproj">
-      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
-      <Name>AjaxMin</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
       <Visible>False</Visible>
       <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
@@ -494,6 +487,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="TestData\JS\Output\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AjaxMin.csproj">
+      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
+      <Name>AjaxMin</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

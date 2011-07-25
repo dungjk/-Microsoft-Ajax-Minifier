@@ -75,7 +75,6 @@
     <Compile Include="Replacements.cs" />
     <Compile Include="Selectors.cs" />
     <Compile Include="Syntax.cs" />
-    <Compile Include="VSCodeGenAccessors.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestData\CSS\Expected\AtRules\Charset.css" />

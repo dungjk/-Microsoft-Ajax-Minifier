@@ -156,6 +156,12 @@ namespace Microsoft.Ajax.Utilities
             settings.IgnoreConditionalCompilation = m_ignoreConditionalCompilation;
             settings.PreserveImportantComments = m_preserveImportantComments;
 
+            // if we have an ignore-error list, set it on the settings object
+            if (m_ignoreErrors != null && m_ignoreErrors.Count > 0)
+            {
+                settings.SetIgnoreErrors(m_ignoreErrors.ToArray());
+            }
+
             // if there are defined preprocessor names
             if (m_defines != null && m_defines.Count > 0)
             {
@@ -825,7 +831,9 @@ namespace Microsoft.Ajax.Utilities
         {
             ContextError error = e.Error;
             // ignore severity values greater than our severity level
-            if (error.Severity <= m_warningLevel)
+            // also ignore errors that are in our ignore list (if any)
+            if (error.Severity <= m_warningLevel
+                && (m_ignoreErrors == null || !m_ignoreErrors.Contains(error.ErrorCode)))
             {
                 // we found an error
                 m_errorsFound = true;
