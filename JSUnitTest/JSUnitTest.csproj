@@ -217,6 +217,7 @@
     <Content Include="TestData\JS\Expected\Literals\CombineNegs.js" />
     <Content Include="TestData\JS\Expected\Literals\InlineSafe.js" />
     <Content Include="TestData\JS\Expected\Literals\InlineSafe_no.js" />
+    <Content Include="TestData\JS\Expected\Literals\Member.js" />
     <Content Include="TestData\JS\Expected\Literals\NestedCombine.js" />
     <Content Include="TestData\JS\Expected\Literals\Number.js" />
     <Content Include="TestData\JS\Expected\Literals\ObjectLiteral.js" />
@@ -396,6 +397,7 @@
     <Content Include="TestData\JS\Input\Literals\Combined.js" />
     <Content Include="TestData\JS\Input\Literals\CombineNegs.js" />
     <Content Include="TestData\JS\Input\Literals\InlineSafe.js" />
+    <Content Include="TestData\JS\Input\Literals\Member.js" />
     <Content Include="TestData\JS\Input\Literals\NestedCombine.js" />
     <Content Include="TestData\JS\Input\Literals\Number.js" />
     <Content Include="TestData\JS\Input\Literals\ObjectLiteral.js" />

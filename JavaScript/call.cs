@@ -197,6 +197,9 @@ namespace Microsoft.Ajax.Utilities
               || (funcCall != null)
               || (m_func is ThisLiteral)
               || (m_func is FunctionObject)
+              || (m_func is ArrayLiteral)
+              || (m_func is ConstantWrapper)
+              || (m_func is ObjectLiteral)
               );
 
             // because if the new-operator associates to the right and the ()-operator associates
