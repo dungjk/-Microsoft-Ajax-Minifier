@@ -1072,8 +1072,17 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     // make up an identifier assume we're done with the var statement
-                    ReportError(JSError.NoIdentifier);
-                    return null;
+                    if (JSScanner.IsValidIdentifier(m_currentToken.Code))
+                    {
+                        // it's probably just a keyword
+                        ReportError(JSError.NoIdentifier, m_currentToken.Clone(), true);
+                        variableName = m_currentToken.Code;
+                    }
+                    else
+                    {
+                        ReportError(JSError.NoIdentifier);
+                        return null;
+                    }
                 }
             }
             else
@@ -2702,7 +2711,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // if this isn't a function expression, then we need to throw an error because
                         // function DECLARATIONS always need a valid identifier name
-                        ReportError(JSError.NoIdentifier, true);
+                        ReportError(JSError.NoIdentifier, m_currentToken.Clone(), true);
 
                         // BUT if the current token is a left paren, we don't want to use it as the name.
                         // (fix for issue #14152)
