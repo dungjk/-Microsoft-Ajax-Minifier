@@ -556,7 +556,7 @@ namespace Microsoft.Ajax.Utilities
                 var uniqueCodes = new List<string>(ignoreErrors.Length);
                 for(var ndx = 0; ndx < ignoreErrors.Length; ++ndx)
                 {
-                    string errorCode = ignoreErrors[ndx].Trim();
+                    string errorCode = ignoreErrors[ndx].Trim().ToUpperInvariant();
                     if (!uniqueCodes.Contains(errorCode))
                     {
                         uniqueCodes.Add(errorCode);
