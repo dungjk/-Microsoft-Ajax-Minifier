@@ -23,7 +23,6 @@ namespace Microsoft.Ajax.Utilities
 
     internal enum OpPrec{
       precNone,
-      precSeqEval, // these first two are not used
       precComma,
       precAssignment,
       precConditional,

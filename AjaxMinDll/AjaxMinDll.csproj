@@ -325,6 +325,9 @@
     <Compile Include="..\JavaScript\missing.cs">
       <Link>JavaScript\missing.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\NewParensVisitor.cs">
+      <Link>JavaScript\NewParensVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\numericunary.cs">
       <Link>JavaScript\numericunary.cs</Link>
     </Compile>

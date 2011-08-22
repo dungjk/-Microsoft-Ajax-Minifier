@@ -127,6 +127,7 @@
     <Compile Include="JavaScript\EvaluateLiteralVisitor.cs" />
     <Compile Include="JavaScript\expr.cs" />
     <Compile Include="JavaScript\FinalPassVisitor.cs" />
+    <Compile Include="JavaScript\NewParensVisitor.cs" />
     <Compile Include="JavaScript\IVisitor.cs" />
     <Compile Include="JavaScript\LogicalNotVisitor.cs" />
     <Compile Include="JavaScript\ReorderScopeVisitor.cs" />

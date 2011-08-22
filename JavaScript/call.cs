@@ -202,24 +202,32 @@ namespace Microsoft.Ajax.Utilities
               || (m_func is ObjectLiteral)
               );
 
-            // because if the new-operator associates to the right and the ()-operator associates
-            // to the left, we need to be careful that we don't change the precedence order when the 
-            // function of a new operator is itself a call. In that case, the call will have it's own
-            // parameters (and therefore parentheses) that will need to be associated with the call
-            // and NOT the new -- the call will need to be surrounded with parens to keep that association.
-            if (m_isConstructor && funcCall != null && !funcCall.InBrackets)
+            // if we already know we're going to wrap in parens, then there's no need for further checks
+            if (!encloseInParens)
             {
-                encloseInParens = true;
-            }
-
-
-            // if the root is a constructor with no arguments, we'll need to wrap it in parens so the 
-            // member-dot comes out with the right precedence.
-            // (don't bother checking if we already are already going to use parens)
-            if (!encloseInParens && funcCall != null && funcCall.IsConstructor
-                && (funcCall.Arguments == null || funcCall.Arguments.Count == 0))
-            {
-                encloseInParens = true;
+                // because if the new-operator associates to the right and the ()-operator associates
+                // to the left, we need to be careful that we don't change the precedence order when the 
+                // function of a new operator is itself a call or contains a call. In that case, the call will have it's own
+                // parameters (and therefore parentheses) that will need to be associated with the call
+                // and NOT the new -- the call will need to be surrounded with parens to keep that association.
+                // (if we are already going to wrap it in parens, no need to check further)
+                if (m_isConstructor)
+                {
+                    // check the constructor function of our new operator to see if 
+                    // it requires parens so we don't get the precedence all screwed up.
+                    // pass in whether or not WE have any arguments -- will make a difference when we have embedded
+                    // constructors that don't have arguments
+                    encloseInParens = NewParensVisitor.NeedsParens(Function, Arguments == null || Arguments.Count == 0);
+                }
+                else if (funcCall != null && funcCall.IsConstructor
+                    && (funcCall.Arguments == null || funcCall.Arguments.Count == 0))
+                {
+                    // WE are neither constructor nor member-brackets, which means we will have our own
+                    // parenthesized argument list. But if the function of our call is a constructor with no arguments, 
+                    // we'll need to wrap it in parens so OUR parens are associated with us and not the child
+                    // new-operator
+                    encloseInParens = true;
+                }
             }
 
             if (encloseInParens)

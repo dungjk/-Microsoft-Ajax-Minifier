@@ -17,3 +17,16 @@ function foo()
 {
     return new Date(new Date().ToUTCString()); 
 }
+
+// don't need any parentheses added
+var a = new new foo;
+
+// don't need any parentheses added
+var b = new new foo(a);
+
+// need to KEEP these parens to make sure the (a) stays with the outer new
+var c = new (new foo)(a);
+
+// don't need any parentheses added
+var d = new new foo(a)(b);
+
