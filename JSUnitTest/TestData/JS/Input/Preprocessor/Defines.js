@@ -9,7 +9,7 @@ var a = "foobar";
 var a = "not foobar";
 ///#ENDIF
 
-///#UNDEF      foobar
+///#undef      foobar
 
 ///#IFDEF FOOBAR
 var b = "foobar";
@@ -17,11 +17,11 @@ var b = "foobar";
 var b = "not foobar";
 ///#ENDIF
 
-///#IFDEF ackbar
+///#ifdef ackbar
 var c = "ackbar";
-///#ELSE
+///#else
 var c = "not ackbar";
-///#ENDIF
+///#endif
 
 ///#IFDEF meow
 function meow()
