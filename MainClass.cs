@@ -318,7 +318,7 @@ namespace Microsoft.Ajax.Utilities
 
                         case "DEBUG":
                             // see if the param part is a comma-delimited list
-                            if (paramPart.IndexOf(',') >= 0)
+                            if (paramPart != null && paramPart.IndexOf(',') >= 0)
                             {
                                 // we have a comma-separated list.
                                 // the first item is the flag (if any), and the rest (if any) are the "debug" lookup names
