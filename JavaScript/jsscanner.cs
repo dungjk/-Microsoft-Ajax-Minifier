@@ -563,7 +563,7 @@ namespace Microsoft.Ajax.Utilities
                                     ++m_currentPos;
 
                                     // check for some AjaxMin preprocessor comments
-                                    if (CheckSubstring(m_currentPos, "#DEBUG"))
+                                    if (CheckCaseInsensitiveSubstring(m_currentPos, "#DEBUG"))
                                     {
                                         if (SkipDebugBlocks)
                                         {
@@ -581,7 +581,7 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                     else if (UsePreprocessorDefines)
                                     {
-                                        if (CheckSubstring(m_currentPos, "#IFDEF"))
+                                        if (CheckCaseInsensitiveSubstring(m_currentPos, "#IFDEF"))
                                         {
                                             // skip past the token and any blanks
                                             m_currentPos += 6;
@@ -619,7 +619,7 @@ namespace Microsoft.Ajax.Utilities
                                                 }
                                             }
                                         }
-                                        else if (CheckSubstring(m_currentPos, "#ELSE") && m_inIfDefDirective)
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ELSE") && m_inIfDefDirective)
                                         {
                                             // reset the state that says we were in an #IFDEF construct
                                             m_inIfDefDirective = false;
@@ -635,7 +635,7 @@ namespace Microsoft.Ajax.Utilities
                                                 goto nextToken;
                                             }
                                         }
-                                        else if (CheckSubstring(m_currentPos, "#ENDIF") && m_inIfDefDirective)
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ENDIF") && m_inIfDefDirective)
                                         {
                                             // reset the state that says we were in an #IFDEF construct
                                             m_inIfDefDirective = false;
@@ -647,7 +647,7 @@ namespace Microsoft.Ajax.Utilities
                                                 goto nextToken;
                                             }
                                         }
-                                        else if (CheckSubstring(m_currentPos, "#DEFINE"))
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#DEFINE"))
                                         {
                                             // skip past the token and any blanks
                                             m_currentPos += 7;
@@ -681,7 +681,7 @@ namespace Microsoft.Ajax.Utilities
                                                 }
                                             }
                                         }
-                                        else if (CheckSubstring(m_currentPos, "#UNDEF"))
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#UNDEF"))
                                         {
                                             // skip past the token and any blanks
                                             m_currentPos += 6;
@@ -1287,6 +1287,21 @@ namespace Microsoft.Ajax.Utilities
             for (int ndx = 0; ndx < target.Length; ++ndx)
             {
                 if (target[ndx] != GetChar(startIndex + ndx))
+                {
+                    // no match
+                    return false;
+                }
+            }
+
+            // if we got here, the strings match
+            return true;
+        }
+
+        private bool CheckCaseInsensitiveSubstring(int startIndex, string target)
+        {
+            for (int ndx = 0; ndx < target.Length; ++ndx)
+            {
+                if (target[ndx] != char.ToUpperInvariant(GetChar(startIndex + ndx)))
                 {
                     // no match
                     return false;
@@ -2527,7 +2542,7 @@ namespace Microsoft.Ajax.Utilities
                             // them is a match
                             for (var ndx = 0; ndx < endStrings.Length; ++ndx)
                             {
-                                if (CheckSubstring(m_currentPos, endStrings[ndx]))
+                                if (CheckCaseInsensitiveSubstring(m_currentPos, endStrings[ndx]))
                                 {
                                     // found the ending string
                                     // skip it and bail
