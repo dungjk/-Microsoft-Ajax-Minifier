@@ -18,82 +18,88 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CssUnitTest
 {
-  /// <summary>
-  /// Summary description for Syntax
-  /// </summary>
-  [TestClass]
-  public class Syntax
-  {
-    [TestMethod]
-    public void Strings()
+    /// <summary>
+    /// Summary description for Syntax
+    /// </summary>
+    [TestClass]
+    public class Syntax
     {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Strings()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Function()
-    {
-      TestHelper.Instance.RunTest("-colors:strict");
-    }
+        [TestMethod]
+        public void Function()
+        {
+            TestHelper.Instance.RunTest("-colors:strict");
+        }
 
-    [TestMethod]
-    public void URI()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void URI()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Important()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Important()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Term()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Term()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Expression()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Expression()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void CDO()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void CDO()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Expr()
-    {
-        TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Expr()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void UnicodeRange()
-    {
-        TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void UnicodeRange()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Escapes()
-    {
-        TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Escapes()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void AlphaHash()
-    {
-        TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void AlphaHash()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void FontNames()
-    {
-        TestHelper.Instance.RunTest();
+        [TestMethod]
+        public void FontNames()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void PointZeroEms()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
-  }
 }

@@ -157,6 +157,7 @@
     <Content Include="TestData\CSS\Expected\Syntax\Function.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Important.css" />
     <Content Include="TestData\CSS\Expected\Errors\ParsingErrors.css" />
+    <Content Include="TestData\CSS\Expected\Syntax\PointZeroEms.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Strings.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Term.css" />
     <Content Include="TestData\CSS\Expected\Syntax\UnicodeRange.css" />
@@ -219,6 +220,7 @@
     <Content Include="TestData\CSS\Input\Syntax\Function.css" />
     <Content Include="TestData\CSS\Input\Syntax\Important.css" />
     <Content Include="TestData\CSS\Input\Errors\ParsingErrors.css" />
+    <Content Include="TestData\CSS\Input\Syntax\PointZeroEms.css" />
     <Content Include="TestData\CSS\Input\Syntax\Strings.css" />
     <Content Include="TestData\CSS\Input\Syntax\AlphaHash.css" />
     <Content Include="TestData\CSS\Input\Syntax\Term.css" />

@@ -1465,6 +1465,15 @@ namespace Microsoft.Ajax.Utilities
                     if (fraction == null)
                     {
                         num = units;
+
+                        // if the fraction is null and the units is null, then
+                        // we must have a zero, because we wouldn't have come into
+                        // this block is one or the other wasn't null before we 
+                        // started stripping zeros.
+                        if (num == null)
+                        {
+                            num = "0";
+                        }
                     }
                     else
                     {
