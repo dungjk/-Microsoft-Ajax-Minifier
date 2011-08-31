@@ -36,3 +36,4 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Js", Scope = "member", Target = "Microsoft.Ajax.Minifier.Tasks.AjaxMin.#JsStripDebugStatements")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Js", Scope = "member", Target = "Microsoft.Ajax.Minifier.Tasks.AjaxMin.#JsTargetExtension")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Js", Scope = "member", Target = "Microsoft.Ajax.Minifier.Tasks.AjaxMin.#JsDebugLookups")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Js", Scope = "member", Target = "Microsoft.Ajax.Minifier.Tasks.AjaxMin.#JsIgnoreErrorList")]

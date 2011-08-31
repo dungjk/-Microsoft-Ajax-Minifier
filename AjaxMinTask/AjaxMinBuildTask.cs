@@ -207,6 +207,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
         }
 
         /// <summary>
+        /// <see cref="CodeSettings.IgnoreErrorList"/> for more information.
+        /// </summary>
+        public string JsIgnoreErrorList
+        {
+            get { return this.m_jsCodeSettings.IgnoreErrorList; }
+            set { this.m_jsCodeSettings.IgnoreErrorList = value; }
+        }
+
+        /// <summary>
         /// <see cref="CodeSettings.MinifyCode"/> for more information.
         /// </summary>
         public bool JsMinifyCode
