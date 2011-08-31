@@ -312,4 +312,7 @@
   <data name="SeverityUnknown" xml:space="preserve">
     <value>unknown ({0})</value>
   </data>
+  <data name="PossibleInvalidClassName" xml:space="preserve">
+    <value>Possible cross-browser invalid class name: {0}</value>
+  </data>
 </root>

@@ -1043,6 +1043,16 @@ namespace Microsoft.Ajax.Utilities
             return (128 <= ch && ch <= 65535);
         }
 
+        internal static bool IsNmChar(char ch)
+        {
+            return IsNonAscii(ch)
+                  || (ch == '-')
+                  || (ch == '_')
+                  || ('0' <= ch && ch <= '9')
+                  || ('a' <= ch && ch <= 'z')
+                  || ('A' <= ch && ch <= 'Z');
+        }
+
         #endregion
 
         #region Get... methods
@@ -1225,12 +1235,7 @@ namespace Microsoft.Ajax.Utilities
             string nmChar = GetEscape();
             if (nmChar == null)
             {
-                if (IsNonAscii(m_currentChar)
-                  || (m_currentChar == '-')
-                  || (m_currentChar == '_')
-                  || ('0' <= m_currentChar && m_currentChar <= '9')
-                  || ('a' <= m_currentChar && m_currentChar <= 'z')
-                  || ('A' <= m_currentChar && m_currentChar <= 'Z'))
+                if (IsNmChar(m_currentChar))
                 {
                     // actually, CSS1 and CSS2 don't allow underscores in
                     // identifier names.

@@ -86,5 +86,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void InvalidClassName()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

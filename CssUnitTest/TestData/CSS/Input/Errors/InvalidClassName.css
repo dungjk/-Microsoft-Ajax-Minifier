@@ -1,0 +1,12 @@
+﻿
+/* starts with number, but has characters after (parsed as dimension) */
+div.9west 
+{
+	background: none;
+}
+
+/* class name all numbers (parsed as number) */
+div.9999 
+{
+	background: red;
+}

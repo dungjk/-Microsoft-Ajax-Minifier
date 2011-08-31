@@ -1394,6 +1394,31 @@ namespace Microsoft.Ajax.Utilities
                     ReportError(0, StringEnum.ExpectedIdentifier, CurrentTokenText);
                 }
             }
+            else if (CurrentTokenText.StartsWith(".", StringComparison.Ordinal))
+            {
+                // may just be a class name that doesn't mesh with what we expect.
+                // if the rest of the token text is just letters and numbers, then let's
+                // accept it as a class, throw a warning, and move on
+                bool useAnyway = (CurrentTokenText.Length > 1);
+                for (int ndx = 1; ndx < CurrentTokenText.Length; ++ndx)
+                {
+                    if (!CssScanner.IsNmChar(CurrentTokenText[ndx]))
+                    {
+                        useAnyway = false;
+                    }
+                }
+
+                if (useAnyway)
+                {
+                    // report a low-sev warning
+                    ReportError(2, StringEnum.PossibleInvalidClassName, CurrentTokenText);
+
+                    // but use anyway
+                    AppendCurrent();
+                    NextToken();
+                    parsed = Parsed.True;
+                }
+            }
             return parsed;
         }
 
