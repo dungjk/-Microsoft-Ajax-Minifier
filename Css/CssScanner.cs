@@ -46,6 +46,9 @@ namespace Microsoft.Ajax.Utilities
 
         private char m_currentChar;
 
+        private string m_rawNumber;
+        public string RawNumber { get { return m_rawNumber; } }
+
         private CssContext m_context;
 
         private static Regex s_leadingZeros = new Regex(
@@ -85,6 +88,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // advance the context
             m_context.Advance();
+            m_rawNumber = null;
 
             CssToken token = null;
             switch (m_currentChar)
@@ -818,6 +822,9 @@ namespace Microsoft.Ajax.Utilities
                       num + '%',
                       m_context
                       );
+
+                    // and make sure the "raw number" we keep has it as well
+                    m_rawNumber += '%';
                 }
                 else
                 {
@@ -829,6 +836,9 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
+                        // add the dimension to the raw number
+                        m_rawNumber += dimen;
+
                         // classify the dimension type
                         TokenType tokenType = TokenType.Dimension;
                         switch (dimen.ToUpperInvariant())
@@ -881,13 +891,6 @@ namespace Microsoft.Ajax.Utilities
                         // other intentional construct.
                         if (num == "0" && tokenType != TokenType.Dimension)
                         {
-                            // dumb warning message -- this kind of thing is what the minimizer is 
-                            // SUPPOSED to handle automatically without any "problems."
-                            // Maybe if we are in Analyze mode or something.
-                            /*if (dimen != null)
-                            {
-                                ReportError(4, StringEnum.UnnecessaryUnits);
-                            }*/
                             token = new CssToken(TokenType.Number, num, m_context);
                         }
                         else
@@ -1397,6 +1400,8 @@ namespace Microsoft.Ajax.Utilities
             string num = null;
             string units = null;
             string fraction = null;
+            bool hasDecimalPoint = false;
+
             if (IsD(m_currentChar))
             {
                 StringBuilder sb = new StringBuilder();
@@ -1413,6 +1418,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (IsD(PeekChar()))
                 {
+                    hasDecimalPoint = true;
                     // move over the decimal point
                     NextChar();
 
@@ -1431,6 +1437,7 @@ namespace Microsoft.Ajax.Utilities
                     // after a decimal point, but let's let it slack a bit and
                     // let decimal point be a part of a number if it starts with
                     // digits
+                    hasDecimalPoint = true;
                     ReportError(
                       2,
                       StringEnum.DecimalNoDigit
@@ -1441,7 +1448,11 @@ namespace Microsoft.Ajax.Utilities
             }
             if (units != null || fraction != null)
             {
-                //string rawNum = units + (fraction != null ? "." + fraction : null);
+                // get the raw number. This SHOULD match the input exactly
+                m_rawNumber = units ?? ""
+                    + (hasDecimalPoint ? "." : "")
+                    + fraction ?? "";
+
                 //if (m_collapseNumbers)
                 {
                     if (units != null)
@@ -1484,22 +1495,11 @@ namespace Microsoft.Ajax.Utilities
                     {
                         num = units + '.' + fraction;
                     }
-
-                    // This is a dumb error message. So what if the minified code is smaller?
-                    // isn't that what the tool is supposed to do?
-                    // Maybe if we are in Analyze mode or something.
-                    /*if (num != rawNum)
-                    {
-                        ReportError(
-                          4,
-                          StringEnum.EquivalentNumbers, rawNum, num
-                          );
-                    }*/
                 }
                 /*else
                 {
                     // just use what we have
-                    num = rawNum;
+                    num = m_rawNumber;
                 }*/
             }
             return num;
@@ -1636,7 +1636,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private char PeekChar()
+        public char PeekChar()
         {
             if (m_readAhead != null)
             {

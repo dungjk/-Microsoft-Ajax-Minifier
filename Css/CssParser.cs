@@ -1394,29 +1394,35 @@ namespace Microsoft.Ajax.Utilities
                     ReportError(0, StringEnum.ExpectedIdentifier, CurrentTokenText);
                 }
             }
-            else if (CurrentTokenText.StartsWith(".", StringComparison.Ordinal))
+            else if (CurrentTokenType == TokenType.Dimension || CurrentTokenType == TokenType.Number)
             {
-                // may just be a class name that doesn't mesh with what we expect.
-                // if the rest of the token text is just letters and numbers, then let's
-                // accept it as a class, throw a warning, and move on
-                bool useAnyway = (CurrentTokenText.Length > 1);
-                for (int ndx = 1; ndx < CurrentTokenText.Length; ++ndx)
+                string rawNumber = m_scanner.RawNumber;
+                if (rawNumber != null && rawNumber.StartsWith(".", StringComparison.Ordinal))
                 {
-                    if (!CssScanner.IsNmChar(CurrentTokenText[ndx]))
-                    {
-                        useAnyway = false;
-                    }
-                }
-
-                if (useAnyway)
-                {
-                    // report a low-sev warning
-                    ReportError(2, StringEnum.PossibleInvalidClassName, CurrentTokenText);
-
-                    // but use anyway
-                    AppendCurrent();
-                    NextToken();
+                    // if we are expecting a class but we got dimension or number that starts with a period,
+                    // then what we REALLY have is a class name that starts with a digit. If it's all digits,
+                    // it will be a number, and it it's just an identifier that starts with a digit, it will
+                    // be a dimension.
+                    // The problem here is that both of those those token type format the number, eg: 
+                    // .000foo would get shrunk to 0foo.
+                    // Be sure to use the RawNumber property on the scanner to get the raw text exactly as
+                    // it was from the input
                     parsed = Parsed.True;
+
+                    // but check the next token to see if it's an identifier.
+                    // if the next token is an identifier with no whitespace between it and the previous
+                    // "number," then it's part of this identifier
+                    NextToken();
+                    if (CurrentTokenType == TokenType.Identifier)
+                    {
+                        // add that identifier to the raw number
+                        rawNumber += CurrentTokenText;
+                        NextToken();
+                    }
+
+                    // report a low-sev warning before outputting the raw number text and advancing
+                    ReportError(2, StringEnum.PossibleInvalidClassName, rawNumber);
+                    Append(rawNumber);
                 }
             }
             return parsed;
