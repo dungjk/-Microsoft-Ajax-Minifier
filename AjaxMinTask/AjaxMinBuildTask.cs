@@ -74,6 +74,26 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool Clobber { get; set; }
 
+        /// <summary>
+        /// <see cref="CodeSettings.IgnoreErrorList"/> for more information.
+        /// </summary>
+        public string IgnoreErrorList
+        {
+            get 
+            { 
+                // there are technically separate lists for JS and CSS, but we'll set them
+                // to the same value, so just use the JS list as the reference here.
+                return this.m_jsCodeSettings.IgnoreErrorList; 
+            }
+            set 
+            { 
+                // there are technically separate lists for JS and CSS, but we'll just set them
+                // to the same values.
+                this.m_jsCodeSettings.IgnoreErrorList = value;
+                this.m_cssCodeSettings.IgnoreErrorList = value;
+            }
+        }
+
         #endregion
 
         #region JavaScript parameters
@@ -204,15 +224,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             get { return this.m_jsCodeSettings.IgnoreConditionalCompilation; }
             set { this.m_jsCodeSettings.IgnoreConditionalCompilation = value; }
-        }
-
-        /// <summary>
-        /// <see cref="CodeSettings.IgnoreErrorList"/> for more information.
-        /// </summary>
-        public string JsIgnoreErrorList
-        {
-            get { return this.m_jsCodeSettings.IgnoreErrorList; }
-            set { this.m_jsCodeSettings.IgnoreErrorList = value; }
         }
 
         /// <summary>

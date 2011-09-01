@@ -3130,19 +3130,28 @@ namespace Microsoft.Ajax.Utilities
         {
             if (CssError != null && exception != null)
             {
-                CssError(this, new CssErrorEventArgs(exception,
-                    new ContextError(
-                        exception.Severity < 2, 
-                        exception.Severity,
-                        GetSeverityString(exception.Severity), 
-                        string.Format(CultureInfo.InvariantCulture, "CSS{0}", (exception.Error & (0xffff))),
-                        exception.HelpLink,
-                        FileContext, 
-                        exception.Line, 
-                        exception.Char, 
-                        0, 
-                        0, 
-                        exception.Message)));
+                // format our CSS error code
+                string errorCode = string.Format(CultureInfo.InvariantCulture, "CSS{0}", (exception.Error & (0xffff)));
+
+                // if we have no errors in our error ignore list, or if we do but this error code is not in
+                // that list, fire the event to whomever is listening for it.
+                if (Settings.IgnoreErrors == null ||
+                    !Settings.IgnoreErrors.Contains(errorCode))
+                {
+                    CssError(this, new CssErrorEventArgs(exception,
+                        new ContextError(
+                            exception.Severity < 2, 
+                            exception.Severity,
+                            GetSeverityString(exception.Severity), 
+                            errorCode,
+                            exception.HelpLink,
+                            FileContext, 
+                            exception.Line, 
+                            exception.Char, 
+                            0, 
+                            0, 
+                            exception.Message)));
+                }
             }
         }
 

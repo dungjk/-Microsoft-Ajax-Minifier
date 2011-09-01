@@ -68,6 +68,12 @@ namespace Microsoft.Ajax.Utilities
 				parser.Settings.AllowEmbeddedAspNetBlocks = m_allowAspNet;
                 parser.ValueReplacements = resourceStrings;
 
+                // if we have an ignore-error list, set it on the settings object
+                if (m_ignoreErrors != null && m_ignoreErrors.Count > 0)
+                {
+                    parser.Settings.SetIgnoreErrors(m_ignoreErrors.ToArray());
+                }
+
                 // if the kill switch was set to 1 (don't preserve important comments), then
                 // we just want to set the comment mode to none, regardless of what the actual comment
                 // mode may be. 

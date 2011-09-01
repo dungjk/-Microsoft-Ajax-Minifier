@@ -334,6 +334,7 @@ Valid OPTS are zero or more of:
   -echo &gt; output is an echo of the original input.
   -enc:(in|out) ENC &gt; input or output file text encoding.
   -help &gt; display this usage message.
+  -ignore:ERRCODE[,ERRCODE]* &gt; ignore one or more possible errors
   -pretty[:N] &gt; causes output to be on multiple lines, with N spaces per tab
         stop. Default N is 4.
   -res[:IDENT] RFILE &gt; use a resource file to specify localization strings
@@ -402,6 +403,7 @@ N is a valid non-negative integer.
 IDENT is a valid JavaScript identifier (case-sensitive).
 NAME is a valid JavaScript identifier (case-insensitive).
 ENC is a valid .NET text encoding scheme name (e.g.: UTF-8).
+ERRCODE is a case-insensitive error code, e.g.: JS1028 or CSS1059.
 IFILE is a valid path to an existing source file.
 OFILE is a valid path to the output file. Existing files will be clobbered
         if the -CLOBBER option is specified.
