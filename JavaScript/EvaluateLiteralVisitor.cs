@@ -479,10 +479,15 @@ namespace Microsoft.Ajax.Utilities
                 if (node.OperatorToken == JSToken.Plus)
                 {
                     // minus-plus
-                    ConstantWrapper newLiteral = NumericAddition(otherConstant, thisConstant);
-                    if (newLiteral != null && NoOverflow(newLiteral))
+                    // the minus will be a numeric operator, but if this constant is a string, it will be a
+                    // string concatenation and we can't combine it.
+                    if (thisConstant.PrimitiveType != PrimitiveType.String && thisConstant.PrimitiveType != PrimitiveType.Other)
                     {
-                        RotateFromRight(node, leftOperator, newLiteral);
+                        ConstantWrapper newLiteral = NumericAddition(otherConstant, thisConstant);
+                        if (newLiteral != null && NoOverflow(newLiteral))
+                        {
+                            RotateFromRight(node, leftOperator, newLiteral);
+                        }
                     }
                 }
                 else if (node.OperatorToken == JSToken.Minus)
