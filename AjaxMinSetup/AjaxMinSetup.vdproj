@@ -70,12 +70,6 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_078EC7FE11AE2A35394EC8E911418097"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -83,6 +77,12 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_078EC7FE11AE2A35394EC8E911418097"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -194,7 +194,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.28.4254.17329, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.29.4266.31383, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                     "_078EC7FE11AE2A35394EC8E911418097"
@@ -401,15 +401,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{123EA229-FE8C-4C2B-9CCC-7DD3C89E9224}"
-        "PackageCode" = "8:{1B54CC8E-BBBC-4A45-98CC-1A249050FCB7}"
+        "ProductCode" = "8:{28693307-9975-4E31-967F-D00891F7651A}"
+        "PackageCode" = "8:{970298BB-B7CF-4FFF-AE70-1C0F9188B8D8}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.28"
+        "ProductVersion" = "8:4.29"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
