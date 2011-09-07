@@ -1065,6 +1065,7 @@ namespace Microsoft.Ajax.Utilities
             // and swap the true/false children
             NumericUnary unary = node.Condition as NumericUnary;
             if (unary != null && unary.OperatorToken == JSToken.LogicalNot
+                && !unary.OperatorInConditionalCompilationComment
                 && m_parser.Settings.IsModificationAllowed(TreeModifications.IfNotTrueFalseToIfFalseTrue))
             {
                 // get rid of the not by replacing it with its operand

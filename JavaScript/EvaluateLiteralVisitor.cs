@@ -1972,65 +1972,70 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                // if this node's operator is in a conditional-compilation comment, then we
+                // don't want to muck with it.
+                if (!node.OperatorInConditionalCompilationComment)
                 {
-                    // see if our operand is a ConstantWrapper
-                    ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                    if (literalOperand != null)
+                    if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
                     {
-                        // must be number, boolean, string, or null
-                        switch (node.OperatorToken)
+                        // see if our operand is a ConstantWrapper
+                        ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
+                        if (literalOperand != null)
                         {
-                            case JSToken.Plus:
-                                try
-                                {
-                                    // replace with a constant representing operand.ToNumber,
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
+                            // must be number, boolean, string, or null
+                            switch (node.OperatorToken)
+                            {
+                                case JSToken.Plus:
+                                    try
+                                    {
+                                        // replace with a constant representing operand.ToNumber,
+                                        node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                    }
+                                    catch (InvalidCastException)
+                                    {
+                                        // some kind of casting in ToNumber caused a situation where we don't want
+                                        // to perform the combination on these operands
+                                    }
+                                    break;
 
-                            case JSToken.Minus:
-                                try
-                                {
-                                    // replace with a constant representing the negative of operand.ToNumber
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
+                                case JSToken.Minus:
+                                    try
+                                    {
+                                        // replace with a constant representing the negative of operand.ToNumber
+                                        node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                    }
+                                    catch (InvalidCastException)
+                                    {
+                                        // some kind of casting in ToNumber caused a situation where we don't want
+                                        // to perform the combination on these operands
+                                    }
+                                    break;
 
-                            case JSToken.BitwiseNot:
-                                try
-                                {
-                                    // replace with a constant representing the bitwise-not of operant.ToInt32
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
+                                case JSToken.BitwiseNot:
+                                    try
+                                    {
+                                        // replace with a constant representing the bitwise-not of operant.ToInt32
+                                        node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
+                                    }
+                                    catch (InvalidCastException)
+                                    {
+                                        // some kind of casting in ToNumber caused a situation where we don't want
+                                        // to perform the combination on these operands
+                                    }
+                                    break;
 
-                            case JSToken.LogicalNot:
-                                // replace with a constant representing the opposite of operand.ToBoolean
-                                try
-                                {
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // ignore any invalid cast exceptions
-                                }
-                                break;
+                                case JSToken.LogicalNot:
+                                    // replace with a constant representing the opposite of operand.ToBoolean
+                                    try
+                                    {
+                                        node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
+                                    }
+                                    catch (InvalidCastException)
+                                    {
+                                        // ignore any invalid cast exceptions
+                                    }
+                                    break;
+                            }
                         }
                     }
                 }

@@ -206,6 +206,14 @@ namespace Microsoft.Ajax.Utilities
                 return string.Empty;
             }
 
+            // if this is the root script block....
+            if (Parent == null)
+            {
+                // make sure the parser's flag for whether or not a cc_on has been output yet
+                // has been cleared
+                Parser.OutputCCOn = false;
+            }
+
             StringBuilder sb = new StringBuilder();
             bool closeBrace = false;
             bool unindent = false;

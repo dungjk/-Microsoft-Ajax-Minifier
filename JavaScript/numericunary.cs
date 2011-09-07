@@ -21,6 +21,8 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class NumericUnary : UnaryOperator
     {
+        public bool OperatorInConditionalCompilationComment { get; set; }
+        public bool ConditionalCommentContainsOn { get; set; }
 
         public NumericUnary(Context context, JSParser parser, AstNode operand, JSToken operatorToken)
             : base(context, parser, operand, operatorToken)
@@ -52,7 +54,29 @@ namespace Microsoft.Ajax.Utilities
         public override string ToCode(ToCodeFormat format)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append(JSScanner.GetOperatorString(OperatorToken));
+
+            var operatorText = JSScanner.GetOperatorString(OperatorToken);
+            if (OperatorInConditionalCompilationComment)
+            {
+                sb.Append("/*@");
+
+                // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
+                // sources had one. Otherwise, we only only want to output one if we had one and we aren't
+                // removing unneccesary ones.
+                if (!Parser.OutputCCOn
+                    || (ConditionalCommentContainsOn && !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                {
+                    // output it now and set the flag that we have output them
+                    sb.Append("cc_on");
+                    Parser.OutputCCOn = true;
+                }
+                sb.Append(operatorText);
+                sb.Append("@*/");
+            }
+            else
+            {
+                sb.Append(operatorText);
+            }
             if (Operand != null)
             {
                 string operandString = Operand.ToCode(format);

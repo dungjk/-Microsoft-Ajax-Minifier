@@ -13,8 +13,22 @@ var ack//@=2
 // (and don't add a cc_on)
 var foo//@cc_on = (ver + !@bar) * 12
 
-// does NOT fit the special-case pattern, so don't keep the conditional comment
-var isMSIE = /*@cc_on!@*/0;
+// this fits another special-case pattern: just the ! inside a conditional comment
+var isMSIE = /*@!@*/0;
+
+// another example of a ! inside a conditional-comment, but this one is in a function
+// that gets relocated to the top of the file, so it will need to keep its cc_on
+// but the others should be eliminated if we are removing duplicate cc_ons.
+function is-ie()
+{
+    if (/*@cc_on!@*/false)
+    {
+        return true;
+    }
+}
+
+// this does not fit any special-case patter, so disregard the comment
+var bar = /*@!true+@*/1;
 
 // this is just so we know that last one doesn't kill the entire processing and can recover okay
 alert(ver);

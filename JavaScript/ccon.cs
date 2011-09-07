@@ -33,7 +33,17 @@ namespace Microsoft.Ajax.Utilities
 
         public override string ToCode(ToCodeFormat format)
         {
-            return "@cc_on";
+            var code = string.Empty;
+            
+            // if we haven't output a cc_on yet, or if we haven't allowed redundants to be removed...
+            if (!Parser.OutputCCOn 
+                || !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
+            {
+                Parser.OutputCCOn = true;
+                code = "@cc_on";
+            }
+
+            return code;
         }
     }
 }

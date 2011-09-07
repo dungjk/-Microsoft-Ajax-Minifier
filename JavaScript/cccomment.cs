@@ -80,21 +80,37 @@ namespace Microsoft.Ajax.Utilities
         {
             StringBuilder sb = new StringBuilder();
 
-            // if there aren't any statements, we don't need this comment
-            if (Statements.Count > 0)
+            // if there aren't any statements, we don't need this comment.
+            // and if there is only one statement and it's a cc_on, we won't need
+            // the comment if we've already output a cc_on.
+            if (Statements.Count > 1
+                || (Statements.Count == 1 && (!(Statements[0] is ConditionalCompilationOn) || !Parser.OutputCCOn
+                || !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))))
             {
-                sb.Append("/*");
 
-                // a first conditional compilation statement will take care of the opening @-sign,
-                // so if the first statement is NOT a conditional compilation statement, then we
-                // need to take care of it outselves
-                if (!(Statements[0] is ConditionalCompilationStatement))
+                // get the statements code - if it's empty, nothing else to do
+                var statements = Statements.ToCode(ToCodeFormat.NoBraces);
+                if (!string.IsNullOrEmpty(statements))
                 {
-                    sb.Append("@ ");
-                }
+                    sb.Append("/*");
 
-                sb.Append(Statements.ToCode(ToCodeFormat.NoBraces));
-                sb.Append("@*/");
+                    // if it the statements don't already start with an @-sign, then
+                    // we'll need to add one now ourselves
+                    if (!statements.StartsWith("@", StringComparison.Ordinal))
+                    {
+                        sb.Append('@');
+
+                        // and if the first character could be an identifier start,
+                        // we'll need to add a space, too
+                        if (JSScanner.IsValidIdentifierStart(statements[0]))
+                        {
+                            sb.Append(' ');
+                        }
+                    }
+
+                    sb.Append(statements);
+                    sb.Append("@*/");
+                }
             }
             return sb.ToString();
         }

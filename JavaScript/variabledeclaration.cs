@@ -254,7 +254,19 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (IsCCSpecialCase)
                 {
-                    sb.Append(UseCCOn ? "/*@cc_on=" : "/*@=");
+                    // we haven't output a cc_on yet -- output it now.
+                    // if we have, we really only need to output one if we had one to begin with AND
+                    // we are NOT removing unnecessary ones
+                    if (!Parser.OutputCCOn
+                        || (UseCCOn && !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                    {
+                        sb.Append("/*@cc_on=");
+                        Parser.OutputCCOn = true;
+                    }
+                    else
+                    {
+                        sb.Append("/*@=");
+                    }
                 }
                 else
                 {

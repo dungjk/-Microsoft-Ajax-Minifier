@@ -55,6 +55,9 @@ namespace Microsoft.Ajax.Utilities
         enum BlockType { Block, Loop, Switch, Finally }
         private int m_finallyEscaped;
 
+        // whether or not we have output a conditional-compilation statement yet
+        internal bool OutputCCOn { get; set; }
+
         private class LabelInfo
         {
             public readonly int BlockIndex;
@@ -258,11 +261,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_scanner.SetPreprocessorDefines(m_settings.PreprocessorDefines);
             }
-
-            // the scanner will eat unnecessary @cc_on statements automatically so we are sure only
-            // the first needed one is in the output. But we can turn that off with a kill switch, so
-            // pass that flag to the scanner.
-            m_scanner.EatUnnecessaryCCOn = m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements);
 
             // set the raw tokens flag
             m_scanner.RawTokens = onlyRawTokens;
@@ -3206,11 +3204,13 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private AstNode ParseUnaryExpression(out bool isLeftHandSideExpr, bool isMinus)
         {
-            AstNode ast = null;
             isLeftHandSideExpr = false;
             bool dummy = false;
             Context exprCtx = null;
             AstNode expr = null;
+
+            TryItAgain:
+            AstNode ast = null;
             switch (m_currentToken.Token)
             {
                 case JSToken.Void:
@@ -3276,6 +3276,119 @@ namespace Microsoft.Ajax.Utilities
                     exprCtx.UpdateWith(expr.Context);
                     ast = new PostOrPrefixOperator(exprCtx, this, expr, m_currentToken.Token, PostOrPrefix.PrefixDecrement);
                     break;
+
+                case JSToken.ConditionalCommentStart:
+                    // skip past the start to the next token
+                    exprCtx = m_currentToken.Clone();
+                    GetNextToken();
+                    if (m_currentToken.Token == JSToken.ConditionalCommentEnd)
+                    {
+                        // empty conditional-compilation comment -- ignore
+                        GetNextToken();
+                        goto TryItAgain;
+                    }
+                    else if (m_currentToken.Token == JSToken.ConditionalCompilationOn)
+                    {
+                        // /*@cc_on -- check for @IDENT@*/ or !@*/
+                        GetNextToken();
+                        if (m_currentToken.Token == JSToken.PreprocessorConstant)
+                        {
+                            // /*@cc_on@IDENT -- check for @*/
+                            ast = new ConstantWrapperPP(m_currentToken.Code, true, m_currentToken.Clone(), this);
+                            GetNextToken();
+
+                            if (m_currentToken.Token == JSToken.ConditionalCommentEnd)
+                            {
+                                // skip the close and keep going
+                                GetNextToken();
+                            }
+                            else
+                            {
+                                // too complicated
+                                CCTooComplicated(null);
+                                goto TryItAgain;
+                            }
+                        }
+                        else if (m_currentToken.Token == JSToken.LogicalNot)
+                        {
+                            // /*@cc_on! -- check for @*/
+                            GetNextToken();
+                            if (m_currentToken.Token == JSToken.ConditionalCommentEnd)
+                            {
+                                // we have /*@cc_on!@*/
+                                GetNextToken();
+                                expr = ParseUnaryExpression(out dummy, false);
+                                exprCtx.UpdateWith(expr.Context);
+
+                                var unary = new NumericUnary(exprCtx, this, expr, JSToken.LogicalNot);
+                                unary.OperatorInConditionalCompilationComment = true;
+                                unary.ConditionalCommentContainsOn = true;
+                                ast = unary;
+                            }
+                            else
+                            {
+                                // too complicated
+                                CCTooComplicated(null);
+                                goto TryItAgain;
+                            }
+                        }
+                        else
+                        {
+                            // too complicated
+                            CCTooComplicated(null);
+                            goto TryItAgain;
+                        }
+                    }
+                    else if (m_currentToken.Token == JSToken.LogicalNot)
+                    {
+                        // /*@! -- check for @*/
+                        GetNextToken();
+                        if (m_currentToken.Token == JSToken.ConditionalCommentEnd)
+                        {
+                            // we have /*@!@*/
+                            GetNextToken();
+                            expr = ParseUnaryExpression(out dummy, false);
+                            exprCtx.UpdateWith(expr.Context);
+
+                            var unary = new NumericUnary(exprCtx, this, expr, JSToken.LogicalNot);
+                            unary.OperatorInConditionalCompilationComment = true;
+                            ast = unary;
+                        }
+                        else
+                        {
+                            // too complicated
+                            CCTooComplicated(null);
+                            goto TryItAgain;
+                        }
+                    }
+                    else if (m_currentToken.Token == JSToken.PreprocessorConstant)
+                    {
+                        // @IDENT -- check for @*/
+                        ast = new ConstantWrapperPP(m_currentToken.Code, true, m_currentToken.Clone(), this);
+                        GetNextToken();
+
+                        if (m_currentToken.Token == JSToken.ConditionalCommentEnd)
+                        {
+                            // skip the close and keep going
+                            GetNextToken();
+                        }
+                        else
+                        {
+                            // too complicated
+                            CCTooComplicated(null);
+                            goto TryItAgain;
+                        }
+                    }
+                    else
+                    {
+                        // we ONLY support /*@id@*/ or /*@cc_on@id@*/ or /*@!@*/ or /*@cc_on!@*/ in expressions right now. 
+                        // throw an error, skip to the end of the comment, then ignore it and start
+                        // looking for the next token.
+                        CCTooComplicated(null);
+                        goto TryItAgain;
+                    }
+                    break;
+
                 default:
                     m_noSkipTokenSet.Add(NoSkipTokenSet.s_PostfixExpressionNoSkipTokenSet);
                     try
@@ -3305,6 +3418,21 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return ast;
+        }
+
+        private void CCTooComplicated(Context context)
+        {
+            // we ONLY support /*@id@*/ or /*@cc_on@id@*/ or /*@!@*/ or /*@cc_on!@*/ in expressions right now. 
+            // throw an error, skip to the end of the comment, then ignore it and start
+            // looking for the next token.
+            (context ?? m_currentToken).HandleError(JSError.ConditionalCompilationTooComplex);
+
+            // skip to end of conditional comment
+            while (m_currentToken.Token != JSToken.EndOfFile && m_currentToken.Token != JSToken.ConditionalCommentEnd)
+            {
+                GetNextToken();
+            }
+            GetNextToken();
         }
 
         //---------------------------------------------------------------------------------------
@@ -3410,14 +3538,7 @@ namespace Microsoft.Ajax.Utilities
                             // a closing comment after the ID, then we don't support it.
                             // throw an error, skip to the end of the comment, then ignore it and start
                             // looking for the next token.
-                            m_currentToken.HandleError(JSError.ConditionalCompilationTooComplex);
-
-                            // skip to end of conditional comment
-                            while (m_currentToken.Token != JSToken.EndOfFile && m_currentToken.Token != JSToken.ConditionalCommentEnd)
-                            {
-                                GetNextToken();
-                            }
-                            GetNextToken();
+                            CCTooComplicated(null);
                             goto TryItAgain;
                         }
                     }

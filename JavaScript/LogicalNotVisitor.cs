@@ -383,7 +383,7 @@ namespace Microsoft.Ajax.Utilities
 
         public override void Visit(NumericUnary node)
         {
-            if (node != null)
+            if (node != null && !node.OperatorInConditionalCompilationComment)
             {
                 // if this is a unary logical-not operator, then we will just remove the
                 // logical-not operation

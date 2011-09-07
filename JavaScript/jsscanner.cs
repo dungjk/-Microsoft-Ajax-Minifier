@@ -113,8 +113,6 @@ namespace Microsoft.Ajax.Utilities
 
         public bool IgnoreConditionalCompilation { get; set; }
 
-        public bool EatUnnecessaryCCOn { get; set; }
-
 		public bool AllowEmbeddedAspNetBlocks { get; set; }
 
         // turning this property on makes the scanner just return raw tokens without any
@@ -129,7 +127,6 @@ namespace Microsoft.Ajax.Utilities
         {
             m_keywords = s_Keywords;
             m_previousToken = JSToken.None;
-            EatUnnecessaryCCOn = true;
             UsePreprocessorDefines = true;
             SetSource(sourceContext);
         }
@@ -1133,14 +1130,6 @@ namespace Microsoft.Ajax.Utilities
                             case 5:
                                 if (CheckSubstring(startPosition, "cc_on"))
                                 {
-                                    // if we have already turned on conditional compilation....
-                                    if (!RawTokens && m_preProcessorOn && EatUnnecessaryCCOn)
-                                    {
-                                        // we'll just eat the token here because we don't even 
-                                        // need to expose it to the parser at this time.
-                                        goto nextToken;
-                                    }
-
                                     // turn it on and return the @cc_on token
                                     m_preProcessorOn = true;
                                     token = JSToken.ConditionalCompilationOn;
