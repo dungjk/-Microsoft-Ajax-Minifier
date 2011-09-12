@@ -28,19 +28,19 @@ namespace JSUnitTest
         [TestMethod]
         public void XmlOneOutputFile()
         {
-            TestHelper.Instance.RunTest("-xml");
+            TestHelper.Instance.RunTest("-xml -reorder:0");
         }
 
         [TestMethod]
         public void XmlTwoOutputFiles()
         {
-            TestHelper.Instance.RunTest("-xml");
+            TestHelper.Instance.RunTest("-xml -reorder:N");
         }
 
         [TestMethod]
         public void XmlMixedType()
         {
-            TestHelper.Instance.RunTest("-xml");
+            TestHelper.Instance.RunTest("-xml -reorder:F");
         }
     }
 }

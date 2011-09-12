@@ -467,6 +467,7 @@
     <Content Include="TestData\JS\Input\XmlInput\Input1.js" />
     <Content Include="TestData\JS\Input\XmlInput\Input2.css" />
     <Content Include="TestData\JS\Input\XmlInput\Input2.js" />
+    <Content Include="TestData\JS\Input\XmlInput\Input3.js" />
     <Content Include="TestData\JS\Input\XmlInput\XmlMixedType.xml" />
     <Content Include="TestData\JS\Input\XmlInput\XmlTwoOutputFiles.xml" />
     <Content Include="TestData\JS\Input\XmlInput\XmlOneOutputFile.xml" />

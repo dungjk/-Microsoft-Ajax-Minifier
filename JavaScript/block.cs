@@ -294,7 +294,12 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
-            if (endsWithEmptyBlock)
+
+            // if the code ends with an empty block, we need to make sure there's a terminating semicolon.
+            // or if the last statement requires a separator and this is the ROOT block, AND we have the "terminating semicolons" setting on,
+            // then also add it now
+            if (endsWithEmptyBlock
+                || (requireSeparator && Parent == null && Parser.Settings.TermSemicolons))
             {
                 sb.Append(';');
             }

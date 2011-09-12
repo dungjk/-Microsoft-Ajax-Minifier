@@ -1,1 +1,1 @@
-﻿function ack(queue){alert(queue)}var bar=42;var foo=10
+﻿var bar=42;function ack(queue){alert(queue)}var foo=10;alert("last one")

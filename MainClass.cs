@@ -834,28 +834,25 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
-                        // process each input file
-                        // we'll keep track of whether the last file ended in a semi-colon.
-                        // we start with true so we don't add one before the first block
-                        bool lastEndedSemiColon = true;
                         try
                         {
                             // see how many input files there are
                             if (crunchGroup.Count == 0)
                             {
-                                // take input from stdin
-                                retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
+                                // take input from stdin.
+                                // since that's the ONLY input file, pass TRUE for isLastFile
+                                retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, true, ref sourceLength);
                             }
                             else
                             {
-                                // process each input file in turn
+                                // process each input file in turn. 
                                 for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                                 {
                                     retVal = ProcessJSFile(
                                         crunchGroup[ndx].Path, 
                                         crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName, 
                                         outputBuilder, 
-                                        ref lastEndedSemiColon, 
+                                        ndx == crunchGroup.Count - 1, 
                                         ref sourceLength);
                                 }
                             }
@@ -865,14 +862,6 @@ namespace Microsoft.Ajax.Utilities
                             retVal = 1;
                             System.Diagnostics.Debug.WriteLine(e.ToString());
                             WriteError(string.Format(CultureInfo.InvariantCulture, "JS{0}", (e.Error & 0xffff)), e.Message);
-                        }
-
-                        // if we want to ensure the stream ends in a semi-colon (command-line option)
-                        // and the last file didn't...
-                        if (m_switchParser.JSSettings.TermSemicolons && !lastEndedSemiColon)
-                        {
-                            // add one now
-                            outputBuilder.Append(';');
                         }
 
                         if (hasCrunchSpecificResources)

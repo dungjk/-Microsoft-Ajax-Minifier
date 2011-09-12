@@ -3,5 +3,6 @@
   <output path="..\..\Output\XmlInput\OneOutputFile.js">
     <input path="input1.js"/>
     <input path="input2.js"/>
+    <input path="input3.js"/>
   </output>
 </root>

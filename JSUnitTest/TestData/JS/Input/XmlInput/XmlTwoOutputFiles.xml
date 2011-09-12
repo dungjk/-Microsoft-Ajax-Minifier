@@ -3,9 +3,11 @@
   <output path="..\..\Output\XmlInput\FirstOutputFile.js">
     <input path="input1.js"/>
     <input path="input2.js"/>
+    <input path="input3.js"/>
   </output>
   <output path="..\..\Output\XmlInput\SecondOutputFile.js">
     <input path="input2.js"/>
     <input path="input1.js"/>
+    <input path="input3.js"/>
   </output>
 </root>

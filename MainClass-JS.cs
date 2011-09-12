@@ -42,7 +42,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region file processing
 
-        private int ProcessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, ref bool lastEndedSemicolon, ref long sourceLength)
+        private int ProcessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
         {
             int retVal = 0;
 
@@ -64,6 +64,15 @@ namespace Microsoft.Ajax.Utilities
 
             // pull our JS settings from the switch-parser class
             CodeSettings settings = m_switchParser.JSSettings;
+
+            // if this isn't the last file, make SURE we terminate the last statement with
+            // a semicolon, since we'll be adding more code for the next file. But save the previous
+            // setting so can restore it before we leave
+            var termSemicolons = settings.TermSemicolons;
+            if (!isLastFile)
+            {
+                settings.TermSemicolons = true;
+            }
 
             string resultingCode = null;
             if (m_preprocessOnly)
@@ -95,17 +104,14 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
+            // make sure we restore the intended temrinating-semicolon setting, 
+            // since we may have changed it earlier
+            settings.TermSemicolons = termSemicolons;
+
             if (!string.IsNullOrEmpty(resultingCode))
             {
                 // always output the crunched code to debug stream
                 System.Diagnostics.Debug.WriteLine(resultingCode);
-
-                // if the last block of code didn't end in a semi-colon,
-                // then we need to add one now
-                if (!lastEndedSemicolon)
-                {
-                    outputBuilder.Append(';');
-                }
 
                 // we'll output either the crunched code (normal) or
                 // the raw source if we're just echoing the input
@@ -113,10 +119,6 @@ namespace Microsoft.Ajax.Utilities
 
                 // send the output code to the output stream
                 outputBuilder.Append(outputCode);
-
-                // check if this string ended in a semi-colon so we'll know if
-                // we need to add one between this code and the next block (if any)
-                lastEndedSemicolon = (outputCode[outputCode.Length - 1] == ';');
             }
             else
             {
