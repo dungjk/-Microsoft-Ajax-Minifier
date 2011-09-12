@@ -26,7 +26,8 @@ namespace Microsoft.Ajax.Utilities
     {
         private JSParser m_parser;
         private uint m_uniqueNumber;// = 0;
-        bool m_encounteredCCOn;// = false;
+        private bool m_encounteredCCOn;// = false;
+        private MatchPropertiesVisitor m_matchVisitor;// == null;
 
         private Stack<ActivationObject> ScopeStack { get { return m_parser.ScopeStack; } }
 
@@ -849,60 +850,68 @@ namespace Microsoft.Ajax.Utilities
 
                 // if we are replacing resource references with strings generated from resource files
                 // and this is a brackets call: lookup[args]
-                ResourceStrings resourceStrings = m_parser.ResourceStrings;
-                if (node.InBrackets && resourceStrings != null && resourceStrings.Count > 0)
+                var resourceList = m_parser.Settings.ResourceStrings;
+                if (node.InBrackets && resourceList != null && resourceList.Count > 0)
                 {
-                    // see if the root object is a lookup that corresponds to the 
-                    // global value (not a local field) for our resource object
-                    // (same name)
-                    Lookup rootLookup = node.Function as Lookup;
-                    if (rootLookup != null
-                        && rootLookup.LocalField == null
-                        && string.CompareOrdinal(rootLookup.Name, resourceStrings.Name) == 0)
+                    // if we don't have a match visitor, create it now
+                    if (m_matchVisitor == null)
                     {
-                        // we're going to replace this node with a string constant wrapper
-                        // but first we need to make sure that this is a valid lookup.
-                        // if the parameter contains anything that would vary at run-time, 
-                        // then we need to throw an error.
-                        // the parser will always have either one or zero nodes in the arguments
-                        // arg list. We're not interested in zero args, so just make sure there is one
-                        if (node.Arguments.Count == 1)
+                        m_matchVisitor = new MatchPropertiesVisitor();
+                    }
+
+                    // check each resource strings object to see if we have a match.
+                    // Walk the list BACKWARDS so that later resource string definitions supercede previous ones.
+                    for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                    {
+                        var resourceStrings = resourceList[ndx];
+
+                        // check to see if the resource strings name matches the function
+                        if (resourceStrings != null && m_matchVisitor.Match(node.Function, resourceStrings.Name))
                         {
-                            // must be a constant wrapper
-                            ConstantWrapper argConstant = node.Arguments[0] as ConstantWrapper;
-                            if (argConstant != null)
+                            // we're going to replace this node with a string constant wrapper
+                            // but first we need to make sure that this is a valid lookup.
+                            // if the parameter contains anything that would vary at run-time, 
+                            // then we need to throw an error.
+                            // the parser will always have either one or zero nodes in the arguments
+                            // arg list. We're not interested in zero args, so just make sure there is one
+                            if (node.Arguments.Count == 1)
                             {
-                                string resourceName = argConstant.Value.ToString();
+                                // must be a constant wrapper
+                                ConstantWrapper argConstant = node.Arguments[0] as ConstantWrapper;
+                                if (argConstant != null)
+                                {
+                                    string resourceName = argConstant.Value.ToString();
 
-                                // get the localized string from the resources object
-                                ConstantWrapper resourceLiteral = new ConstantWrapper(
-                                    resourceStrings[resourceName],
-                                    PrimitiveType.String,
-                                    node.Context,
-                                    m_parser);
+                                    // get the localized string from the resources object
+                                    ConstantWrapper resourceLiteral = new ConstantWrapper(
+                                        resourceStrings[resourceName],
+                                        PrimitiveType.String,
+                                        node.Context,
+                                        m_parser);
 
-                                // replace this node with localized string, analyze it, and bail
-                                // so we don't anaylze the tree we just replaced
-                                node.Parent.ReplaceChild(node, resourceLiteral);
-                                resourceLiteral.Accept(this);
-                                return;
+                                    // replace this node with localized string, analyze it, and bail
+                                    // so we don't anaylze the tree we just replaced
+                                    node.Parent.ReplaceChild(node, resourceLiteral);
+                                    resourceLiteral.Accept(this);
+                                    return;
+                                }
+                                else
+                                {
+                                    // error! must be a constant
+                                    node.Context.HandleError(
+                                        JSError.ResourceReferenceMustBeConstant,
+                                        true);
+                                }
                             }
                             else
                             {
-                                // error! must be a constant
+                                // error! can only be a single constant argument to the string resource object.
+                                // the parser will only have zero or one arguments, so this must be zero
+                                // (since the parser won't pass multiple args to a [] operator)
                                 node.Context.HandleError(
                                     JSError.ResourceReferenceMustBeConstant,
                                     true);
                             }
-                        }
-                        else
-                        {
-                            // error! can only be a single constant argument to the string resource object.
-                            // the parser will only have zero or one arguments, so this must be zero
-                            // (since the parser won't pass multiple args to a [] operator)
-                            node.Context.HandleError(
-                                JSError.ResourceReferenceMustBeConstant,
-                                true);
                         }
                     }
                 }
@@ -1706,33 +1715,40 @@ namespace Microsoft.Ajax.Utilities
             {
                 // if we don't even have any resource strings, then there's nothing
                 // we need to do and we can just perform the base operation
-                ResourceStrings resourceStrings = m_parser.ResourceStrings;
-                if (resourceStrings != null && resourceStrings.Count > 0)
+                var resourceList = m_parser.Settings.ResourceStrings;
+                if (resourceList != null && resourceList.Count > 0)
                 {
-                    // see if the root object is a lookup that corresponds to the 
-                    // global value (not a local field) for our resource object
-                    // (same name)
-                    Lookup rootLookup = node.Root as Lookup;
-                    if (rootLookup != null
-                        && rootLookup.LocalField == null
-                        && string.CompareOrdinal(rootLookup.Name, resourceStrings.Name) == 0)
+                    // if we haven't created the match visitor yet, do so now
+                    if (m_matchVisitor == null)
                     {
-                        // it is -- we're going to replace this with a string value.
-                        // if this member name is a string on the object, we'll replacve it with
-                        // the literal. Otherwise we'll replace it with an empty string.
-                        // see if the string resource contains this value
-                        ConstantWrapper stringLiteral = new ConstantWrapper(
-                            resourceStrings[node.Name] ?? string.Empty,
-                            PrimitiveType.String,
-                            node.Context,
-                            m_parser
-                            );
+                        m_matchVisitor = new MatchPropertiesVisitor();
+                    }
 
-                        node.Parent.ReplaceChild(node, stringLiteral);
+                    // walk the list BACKWARDS so that later resource strings supercede previous ones
+                    for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                    {
+                        var resourceStrings = resourceList[ndx];
 
-                        // analyze the literal
-                        stringLiteral.Accept(this);
-                        return;
+                        // see if the resource string name matches the root
+                        if (m_matchVisitor.Match(node.Root, resourceStrings.Name))
+                        {
+                            // it is -- we're going to replace this with a string value.
+                            // if this member name is a string on the object, we'll replacve it with
+                            // the literal. Otherwise we'll replace it with an empty string.
+                            // see if the string resource contains this value
+                            ConstantWrapper stringLiteral = new ConstantWrapper(
+                                resourceStrings[node.Name] ?? string.Empty,
+                                PrimitiveType.String,
+                                node.Context,
+                                m_parser
+                                );
+
+                            node.Parent.ReplaceChild(node, stringLiteral);
+
+                            // analyze the literal
+                            stringLiteral.Accept(this);
+                            return;
+                        }
                     }
                 }
 

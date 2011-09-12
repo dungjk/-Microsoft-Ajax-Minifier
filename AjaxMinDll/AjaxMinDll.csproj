@@ -112,6 +112,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\CommonSettings.cs">
+      <Link>CommonSettings.cs</Link>
+    </Compile>
     <Compile Include="..\ContextError.cs">
       <Link>ContextError.cs</Link>
     </Compile>
@@ -319,6 +322,9 @@
     <Compile Include="..\JavaScript\lookup.cs">
       <Link>JavaScript\lookup.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\MatchPropertiesVisitor.cs">
+      <Link>JavaScript\MatchPropertiesVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\member.cs">
       <Link>JavaScript\member.cs</Link>
     </Compile>
@@ -411,6 +417,9 @@
     </Compile>
     <Compile Include="..\ResourceStrings.cs">
       <Link>ResourceStrings.cs</Link>
+    </Compile>
+    <Compile Include="..\SwitchParser.cs">
+      <Link>SwitchParser.cs</Link>
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

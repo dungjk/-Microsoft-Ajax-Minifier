@@ -15,7 +15,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.IO;
+using System.Resources;
 using System.Security;
 using System.Text.RegularExpressions;
 using Microsoft.Ajax.Utilities;
@@ -54,6 +56,153 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// AjaxMin Minifier
         /// </summary>
         private readonly Utilities.Minifier m_minifier = new Utilities.Minifier();
+
+        /// <summary>
+        /// AjaxMin command-line switch parser
+        /// </summary>
+        private SwitchParser m_switchParser;
+
+        #endregion
+
+        #region command-line style switches
+
+        /// <summary>
+        /// EXE-style command-line switch string for initializing the CSS and/or JS settings at one time
+        /// </summary>
+        public string Switches 
+        {
+            get
+            {
+                // return an empty string instead of null
+                return m_switches ?? string.Empty;
+            }
+            set
+            {
+                if (m_switchParser == null)
+                {
+                    // create a new switch-parser class, passing in this object's JS and CSS code settings
+                    // so they are used as the bases to which the switch values are applied
+                    m_switchParser = new Utilities.SwitchParser(m_jsCodeSettings, m_cssCodeSettings);
+
+                    // hook the unknown switches event so we can do something similar to the EXE for
+                    // file processing (since the DLL can't access the file system)
+                    m_switchParser.UnknownParameter += OnUnknownParameter;
+                }
+
+                // parse the switches
+                m_switchParser.Parse(value);
+
+                // just so we can grab them later, let's keep track of all the switches we are passed
+                if (m_switches == null)
+                {
+                    // this is the first set of switches
+                    m_switches = value;
+                }
+                else
+                {
+                    // just appends this set to the previous set
+                    m_switches += value;
+                }
+            }
+        }
+        private string m_switches = null;
+
+        private void OnUnknownParameter(object sender, UnknownParameterEventArgs ea)
+        {
+            // we only care about rename, res, and r -- ignore all other switches.
+            switch (ea.SwitchPart)
+            {
+                case "RENAME":
+                    // only care if the parameter part is null
+                    if (ea.ParameterPart == null)
+                    {
+                        // needs to be another parameter still left
+                        if (ea.Index < ea.Arguments.Count - 1)
+                        {
+                            // the renaming file is specified as the NEXT argument
+                            using (var reader = new StreamReader(ea.Arguments[++ea.Index]))
+                            {
+                                // read the XML file and parse it into the parameters
+                                m_switchParser.ParseRenamingXml(reader.ReadToEnd());
+                            }
+                        }
+                    }
+                    break;
+
+                case "RES":
+                case "R":
+                    // needs to be another parameter still left
+                    if (ea.Index < ea.Arguments.Count - 1)
+                    {
+                        // the resource file path is specified as the NEXT argument
+                        var resourceFile = ea.Arguments[++ea.Index];
+
+                        var isValid = true;
+                        var objectName = ea.ParameterPart;
+                        if (string.IsNullOrEmpty(objectName))
+                        {
+                            // use the default object name
+                            objectName = "Strings";
+                        }
+                        else
+                        {
+                            // the parameter part needs to be in the pattern of IDENT[.IDENT]*
+                            var parts = objectName.Split('.');
+
+                            // assume it's okay unless we prove otherwise
+                            foreach (var part in parts)
+                            {
+                                if (!JSScanner.IsValidIdentifier(part))
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isValid)
+                        {
+                            ResourceStrings resourceStrings = null;
+
+                            // process the appropriate resource type
+                            switch(Path.GetExtension(resourceFile).ToUpperInvariant())
+                            {
+                                case "RESX":
+                                    using (var reader = new ResXResourceReader(resourceFile))
+                                    {
+                                        // create an object out of the dictionary
+                                        resourceStrings = new ResourceStrings(reader.GetEnumerator());
+                                    }
+                                    break;
+
+                                case "RESOURCES":
+                                    using (var reader = new ResourceReader(resourceFile))
+                                    {
+                                        // create an object out of the dictionary
+                                        resourceStrings = new ResourceStrings(reader.GetEnumerator());
+                                    }
+                                    break;
+
+                                default:
+                                    // ignore all other extensions
+                                    break;
+                            }
+
+                            // add it to the settings objects
+                            if (resourceStrings != null)
+                            {
+                                // set the object name
+                                resourceStrings.Name = objectName;
+
+                                // and add it to the parsers
+                                m_switchParser.JSSettings.AddResourceStrings(resourceStrings);
+                                m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
 
         #endregion
 
@@ -340,8 +489,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool CssExpandOutput
         {
-            get { return this.m_cssCodeSettings.ExpandOutput; }
-            set { this.m_cssCodeSettings.ExpandOutput = value; }
+            get { return this.m_cssCodeSettings.OutputMode == OutputMode.MultipleLines; }
+            set { this.m_cssCodeSettings.OutputMode = value ? OutputMode.MultipleLines : OutputMode.SingleLine; }
         }
 
         /// <summary>
@@ -349,8 +498,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public int CssIndentSpaces
         {
-            get { return this.m_cssCodeSettings.IndentSpaces; }
-            set { this.m_cssCodeSettings.IndentSpaces = value; }
+            get { return this.m_cssCodeSettings.IndentSize; }
+            set { this.m_cssCodeSettings.IndentSize = value; }
         }
         
         /// <summary>
@@ -487,7 +636,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    //Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                     Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                 }
             }
@@ -536,7 +684,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    //Log.LogMessage(MessageImportance.High, StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                     Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                 }
             }

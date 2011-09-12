@@ -57,47 +57,25 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private bool m_headerWritten;
 
-        /// <summary>
-        /// list of preprocessor "defines" specified on the command-line
-        /// </summary>
-        private List<string> m_defines;
-
-        /// <summary>
-        /// Optional list of error codes to ignore
-        /// </summary>
-        private List<string> m_ignoreErrors;
-
         #endregion
 
         #region common settings
 
+        /// <summary>
+        /// object to turn the command-line into settings object
+        /// </summary>
+        private SwitchParser m_switchParser;
+
         // whether to clobber existing output files
         private bool m_clobber; // = false
-
-        // Whether to allow embedded asp.net blocks.
-        private bool m_allowAspNet; // = false
-
-        /// <summary>
-        /// Bitfield for turning off individual AST modifications if so desired
-        /// </summary>
-        private long m_killSwitch;// = 0;
 
         // simply echo the input code, not the crunched code
         private bool m_echoInput;// = false;
 
-        // encoding to use on input
-        private string m_encodingInputName;// = null;
-
-        // encoding to use for output file
-        private string m_encodingOutputName;// = null;
-
-        // "pretty" indent size
-        private int m_indentSize = 4;
-
         /// <summary>
         /// File name of the source file or directory (if in recursive mode)
         /// </summary>
-        private string[] m_inputFiles;// = null;
+        private List<string> m_inputFiles;// = null;
 
         /// <summary>
         /// Input type: JS or CSS
@@ -114,37 +92,11 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private bool m_outputToStandardOut;// = false;
 
-        // output "pretty" instead of crunched
-        private bool m_prettyPrint;// = false;
-
         /// <summary>
         /// Optional file name of the destination file. Must be blank for in-place processing.
         /// If not in-place, a blank destination output to STDOUT
         /// </summary>
         private string m_outputFile = string.Empty;
-
-        /// <summary>
-        /// Optional resource file name. This file should contain a single global variable
-        /// assignment using an object literal. The properties on that object are localizable
-        /// values that get replaced in the input files with the actual values.
-        /// </summary>
-        private string m_resourceFile = string.Empty;
-
-        /// <summary>
-        /// Optional name for the global resource object to be created from a .resx or .resources
-        /// file specified by the path in m_resourceFile
-        /// </summary>
-        private string m_resourceObjectName = string.Empty;
-
-        /// <summary>
-        /// This field is false by default. If it is set to true by an optional
-        /// command-line parameter, then the crunched stream will always be terminated
-        /// with a semi-colon.
-        /// </summary>
-        private bool m_terminateWithSemicolon;// = false;
-
-        // default warning level ignores warnings
-        private int m_warningLevel;// = 0;
 
         /// <summary>
         /// Optionally specify an XML file that indicates the input and output file(s)
@@ -205,1121 +157,301 @@ namespace Microsoft.Ajax.Utilities
 
         private void ProcessArgs(string[] args)
         {
-            List<string> inputFiles = new List<string>();
-            bool levelSpecified = false;
-            bool renamingSpecified = false;
-            for (int ndx = 0; ndx < args.Length; ++ndx)
+            // create the switch parser and hook the events we care about
+            m_switchParser = new SwitchParser();
+            m_switchParser.UnknownParameter += OnUnknownParameter;
+            m_switchParser.CssOnlyParameter += OnCssOnlyParameter;
+            m_switchParser.JSOnlyParameter += OnJSOnlyParameter;
+            m_switchParser.InvalidSwitch += OnInvalidSwitch;
+
+            // and go
+            m_switchParser.Parse(args);
+
+            if (m_inputFiles != null)
             {
-                // parameter switch
-                string thisArg = args[ndx];
-                if (thisArg.Length > 1
-                  && (thisArg.StartsWith("-", StringComparison.Ordinal) // this is a normal hyphen (minus character)
-                  || thisArg.StartsWith("–", StringComparison.Ordinal) // this character is what Word will convert a hyphen to
-                  || thisArg.StartsWith("/", StringComparison.Ordinal)))
+                // if we didn't specify the type (JS or CSS), then look at the extension of
+                // the input files and see if we can divine what we are
+                foreach (string path in m_inputFiles)
                 {
-                    // general switch syntax is -switch:param
-                    string[] parts = thisArg.Substring(1).Split(':');
-                    string switchPart = parts[0].ToUpper(CultureInfo.InvariantCulture);
-                    string paramPart = (parts.Length == 1 ? null : parts[1].ToUpper(CultureInfo.InvariantCulture));
-
-                    // switch off the switch part
-                    switch (switchPart)
+                    string extension = Path.GetExtension(path).ToUpperInvariant();
+                    switch (m_inputType)
                     {
-                        case "ANALYZE":
-                        case "A": // <-- old-style
-                            // ignore any arguments
-                            m_analyze = true;
-                            break;
-
-                        case "ASPNET":
-                            BooleanSwitch(paramPart, switchPart, false, out m_allowAspNet);
-                            break;
-
-                        case "CC":
-                            BooleanSwitch(paramPart, switchPart, true, out m_ignoreConditionalCompilation);
-
-                            // actually, the flag is the opposite of the member -- turn CC ON and we DON'T
-                            // want to ignore them; turn CC OFF and we DO want to ignore them
-                            m_ignoreConditionalCompilation = !m_ignoreConditionalCompilation;
-
-                            JavaScriptOnly();
-                            break;
-
-                        case "CLOBBER":
-                            // just putting the clobber switch on the command line without any arguments
-                            // is the same as putting -clobber:true and perfectly valid.
-                            BooleanSwitch(paramPart, switchPart, true, out m_clobber);
-                            break;
-
-                        case "COLORS":
-                            // two options: hex or names
-                            if (paramPart == "HEX")
+                        case InputType.Unknown:
+                            // we don't know yet. If the extension is JS or CSS set to the
+                            // appropriate input type
+                            if (extension == ".JS")
                             {
-                                m_colorNames = CssColor.Hex;
+                                m_inputType = InputType.JavaScript;
                             }
-                            else if (paramPart == "STRICT")
+                            else if (extension == ".CSS")
                             {
-                                m_colorNames = CssColor.Strict;
-                            }
-                            else if (paramPart == "MAJOR")
-                            {
-                                m_colorNames = CssColor.Major;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-                            CssOnly();
-                            break;
-
-                        case "COMMENTS":
-                            // four options for css: none, all, important, or hacks
-                            // two options for js: none, important
-                            // (default is important)
-                            if (paramPart == "NONE")
-                            {
-                                m_cssComments = CssComment.None;
-                                m_preserveImportantComments = false;
-                            }
-                            else if (paramPart == "ALL")
-                            {
-                                m_cssComments = CssComment.All;
-                                CssOnly();
-                            }
-                            else if (paramPart == "IMPORTANT")
-                            {
-                                m_cssComments = CssComment.Important;
-                                m_preserveImportantComments = true;
-                            }
-                            else if (paramPart == "HACKS")
-                            {
-                                m_cssComments = CssComment.Hacks;
-                                CssOnly();
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            break;
-
-                        case "CSS":
-                            // if we've already declared JS, then error
-                            CssOnly();
-                            break;
-
-                        case "DEBUG":
-                            // see if the param part is a comma-delimited list
-                            if (paramPart != null && paramPart.IndexOf(',') >= 0)
-                            {
-                                // we have a comma-separated list.
-                                // the first item is the flag (if any), and the rest (if any) are the "debug" lookup names
-                                // use parts[1] rather than paramParts because paramParts has been forced to upper-case
-                                var items = parts[1].Split(',');
-
-                                // use the first value as the debug boolean switch
-                                BooleanSwitch(items[0], switchPart, true, out m_stripDebugStatements);
-
-                                // and the rest as names.
-                                // if we haven't created the list yet, do it now
-                                if (m_debugLookups == null)
-                                {
-                                    m_debugLookups = new List<string>();
-                                }
-
-                                // start with index 1, since index 0 was the flag
-                                for (var item = 1; item < items.Length; ++item)
-                                {
-                                    // get the identifier that was specified
-                                    var identifier = items[item];
-
-                                    // a blank identifier is okay -- we just ignore it
-                                    if (!string.IsNullOrEmpty(identifier))
-                                    {
-                                        // but if it's not blank, it better be a valid JavaScript identifier or member chain
-                                        if (identifier.IndexOf('.') > 0)
-                                        {
-                                            // it's a member chain -- check that each part is a valid JS identifier
-                                            var names = identifier.Split('.');
-                                            foreach (var name in names)
-                                            {
-                                                if (!JSScanner.IsValidIdentifier(name))
-                                                {
-                                                    throw new UsageException(m_outputMode, "InvalidSwitchArg", name, switchPart);
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // no dot -- just an identifier
-                                            if (!JSScanner.IsValidIdentifier(identifier))
-                                            {
-                                                throw new UsageException(m_outputMode, "InvalidSwitchArg", identifier, switchPart);
-                                            }
-                                        }
-
-                                        // don't add duplicates
-                                        if (!m_debugLookups.Contains(identifier))
-                                        {
-                                            m_debugLookups.Add(identifier);
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // no commas -- just use the entire param part as the boolean value.
-                                // just putting the debug switch on the command line without any arguments
-                                // is the same as putting -debug:true and perfectly valid.
-                                BooleanSwitch(paramPart, switchPart, true, out m_stripDebugStatements);
-                            }
-
-                            // actually the inverse - a TRUE on the -debug switch means we DON'T want to
-                            // strip debug statements, and a FALSE means we DO want to strip them
-                            m_stripDebugStatements = !m_stripDebugStatements;
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "DEFINE":
-                            // the parts can be a comma-separate list of identifiers
-                            if (string.IsNullOrEmpty(paramPart))
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // use paramPart because it has been forced to upper-case and these identifiers are
-                            // supposed to be case-insensitive
-                            foreach (string upperCaseName in paramPart.Split(','))
-                            {
-                                // better be a valid JavaScript identifier
-                                if (!JSScanner.IsValidIdentifier(upperCaseName))
-                                {
-                                    throw new UsageException(m_outputMode, "InvalidSwitchArg", upperCaseName, switchPart);
-                                }
-
-                                // if we haven't created the list yet, do it now
-                                if (m_defines == null)
-                                {
-                                    m_defines = new List<string>();
-                                }
-
-                                // don't add duplicates
-                                if (!m_defines.Contains(upperCaseName))
-                                {
-                                    m_defines.Add(upperCaseName);
-                                }
-                            }
-
-                            break;
-
-                        case "ECHO":
-                        case "I": // <-- old style
-                            // ignore any arguments
-                            m_echoInput = true;
-                            // -pretty and -echo are not compatible
-                            if (m_prettyPrint)
-                            {
-                                throw new UsageException(m_outputMode, "PrettyAndEchoArgs");
+                                m_inputType = InputType.Css;
                             }
                             break;
 
-                        case "ENC":
-                            // the encoding is the next argument
-                            if (ndx >= args.Length - 1)
+                        case InputType.JavaScript:
+                            // we know we are JS -- if we find a CSS file, throw an error
+                            if (extension == ".CSS")
                             {
-                                // must be followed by an encoding
-                                throw new UsageException(m_outputMode, "EncodingArgMustHaveEncoding", switchPart);
-                            }
-                            string encoding = args[++ndx];
-
-                            // whether this is an in or an out encoding
-                            if (paramPart == "IN")
-                            {
-                                // save the name -- we'll create the encoding later because we may
-                                // override it on a file-by-file basis in an XML file
-                                m_encodingInputName = encoding;
-                            }
-                            else if (paramPart == "OUT")
-                            {
-                                // just save the name -- we'll create the encoding later because we need
-                                // to know whether we are JS or CSS to pick the right encoding fallback
-                                m_encodingOutputName = encoding;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
+                                throw new UsageException(m_outputMode, "ConflictingInputType");
                             }
                             break;
 
-                        case "EVALS":
-                            // three options: ignore, make immediate scope safe, or make all scopes safe
-                            if (paramPart == "IGNORE")
+                        case InputType.Css:
+                            // we know we are CSS -- if we find a JS file, throw an error
+                            if (extension == ".JS")
                             {
-                                m_evalTreatment = EvalTreatment.Ignore;
-                            }
-                            else if (paramPart == "IMMEDIATE")
-                            {
-                                m_evalTreatment = EvalTreatment.MakeImmediateSafe;
-                            }
-                            else if (paramPart == "SAFEALL")
-                            {
-                                m_evalTreatment = EvalTreatment.MakeAllSafe;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "EXPR":
-                            // two options: minify (default) or raw
-                            if (paramPart == "MINIFY")
-                            {
-                                m_minifyExpressions = true;
-                            }
-                            else if (paramPart == "RAW")
-                            {
-                                m_minifyExpressions = false;
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            CssOnly();
-                            break;
-
-                        case "FNAMES":
-                            // three options: 
-                            // LOCK    -> keep all NFE names, don't allow renaming of function names
-                            // KEEP    -> keep all NFE names, but allow function names to be renamed
-                            // ONLYREF -> remove unref'd NFE names, allow function named to be renamed (DEFAULT)
-                            if (paramPart == "LOCK")
-                            {
-                                // don't remove function expression names
-                                m_removeFunctionExpressionNames = false;
-
-                                // and preserve the names (don't allow renaming)
-                                m_preserveFunctionNames = true;
-                            }
-                            else if (paramPart == "KEEP")
-                            {
-                                // don't remove function expression names
-                                m_removeFunctionExpressionNames = false;
-
-                                // but it's okay to rename them
-                                m_preserveFunctionNames = false;
-                            }
-                            else if (paramPart == "ONLYREF")
-                            {
-                                // remove function expression names if they aren't referenced
-                                m_removeFunctionExpressionNames = true;
-
-                                // and rename them if we so desire
-                                m_preserveFunctionNames = false;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "GLOBAL":
-                        case "G": // <-- old style
-                            // the parts can be a comma-separate list of identifiers
-                            if (string.IsNullOrEmpty(paramPart))
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // use parts[1] rather than paramParts because paramParts has been forced to upper-case
-                            foreach (string global in parts[1].Split(','))
-                            {
-                                // better be a valid JavaScript identifier
-                                if (!JSScanner.IsValidIdentifier(global))
-                                {
-                                    throw new UsageException(m_outputMode, "InvalidSwitchArg", global, switchPart);
-                                }
-
-                                // if we haven't created the list yet, do it now
-                                if (m_globals == null)
-                                {
-                                    m_globals = new List<string>();
-                                }
-
-                                // don't add duplicates
-                                if (!m_globals.Contains(global))
-                                {
-                                    m_globals.Add(global);
-                                }
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "HELP":
-                        case "?":
-                            // just show usage
-                            throw new UsageException(m_outputMode);
-
-                        case "IGNORE":
-                            // list of error codes to ignore (not report)
-                            // the parts can be a comma-separate list of identifiers
-                            if (string.IsNullOrEmpty(paramPart))
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // use parts[1] rather than paramParts because paramParts has been forced to upper-case
-                            foreach (string errorCode in parts[1].Split(','))
-                            {
-                                // if we haven't created the list yet, do it now
-                                if (m_ignoreErrors == null)
-                                {
-                                    m_ignoreErrors = new List<string>();
-                                }
-
-                                // don't add duplicates
-                                if (!m_ignoreErrors.Contains(errorCode))
-                                {
-                                    m_ignoreErrors.Add(errorCode);
-                                }
+                                throw new UsageException(m_outputMode, "ConflictingInputType");
                             }
                             break;
-
-                        case "INLINE":
-                            // set safe for inline to the same boolean.
-                            // if no param part, will return false (indicating the default)
-                            // if invalid param part, will throw error
-                            if (!BooleanSwitch(paramPart, switchPart, true, out m_safeForInline))
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "JS":
-                            // if we've already declared CSS, then error
-                            JavaScriptOnly();
-                            break;
-
-                        case "KILL":
-                            // optional integer switch argument
-                            if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // get the numeric portion
-                            if (paramPart.StartsWith("0X", StringComparison.OrdinalIgnoreCase))
-                            {
-                                // it's hex -- convert the number after the "0x"
-                                if (!long.TryParse(paramPart.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out m_killSwitch))
-                                {
-                                    throw new UsageException(m_outputMode, "InvalidKillSwitchArg", paramPart);
-                                }
-                            }
-                            else if (!long.TryParse(paramPart, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out m_killSwitch))
-                            {
-                                throw new UsageException(m_outputMode, "InvalidKillSwitchArg", paramPart);
-                            }
-
-                            break;
-
-                        case "LITERALS":
-                            // two options: keep or combine
-                            if (paramPart == "KEEP")
-                            {
-                                m_combineDuplicateLiterals = false;
-                            }
-                            else if (paramPart == "COMBINE")
-                            {
-                                m_combineDuplicateLiterals = true;
-                            }
-                            else if (paramPart == "EVAL")
-                            {
-                                m_evalLiteralExpressions = true;
-                            }
-                            else if (paramPart == "NOEVAL")
-                            {
-                                m_evalLiteralExpressions = false;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "MAC":
-                            // optional boolean switch
-                            // no arg is valid scenario (default is true)
-                            BooleanSwitch(paramPart, switchPart, true, out m_macSafariQuirks);
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "NEW":
-                            // two options: keep and collapse
-                            if (paramPart == "KEEP")
-                            {
-                                m_collapseToLiteral = false;
-                            }
-                            else if (paramPart == "COLLAPSE")
-                            {
-                                m_collapseToLiteral = true;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "NFE": // <-- deprecate; use FNAMES option instead
-                            if (paramPart == "KEEPALL")
-                            {
-                                m_removeFunctionExpressionNames = false;
-                            }
-                            else if (paramPart == "ONLYREF")
-                            {
-                                m_removeFunctionExpressionNames = true;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "NORENAME":
-                            // the parts can be a comma-separate list of identifiers
-                            if (string.IsNullOrEmpty(paramPart))
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-
-                            // use parts[1] rather than paramParts because paramParts has been forced to upper-case
-                            foreach (string ident in parts[1].Split(','))
-                            {
-                                // better be a valid JavaScript identifier
-                                if (!JSScanner.IsValidIdentifier(ident))
-                                {
-                                    throw new UsageException(m_outputMode, "InvalidSwitchArg", ident, switchPart);
-                                }
-
-                                // if we haven't created the list yet, do it now
-                                if (m_noAutoRename == null)
-                                {
-                                    m_noAutoRename = new List<string>();
-                                }
-
-                                // don't add duplicates
-                                if (!m_noAutoRename.Contains(ident))
-                                {
-                                    m_noAutoRename.Add(ident);
-                                }
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "OUT":
-                        case "O": // <-- old style
-                            // next argument is the output path
-                            // cannot have two out arguments
-                            if (!string.IsNullOrEmpty(m_outputFile))
-                            {
-                                throw new UsageException(m_outputMode, "MultipleOutputArg");
-                            }
-                            else if (ndx >= args.Length - 1)
-                            {
-                                throw new UsageException(m_outputMode, "OutputArgNeedsPath");
-                            }
-                            m_outputFile = args[++ndx];
-                            break;
-
-                        case "PPONLY":
-                            // just putting the pponly switch on the command line without any arguments
-                            // is the same as putting -pponly:true and perfectly valid.
-                            BooleanSwitch(paramPart, switchPart, true, out m_preprocessOnly);
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "PRETTY":
-                        case "P": // <-- old style
-                            m_prettyPrint = true;
-                            // pretty-print and echo-input not compatible
-                            if (m_echoInput)
-                            {
-                                throw new UsageException(m_outputMode, "PrettyAndEchoArgs");
-                            }
-
-                            // if renaming hasn't been specified yet, turn it off for prety-print
-                            if (!renamingSpecified)
-                            {
-                                m_localRenaming = LocalRenaming.KeepAll;
-                            }
-
-                            // optional integer switch argument
-                            if (paramPart != null)
-                            {
-                                // get the numeric portion
-                                try
-                                {
-                                    // must be an integer value
-                                    int indentSize = int.Parse(paramPart, CultureInfo.InvariantCulture);
-                                    if (indentSize >= 0)
-                                    {
-                                        m_indentSize = indentSize;
-                                    }
-                                    else
-                                    {
-                                        throw new UsageException(m_outputMode, "InvalidTabSizeArg", paramPart);
-                                    }
-                                }
-                                catch (FormatException e)
-                                {
-                                    Debug.WriteLine(e.ToString());
-                                    throw new UsageException(m_outputMode, "InvalidTabSizeArg", paramPart);
-                                }
-                            }
-                            break;
-
-                        case "RENAME":
-                            if (paramPart == null)
-                            {
-                                // there are no other parts after -rename
-                                // the next argument should be a filename from which we can pull the
-                                // variable renaming information
-                                if (ndx >= args.Length - 1)
-                                {
-                                    // must be followed by an encoding
-                                    throw new UsageException(m_outputMode, "RenameArgMissingParameterOrFilePath", switchPart);
-                                }
-
-                                // the renaming file is specified as the NEXT argument
-                                string renameFilePath = args[++ndx];
-
-                                // and it needs to exist
-                                EnsureInputFileExists(renameFilePath);
-
-                                // process the renaming file
-                                ProcessRenamingFile(renameFilePath);
-                            }
-                            else if (paramPart.IndexOf('=') > 0)
-                            {
-                                // there is at least one equal sign -- treat this as a set of JS identifier
-                                // pairs. split on commas -- multiple pairs can be specified
-                                var paramPairs = parts[1].Split(',');
-                                foreach (var paramPair in paramPairs)
-                                {
-                                    // split on the equal sign -- each pair needs to have an equal sige
-                                    var pairParts = paramPair.Split('=');
-                                    if (pairParts.Length == 2)
-                                    {
-                                        // there is an equal sign. The first part is the source name and the
-                                        // second part is the new name to which to rename those entities.
-                                        string fromIdentifier = pairParts[0];
-                                        string toIdentifier = pairParts[1];
-                                
-                                        // make sure both parts are valid JS identifiers
-                                        var fromIsValid = JSScanner.IsValidIdentifier(fromIdentifier);
-                                        var toIsValid = JSScanner.IsValidIdentifier(toIdentifier);
-                                        if (fromIsValid && toIsValid)
-                                        {
-                                            // create the map if it hasn't been created yet.
-                                            if (m_renameMap == null)
-                                            {
-                                                m_renameMap = new Dictionary<string, string>();
-                                            }
-
-                                            m_renameMap.Add(fromIdentifier, toIdentifier);
-                                        }
-                                        else if (fromIsValid)
-                                        {
-                                            // the toIdentifier is invalid!
-                                            throw new UsageException(m_outputMode, "InvalidRenameToIdentifier", toIdentifier);
-                                        }
-                                        else if (toIsValid)
-                                        {
-                                            // the fromIdentifier is invalid!
-                                            throw new UsageException(m_outputMode, "InvalidRenameFromIdentifier", fromIdentifier);
-                                        }
-                                        else
-                                        {
-                                            // NEITHER of the rename parts are valid identifiers! BOTH are required to
-                                            // be valid JS identifiers
-                                            throw new UsageException(m_outputMode, "InvalidRenameIdentifiers", fromIdentifier, toIdentifier);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // either zero or more than one equal sign. Invalid.
-                                        throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // no equal sign; just a plain option
-                                // three options: all, localization, none
-                                if (paramPart == "ALL")
-                                {
-                                    m_localRenaming = LocalRenaming.CrunchAll;
-
-                                    // automatic renaming strategy has been specified by this option
-                                    renamingSpecified = true;
-                                }
-                                else if (paramPart == "LOCALIZATION")
-                                {
-                                    m_localRenaming = LocalRenaming.KeepLocalizationVars;
-
-                                    // automatic renaming strategy has been specified by this option
-                                    renamingSpecified = true;
-                                }
-                                else if (paramPart == "NONE")
-                                {
-                                    m_localRenaming = LocalRenaming.KeepAll;
-
-                                    // automatic renaming strategy has been specified by this option
-                                    renamingSpecified = true;
-                                }
-                                else if (paramPart == "NOPROPS")
-                                {
-                                    // manual-renaming does not change property names
-                                    m_renameProperties = false;
-                                }
-                                else
-                                {
-                                    throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                                }
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "REORDER":
-                            // default is true
-                            BooleanSwitch(paramPart, switchPart, true, out m_reorderScopeDeclarations);
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "RES":
-                        case "R": // <-- old style
-                            // -res:id path
-                            // can't specify -R more than once
-                            if (!string.IsNullOrEmpty(m_resourceFile))
-                            {
-                                throw new UsageException(m_outputMode, "MultipleResourceArgs");
-                            }
-                            // must have resource file on next parameter
-                            if (ndx >= args.Length - 1)
-                            {
-                                throw new UsageException(m_outputMode, "ResourceArgNeedsPath");
-                            }
-
-                            // the resource file name is the NEXT argument
-                            m_resourceFile = args[++ndx];
-                            EnsureInputFileExists(m_resourceFile);
-
-                            // check the extension to see if the resource file is a supported file type.
-                            switch (Path.GetExtension(m_resourceFile).ToUpper(CultureInfo.InvariantCulture))
-                            {
-                                case ".RESOURCES":
-                                case ".RESX":
-                                    if (!string.IsNullOrEmpty(paramPart))
-                                    {
-                                        // reset paramPart to not be the forced-to-upper version
-                                        paramPart = parts[1];
-
-                                        // must be valid JS identifier
-                                        if (JSScanner.IsValidIdentifier(paramPart))
-                                        {
-                                            // save the name portion
-                                            m_resourceObjectName = paramPart;
-                                        }
-                                        else
-                                        {
-                                            throw new UsageException(m_outputMode, "ResourceArgInvalidName", paramPart);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // no name specified -- use Strings as the default
-                                        // (not recommended)
-                                        m_resourceObjectName = c_defaultResourceObjectName;
-                                    }
-                                    break;
-
-                                default:
-                                    // not a supported resource file type
-                                    throw new UsageException(m_outputMode, "ResourceArgInvalidType");
-                            }
-                            break;
-
-                        case "SILENT":
-                        case "S": // <-- old style
-                            // ignore any argument part
-                            m_outputMode = ConsoleOutputMode.Silent;
-                            break;
-
-                        case "TERM":
-                            // optional boolean argument, defaults to true
-                            BooleanSwitch(paramPart, switchPart, true, out m_terminateWithSemicolon);
-                            break;
-
-                        case "UNUSED":
-                            // two options: keep and remove
-                            if (paramPart == "KEEP")
-                            {
-                                m_removeUnneededCode = false;
-                            }
-                            else if (paramPart == "REMOVE")
-                            {
-                                m_removeUnneededCode = true;
-                            }
-                            else if (paramPart == null)
-                            {
-                                throw new UsageException(m_outputMode, "SwitchRequiresArg", switchPart);
-                            }
-                            else
-                            {
-                                throw new UsageException(m_outputMode, "InvalidSwitchArg", paramPart, switchPart);
-                            }
-
-                            // this is a JS-only switch
-                            JavaScriptOnly();
-                            break;
-
-                        case "VERSION":
-                            // the user just wants the version number
-                            string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-
-                            // the special prefix tells the Usage method to not create an error
-                            // out of the text and just output it as-is
-                            throw new UsageException(ConsoleOutputMode.Silent, c_rawMessagePrefix + version);
-
-                        case "WARN":
-                        case "W": // <-- old style
-                            if (string.IsNullOrEmpty(paramPart))
-                            {
-                                // just "-warn" without anything else means all errors and warnings
-                                m_warningLevel = int.MaxValue;
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    // must be an unsigned integer value
-                                    m_warningLevel = int.Parse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture);
-                                }
-                                catch (FormatException e)
-                                {
-                                    Debug.WriteLine(e.ToString());
-                                    throw new UsageException(m_outputMode, "InvalidWarningArg", paramPart);
-                                }
-                            }
-                            levelSpecified = true;
-                            break;
-
-                        case "XML":
-                        case "X": // <-- old style
-                            if (!string.IsNullOrEmpty(m_xmlInputFile))
-                            {
-                                throw new UsageException(m_outputMode, "MultipleXmlArgs");
-                            }
-                            // cannot have input files
-                            if (inputFiles.Count > 0)
-                            {
-                                throw new UsageException(m_outputMode, "XmlArgHasInputFiles");
-                            }
-
-                            if (ndx >= args.Length - 1)
-                            {
-                                throw new UsageException(m_outputMode, "XmlArgNeedsPath");
-                            }
-
-                            // the xml file name is the NEXT argument
-                            m_xmlInputFile = args[++ndx];
-
-                            // and it must exist
-                            EnsureInputFileExists(m_xmlInputFile);
-                            break;
-
-                        // Backward-compatibility switches different from new switches
-
-                        case "D":
-                            // equivalent to -debug:true (default behavior)
-                            m_stripDebugStatements = true;
-                            JavaScriptOnly();
-                            break;
-
-                        case "E":
-                        case "EO":
-                            // equivalent to -enc:out <encoding>
-                            if(parts.Length < 2)
-                            {
-                                // must be followed by an encoding
-                                throw new UsageException(m_outputMode, "EncodingArgMustHaveEncoding", switchPart);
-                            }
-
-                            // just save the name -- we'll create the encoding later because we need
-                            // to know whether we are JS or CSS to pick the right encoding fallback
-                            m_encodingOutputName = parts[1];
-                            break;
-
-                        case "EI":
-                            // equivalent to -enc:in <encoding>
-                            if (parts.Length < 2)
-                            {
-                                // must be followed by an encoding
-                                throw new UsageException(m_outputMode, "EncodingArgMustHaveEncoding", switchPart);
-                            }
-
-                            // save the name
-                            m_encodingInputName = parts[1];
-                            break;
-
-                        case "H":
-                            // equivalent to -rename:all -unused:remove (default behavior)
-                            m_localRenaming = LocalRenaming.CrunchAll;
-                            m_removeUnneededCode = true;
-                            JavaScriptOnly();
-
-                            // renaming is specified by this option
-                            renamingSpecified = true;
-                            break;
-
-                        case "HL":
-                            // equivalent to -rename:localization -unused:remove
-                            m_localRenaming = LocalRenaming.KeepLocalizationVars;
-                            m_removeUnneededCode = true;
-                            JavaScriptOnly();
-
-                            // renaming is specified by this option
-                            renamingSpecified = true;
-                            break;
-
-                        case "HC":
-                            // equivalent to -literals:combine -rename:all -unused:remove
-                            m_combineDuplicateLiterals = true;
-                            goto case "H";
-
-                        case "HLC":
-                        case "HCL":
-                            // equivalent to -literals:combine -rename:localization -unused:remove
-                            m_combineDuplicateLiterals = true;
-                            goto case "HL";
-
-                        case "J":
-                            // equivalent to -evals:ignore (default behavior)
-                            m_evalTreatment = EvalTreatment.Ignore;
-                            JavaScriptOnly();
-                            break;
-
-                        case "K":
-                            // equivalent to -inline:true (default behavior)
-                            m_safeForInline = true;
-                            JavaScriptOnly();
-                            break;
-
-                        case "L":
-                            // equivalent to -new:keep (default is collapse)
-                            m_collapseToLiteral = false;
-                            JavaScriptOnly();
-                            break;
-
-                        case "M":
-                            // equivalent to -mac:true (default behavior)
-                            m_macSafariQuirks = true;
-                            JavaScriptOnly();
-                            break;
-
-                        case "Z":
-                            // equivalent to -term:true (default is false)
-                            m_terminateWithSemicolon = true;
-                            break;
-
-                        case "CL":
-                        case "CS":
-                        case "V":
-                        case "3":
-                            // ignore -- we don't use these switches anymore.
-                            // but for backwards-compatibility, don't throw an error.
-                            break;
-
-                        // end backward-compatible section
-
-                        default:
-                            throw new UsageException(m_outputMode, "InvalidArgument", args[ndx]);
                     }
                 }
-                else // must be an input file!
+
+                // if we have input files but we don't know the type by now, 
+                // then throw an exception
+                if (m_inputFiles.Count > 0 && m_inputType == InputType.Unknown)
                 {
-                    // cannot coexist with XML option
-                    if (!string.IsNullOrEmpty(m_xmlInputFile))
-                    {
-                        throw new UsageException(m_outputMode, "XmlArgHasInputFiles");
-                    }
-
-                    // shortcut
-                    string fileName = args[ndx];
-
-                    // make sure it exists
-                    EnsureInputFileExists(fileName);
-
-                    // we don't want duplicates
-                    if (!inputFiles.Contains(fileName))
-                    {
-                        inputFiles.Add(fileName);
-                    }
+                    throw new UsageException(m_outputMode, "UnknownInputType");
                 }
-            }
-
-            // if we didn't specify the type (JS or CSS), then look at the extension of
-            // the input files and see if we can divine what we are
-            foreach (string path in inputFiles)
-            {
-                string extension = Path.GetExtension(path).ToUpperInvariant();
-                switch (m_inputType)
-                {
-                    case InputType.Unknown:
-                        // we don't know yet. If the extension is JS or CSS set to the
-                        // appropriate input type
-                        if (extension == ".JS")
-                        {
-                            m_inputType = InputType.JavaScript;
-                        }
-                        else if (extension == ".CSS")
-                        {
-                            m_inputType = InputType.Css;
-                        }
-                        break;
-
-                    case InputType.JavaScript:
-                        // we know we are JS -- if we find a CSS file, throw an error
-                        if (extension == ".CSS")
-                        {
-                            throw new UsageException(m_outputMode, "ConflictingInputType");
-                        }
-                        break;
-
-                    case InputType.Css:
-                        // we know we are CSS -- if we find a JS file, throw an error
-                        if (extension == ".JS")
-                        {
-                            throw new UsageException(m_outputMode, "ConflictingInputType");
-                        }
-                        break;
-                }
-            }
-
-            // if we have input files but we don't know the type by now, 
-            // then throw an exception
-            if (inputFiles.Count > 0 && m_inputType == InputType.Unknown)
-            {
-                throw new UsageException(m_outputMode, "UnknownInputType");
-            }
-
-            m_inputFiles = inputFiles.ToArray();
-
-            // if analyze was specified but no warning level, jack up the warning level
-            // so everything is shown
-            if (m_analyze && !levelSpecified)
-            {
-                // we want to analyze, and we didn't specify a particular warning level.
-                // go ahead and report all errors
-                m_warningLevel = int.MaxValue;
             }
         }
 
-        private bool BooleanSwitch(string booleanText, string switchPart, bool defaultValue, out bool booleanValue)
+        private void OnUnknownParameter(object sender, UnknownParameterEventArgs ea)
         {
-            switch (booleanText)
+            if (ea.SwitchPart != null)
             {
-                case "Y":
-                case "YES":
-                case "T":
-                case "TRUE":
-                case "ON":
-                case "1":
-                    booleanValue = true;
-                    return true;
+                // see if the switch is okay
+                switch (ea.SwitchPart)
+                {
+                    case "CLOBBER":
+                        // just putting the clobber switch on the command line without any arguments
+                        // is the same as putting -clobber:true and perfectly valid.
+                        if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_clobber))
+                        {
+                            throw new UsageException(m_outputMode, "InvalidSwitchArg", ea.SwitchPart, ea.ParameterPart);
+                        }
+                        break;
 
-                case "N":
-                case "NO":
-                case "F":
-                case "FALSE":
-                case "OFF":
-                case "0":
-                    booleanValue = false;
-                    return true;
+                    case "ECHO":
+                    case "I": // <-- old style
+                        // ignore any arguments
+                        m_echoInput = true;
 
-                case "":
-                case null:
-                    booleanValue = defaultValue;
-                    return false;
+                        // -pretty and -echo are not compatible
+                        if (m_switchParser.AnalyzeMode)
+                        {
+                            throw new UsageException(m_outputMode, "PrettyAndEchoArgs");
+                        }
+                        break;
 
-                default:
-                    // not a valid value
-                    throw new UsageException(m_outputMode, "InvalidSwitchArg", booleanText, switchPart);
+                    case "HELP":
+                    case "?":
+                        // just show usage
+                        throw new UsageException(m_outputMode);
+
+                    case "OUT":
+                    case "O": // <-- old style
+                        // next argument is the output path
+                        // cannot have two out arguments
+                        if (!string.IsNullOrEmpty(m_outputFile))
+                        {
+                            throw new UsageException(m_outputMode, "MultipleOutputArg");
+                        }
+                        else if (ea.Index >= ea.Arguments.Count - 1)
+                        {
+                            throw new UsageException(m_outputMode, "OutputArgNeedsPath");
+                        }
+
+                        m_outputFile = ea.Arguments[++ea.Index];
+                        break;
+
+                    case "PPONLY":
+                        // just putting the pponly switch on the command line without any arguments
+                        // is the same as putting -pponly:true and perfectly valid.
+                        if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_preprocessOnly))
+                        {
+                            throw new UsageException(m_outputMode, "InvalidSwitchArg", ea.SwitchPart, ea.ParameterPart);
+                        }
+
+                        // this is a JS-only switch
+                        OnJSOnlyParameter(null, null);
+                        break;
+
+                    case "RENAME":
+                        if (ea.ParameterPart == null)
+                        {
+                            // there are no other parts after -rename
+                            // the next argument should be a filename from which we can pull the
+                            // variable renaming information
+                            if (ea.Index >= ea.Arguments.Count - 1)
+                            {
+                                // must be followed by an encoding
+                                throw new UsageException(m_outputMode, "RenameArgMissingParameterOrFilePath", ea.SwitchPart);
+                            }
+
+                            // the renaming file is specified as the NEXT argument
+                            string renameFilePath = ea.Arguments[++ea.Index];
+
+                            // and it needs to exist
+                            EnsureInputFileExists(renameFilePath);
+
+                            // process the renaming file
+                            ProcessRenamingFile(renameFilePath);
+                        }
+                        break;
+
+                    case "RES":
+                    case "R": // <-- old style
+                        // -res:id path
+                        // must have resource file on next parameter
+                        if (ea.Index >= ea.Arguments.Count - 1)
+                        {
+                            throw new UsageException(m_outputMode, "ResourceArgNeedsPath");
+                        }
+
+                        // the resource file name is the NEXT argument
+                        var resourceFile = ea.Arguments[++ea.Index];
+                        EnsureInputFileExists(resourceFile);
+
+                        // create the resource strings object from the file name
+                        // will throw an error if not a supported file type
+                        var resourceStrings = ProcessResourceFile(resourceFile);
+
+                        // set the object name from the parameter part
+                        if (!string.IsNullOrEmpty(ea.ParameterPart))
+                        {
+                            // must be a series of JS identifiers separated by dots: IDENT(.IDENT)*
+                            // if any part doesn't match a JAvaScript identifier, throw an error
+                            var parts = ea.ParameterPart.Split('.');
+                            foreach (var part in parts)
+                            {
+                                if (!JSScanner.IsValidIdentifier(part))
+                                {
+                                    throw new UsageException(m_outputMode, "ResourceArgInvalidName", part);
+                                }
+                            }
+
+                            // if we got here, then everything is valid; save the name portion
+                            resourceStrings.Name = ea.ParameterPart;
+                        }
+                        else
+                        {
+                            // no name specified -- use Strings as the default
+                            // (not recommended)
+                            resourceStrings.Name = c_defaultResourceObjectName;
+                        }
+
+                        // add it to the settings objects
+                        m_switchParser.JSSettings.AddResourceStrings(resourceStrings);
+                        m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
+
+                        break;
+
+                    case "SILENT":
+                    case "S": // <-- old style
+                        // ignore any argument part
+                        m_outputMode = ConsoleOutputMode.Silent;
+                        break;
+
+                    case "VERSION":
+                        // the user just wants the version number
+                        string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+                        // the special prefix tells the Usage method to not create an error
+                        // out of the text and just output it as-is
+                        throw new UsageException(ConsoleOutputMode.Silent, c_rawMessagePrefix + version);
+
+                    case "XML":
+                    case "X": // <-- old style
+                        if (!string.IsNullOrEmpty(m_xmlInputFile))
+                        {
+                            throw new UsageException(m_outputMode, "MultipleXmlArgs");
+                        }
+                        // cannot have input files
+                        if (m_inputFiles != null && m_inputFiles.Count > 0)
+                        {
+                            throw new UsageException(m_outputMode, "XmlArgHasInputFiles");
+                        }
+
+                        if (ea.Index >= ea.Arguments.Count - 1)
+                        {
+                            throw new UsageException(m_outputMode, "XmlArgNeedsPath");
+                        }
+
+                        // the xml file name is the NEXT argument
+                        m_xmlInputFile = ea.Arguments[++ea.Index];
+
+                        // and it must exist
+                        EnsureInputFileExists(m_xmlInputFile);
+                        break;
+
+                    case "CL":
+                    case "CS":
+                    case "V":
+                    case "3":
+                        // just ignore -- for backwards-compatibility
+                        break;
+                }
+            }
+            else
+            {
+                // no switch -- then this must be an input file!
+                // cannot coexist with XML file
+                if (!string.IsNullOrEmpty(m_xmlInputFile))
+                {
+                    throw new UsageException(m_outputMode, "XmlArgHasInputFiles");
+                }
+
+                // shortcut
+                string fileName = ea.Arguments[ea.Index];
+
+                // make sure it exists (will throw an exception if it doesn't)
+                EnsureInputFileExists(fileName);
+
+                if (m_inputFiles == null)
+                {
+                    // if we haven't created it yet, do it now and just add the
+                    // file because we know it's empty and won't collide with any dupe
+                    m_inputFiles = new List<string>();
+                    m_inputFiles.Add(fileName);
+                }
+                else if (!m_inputFiles.Contains(fileName))
+                {
+                    // we don't want duplicates
+                    m_inputFiles.Add(fileName);
+                }
+            }
+        }
+
+        private void OnInvalidSwitch(object sender, InvalidSwitchEventArgs ea)
+        {
+            if (ea.ParameterPart == null)
+            {
+                // if there's no parameter, then the switch required an arg
+                throw new UsageException(m_outputMode, "SwitchRequiresArg", ea.SwitchPart);
+            }
+            else
+            {
+                // otherwise the arg was invalid
+                throw new UsageException(m_outputMode, "InvalidSwitchArg", ea.ParameterPart, ea.SwitchPart);
+            }
+        }
+
+        private void OnCssOnlyParameter(object sender, EventArgs ea)
+        {
+            // if we don't know by now, assume CSS
+            if (m_inputType == InputType.Unknown)
+            {
+                m_inputType = InputType.Css;
+            }
+        }
+
+        private void OnJSOnlyParameter(object sender, EventArgs ea)
+        {
+            // if we don't know by now, assume JS
+            if (m_inputType == InputType.Unknown)
+            {
+                m_inputType = InputType.JavaScript;
             }
         }
 
@@ -1339,24 +471,6 @@ namespace Microsoft.Ajax.Utilities
                     // just plain doesn't exist
                     throw new UsageException(m_outputMode, "SourceFileNotExist", fileName);
                 }
-            }
-        }
-
-        private void JavaScriptOnly()
-        {
-            // this is a JS-only switch, so if we don't know we're JS by now, we can assume it
-            if (m_inputType == InputType.Unknown)
-            {
-                m_inputType = InputType.JavaScript;
-            }
-        }
-
-        private void CssOnly()
-        {
-            // this is a CSS-only switch, so if we don't know we're CSS by now, we can assume it
-            if (m_inputType == InputType.Unknown)
-            {
-                m_inputType = InputType.Css;
             }
         }
 
@@ -1419,13 +533,18 @@ namespace Microsoft.Ajax.Utilities
             if (!string.IsNullOrEmpty(m_xmlInputFile))
             {
                 // process the XML file, using the output path as an optional output root folder
-                crunchGroups = ProcessXmlFile(m_xmlInputFile, m_resourceFile, m_resourceObjectName, m_outputFile);
+                crunchGroups = ProcessXmlFile(m_xmlInputFile, m_outputFile);
             }
             else
             {
                 // just pass the input and output files specified in the command line
                 // to the processing method (normal operation)
-                crunchGroups = new CrunchGroup[] { new CrunchGroup(m_outputFile, m_encodingOutputName, m_resourceFile, m_resourceObjectName, m_inputFiles, m_encodingInputName, m_inputType) };
+                crunchGroups = new CrunchGroup[] { new CrunchGroup(
+                    m_outputFile, 
+                    m_switchParser.EncodingOutputName, 
+                    m_inputFiles.ToArray(), 
+                    m_switchParser.EncodingInputName, 
+                    m_inputType) };
             }
 
             if (crunchGroups.Length > 0)
@@ -1619,7 +738,7 @@ namespace Microsoft.Ajax.Utilities
 
                 source = Console.In.ReadToEnd();
 
-                if (m_analyze)
+                if (m_switchParser.AnalyzeMode)
                 {
                     // calculate the actual number of bytes read using the input encoding
                     // and the string that we just read and
@@ -1644,67 +763,75 @@ namespace Microsoft.Ajax.Utilities
             // length of all the source files combined
             long sourceLength = 0;
 
+            // if the crunch group has any resource strings objects, we need to add them to the back
+            // of the settings list
+            var hasCrunchSpecificResources = crunchGroup.ResourceStrings != null && crunchGroup.ResourceStrings.Count > 0;
+
             // create a string builder we'll dump our output into
             StringBuilder outputBuilder = new StringBuilder();
             try
             {
-                // if we have a resource file, process it now
-                ResourceStrings resourceStrings = null;
-                if (crunchGroup.Resource.Length > 0)
-                {
-                    try
-                    {
-                        resourceStrings = ProcessResourceFile(crunchGroup.Resource);
-                    }
-                    catch (IOException e)
-                    {
-                        Debug.WriteLine(e.ToString());
-                    }
-                    catch (BadImageFormatException e)
-                    {
-                        Debug.WriteLine(e.ToString());
-                    }
-                }
-
                 switch (crunchGroup.InputType)
                 {
                     case InputType.Css:
+                        if (hasCrunchSpecificResources)
+                        {
+                            // add to the CSS list
+                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                            {
+                                m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
+                            }
+                        }
+
                         // see how many input files there are
                         if (crunchGroup.Count == 0)
                         {
                             // no input files -- take from stdin
-                            retVal = ProcessCssFile(string.Empty, m_encodingInputName, resourceStrings, outputBuilder, ref sourceLength);
+                            retVal = ProcessCssFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
                         }
                         else
                         {
                             // process each input file
                             for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                             {
-                                retVal = ProcessCssFile(crunchGroup[ndx].Path, crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref sourceLength);
+                                retVal = ProcessCssFile(
+                                    crunchGroup[ndx].Path, 
+                                    crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName, 
+                                    outputBuilder, 
+                                    ref sourceLength);
+                            }
+                        }
+
+                        if (hasCrunchSpecificResources)
+                        {
+                            // remove from the CSS list
+                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                            {
+                                m_switchParser.CssSettings.RemoveResourceStrings(resourceStrings);
                             }
                         }
                         break;
 
                     case InputType.JavaScript:
-                        if (resourceStrings != null)
+                        if (hasCrunchSpecificResources)
                         {
-                            // make sure the resource strings know the name of the resource object
-                            resourceStrings.Name = crunchGroup.ResourceObjectName;
+                            // add to the JS list
+                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                            {
+                                m_switchParser.JSSettings.AddResourceStrings(resourceStrings);
+                            }
                         }
 
-                        if (m_echoInput && resourceStrings != null)
+                        if (m_echoInput && m_switchParser.JSSettings.ResourceStrings != null)
                         {
                             // we're just echoing the output -- so output a JS version of the dictionary
                             // create JS from the dictionary and output it to the stream
                             // leave the object null
-                            string resourceObject = CreateJSFromResourceStrings(resourceStrings);
-                            outputBuilder.Append(resourceObject);
-
-                            // just add the number of characters to the length 
-                            // it's just an approximation
-                            // NO! We don't want to include this code in the calculations.
-                            // it's not actually part of the sources
-                            //sourceLength += resourceObject.Length;
+                            foreach (var resourceStrings in m_switchParser.JSSettings.ResourceStrings)
+                            {
+                                string resourceObject = CreateJSFromResourceStrings(resourceStrings);
+                                outputBuilder.Append(resourceObject);
+                            }
                         }
 
                         // process each input file
@@ -1717,14 +844,19 @@ namespace Microsoft.Ajax.Utilities
                             if (crunchGroup.Count == 0)
                             {
                                 // take input from stdin
-                                retVal = ProcessJSFile(string.Empty, m_encodingInputName, resourceStrings, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
+                                retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
                             }
                             else
                             {
                                 // process each input file in turn
                                 for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                                 {
-                                    retVal = ProcessJSFile(crunchGroup[ndx].Path, crunchGroup[ndx].EncodingName ?? m_encodingInputName, resourceStrings, outputBuilder, ref lastEndedSemiColon, ref sourceLength);
+                                    retVal = ProcessJSFile(
+                                        crunchGroup[ndx].Path, 
+                                        crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName, 
+                                        outputBuilder, 
+                                        ref lastEndedSemiColon, 
+                                        ref sourceLength);
                                 }
                             }
                         }
@@ -1737,10 +869,19 @@ namespace Microsoft.Ajax.Utilities
 
                         // if we want to ensure the stream ends in a semi-colon (command-line option)
                         // and the last file didn't...
-                        if (m_terminateWithSemicolon && !lastEndedSemiColon)
+                        if (m_switchParser.JSSettings.TermSemicolons && !lastEndedSemiColon)
                         {
                             // add one now
                             outputBuilder.Append(';');
+                        }
+
+                        if (hasCrunchSpecificResources)
+                        {
+                            // remove from the JS list
+                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                            {
+                                m_switchParser.JSSettings.RemoveResourceStrings(resourceStrings);
+                            }
                         }
                         break;
 
@@ -1749,7 +890,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // if we are pretty-printing, add a newline
-                if (m_prettyPrint)
+                if (m_switchParser.PrettyPrint)
                 {
                     outputBuilder.AppendLine();
                 }
@@ -1991,31 +1132,8 @@ namespace Microsoft.Ajax.Utilities
             // input type (JavaScript or CSS)
             public InputType InputType { get; set; }
 
-            // optional resource file for this group
-            private string m_resourcePath = string.Empty;
-            public string Resource
-            {
-                get { return m_resourcePath; }
-                set
-                {
-                    // make sure we don't set this value to null.
-                    // if the value is null, use an empty string
-                    m_resourcePath = (value == null ? string.Empty : value);
-                }
-            }
-
-            // optional resource object name
-            private string m_resourceObjectName = string.Empty;
-            public string ResourceObjectName
-            {
-                get { return m_resourceObjectName; }
-                set
-                {
-                    // make sure we don't set this value to null.
-                    // if the value is null, use an empty string
-                    m_resourceObjectName = (value == null ? string.Empty : value);
-                }
-            }
+            // optional list of resource string objects specific to this group
+            public IList<ResourceStrings> ResourceStrings { get; set; }
 
             // list of input files -- may not be empty.
             private List<FileInformation> m_sourcePaths;// = null;
@@ -2037,14 +1155,9 @@ namespace Microsoft.Ajax.Utilities
                 m_sourcePaths = new List<FileInformation>();
             }
 
-            public CrunchGroup(string outputPath, string encodingOutputName, string resourcePath, string resourceObjectName, string[] inputFiles, string encodingInputName, InputType inputType)
+            public CrunchGroup(string outputPath, string encodingOutputName, string[] inputFiles, string encodingInputName, InputType inputType)
                 : this(outputPath, encodingOutputName)
             {
-                // save the optional resource path and object name.
-                // use the property setters so we can make sure they aren't set to null
-                Resource = resourcePath;
-                ResourceObjectName = resourceObjectName;
-
                 // save the input type
                 InputType = inputType;
 
@@ -2066,7 +1179,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region ProcessXmlFile method
 
-        private static CrunchGroup[] ProcessXmlFile(string xmlPath, string resourcePath, string resourceObjectName, string outputFolder)
+        private static CrunchGroup[] ProcessXmlFile(string xmlPath, string outputFolder)
         {
             // list of crunch groups we're going to create by reading the XML file
             List<CrunchGroup> crunchGroups = new List<CrunchGroup>();
@@ -2139,62 +1252,68 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
-                        // see if there is a resource node
-                        XmlNode resourceNode = outputNode.SelectSingleNode("./resource");
-                        if (resourceNode != null)
+                        // see if there are any resource nodes
+                        var resourceNodes = outputNode.SelectNodes("./resource");
+                        if (resourceNodes != null && resourceNodes.Count > 0)
                         {
-                            // the path attribute MUST exist, or we will throw an error
-                            pathAttribute = resourceNode.Attributes["path"];
-                            if (pathAttribute != null)
+                            for (var ndx = 0; ndx < resourceNodes.Count; ++ndx )
                             {
-                                // get the value from the attribute
-                                string resourceFile = pathAttribute.Value;
-                                // if it's a relative path...
-                                if (!Path.IsPathRooted(resourceFile))
+                                var resourceNode = resourceNodes[ndx];
+
+                                // if there is a name attribute, we will use it's value for the object name
+                                string objectName = null;
+                                XmlAttribute nameAttribute = resourceNode.Attributes["name"];
+                                if (nameAttribute != null)
                                 {
-                                    // make it relative from the XML file
-                                    resourceFile = Path.Combine(rootPath, resourceFile);
-                                }
-                                // make sure the resource file actually exists! It's an error if it doesn't.
-                                if (!File.Exists(resourceFile))
-                                {
-                                    throw new XmlException(StringMgr.GetString(
-                                      "XmlResourceNotExist",
-                                      pathAttribute.Value
-                                      ));
+                                    objectName = nameAttribute.Value;
                                 }
 
-                                // add it to the group
-                                crunchGroup.Resource = resourceFile;
-                            }
-                            else
-                            {
-                                throw new XmlException(StringMgr.GetString("ResourceNoPathAttr"));
-                            }
-
-                            // if there is a name attribute, we will use it for the object name
-                            XmlAttribute nameAttribute = resourceNode.Attributes["name"];
-                            if (nameAttribute != null)
-                            {
-                                // but first make sure it isn't empty
-                                string objectName = nameAttribute.Value;
-                                if (!string.IsNullOrEmpty(objectName))
+                                // if no name was specified, use our default name
+                                if (string.IsNullOrEmpty(objectName))
                                 {
-                                    crunchGroup.ResourceObjectName = objectName;
+                                    objectName = c_defaultResourceObjectName;
+                                }
+
+                                // the path attribute MUST exist, or we will throw an error
+                                pathAttribute = resourceNode.Attributes["path"];
+                                if (pathAttribute != null)
+                                {
+                                    // get the value from the attribute
+                                    string resourceFile = pathAttribute.Value;
+                                    // if it's a relative path...
+                                    if (!Path.IsPathRooted(resourceFile))
+                                    {
+                                        // make it relative from the XML file
+                                        resourceFile = Path.Combine(rootPath, resourceFile);
+                                    }
+
+                                    // make sure the resource file actually exists! It's an error if it doesn't.
+                                    if (!File.Exists(resourceFile))
+                                    {
+                                        throw new XmlException(StringMgr.GetString(
+                                          "XmlResourceNotExist",
+                                          pathAttribute.Value
+                                          ));
+                                    }
+
+                                    // create the resource strings object from the path, and set the name
+                                    var resourceStrings = ProcessResources(resourceFile);
+                                    resourceStrings.Name = objectName;
+
+                                    // if the crunch group doesn't have a resource strings collection, add one now
+                                    if (crunchGroup.ResourceStrings == null)
+                                    {
+                                        crunchGroup.ResourceStrings = new List<ResourceStrings>();
+                                    }
+
+                                    // add it to the list
+                                    crunchGroup.ResourceStrings.Add(resourceStrings);
+                                }
+                                else
+                                {
+                                    throw new XmlException(StringMgr.GetString("ResourceNoPathAttr"));
                                 }
                             }
-                            // if no name was specified, use our default name
-                            if (string.IsNullOrEmpty(crunchGroup.ResourceObjectName))
-                            {
-                                crunchGroup.ResourceObjectName = c_defaultResourceObjectName;
-                            }
-                        }
-                        else if (!string.IsNullOrEmpty(resourcePath))
-                        {
-                            // just use the global resource path and object name passed to us
-                            // (if anything was passed at all)
-                            crunchGroup.Resource = resourcePath;
-                            crunchGroup.ResourceObjectName = resourceObjectName;
                         }
 
                         // get a list of <input> nodes

@@ -21,19 +21,14 @@ namespace Microsoft.Ajax.Utilities
 {
     public class ResourceStrings
     {
-        private string m_name;
-        public string Name
-        {
-            get { return m_name; }
-            set { m_name = value; }
-        }
+        public string Name { get; set; }
 
-        private Dictionary<string, object> m_properties;
-        public object this[string name]
+        private Dictionary<string, string> m_properties;
+        public string this[string name]
         {
             get
             {
-                object propertyValue;
+                string propertyValue;
                 if (!m_properties.TryGetValue(name, out propertyValue))
                 {
                     // couldn't find the property -- make sure we return null
@@ -54,7 +49,7 @@ namespace Microsoft.Ajax.Utilities
 
         public ResourceStrings(IDictionaryEnumerator enumerator)
         {
-            m_properties = new Dictionary<string, object>();
+            m_properties = new Dictionary<string, string>();
 
             if (enumerator != null)
             {
@@ -65,7 +60,7 @@ namespace Microsoft.Ajax.Utilities
                     string propertyName = enumerator.Key.ToString();
 
                     // set the name/value in the resource object
-                    m_properties[propertyName] = enumerator.Value;
+                    m_properties[propertyName] = enumerator.Value.ToString();
                 }
             }
         }

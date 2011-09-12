@@ -46,8 +46,6 @@ namespace Microsoft.Ajax.Utilities
         // start it as true so we don't start off with a blank line
         private bool m_outputNewLine = true;
 
-        private int m_indentLevel;// = 0;
-
         public CssSettings Settings
         {
             get; set;
@@ -218,12 +216,8 @@ namespace Microsoft.Ajax.Utilities
 #endif
 );
 
-        public ResourceStrings ValueReplacements
-        {
-            get { return m_valueReplacements; }
-            set { m_valueReplacements = value; }
-        }
-        private ResourceStrings m_valueReplacements;// = null;
+        // this variable will be set whenever we encounter a value-replacement comment
+        // and have a string to replace it with
         private string m_valueReplacement;// = null;
 
         #endregion
@@ -616,7 +610,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // only need a space if this is a Uri -- a string starts with a quote delimiter
                     // and won't get parsed as teh end of the @import token
-                    if (CurrentTokenType == TokenType.Uri || Settings.ExpandOutput)
+                    if (CurrentTokenType == TokenType.Uri || Settings.OutputMode == OutputMode.MultipleLines)
                     {
                         Append(' ');
                     }
@@ -755,7 +749,7 @@ namespace Microsoft.Ajax.Utilities
                 // if this is the first query, the last thing we output was @media, which will need a separator.
                 // if it's not the first, the last thing was a comma, so no space is needed.
                 // but if we're expanding the output, we always want a space
-                if (firstQuery || Settings.ExpandOutput)
+                if (firstQuery || Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
                 }
@@ -773,7 +767,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // media type
                 // if we might need a space, output it now
-                if (mightNeedSpace || Settings.ExpandOutput)
+                if (mightNeedSpace || Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
                 }
@@ -814,7 +808,7 @@ namespace Microsoft.Ajax.Utilities
                 && string.Compare(CurrentTokenText, "AND(", StringComparison.OrdinalIgnoreCase) == 0))
             {
                 // if we might need a space, output it now
-                if (mightNeedSpace || Settings.ExpandOutput)
+                if (mightNeedSpace || Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
 
@@ -894,7 +888,7 @@ namespace Microsoft.Ajax.Utilities
                     SkipSpace();
 
                     // if we are expanding the output, we want a space after the colon
-                    if (Settings.ExpandOutput)
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
                     {
                         Append(' ');
                     }
@@ -1257,7 +1251,7 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         Append(',');
-                        if (Settings.ExpandOutput)
+                        if (Settings.OutputMode == OutputMode.MultipleLines)
                         {
                             Append(' ');
                         }
@@ -1751,7 +1745,7 @@ namespace Microsoft.Ajax.Utilities
                     return Parsed.True;
                 }
                 Append(':');
-                if (Settings.ExpandOutput)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
                 }
@@ -1798,7 +1792,7 @@ namespace Microsoft.Ajax.Utilities
             Parsed parsed = Parsed.False;
             if (CurrentTokenType == TokenType.ImportantSymbol)
             {
-                if (Settings.ExpandOutput)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
                 }
@@ -2402,22 +2396,35 @@ namespace Microsoft.Ajax.Utilities
                         Match match = s_valueReplacement.Match(commentText);
                         if (match.Success)
                         {
-                            // get he id of the string we want to substitute
-                            string ident = match.Result("${id}");
+                            // check all the resource strings objects to see if one is a match.
+                            m_valueReplacement = null;
 
-                            // if there is such a string, we want to save teh value in the value replacement
+                            var resourceList = Settings.ResourceStrings;
+                            if (resourceList != null && resourceList.Count > 0)
+                            {
+                                // get the id of the string we want to substitute
+                                string ident = match.Result("${id}");
+
+                                // walk the list BACKWARDS so later resource string objects override previous ones
+                                for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                                {
+                                    m_valueReplacement = resourceList[ndx][ident];
+                                    if (m_valueReplacement != null)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // if there is such a string, we will have saved the value in the value replacement
                             // variable so it will be substituted for the next value.
                             // if there is no such string, we ALWAYS want to output the comment so we know 
                             // there was a problem (even if the comments mode is to output none)
-                            writeComment = !(m_valueReplacements != null && m_valueReplacements[ident] != null);
+                            writeComment = m_valueReplacement == null;
                             if (writeComment)
                             {
                                 // make sure the comment is normalized
                                 commentText = NormalizedValueReplacementComment(commentText);
-                            }
-                            else
-                            {
-                                m_valueReplacement = m_valueReplacements[ident].ToString();
                             }
                         }
                     }
@@ -2864,13 +2871,31 @@ namespace Microsoft.Ajax.Utilities
                         Match match = s_valueReplacement.Match(CurrentTokenText);
                         if (match.Success)
                         {
-                            // it is! see if we have a replacement string
-                            string id = match.Result("${id}");
-                            if (m_valueReplacements != null && m_valueReplacements[id] != null)
+                            m_valueReplacement = null;
+
+                            var resourceList = Settings.ResourceStrings;
+                            if (resourceList != null && resourceList.Count > 0)
+                            {
+                                // it is! see if we have a replacement string
+                                string id = match.Result("${id}");
+
+                                // if we have resource strings in the settings, check each one for the
+                                // id and set the value replacement field to the value.
+                                // walk backwards so later objects override earlier ones.
+                                for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                                {
+                                    m_valueReplacement = resourceList[ndx][id];
+                                    if (m_valueReplacement != null)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (m_valueReplacement != null)
                             {
                                 // we do. Don't output the comment. Instead, save the value replacement
                                 // for the next time we encounter a value
-                                m_valueReplacement = m_valueReplacements[id].ToString();
                                 return false;
                             }
                             else
@@ -2984,7 +3009,7 @@ namespace Microsoft.Ajax.Utilities
         private void NewLine()
         {
             // if we've output something other than a newline, output one now
-            if (Settings.ExpandOutput && !m_outputNewLine)
+            if (Settings.OutputMode == OutputMode.MultipleLines && !m_outputNewLine)
             {
                 AddNewLine(m_parsed);
                 m_outputNewLine = true;
@@ -2993,31 +3018,19 @@ namespace Microsoft.Ajax.Utilities
 
         private void AddNewLine(StringBuilder sb)
         {
-            // add the newline
-            sb.AppendLine();
-
-            // if the indent level is greater than zero and the number of
-            // spaces for an indent is greater than zero...
-            if (m_indentLevel > 0 && Settings.IndentSpaces > 0)
-            {
-                // add the appropriate number of spaces
-                sb.Append(new string(' ', m_indentLevel * Settings.IndentSpaces));
-            }
+            Settings.NewLine(sb);
         }
 
         private void Indent()
         {
             // increase the indent level by one
-            ++m_indentLevel;
+            Settings.Indent();
         }
 
         private void Unindent()
         {
             // only decrease the indent level by one IF it's greater than zero
-            if (m_indentLevel > 0)
-            {
-                --m_indentLevel;
-            }
+            Settings.Unindent();
         }
 
         #endregion
@@ -3253,7 +3266,7 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     // contains text -- assume we want it to stay that way. 
-                    if (Settings.ExpandOutput)
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
                     {
                         // Important comments should start with a newline (and the appropriate indention)
                         var sb = new StringBuilder();
@@ -3283,7 +3296,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // if this is single-line mode, make sure CRLF-pairs are all converted to just CR
-            if (!Settings.ExpandOutput)
+            if (Settings.OutputMode == OutputMode.SingleLine)
             {
                 source = source.Replace("\r\n", "\r");
             }

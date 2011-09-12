@@ -21,12 +21,6 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public enum OutputMode
-    {
-        SingleLine,
-        MultipleLines
-    }
-
     public enum LocalRenaming
     {
         KeepAll,
@@ -34,7 +28,6 @@ namespace Microsoft.Ajax.Utilities
         CrunchAll
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Eval")]
     public enum EvalTreatment
     {
         Ignore = 0,
@@ -42,19 +35,17 @@ namespace Microsoft.Ajax.Utilities
         MakeAllSafe
     }
 
-    public class CodeSettings
+    public class CodeSettings : CommonSettings
     {
         public CodeSettings()
         {
             this.CollapseToLiteral = true;
             this.CombineDuplicateLiterals = false;
             this.EvalTreatment = EvalTreatment.Ignore;
-            this.IndentSize = 4;
             this.InlineSafeStrings = true;
             this.LocalRenaming = LocalRenaming.CrunchAll;
             this.MacSafariQuirks = true;
             this.MinifyCode = true;
-            this.OutputMode = OutputMode.SingleLine;
             this.PreserveFunctionNames = false;
             this.PreserveImportantComments = true;
             this.ReorderScopeDeclarations = true;
@@ -90,13 +81,13 @@ namespace Microsoft.Ajax.Utilities
             // both names MUST be valid JavaScript identifiers
             if (JSScanner.IsValidIdentifier(sourceName) && JSScanner.IsValidIdentifier(newName))
             {
-                // if there isn't a rename map, create it now
                 if (m_identifierReplacementMap == null)
                 {
+                    // if there isn't a rename map, create it now and add the first pair
                     m_identifierReplacementMap = new Dictionary<string, string>();
+                    m_identifierReplacementMap.Add(sourceName, newName);
                 }
-
-                if (m_identifierReplacementMap.ContainsKey(sourceName))
+                else if (m_identifierReplacementMap.ContainsKey(sourceName))
                 {
                     // just replace the value
                     m_identifierReplacementMap[sourceName] = newName;
@@ -352,82 +343,6 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
-        #region Preprocessor defines
-
-        /// <summary>
-        /// Collection of names to define for the preprocessor
-        /// </summary>
-        public ReadOnlyCollection<string> PreprocessorDefines { get; private set; }
-
-        /// <summary>
-        /// Set the collection of defined names for the preprocessor
-        /// </summary>
-        /// <param name="definedNames">array of defined name strings</param>
-        /// <returns>number of names successfully added to the collection</returns>
-        public int SetPreprocessorDefines(params string[] definedNames)
-        {
-            int numAdded = 0;
-            if (definedNames == null)
-            {
-                PreprocessorDefines = null;
-            }
-            else
-            {
-                // create a list with a capacity equal to the number of items in the array
-                var checkedNames = new List<string>(definedNames.Length);
-
-                // validate that each name in the array is a valid JS identifier
-                foreach (var name in definedNames)
-                {
-                    // must be a valid JS identifier
-                    string trimmedName = name.Trim();
-                    if (JSScanner.IsValidIdentifier(trimmedName))
-                    {
-                        checkedNames.Add(trimmedName);
-                    }
-                }
-                PreprocessorDefines = new ReadOnlyCollection<string>(checkedNames);
-                numAdded = checkedNames.Count;
-            }
-
-            return numAdded;
-        }
-
-        /// <summary>
-        /// string representation of the list of names defined for the preprocessor, comma-separated
-        /// </summary>
-        public string PreprocessorDefineList
-        {
-            get
-            {
-                // createa string builder and add each of the defined names to it
-                // one-by-one, separating them with a comma
-                var sb = new StringBuilder();
-                foreach (var definedName in PreprocessorDefines)
-                {
-                    if (sb.Length > 0)
-                    {
-                        sb.Append(',');
-                    }
-                    sb.Append(definedName);
-                }
-                return sb.ToString();
-            }
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    SetPreprocessorDefines(value.Split(','));
-                }
-                else
-                {
-                    SetPreprocessorDefines(null);
-                }
-            }
-        }
-
-        #endregion
-
         #region Debug lookups
 
         /// <summary>
@@ -532,78 +447,6 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
-        #region IgnoreErrors list
-
-        /// <summary>
-        /// Collection of errors to ignore
-        /// </summary>
-        public ReadOnlyCollection<string> IgnoreErrors { get; private set; }
-
-        /// <summary>
-        /// Set the collection of errors to ignore
-        /// </summary>
-        /// <param name="definedNames">array of error code strings</param>
-        /// <returns>number of error codes successfully added to the collection</returns>
-        public int SetIgnoreErrors(params string[] ignoreErrors)
-        {
-            int numAdded = 0;
-            if (ignoreErrors == null)
-            {
-                IgnoreErrors = null;
-            }
-            else
-            {
-                var uniqueCodes = new List<string>(ignoreErrors.Length);
-                for(var ndx = 0; ndx < ignoreErrors.Length; ++ndx)
-                {
-                    string errorCode = ignoreErrors[ndx].Trim().ToUpperInvariant();
-                    if (!uniqueCodes.Contains(errorCode))
-                    {
-                        uniqueCodes.Add(errorCode);
-                    }
-                }
-                IgnoreErrors = new ReadOnlyCollection<string>(uniqueCodes);
-                numAdded = IgnoreErrors.Count;
-            }
-
-            return numAdded;
-        }
-
-        /// <summary>
-        /// string representation of the list of debug lookups, comma-separated
-        /// </summary>
-        public string IgnoreErrorList
-        {
-            get
-            {
-                // createa string builder and add each of the debug lookups to it
-                // one-by-one, separating them with a comma
-                var sb = new StringBuilder();
-                foreach (var errorCode in IgnoreErrors)
-                {
-                    if (sb.Length > 0)
-                    {
-                        sb.Append(',');
-                    }
-                    sb.Append(errorCode);
-                }
-                return sb.ToString();
-            }
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    SetIgnoreErrors(value.Split(','));
-                }
-                else
-                {
-                    SetIgnoreErrors(null);
-                }
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Whether to allow embedded asp.net blocks.
         /// </summary>
@@ -690,14 +533,6 @@ namespace Microsoft.Ajax.Utilities
         public bool IgnoreConditionalCompilation { get; set; }
 
         /// <summary>
-        /// Number of spaces per indent level when in MultipleLines output mode
-        /// </summary>
-        public int IndentSize
-        {
-            get; set;
-        }
-
-        /// <summary>
         /// Break up string literals containing &lt;/script&gt; so inline code won't break [true]
         /// Leave string literals as-is [false]
         /// </summary>
@@ -741,25 +576,6 @@ namespace Microsoft.Ajax.Utilities
         /// if this property is false.
         /// </summary>
         public bool ManualRenamesProperties
-        {
-            get; set;
-        }
-
-        /// <summary>
-        /// Kill switch flags for each individual mod to the parsed code tree. Allows for
-        /// callers to turn off specific modifications if desired.
-        /// </summary>
-        public TreeModifications KillSwitch
-        {
-            get; set;
-        }
-
-        /// <summary>
-        /// Output mode:
-        /// SingleLine - output all code on a single line
-        /// MultipleLines - break the output into multiple lines to be more human-readable
-        /// </summary>
-        public OutputMode OutputMode
         {
             get; set;
         }
@@ -832,47 +648,8 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>true only if NONE of the passed modifications have their kill bits set</returns>
         public bool IsModificationAllowed(TreeModifications modification)
         {
-            return (this.KillSwitch & modification) == TreeModifications.None;
+            return (KillSwitch & (long)modification) == 0;
         }
-
-        #region Indent methods
-
-        // this is the indent level and size for the pretty-print
-        private int m_indentLevel;// = 0;
-
-        internal void Indent()
-        {
-            ++m_indentLevel;
-        }
-
-        internal void Unindent()
-        {
-            --m_indentLevel;
-        }
-
-        internal string IndentSpaces
-        {
-            get
-            {
-                int numSpaces = m_indentLevel * IndentSize;
-                return (numSpaces > 0 ? new string(' ', numSpaces) : string.Empty);
-            }
-        }
-
-        // put indent level and size together for a new-line
-        internal bool NewLine(StringBuilder sb)
-        {
-            bool addNewLine = (OutputMode == OutputMode.MultipleLines);
-            if (addNewLine)
-            {
-                sb.AppendLine();
-                sb.Append(IndentSpaces);
-            }
-
-            return addNewLine;
-        }
-
-        #endregion
     }
 
     [Flags]

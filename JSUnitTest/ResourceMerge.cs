@@ -41,5 +41,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-res:Strings -rename:all -literals:combine");
         }
+
+        [TestMethod]
+        public void StringsFooBar()
+        {
+            TestHelper.Instance.RunTest("-res:Strings.Foo.Bar");
+        }
     }
 }

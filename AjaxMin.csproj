@@ -110,6 +110,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonSettings.cs" />
+    <Compile Include="JavaScript\MatchPropertiesVisitor.cs" />
+    <Compile Include="SwitchParser.cs" />
     <Content Include="App.ico" />
     <Compile Include="ContextError.cs" />
     <Compile Include="Css\CssSettings.cs" />
@@ -380,7 +383,6 @@
   <ItemGroup>
     <None Include="AjaxMinCommandPrompt.bat" />
     <None Include="AjaxMinCommandPromptVars.bat" />
-    <None Include="ClassDiagram3.cd" />
     <None Include="Documentation.url" />
     <None Include="Migrated rules for AjaxMin.ruleset" />
   </ItemGroup>

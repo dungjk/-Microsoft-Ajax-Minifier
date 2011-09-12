@@ -47,8 +47,6 @@ namespace Microsoft.Ajax.Utilities
 
         private Block m_program;
 
-        public ResourceStrings ResourceStrings { get; set; }
-
         // label related info
         private List<BlockType> m_blockType;
         private Dictionary<string, LabelInfo> m_labelTable;

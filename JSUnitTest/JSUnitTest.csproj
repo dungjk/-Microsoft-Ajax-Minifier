@@ -88,6 +88,11 @@
     <Compile Include="Strict.cs" />
     <Compile Include="Switch.cs" />
     <Compile Include="Syntax.cs" />
+    <Compile Include="TestData\JS\Input\ResourceMerge\StringsFooBar.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StringsFooBar.resx</DependentUpon>
+    </Compile>
     <Compile Include="UnknownScope.cs" />
     <Compile Include="XmlInput.cs" />
   </ItemGroup>
@@ -271,6 +276,7 @@
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx_I.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\Resources.js" />
+    <Content Include="TestData\JS\Expected\ResourceMerge\StringsFooBar.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOL.js" />
@@ -436,6 +442,7 @@
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS_res.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\Resources.js" />
+    <Content Include="TestData\JS\Input\ResourceMerge\StringsFooBar.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOL.js" />
@@ -495,6 +502,12 @@
       <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
       <Name>AjaxMin</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TestData\JS\Input\ResourceMerge\StringsFooBar.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>StringsFooBar.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

@@ -35,82 +35,14 @@ namespace Microsoft.Ajax.Utilities
 
         #region JS-only settings
 
-        // whether to analyze the resulting script for common problems
-        // (as opposed to just crunching it)
-        private bool m_analyze;// = false;
-
-        // collapse certain contructors into literals
-        private bool m_collapseToLiteral = true;
-
-        // combine duplicate labels -- on by default with hypercrunch
-        private bool m_combineDuplicateLiterals; // = false;
-
-        // set to something other than Ignore if we know our eval statements 
-        // will be referencing variables and functions in the immediate or
-        // parent scopes
-        private EvalTreatment m_evalTreatment = EvalTreatment.Ignore;
-
-        // whether or not to evaluate literal expressions
-        private bool m_evalLiteralExpressions = true;
-
-        // whether or not to reorder function and var declarations within scopes
-        private bool m_reorderScopeDeclarations = true;
-
-        /// <summary>
-        /// List of expected global variables we don't want to assume are undefined
-        /// </summary>
-        private List<string> m_globals;// = null;
-
-        /// <summary>
-        /// List of names we don't want automatically renamed
-        /// </summary>
-        private List<string> m_noAutoRename; // = null;
-
-        // whether and how to crunch local names
-        private LocalRenaming m_localRenaming = LocalRenaming.CrunchAll;
-
-        // set to true to add code to support Mac Safari quirks
-        private bool m_macSafariQuirks = true;
-
-        // whether to keep all function names (true), or allow them to be renamed along with local vars (false)
-        private bool m_preserveFunctionNames;// = false;
-
-        // whether to keep unreferenced function expression names
-        private bool m_removeFunctionExpressionNames = true;
-
-        // whether to remove unneeded code
-        private bool m_removeUnneededCode = true;
-
-        // set to true to make sure the resulting code is safe to be
-        // inserted inline into an HTML page
-        private bool m_safeForInline = true;
-
-        // whether to strip debug statements from output
-        private bool m_stripDebugStatements = true;
-
-        // set of names (variables or functions) that we want to always RENAME to something else
-        private Dictionary<string, string> m_renameMap;
-
-        // when using the manual-rename map, rename properties when this value us true 
-        private bool m_renameProperties = true;
-
-        // whether to ignore or parse conditional-compilation comments
-        private bool m_ignoreConditionalCompilation; // = false;
-
         // whether to only preprocess (true), or to completely parse and analyze code (false)
         private bool m_preprocessOnly; // = false;
-
-        // whether to preserve important comments or remove them
-        private bool m_preserveImportantComments = true;
-
-        // list of identifier names to consider "debug" lookups
-        private List<string> m_debugLookups; // = null;
 
         #endregion
 
         #region file processing
 
-        private int ProcessJSFile(string sourceFileName, string encodingName, ResourceStrings resourceStrings, StringBuilder outputBuilder, ref bool lastEndedSemicolon, ref long sourceLength)
+        private int ProcessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, ref bool lastEndedSemicolon, ref long sourceLength)
         {
             int retVal = 0;
 
@@ -130,64 +62,8 @@ namespace Microsoft.Ajax.Utilities
             parser.CompilerError += OnCompilerError;
             parser.UndefinedReference += OnUndefinedReference;
 
-            // put the resource strings object into the parser
-            parser.ResourceStrings = resourceStrings;
-
-            // set our flags
-            CodeSettings settings = new CodeSettings();
-            settings.ManualRenamesProperties = m_renameProperties;
-            settings.CollapseToLiteral = m_collapseToLiteral;
-            settings.CombineDuplicateLiterals = m_combineDuplicateLiterals;
-            settings.EvalLiteralExpressions = m_evalLiteralExpressions;
-            settings.EvalTreatment = m_evalTreatment;
-            settings.IndentSize = m_indentSize;
-            settings.InlineSafeStrings = m_safeForInline;
-            settings.LocalRenaming = m_localRenaming;
-            settings.MacSafariQuirks = m_macSafariQuirks;
-            settings.OutputMode = (m_prettyPrint ? OutputMode.MultipleLines : OutputMode.SingleLine);
-            settings.PreserveFunctionNames = m_preserveFunctionNames;
-            settings.ReorderScopeDeclarations = m_reorderScopeDeclarations;
-            settings.RemoveFunctionExpressionNames = m_removeFunctionExpressionNames;
-            settings.RemoveUnneededCode = m_removeUnneededCode;
-            settings.StripDebugStatements = m_stripDebugStatements;
-			settings.AllowEmbeddedAspNetBlocks = m_allowAspNet;
-            settings.SetKnownGlobalNames(m_globals == null ? null : m_globals.ToArray());
-            settings.SetNoAutoRename(m_noAutoRename == null ? null : m_noAutoRename.ToArray());
-            settings.IgnoreConditionalCompilation = m_ignoreConditionalCompilation;
-            settings.PreserveImportantComments = m_preserveImportantComments;
-
-            // if we have an ignore-error list, set it on the settings object
-            if (m_ignoreErrors != null && m_ignoreErrors.Count > 0)
-            {
-                settings.SetIgnoreErrors(m_ignoreErrors.ToArray());
-            }
-
-            // if there are defined preprocessor names
-            if (m_defines != null && m_defines.Count > 0)
-            {
-                // set the list of defined names to our array of names
-                settings.SetPreprocessorDefines(m_defines.ToArray());
-            }
-
-            // if there are rename entries...
-            if (m_renameMap != null && m_renameMap.Count > 0)
-            {
-                // add each of them to the parser
-                foreach (var sourceName in m_renameMap.Keys)
-                {
-                    settings.AddRenamePair(sourceName, m_renameMap[sourceName]);
-                }
-            }
-
-            // if the lookups collection is not null, replace any current lookups with
-            // whatever the collection is (which might be empty)
-            if (m_debugLookups != null)
-            {
-                settings.SetDebugLookups(m_debugLookups.ToArray());
-            }
-
-            // cast the kill switch numeric value to the appropriate TreeModifications enumeration
-            settings.KillSwitch = (TreeModifications)m_killSwitch;
+            // pull our JS settings from the switch-parser class
+            CodeSettings settings = m_switchParser.JSSettings;
 
             string resultingCode = null;
             if (m_preprocessOnly)
@@ -200,7 +76,7 @@ namespace Microsoft.Ajax.Utilities
                 Block scriptBlock = parser.Parse(settings);
                 if (scriptBlock != null)
                 {
-                    if (m_analyze)
+                    if (m_switchParser.AnalyzeMode)
                     {
                         // blank line before
                         WriteProgress();
@@ -329,65 +205,17 @@ namespace Microsoft.Ajax.Utilities
 
         private void ProcessRenamingFile(string filePath)
         {
+            string xml;
+            using (var reader = new StreamReader(filePath))
+            {
+                // read the XML file
+                xml = reader.ReadToEnd();
+            }
+
             try
             {
-                XmlDocument xmlDoc = new XmlDocument();
-                xmlDoc.Load(filePath);
-
-                // get all the <rename> nodes in the document
-                var renameNodes = xmlDoc.SelectNodes("//rename");
-
-                // not an error if there are no variables to rename; but if there are no nodes, then
-                // there's nothing to process
-                if (renameNodes.Count > 0)
-                {
-                    // process each <rename> node
-                    for (var ndx = 0; ndx < renameNodes.Count; ++ndx)
-                    {
-                        var renameNode = renameNodes[ndx];
-
-                        // get the from and to attributes
-                        var fromAttribute = renameNode.Attributes["from"];
-                        var toAttribute = renameNode.Attributes["to"];
-
-                        // need to have both, and their values both need to be non-null and non-empty
-                        if (fromAttribute != null && !string.IsNullOrEmpty(fromAttribute.Value)
-                            && toAttribute != null && !string.IsNullOrEmpty(toAttribute.Value))
-                        {
-                            // create the map if it doesn't yet exist
-                            if (m_renameMap == null)
-                            {
-                                m_renameMap = new Dictionary<string, string>();
-                            }
-
-                            // if one or the other name is invalid, the pair will be ignored
-                            m_renameMap.Add(fromAttribute.Value, toAttribute.Value);
-                        }
-                    }
-                }
-
-                // get all the <norename> nodes in the document
-                var norenameNodes = xmlDoc.SelectNodes("//norename");
-
-                // not an error if there aren't any
-                if (norenameNodes.Count > 0)
-                {
-                    for (var ndx = 0; ndx < norenameNodes.Count; ++ndx)
-                    {
-                        var node = norenameNodes[ndx];
-                        var idAttribute = node.Attributes["id"];
-                        if (idAttribute != null && !string.IsNullOrEmpty(idAttribute.Value))
-                        {
-                            // if we haven't created it yet, do it now
-                            if (m_noAutoRename == null)
-                            {
-                                m_noAutoRename = new List<string>();
-                            }
-
-                            m_noAutoRename.Add(idAttribute.Value);
-                        }
-                    }
-                }
+                // this doesn't catch any exceptions, so we need to handle them
+                m_switchParser.ParseRenamingXml(xml);
             }
             catch (XmlException e)
             {
@@ -631,7 +459,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // skip any *unreferenced* named-function-expression fields
             JSNamedFunctionExpressionField namedFuncExpr = variableField as JSNamedFunctionExpressionField;
-            if (namedFuncExpr == null || namedFuncExpr.RefCount > 0 || !m_removeFunctionExpressionNames)
+            if (namedFuncExpr == null || namedFuncExpr.RefCount > 0 || !m_switchParser.JSSettings.RemoveFunctionExpressionNames)
             {
                 string scope = string.Empty;
                 string type = string.Empty;
@@ -832,7 +660,7 @@ namespace Microsoft.Ajax.Utilities
             ContextError error = e.Error;
             // ignore severity values greater than our severity level
             // also ignore errors that are in our ignore list (if any)
-            if (error.Severity <= m_warningLevel)
+            if (error.Severity <= m_switchParser.WarningLevel)
             {
                 // we found an error
                 m_errorsFound = true;
