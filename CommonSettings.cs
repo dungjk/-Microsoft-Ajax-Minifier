@@ -128,7 +128,7 @@ namespace Microsoft.Ajax.Utilities
         public int SetIgnoreErrors(params string[] ignoreErrors)
         {
             int numAdded = 0;
-            if (ignoreErrors == null)
+            if (ignoreErrors == null || ignoreErrors.Length == 0)
             {
                 IgnoreErrors = null;
             }
@@ -160,13 +160,16 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                foreach (var errorCode in IgnoreErrors)
+                if (IgnoreErrors != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (var errorCode in IgnoreErrors)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(errorCode);
                     }
-                    sb.Append(errorCode);
                 }
                 return sb.ToString();
             }
@@ -200,7 +203,7 @@ namespace Microsoft.Ajax.Utilities
         public int SetPreprocessorDefines(params string[] definedNames)
         {
             int numAdded = 0;
-            if (definedNames == null)
+            if (definedNames == null || definedNames.Length == 0)
             {
                 PreprocessorDefines = null;
             }
@@ -236,13 +239,16 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the defined names to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                foreach (var definedName in PreprocessorDefines)
+                if (PreprocessorDefines != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (var definedName in PreprocessorDefines)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(definedName);
                     }
-                    sb.Append(definedName);
                 }
                 return sb.ToString();
             }
@@ -279,6 +285,28 @@ namespace Microsoft.Ajax.Utilities
 
             // add it
             m_resourceStrings.Add(resourceStrings);
+        }
+
+        public void AddResourceStrings(IEnumerable<ResourceStrings> collection)
+        {
+            // if we haven't createed the collection yet, do so now
+            if (m_resourceStrings == null)
+            {
+                m_resourceStrings = new List<ResourceStrings>();
+            }
+
+            // just add the whole collection
+            m_resourceStrings.AddRange(collection);
+        }
+
+        public void ClearResourceStrings()
+        {
+            if (m_resourceStrings != null)
+            {
+                // clear it and set our pointer to null
+                m_resourceStrings.Clear();
+                m_resourceStrings = null;
+            }
         }
 
         public void RemoveResourceStrings(ResourceStrings resourceStrings)

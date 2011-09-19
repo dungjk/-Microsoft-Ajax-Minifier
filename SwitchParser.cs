@@ -467,27 +467,29 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     OnInvalidSwitch(switchPart, paramPart);
                                 }
-
-                                // use paramPart because it has been forced to upper-case and these identifiers are
-                                // supposed to be case-insensitive
-                                foreach (string upperCaseName in paramPartUpper.Split(','))
+                                else
                                 {
-                                    // better be a valid JavaScript identifier
-                                    if (!JSScanner.IsValidIdentifier(upperCaseName))
+                                    // use paramPart because it has been forced to upper-case and these identifiers are
+                                    // supposed to be case-insensitive
+                                    foreach (string upperCaseName in paramPartUpper.Split(','))
                                     {
-                                        OnInvalidSwitch(switchPart, upperCaseName);
-                                    }
+                                        // better be a valid JavaScript identifier
+                                        if (!JSScanner.IsValidIdentifier(upperCaseName))
+                                        {
+                                            OnInvalidSwitch(switchPart, upperCaseName);
+                                        }
 
-                                    // if we haven't created the list yet, do it now
-                                    if (defines == null)
-                                    {
-                                        defines = new List<string>();
-                                    }
+                                        // if we haven't created the list yet, do it now
+                                        if (defines == null)
+                                        {
+                                            defines = new List<string>();
+                                        }
 
-                                    // don't add duplicates
-                                    if (!defines.Contains(upperCaseName))
-                                    {
-                                        defines.Add(upperCaseName);
+                                        // don't add duplicates
+                                        if (!defines.Contains(upperCaseName))
+                                        {
+                                            defines.Add(upperCaseName);
+                                        }
                                     }
                                 }
 
@@ -610,26 +612,28 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     OnInvalidSwitch(switchPart, paramPart);
                                 }
-
-                                foreach (string global in paramPart.Split(','))
+                                else
                                 {
-                                    // better be a valid JavaScript identifier
-                                    if (!JSScanner.IsValidIdentifier(global))
+                                    foreach (string global in paramPart.Split(','))
                                     {
-                                        OnInvalidSwitch(switchPart, global);
-                                    }
-                                    else
-                                    {
-                                        // if we haven't created the list yet, do it now
-                                        if (globals == null)
+                                        // better be a valid JavaScript identifier
+                                        if (!JSScanner.IsValidIdentifier(global))
                                         {
-                                            globals = new List<string>();
+                                            OnInvalidSwitch(switchPart, global);
                                         }
-
-                                        // don't add duplicates
-                                        if (!globals.Contains(global))
+                                        else
                                         {
-                                            globals.Add(global);
+                                            // if we haven't created the list yet, do it now
+                                            if (globals == null)
+                                            {
+                                                globals = new List<string>();
+                                            }
+
+                                            // don't add duplicates
+                                            if (!globals.Contains(global))
+                                            {
+                                                globals.Add(global);
+                                            }
                                         }
                                     }
                                 }
@@ -768,6 +772,22 @@ namespace Microsoft.Ajax.Utilities
                                 if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
                                 {
                                     JSSettings.MacSafariQuirks = parameterFlag;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
+                            case "MINIFY":
+                                // optional boolean switch
+                                // no arg is a valid scenario (default is true)
+                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    JSSettings.MinifyCode = parameterFlag;
                                 }
                                 else
                                 {

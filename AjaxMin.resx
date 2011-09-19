@@ -327,6 +327,8 @@
 
 Valid OPTS are zero or more of:
   -analyze &gt; provide extra analysis output.
+  -aspnet[:BOOL] &gt; whether to allow for inline ASP.NET-style substitutions,
+        &lt;% ... %&gt; Default is False. 
   -clobber[:BOOL] &gt; when false, will not overwrite existing output file.
         True always writes output file. Default is false.
   -define:NAME[,NAME]* &gt; add defined case-insensitive names to the list used 
@@ -372,21 +374,26 @@ Valid JSOPTS are zero or more of:
         whether to evaluate literal expressions or keep them. Default is eval.
   -mac[:BOOL] &gt; whether to add code to ensure output works in Mac Safari
         browsers. Default is True.
+  -minify[:BOOL] &gt; whether to run any minification optimizations beyond
+        simple white-space and comment-removal on the parsed JavaScript code. 
+        Default is True.
   -new:(keep|collapse) &gt; whether to collapse certain constructors with known
         literals. Default is collapse.
+  -norename:IDENT(,IDENT)* &gt; specify one or more comma-separated identifiers
+        that should not be automatically renamed. May be repeated as necessary.
   -rename:(all|localization|none) &gt; automatic local variable and function 
         renaming methodology. Default is all.
   -rename:IDENT=IDENT(,IDENT=IDENT)* &gt; specify one or more comma-separated
         from=to identifier pairs for manual renaming of variables, functions
         or properties. May be repeated as needed.
-  -norename:IDENT(,IDENT)* &gt; specify one or more comma-separated identifiers
-        that should not be automatically renamed. May be repeated as necessary.
   -rename NFILE &gt; open the XML file with path NFILE and use the &lt;rename&gt;
         elements for manual renaming of variables, function and properties, and
         &lt;norename&gt; elements for excluding identifiers from automatic
         renaming processes. May be repeated as needed.
   -rename:NOPROPS &gt; when using the manual renaming options above, this option
         will turn off property-renaming (renaming only variables and functions).
+  -reorder[:BOOL] &gt; whether or not to reorder function declarations, putting
+        then at the top of their respective scopes. Default is True.
   -unused:(remove|keep) &gt; whether to keep or remove unused code. Default
         is remove.
 
@@ -397,6 +404,8 @@ Valid CSSOPTS are zero or more of:
   -colors:(hex|strict|major) &gt; how to treat color names: always convert to
         hexadecimal values, use strict color names if shorter, or use major-
         browser color names if shorter. Default is strict.
+  -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw), or
+        minify them as JavaScript expressions (minify). Default is minify.
 
 BOOL can be true, false, T, F, Yes, No, Y, or N.
 N is a valid non-negative integer.

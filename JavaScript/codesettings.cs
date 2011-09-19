@@ -61,6 +61,49 @@ namespace Microsoft.Ajax.Utilities
             this.DebugLookups = new ReadOnlyCollection<string>(initialList);
         }
 
+        public CodeSettings Clone()
+        {
+            // create a new settings object and set all the properties using this settings object
+            var newSettings = new CodeSettings()
+            {
+                AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
+                CollapseToLiteral = this.CollapseToLiteral,
+                CombineDuplicateLiterals = this.CombineDuplicateLiterals,
+                DebugLookupList = this.DebugLookupList,
+                EvalLiteralExpressions = this.EvalLiteralExpressions,
+                EvalTreatment = this.EvalTreatment,
+                IgnoreConditionalCompilation = this.IgnoreConditionalCompilation,
+                IgnoreErrorList = this.IgnoreErrorList,
+                IndentSize = this.IndentSize,
+                InlineSafeStrings = this.InlineSafeStrings,
+                KillSwitch = this.KillSwitch,
+                KnownGlobalNamesList = this.KnownGlobalNamesList,
+                LocalRenaming = this.LocalRenaming,
+                MacSafariQuirks = this.MacSafariQuirks,
+                ManualRenamesProperties = this.ManualRenamesProperties,
+                MinifyCode = this.MinifyCode,
+                NoAutoRenameList = this.NoAutoRenameList,
+                OutputMode = this.OutputMode,
+                PreprocessorDefineList = this.PreprocessorDefineList,
+                PreserveFunctionNames = this.PreserveFunctionNames,
+                PreserveImportantComments = this.PreserveImportantComments,
+                RemoveFunctionExpressionNames = this.RemoveFunctionExpressionNames,
+                RemoveUnneededCode = this.RemoveUnneededCode,
+                RenamePairs = this.RenamePairs,
+                ReorderScopeDeclarations = this.ReorderScopeDeclarations,
+                StripDebugStatements = this.StripDebugStatements,
+                TermSemicolons = this.TermSemicolons,
+            };
+
+            // set the resource strings if there are any
+            if (this.ResourceStrings != null)
+            {
+                newSettings.AddResourceStrings(this.ResourceStrings);
+            }
+
+            return newSettings;
+        }
+
         #region Manually rename
 
         /// <summary>
@@ -113,6 +156,7 @@ namespace Microsoft.Ajax.Utilities
             if (m_identifierReplacementMap != null)
             {
                 m_identifierReplacementMap.Clear();
+                m_identifierReplacementMap = null;
             }
         }
 
@@ -155,15 +199,18 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                foreach (string sourceName in m_identifierReplacementMap.Keys)
+                if (m_identifierReplacementMap != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (string sourceName in m_identifierReplacementMap.Keys)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(sourceName);
+                        sb.Append('=');
+                        sb.Append(m_identifierReplacementMap[sourceName]);
                     }
-                    sb.Append(sourceName);
-                    sb.Append('=');
-                    sb.Append(m_identifierReplacementMap[sourceName]);
                 }
                 return sb.ToString();
             }
@@ -209,7 +256,7 @@ namespace Microsoft.Ajax.Utilities
         public int SetNoAutoRename(params string[] noRenameNames)
         {
             int numAdded = 0;
-            if (noRenameNames == null)
+            if (noRenameNames == null || noRenameNames.Length == 0)
             {
                 NoAutoRenameIdentifiers = null;
             }
@@ -243,13 +290,16 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                foreach (var noRename in NoAutoRenameIdentifiers)
+                if (NoAutoRenameIdentifiers != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (var noRename in NoAutoRenameIdentifiers)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(noRename);
                     }
-                    sb.Append(noRename);
                 }
                 return sb.ToString();
             }
@@ -283,7 +333,7 @@ namespace Microsoft.Ajax.Utilities
         public int SetKnownGlobalNames(params string[] globalArray)
         {
             int numAdded = 0;
-            if (globalArray == null)
+            if (globalArray == null || globalArray.Length == 0)
             {
                 KnownGlobalNames = null;
             }
@@ -317,13 +367,16 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                foreach (var knownGlobal in KnownGlobalNames)
+                if (KnownGlobalNames != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (var knownGlobal in KnownGlobalNames)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(knownGlobal);
                     }
-                    sb.Append(knownGlobal);
                 }
                 return sb.ToString();
             }
@@ -358,7 +411,7 @@ namespace Microsoft.Ajax.Utilities
         public int SetDebugLookups(params string[] debugLookups)
         {
             int numAdded = 0;
-            if (debugLookups == null)
+            if (debugLookups == null || debugLookups.Length == 0)
             {
                 DebugLookups = null;
             }
@@ -422,13 +475,16 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                foreach (var debugLookup in DebugLookups)
+                if (DebugLookups != null)
                 {
-                    if (sb.Length > 0)
+                    foreach (var debugLookup in DebugLookups)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(debugLookup);
                     }
-                    sb.Append(debugLookup);
                 }
                 return sb.ToString();
             }

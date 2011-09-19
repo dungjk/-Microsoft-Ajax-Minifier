@@ -180,30 +180,33 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we want to look through the settings object and see if we match any of the
                 // debug lookups specified therein.
-                foreach (var lookup in Parser.Settings.DebugLookups)
+                if (Parser.Settings.DebugLookups != null)
                 {
-                    // see if there's a period in this lookup
-                    var firstPeriod = lookup.IndexOf('.');
-                    if (firstPeriod > 0)
+                    foreach (var lookup in Parser.Settings.DebugLookups)
                     {
-                        // this lookup is a member chain, so check our name against that
-                        // first part before the period; if it matches, we need to walk up the parent tree
-                        if (string.CompareOrdinal(m_name, 0, lookup, 0, firstPeriod) == 0)
+                        // see if there's a period in this lookup
+                        var firstPeriod = lookup.IndexOf('.');
+                        if (firstPeriod > 0)
                         {
-                            // we matched the first one; test the rest of the chain
-                            if (MatchesMemberChain(Parent, lookup, firstPeriod + 1))
+                            // this lookup is a member chain, so check our name against that
+                            // first part before the period; if it matches, we need to walk up the parent tree
+                            if (string.CompareOrdinal(m_name, 0, lookup, 0, firstPeriod) == 0)
                             {
-                                return true;
+                                // we matched the first one; test the rest of the chain
+                                if (MatchesMemberChain(Parent, lookup, firstPeriod + 1))
+                                {
+                                    return true;
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        // just a straight comparison
-                        if (string.CompareOrdinal(m_name, lookup) == 0)
+                        else
                         {
-                            // we found a match
-                            return true;
+                            // just a straight comparison
+                            if (string.CompareOrdinal(m_name, lookup) == 0)
+                            {
+                                // we found a match
+                                return true;
+                            }
                         }
                     }
                 }

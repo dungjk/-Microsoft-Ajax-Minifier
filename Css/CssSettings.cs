@@ -36,6 +36,33 @@ namespace Microsoft.Ajax.Utilities
 			AllowEmbeddedAspNetBlocks = false;
         }
 
+        public CssSettings Clone()
+        {
+            // create the new settings object and copy all the properties from
+            // the current settings
+            var newSettings = new CssSettings()
+            {
+                AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
+                ColorNames = this.ColorNames,
+                CommentMode = this.CommentMode,
+                IgnoreErrorList = this.IgnoreErrorList,
+                IndentSize = this.IndentSize,
+                KillSwitch = this.KillSwitch,
+                MinifyExpressions = this.MinifyExpressions,
+                OutputMode = this.OutputMode,
+                PreprocessorDefineList = this.PreprocessorDefineList,
+                TermSemicolons = this.TermSemicolons,
+            };
+
+            // add the resource strings (if any)
+            if (this.ResourceStrings != null)
+            {
+                newSettings.AddResourceStrings(this.ResourceStrings);
+            }
+
+            return newSettings;
+        }
+
         /// <summary>
         /// Gets or sets ColorNames setting.
         /// </summary>
