@@ -417,6 +417,7 @@ namespace Microsoft.Ajax.Utilities
                                         if (!string.IsNullOrEmpty(identifier))
                                         {
                                             // but if it's not blank, it better be a valid JavaScript identifier or member chain
+                                            var isValid = true;
                                             if (identifier.IndexOf('.') > 0)
                                             {
                                                 // it's a member chain -- check that each part is a valid JS identifier
@@ -426,6 +427,7 @@ namespace Microsoft.Ajax.Utilities
                                                     if (!JSScanner.IsValidIdentifier(name))
                                                     {
                                                         OnInvalidSwitch(switchPart, name);
+                                                        isValid = false;
                                                     }
                                                 }
                                             }
@@ -435,11 +437,12 @@ namespace Microsoft.Ajax.Utilities
                                                 if (!JSScanner.IsValidIdentifier(identifier))
                                                 {
                                                     OnInvalidSwitch(switchPart, identifier);
+                                                    isValid = false;
                                                 }
                                             }
 
-                                            // don't add duplicates
-                                            if (!debugLookups.Contains(identifier))
+                                            // don't add duplicates or invalid identifiers
+                                            if (isValid && !debugLookups.Contains(identifier))
                                             {
                                                 debugLookups.Add(identifier);
                                             }
@@ -478,16 +481,15 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             OnInvalidSwitch(switchPart, upperCaseName);
                                         }
-
-                                        // if we haven't created the list yet, do it now
-                                        if (defines == null)
+                                        else if (defines == null)
                                         {
+                                            // if we haven't created the list yet, do it now
                                             defines = new List<string>();
+                                            defines.Add(upperCaseName);
                                         }
-
-                                        // don't add duplicates
-                                        if (!defines.Contains(upperCaseName))
+                                        else if (!defines.Contains(upperCaseName))
                                         {
+                                            // don't add duplicates
                                             defines.Add(upperCaseName);
                                         }
                                     }
@@ -621,19 +623,16 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             OnInvalidSwitch(switchPart, global);
                                         }
-                                        else
+                                        else if (globals == null)
                                         {
                                             // if we haven't created the list yet, do it now
-                                            if (globals == null)
-                                            {
-                                                globals = new List<string>();
-                                            }
-
+                                            globals = new List<string>();
+                                            globals.Add(global);
+                                        }
+                                        else if (!globals.Contains(global))
+                                        {
                                             // don't add duplicates
-                                            if (!globals.Contains(global))
-                                            {
-                                                globals.Add(global);
-                                            }
+                                            globals.Add(global);
                                         }
                                     }
                                 }
@@ -704,8 +703,8 @@ namespace Microsoft.Ajax.Utilities
                                         // it's hex -- convert the number after the "0x"
                                         if (long.TryParse(paramPartUpper.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out killSwitch))
                                         {
-                                            // save the switch for JS
-                                            JSSettings.KillSwitch = killSwitch;
+                                            // save the switch for both JS and Css
+                                            JSSettings.KillSwitch = CssSettings.KillSwitch = killSwitch;
 
                                             // for CSS, we only look at the first bit: preeserve important comments
                                             if ((killSwitch & 1) != 0)
@@ -721,8 +720,8 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                     else if (long.TryParse(paramPartUpper, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out killSwitch))
                                     {
-                                        // save the switch for JS
-                                        JSSettings.KillSwitch = killSwitch;
+                                        // save the switch for both JS and CSS
+                                        JSSettings.KillSwitch = CssSettings.KillSwitch = killSwitch;
 
                                         // for CSS, we only look at the first bit: preeserve important comments
                                         if ((killSwitch & 1) != 0)
@@ -850,16 +849,15 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             OnInvalidSwitch(switchPart, ident);
                                         }
-
-                                        // if we haven't created the list yet, do it now
-                                        if (noAutoRename == null)
+                                        else if (noAutoRename == null)
                                         {
+                                            // if we haven't created the list yet, do it now
                                             noAutoRename = new List<string>();
+                                            noAutoRename.Add(ident);
                                         }
-
-                                        // don't add duplicates
-                                        if (!noAutoRename.Contains(ident))
+                                        else if (!noAutoRename.Contains(ident))
                                         {
+                                            // don't add duplicates
                                             noAutoRename.Add(ident);
                                         }
                                     }
@@ -885,23 +883,16 @@ namespace Microsoft.Ajax.Utilities
                                 // optional integer switch argument
                                 if (paramPartUpper != null)
                                 {
-                                    // get the numeric portion
-                                    try
+                                    // get the numeric portion; must be a decimal integer
+                                    int indentSize;
+                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
                                     {
-                                        // must be an integer value
-                                        int indentSize = int.Parse(paramPartUpper, CultureInfo.InvariantCulture);
-                                        if (indentSize >= 0)
-                                        {
-                                            // same value for JS and CSS
-                                            JSSettings.IndentSize =
-                                                CssSettings.IndentSize = indentSize;
-                                        }
-                                        else
-                                        {
-                                            OnInvalidSwitch(switchPart, paramPart);
-                                        }
+                                        // same value for JS and CSS.
+                                        // don't need to check for negative, because the tryparse method above does NOT
+                                        // allow for a sign -- no sign, no negative.
+                                        JSSettings.IndentSize = CssSettings.IndentSize = indentSize;
                                     }
-                                    catch (FormatException)
+                                    else 
                                     {
                                         OnInvalidSwitch(switchPart, paramPart);
                                     }
@@ -1073,12 +1064,13 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    try
+                                    // must be an unsigned decimal integer value
+                                    int warningLevel;
+                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out warningLevel))
                                     {
-                                        // must be an unsigned integer value
-                                        WarningLevel = int.Parse(paramPartUpper, NumberStyles.None, CultureInfo.InvariantCulture);
+                                        WarningLevel = warningLevel;
                                     }
-                                    catch (FormatException)
+                                    else
                                     {
                                         OnInvalidSwitch(switchPart, paramPart);
                                     }
@@ -1199,7 +1191,9 @@ namespace Microsoft.Ajax.Utilities
                 // then set the appropriate property in the settings object(s)
                 if (defines != null)
                 {
-                    JSSettings.SetPreprocessorDefines(defines.ToArray());
+                    var defineList = defines.ToArray();
+                    JSSettings.SetPreprocessorDefines(defineList);
+                    CssSettings.SetPreprocessorDefines(defineList);
                 }
 
                 if (debugLookups != null)

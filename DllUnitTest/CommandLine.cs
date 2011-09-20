@@ -107,6 +107,38 @@ namespace DllUnitTest
         {
             var testData = new ArgumentsSettings[] {
                 new ArgumentsSettings(){CommandLine="-warn:4 -ei:utf-8 -enc:out utf-8 /g:jQuery,$,Msn -p", JSSettings=new CodeSettings(){OutputMode=OutputMode.MultipleLines, LocalRenaming=LocalRenaming.KeepAll, KnownGlobalNamesList="jQuery,$,Msn"}, CssSettings=new CssSettings(){OutputMode=OutputMode.MultipleLines}, WarningLevel=4, EncodingInputName="utf-8", EncodingOutputName="utf-8"},
+                new ArgumentsSettings(){CommandLine="-minify:false -rename:none", JSSettings=new CodeSettings(){MinifyCode=false, LocalRenaming=LocalRenaming.KeepAll}, CssSettings=null, WarningLevel=0},
+                new ArgumentsSettings(){CommandLine="-define:foo,bar,ack,gag,42", JSSettings=new CodeSettings(){PreprocessorDefineList="FOO,BAR,ACK,GAG"}, CssSettings=new CssSettings(){PreprocessorDefineList="FOO,BAR,ACK,GAG"}},
+                new ArgumentsSettings(){CommandLine="-ignore:foo,bar,ack,gag", JSSettings=new CodeSettings(){IgnoreErrorList="FOO,BAR,ACK,GAG"}, CssSettings=new CssSettings(){IgnoreErrorList="FOO,BAR,ACK,GAG"}},
+                new ArgumentsSettings(){CommandLine="/aspnet:T -pretty:8 -term:Yes", JSSettings=new CodeSettings(){AllowEmbeddedAspNetBlocks=true,TermSemicolons=true,LocalRenaming=LocalRenaming.KeepAll,OutputMode=OutputMode.MultipleLines,IndentSize=8}, CssSettings=new CssSettings(){AllowEmbeddedAspNetBlocks=true,TermSemicolons=true,OutputMode=OutputMode.MultipleLines,IndentSize=8}},
+                new ArgumentsSettings(){CommandLine="/aspnet:F -pretty:0 -term:N", JSSettings=new CodeSettings(){AllowEmbeddedAspNetBlocks=false,TermSemicolons=false,LocalRenaming=LocalRenaming.KeepAll,OutputMode=OutputMode.MultipleLines,IndentSize=0}, CssSettings=new CssSettings(){AllowEmbeddedAspNetBlocks=false,TermSemicolons=false,OutputMode=OutputMode.MultipleLines,IndentSize=0}},
+                new ArgumentsSettings(){CommandLine="-expr:minify -colors:hex -comments:All", JSSettings=null, CssSettings=new CssSettings(){MinifyExpressions=true,ColorNames=CssColor.Hex,CommentMode=CssComment.All}},
+                new ArgumentsSettings(){CommandLine="-expr:raw -colors:MAJOR /comments:HaCkS", JSSettings=null, CssSettings=new CssSettings(){MinifyExpressions=false,ColorNames=CssColor.Major,CommentMode=CssComment.Hacks}},
+                new ArgumentsSettings(){CommandLine="-cc:1 -comments:None -debug:true -inline:yes -literals:keep -literals:evAL -mac:Y -minify:T -new:Keep -reorder:yes -unused:remove -rename:all", 
+                    JSSettings=new CodeSettings(){IgnoreConditionalCompilation=false,PreserveImportantComments=false,StripDebugStatements=false,InlineSafeStrings=true,CombineDuplicateLiterals=false,EvalLiteralExpressions=true,MacSafariQuirks=true,MinifyCode=true,CollapseToLiteral=false,ReorderScopeDeclarations=true,RemoveUnneededCode=true,LocalRenaming=LocalRenaming.CrunchAll}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-cc:0 -comments:ImportanT -debug:false -inline:no /literals:combine -literals:NoEval -mac:N -minify:F -new:Collapse -reorder:N -unused:keep -rename:localization", 
+                    JSSettings=new CodeSettings(){IgnoreConditionalCompilation=true,PreserveImportantComments=true,StripDebugStatements=true,InlineSafeStrings=false,CombineDuplicateLiterals=true,EvalLiteralExpressions=false,MacSafariQuirks=false,MinifyCode=false,CollapseToLiteral=true,ReorderScopeDeclarations=false,RemoveUnneededCode=false, LocalRenaming=LocalRenaming.KeepLocalizationVars}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="–debug:,", JSSettings=new CodeSettings(){StripDebugStatements=false,DebugLookupList=""}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-debug:N,", JSSettings=new CodeSettings(){StripDebugStatements=true,DebugLookupList=""}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-debug:N,Foo,Bar,Ack.Gag.Barf,14,Name.42.First", JSSettings=new CodeSettings(){StripDebugStatements=true,DebugLookupList="Foo,Bar,Ack.Gag.Barf"}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-global:foo,bar,ack,gag,212", JSSettings=new CodeSettings(){KnownGlobalNamesList="foo,bar,ack,gag"}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-norename:foo,bar,ack,gag,105 -rename:NoProps", JSSettings=new CodeSettings(){NoAutoRenameList="foo,bar,ack,gag", ManualRenamesProperties=false}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-rename:foo=bar,ack=gag,105=106", JSSettings=new CodeSettings(){RenamePairs="foo=bar,ack=gag", ManualRenamesProperties=true}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="–fnames:lock -evals:ignore", JSSettings=new CodeSettings(){PreserveFunctionNames=true, RemoveFunctionExpressionNames=false, EvalTreatment=EvalTreatment.Ignore}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-fnames:keep -evals:immediate", JSSettings=new CodeSettings(){PreserveFunctionNames=false, RemoveFunctionExpressionNames=false, EvalTreatment=EvalTreatment.MakeImmediateSafe}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-fnames:onlyref -evals:safeall", JSSettings=new CodeSettings(){PreserveFunctionNames=false, RemoveFunctionExpressionNames=true, EvalTreatment=EvalTreatment.MakeAllSafe}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="–kill:-1", JSSettings=new CodeSettings(){KillSwitch=-1}, CssSettings=new CssSettings(){KillSwitch=-1,CommentMode=CssComment.None}},
+                new ArgumentsSettings(){CommandLine="–kill:0x1", JSSettings=new CodeSettings(){KillSwitch=1}, CssSettings=new CssSettings(){KillSwitch=1,CommentMode=CssComment.None}},
+                new ArgumentsSettings(){CommandLine="-kill:2", JSSettings=new CodeSettings(){KillSwitch=2}, CssSettings=new CssSettings(){KillSwitch=2}},
+                new ArgumentsSettings(){CommandLine="-kill:0xDAB0 -cc:BOOYAH! -warn:-1", JSSettings=new CodeSettings(){KillSwitch=0xdab0}, CssSettings=new CssSettings(){KillSwitch=55984}, WarningLevel=0},
+                new ArgumentsSettings(){CommandLine="-enc:in ascii -EO:big5 -warn", JSSettings=null, CssSettings=null, EncodingInputName="ascii", EncodingOutputName="big5", WarningLevel=int.MaxValue},
+                new ArgumentsSettings(){CommandLine="-css /js", JSSettings=new CodeSettings(), CssSettings=new CssSettings()},
+                new ArgumentsSettings(){CommandLine="-rename:All -pretty:WHAM", JSSettings=new CodeSettings(){OutputMode=OutputMode.MultipleLines,IndentSize=4}, CssSettings=new CssSettings(){OutputMode=OutputMode.MultipleLines,IndentSize=4}},
+                new ArgumentsSettings(){CommandLine="-rename:All -pretty:-10", JSSettings=new CodeSettings(){OutputMode=OutputMode.MultipleLines,IndentSize=4}, CssSettings=new CssSettings(){OutputMode=OutputMode.MultipleLines,IndentSize=4}},
+                new ArgumentsSettings(){CommandLine="–rename:foo=bar,foo=ack", JSSettings=new CodeSettings(){RenamePairs="foo=bar"}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="–d -h -j -k -m", JSSettings=new CodeSettings(), CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-l -z -hCL", JSSettings=new CodeSettings() {CollapseToLiteral=false, TermSemicolons=true, CombineDuplicateLiterals=true, LocalRenaming=LocalRenaming.KeepLocalizationVars}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="/HC", JSSettings=new CodeSettings() {CombineDuplicateLiterals=true}, CssSettings=null},
             };
 
             var ndxTest = 0;
@@ -187,18 +219,34 @@ namespace DllUnitTest
                 var parsedProperty = property.GetValue(actual, null);
                 var expectedProperty = property.GetValue(expected, null);
 
-                if (parsedProperty is ICollection && expectedProperty is ICollection)
+                var parsedCollection = parsedProperty as ICollection;
+                var expectedCollection = expectedProperty as ICollection;
+                if (parsedCollection != null || expectedCollection != null)
                 {
-                    // ignore collections for now
+                    // if one is null or not a collection, then it's a fail
+                    if (parsedCollection == null || expectedCollection == null)
+                    {
+                        Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedCollection, expectedCollection, property.Name, type.Name));
+                        success = false;
+                    }
+                    else if (parsedCollection.Count != expectedCollection.Count)
+                    {
+                        Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} collection has {0} elements, expected has {1}", parsedCollection.Count, expectedCollection.Count, property.Name, type.Name));
+                        success = false;
+                    }
+                    else
+                    {
+                        Trace.WriteLine(string.Format("\tParsed {2} property {1} has {0} elements, as expected", parsedCollection.Count, property.Name, type.Name));
+                    }
                 }
                 else if (!object.Equals(parsedProperty, expectedProperty))
                 {
-                    Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedProperty, expectedProperty, property.Name, type.Name));
+                    Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedProperty ?? "<null>", expectedProperty ?? "<null>", property.Name, type.Name));
                     success = false;
                 }
                 else
                 {
-                    Trace.WriteLine(string.Format("\tParsed {2} property {1} is {0}", parsedProperty, property.Name, type.Name));
+                    Trace.WriteLine(string.Format("\tParsed {2} property {1} is {0}", parsedProperty ?? "<null>", property.Name, type.Name));
                 }
             }
             return success;
