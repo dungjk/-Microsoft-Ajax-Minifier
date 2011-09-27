@@ -226,7 +226,11 @@ namespace Microsoft.Ajax.Utilities
                     case "CLOBBER":
                         // just putting the clobber switch on the command line without any arguments
                         // is the same as putting -clobber:true and perfectly valid.
-                        if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_clobber))
+                        if (ea.ParameterPart == null)
+                        {
+                            m_clobber = true;
+                        }
+                        else if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_clobber))
                         {
                             throw new UsageException(m_outputMode, "InvalidSwitchArg", ea.SwitchPart, ea.ParameterPart);
                         }
@@ -268,7 +272,11 @@ namespace Microsoft.Ajax.Utilities
                     case "PPONLY":
                         // just putting the pponly switch on the command line without any arguments
                         // is the same as putting -pponly:true and perfectly valid.
-                        if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_preprocessOnly))
+                        if (ea.ParameterPart == null)
+                        {
+                            m_preprocessOnly = true;
+                        }
+                        else if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_preprocessOnly))
                         {
                             throw new UsageException(m_outputMode, "InvalidSwitchArg", ea.SwitchPart, ea.ParameterPart);
                         }
