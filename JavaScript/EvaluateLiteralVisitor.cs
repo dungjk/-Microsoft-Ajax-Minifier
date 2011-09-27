@@ -1637,142 +1637,152 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.EvalLiteralExpressions)
-                {
-                    // if this is an assign operator, an in, or an instanceof, then we won't
-                    // try to evaluate it
-                    if (!node.IsAssign && node.OperatorToken != JSToken.In && node.OperatorToken != JSToken.InstanceOf)
-                    {
-                        if (node.OperatorToken == JSToken.StrictEqual || node.OperatorToken == JSToken.StrictNotEqual)
-                        {
-                            // the operator is a strict equality (or not-equal).
-                            // check the primitive types of the two operands -- if they are known but not the same, we can
-                            // shortcut the whole process by just replacing this node with a boolean literal.
-                            var leftType = node.Operand1.FindPrimitiveType();
-                            if (leftType != PrimitiveType.Other)
-                            {
-                                var rightType = node.Operand2.FindPrimitiveType();
-                                if (rightType != PrimitiveType.Other)
-                                {
-                                    // both sides are known
-                                    if (leftType != rightType)
-                                    {
-                                        // they are not the same type -- replace with a boolean and bail
-                                        node.Parent.ReplaceChild(
-                                            node,
-                                            new ConstantWrapper(node.OperatorToken == JSToken.StrictEqual ? false : true, PrimitiveType.Boolean, node.Context, m_parser));
-                                        return;
-                                    }
+                // then evaluate.
+                // do it in a separate method than this one because if this method
+                // allocates a lot of bytes on the stack, we'll overflow our stack for
+                // code that has lots of expression statements that get converted into one
+                // BIG, uber-nested set of comma operators.
+                DoBinaryOperator(node);
+            }
+        }
 
-                                    // they are the same type -- we can change the operator to simple equality/not equality
-                                    node.OperatorToken = node.OperatorToken == JSToken.StrictEqual ? JSToken.Equal : JSToken.NotEqual;
+        private void DoBinaryOperator(BinaryOperator node)
+        {
+            if (m_parser.Settings.EvalLiteralExpressions)
+            {
+                // if this is an assign operator, an in, or an instanceof, then we won't
+                // try to evaluate it
+                if (!node.IsAssign && node.OperatorToken != JSToken.In && node.OperatorToken != JSToken.InstanceOf)
+                {
+                    if (node.OperatorToken == JSToken.StrictEqual || node.OperatorToken == JSToken.StrictNotEqual)
+                    {
+                        // the operator is a strict equality (or not-equal).
+                        // check the primitive types of the two operands -- if they are known but not the same, we can
+                        // shortcut the whole process by just replacing this node with a boolean literal.
+                        var leftType = node.Operand1.FindPrimitiveType();
+                        if (leftType != PrimitiveType.Other)
+                        {
+                            var rightType = node.Operand2.FindPrimitiveType();
+                            if (rightType != PrimitiveType.Other)
+                            {
+                                // both sides are known
+                                if (leftType != rightType)
+                                {
+                                    // they are not the same type -- replace with a boolean and bail
+                                    node.Parent.ReplaceChild(
+                                        node,
+                                        new ConstantWrapper(node.OperatorToken == JSToken.StrictEqual ? false : true, PrimitiveType.Boolean, node.Context, m_parser));
+                                    return;
                                 }
+
+                                // they are the same type -- we can change the operator to simple equality/not equality
+                                node.OperatorToken = node.OperatorToken == JSToken.StrictEqual ? JSToken.Equal : JSToken.NotEqual;
                             }
                         }
+                    }
 
-                        // see if the left operand is a literal number, boolean, string, or null
-                        ConstantWrapper left = node.Operand1 as ConstantWrapper;
-                        if (left != null)
+                    // see if the left operand is a literal number, boolean, string, or null
+                    ConstantWrapper left = node.Operand1 as ConstantWrapper;
+                    if (left != null)
+                    {
+                        if (node.OperatorToken == JSToken.Comma)
                         {
-                            if (node.OperatorToken == JSToken.Comma)
+                            // the comma operator evaluates the left, then evaluates the right and returns it.
+                            // but if the left is a literal, evaluating it doesn't DO anything, so we can replace the
+                            // entire operation with the right-hand operand
+                            ConstantWrapper rightConstant = node.Operand2 as ConstantWrapper;
+                            if (rightConstant != null)
                             {
-                                // the comma operator evaluates the left, then evaluates the right and returns it.
-                                // but if the left is a literal, evaluating it doesn't DO anything, so we can replace the
-                                // entire operation with the right-hand operand
-                                ConstantWrapper rightConstant = node.Operand2 as ConstantWrapper;
-                                if (rightConstant != null)
+                                // we'll replace the operator with the right-hand operand, BUT it's a constant, too.
+                                // first check to see if replacing this node with a constant will result in creating
+                                // a member-bracket operator that can be turned into a member-dot. If it is, then that
+                                // method will handle the replacement. But if it doesn't, then we should just replace
+                                // the comma with the right-hand operand.
+                                if (!ReplaceMemberBracketWithDot(node, rightConstant))
                                 {
-                                    // we'll replace the operator with the right-hand operand, BUT it's a constant, too.
-                                    // first check to see if replacing this node with a constant will result in creating
-                                    // a member-bracket operator that can be turned into a member-dot. If it is, then that
-                                    // method will handle the replacement. But if it doesn't, then we should just replace
-                                    // the comma with the right-hand operand.
-                                    if (!ReplaceMemberBracketWithDot(node, rightConstant))
-                                    {
-                                        node.Parent.ReplaceChild(node, rightConstant);
-                                    }
-                                }
-                                else
-                                {
-                                    // replace the comma operator with the right-hand operand
-                                    node.Parent.ReplaceChild(node, node.Operand2);
+                                    node.Parent.ReplaceChild(node, rightConstant);
                                 }
                             }
                             else
                             {
-                                // see if the right operand is a literal number, boolean, string, or null
-                                ConstantWrapper right = node.Operand2 as ConstantWrapper;
-                                if (right != null)
-                                {
-                                    // then they are both constants and we can evaluate the operation
-                                    EvalThisOperator(node, left, right);
-                                }
-                                else
-                                {
-                                    // see if the right is a binary operator that can be combined with ours
-                                    BinaryOperator rightBinary = node.Operand2 as BinaryOperator;
-                                    if (rightBinary != null)
-                                    {
-                                        ConstantWrapper rightLeft = rightBinary.Operand1 as ConstantWrapper;
-                                        if (rightLeft != null)
-                                        {
-                                            // eval our left and the right-hand binary's left and put the combined operation as
-                                            // the child of the right-hand binary
-                                            EvalToTheRight(node, left, rightLeft, rightBinary);
-                                        }
-                                        else
-                                        {
-                                            ConstantWrapper rightRight = rightBinary.Operand2 as ConstantWrapper;
-                                            if (rightRight != null)
-                                            {
-                                                EvalFarToTheRight(node, left, rightRight, rightBinary);
-                                            }
-                                        }
-                                    }
-                                }
+                                // replace the comma operator with the right-hand operand
+                                node.Parent.ReplaceChild(node, node.Operand2);
                             }
                         }
                         else
                         {
-                            // left is not a constantwrapper. See if the right is
+                            // see if the right operand is a literal number, boolean, string, or null
                             ConstantWrapper right = node.Operand2 as ConstantWrapper;
                             if (right != null)
                             {
-                                // the right is a constant. See if the the left is a binary operator...
-                                BinaryOperator leftBinary = node.Operand1 as BinaryOperator;
-                                if (leftBinary != null)
+                                // then they are both constants and we can evaluate the operation
+                                EvalThisOperator(node, left, right);
+                            }
+                            else
+                            {
+                                // see if the right is a binary operator that can be combined with ours
+                                BinaryOperator rightBinary = node.Operand2 as BinaryOperator;
+                                if (rightBinary != null)
                                 {
-                                    // ...with a constant on the right, and the operators can be combined
-                                    ConstantWrapper leftRight = leftBinary.Operand2 as ConstantWrapper;
-                                    if (leftRight != null)
+                                    ConstantWrapper rightLeft = rightBinary.Operand1 as ConstantWrapper;
+                                    if (rightLeft != null)
                                     {
-                                        EvalToTheLeft(node, right, leftRight, leftBinary);
+                                        // eval our left and the right-hand binary's left and put the combined operation as
+                                        // the child of the right-hand binary
+                                        EvalToTheRight(node, left, rightLeft, rightBinary);
                                     }
                                     else
                                     {
-                                        ConstantWrapper leftLeft = leftBinary.Operand1 as ConstantWrapper;
-                                        if (leftLeft != null)
+                                        ConstantWrapper rightRight = rightBinary.Operand2 as ConstantWrapper;
+                                        if (rightRight != null)
                                         {
-                                            EvalFarToTheLeft(node, right, leftLeft, leftBinary);
+                                            EvalFarToTheRight(node, left, rightRight, rightBinary);
                                         }
                                     }
                                 }
-                                else if (m_parser.Settings.IsModificationAllowed(TreeModifications.SimplifyStringToNumericConversion))
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // left is not a constantwrapper. See if the right is
+                        ConstantWrapper right = node.Operand2 as ConstantWrapper;
+                        if (right != null)
+                        {
+                            // the right is a constant. See if the the left is a binary operator...
+                            BinaryOperator leftBinary = node.Operand1 as BinaryOperator;
+                            if (leftBinary != null)
+                            {
+                                // ...with a constant on the right, and the operators can be combined
+                                ConstantWrapper leftRight = leftBinary.Operand2 as ConstantWrapper;
+                                if (leftRight != null)
                                 {
-                                    // see if it's a lookup and this is a minus operation and the constant is a zero
-                                    Lookup lookup = node.Operand1 as Lookup;
-                                    if (lookup != null && node.OperatorToken == JSToken.Minus && right.IsIntegerLiteral && right.ToNumber() == 0)
+                                    EvalToTheLeft(node, right, leftRight, leftBinary);
+                                }
+                                else
+                                {
+                                    ConstantWrapper leftLeft = leftBinary.Operand1 as ConstantWrapper;
+                                    if (leftLeft != null)
                                     {
-                                        // okay, so we have "lookup - 0"
-                                        // this is done frequently to force a value to be numeric. 
-                                        // There is an easier way: apply the unary + operator to it. 
-                                        NumericUnary unary = new NumericUnary(node.Context, m_parser, lookup, JSToken.Plus);
-                                        node.Parent.ReplaceChild(node, unary);
+                                        EvalFarToTheLeft(node, right, leftLeft, leftBinary);
                                     }
                                 }
                             }
-                            // TODO: shouldn't we check if they BOTH are binary operators? (a*6)*(5*b) ==> a*30*b (for instance)
+                            else if (m_parser.Settings.IsModificationAllowed(TreeModifications.SimplifyStringToNumericConversion))
+                            {
+                                // see if it's a lookup and this is a minus operation and the constant is a zero
+                                Lookup lookup = node.Operand1 as Lookup;
+                                if (lookup != null && node.OperatorToken == JSToken.Minus && right.IsIntegerLiteral && right.ToNumber() == 0)
+                                {
+                                    // okay, so we have "lookup - 0"
+                                    // this is done frequently to force a value to be numeric. 
+                                    // There is an easier way: apply the unary + operator to it. 
+                                    NumericUnary unary = new NumericUnary(node.Context, m_parser, lookup, JSToken.Plus);
+                                    node.Parent.ReplaceChild(node, unary);
+                                }
+                            }
                         }
+                        // TODO: shouldn't we check if they BOTH are binary operators? (a*6)*(5*b) ==> a*30*b (for instance)
                     }
                 }
             }
@@ -1785,23 +1795,28 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoConditional(node);
+            }
+        }
+
+        private void DoConditional(Conditional node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // if the condition is a literal, evaluating the condition doesn't do anything, AND
+                // we know now whether it's true or not.
+                ConstantWrapper literalCondition = node.Condition as ConstantWrapper;
+                if (literalCondition != null)
                 {
-                    // if the condition is a literal, evaluating the condition doesn't do anything, AND
-                    // we know now whether it's true or not.
-                    ConstantWrapper literalCondition = node.Condition as ConstantWrapper;
-                    if (literalCondition != null)
+                    try
                     {
-                        try
-                        {
-                            // if the boolean represenation of the literal is true, we can replace the condition operator
-                            // with the true expression; otherwise we can replace it with the false expression
-                            node.Parent.ReplaceChild(node, literalCondition.ToBoolean() ? node.TrueExpression : node.FalseExpression);
-                        }
-                        catch (InvalidCastException)
-                        {
-                            // ignore any invalid cast errors
-                        }
+                        // if the boolean represenation of the literal is true, we can replace the condition operator
+                        // with the true expression; otherwise we can replace it with the false expression
+                        node.Parent.ReplaceChild(node, literalCondition.ToBoolean() ? node.TrueExpression : node.FalseExpression);
+                    }
+                    catch (InvalidCastException)
+                    {
+                        // ignore any invalid cast errors
                     }
                 }
             }
@@ -1814,24 +1829,29 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoConditionalCompilationElseIf(node);
+            }
+        }
+
+        private void DoConditionalCompilationElseIf(ConditionalCompilationElseIf node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // if the if-condition is a constant, we can eliminate one of the two branches
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null)
                 {
-                    // if the if-condition is a constant, we can eliminate one of the two branches
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null)
+                    // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
+                    if (constantCondition.IsNotOneOrPositiveZero)
                     {
-                        // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
-                        if (constantCondition.IsNotOneOrPositiveZero)
+                        try
                         {
-                            try
-                            {
-                                node.ReplaceChild(node.Condition,
-                                    new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
-                            }
-                            catch (InvalidCastException)
-                            {
-                                // ignore any invalid cast exceptions
-                            }
+                            node.ReplaceChild(node.Condition,
+                                new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
+                        }
+                        catch (InvalidCastException)
+                        {
+                            // ignore any invalid cast exceptions
                         }
                     }
                 }
@@ -1845,24 +1865,29 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoConditionalCompilationIf(node);
+            }
+        }
+
+        private void DoConditionalCompilationIf(ConditionalCompilationIf node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // if the if-condition is a constant, we can eliminate one of the two branches
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null)
                 {
-                    // if the if-condition is a constant, we can eliminate one of the two branches
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null)
+                    // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
+                    if (constantCondition.IsNotOneOrPositiveZero)
                     {
-                        // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
-                        if (constantCondition.IsNotOneOrPositiveZero)
+                        try
                         {
-                            try
-                            {
-                                node.ReplaceChild(node.Condition,
-                                    new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
-                            }
-                            catch (InvalidCastException)
-                            {
-                                // ignore any invalid cast exceptions
-                            }
+                            node.ReplaceChild(node.Condition,
+                                new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
+                        }
+                        catch (InvalidCastException)
+                        {
+                            // ignore any invalid cast exceptions
                         }
                     }
                 }
@@ -1876,23 +1901,28 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoDoWhile(node);
+            }
+        }
+
+        private void DoDoWhile(DoWhile node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // if the condition is a constant, we can simplify things
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null && constantCondition.IsNotOneOrPositiveZero)
                 {
-                    // if the condition is a constant, we can simplify things
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null && constantCondition.IsNotOneOrPositiveZero)
+                    try
                     {
-                        try
-                        {
-                            // the condition is a constant, so it is always either true or false
-                            // we can replace the condition with a one or a zero -- only one byte
-                            node.ReplaceChild(node.Condition,
-                                new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
-                        }
-                        catch (InvalidCastException)
-                        {
-                            // ignore any invalid cast errors
-                        }
+                        // the condition is a constant, so it is always either true or false
+                        // we can replace the condition with a one or a zero -- only one byte
+                        node.ReplaceChild(node.Condition,
+                            new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
+                    }
+                    catch (InvalidCastException)
+                    {
+                        // ignore any invalid cast errors
                     }
                 }
             }
@@ -1905,30 +1935,35 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoForNode(node);
+            }
+        }
+
+        private void DoForNode(ForNode node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null)
                 {
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null)
+                    try
                     {
-                        try
+                        // if condition is always false, change it to a zero (only one byte)
+                        // and if it is always true, remove it (default behavior)
+                        if (constantCondition.ToBoolean())
                         {
-                            // if condition is always false, change it to a zero (only one byte)
-                            // and if it is always true, remove it (default behavior)
-                            if (constantCondition.ToBoolean())
-                            {
-                                // always true -- don't need a condition at all
-                                node.ReplaceChild(node.Condition, null);
-                            }
-                            else if (constantCondition.IsNotOneOrPositiveZero)
-                            {
-                                // always false and it's not already a zero. Make it so (only one byte)
-                                node.ReplaceChild(node.Condition, new ConstantWrapper(0, PrimitiveType.Number, node.Condition.Context, m_parser));
-                            }
+                            // always true -- don't need a condition at all
+                            node.ReplaceChild(node.Condition, null);
                         }
-                        catch (InvalidCastException)
+                        else if (constantCondition.IsNotOneOrPositiveZero)
                         {
-                            // ignore any invalid cast exceptions
+                            // always false and it's not already a zero. Make it so (only one byte)
+                            node.ReplaceChild(node.Condition, new ConstantWrapper(0, PrimitiveType.Number, node.Condition.Context, m_parser));
                         }
+                    }
+                    catch (InvalidCastException)
+                    {
+                        // ignore any invalid cast exceptions
                     }
                 }
             }
@@ -1941,24 +1976,29 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoIfNode(node);
+            }
+        }
+
+        private void DoIfNode(IfNode node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // if the if-condition is a constant, we can eliminate one of the two branches
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null)
                 {
-                    // if the if-condition is a constant, we can eliminate one of the two branches
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null)
+                    // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
+                    if (constantCondition.IsNotOneOrPositiveZero)
                     {
-                        // instead, replace the condition with a 1 if it's always true or a 0 if it's always false
-                        if (constantCondition.IsNotOneOrPositiveZero)
+                        try
                         {
-                            try
-                            {
-                                node.ReplaceChild(node.Condition,
-                                    new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
-                            }
-                            catch (InvalidCastException)
-                            {
-                                // ignore any invalid cast exceptions
-                            }
+                            node.ReplaceChild(node.Condition,
+                                new ConstantWrapper(constantCondition.ToBoolean() ? 1 : 0, PrimitiveType.Number, node.Condition.Context, m_parser));
+                        }
+                        catch (InvalidCastException)
+                        {
+                            // ignore any invalid cast exceptions
                         }
                     }
                 }
@@ -1972,70 +2012,75 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                // if this node's operator is in a conditional-compilation comment, then we
-                // don't want to muck with it.
-                if (!node.OperatorInConditionalCompilationComment)
+                DoNumericUnary(node);
+            }
+        }
+
+        private void DoNumericUnary(NumericUnary node)
+        {
+            // if this node's operator is in a conditional-compilation comment, then we
+            // don't want to muck with it.
+            if (!node.OperatorInConditionalCompilationComment)
+            {
+                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
                 {
-                    if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                    // see if our operand is a ConstantWrapper
+                    ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
+                    if (literalOperand != null)
                     {
-                        // see if our operand is a ConstantWrapper
-                        ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                        if (literalOperand != null)
+                        // must be number, boolean, string, or null
+                        switch (node.OperatorToken)
                         {
-                            // must be number, boolean, string, or null
-                            switch (node.OperatorToken)
-                            {
-                                case JSToken.Plus:
-                                    try
-                                    {
-                                        // replace with a constant representing operand.ToNumber,
-                                        node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                    }
-                                    catch (InvalidCastException)
-                                    {
-                                        // some kind of casting in ToNumber caused a situation where we don't want
-                                        // to perform the combination on these operands
-                                    }
-                                    break;
+                            case JSToken.Plus:
+                                try
+                                {
+                                    // replace with a constant representing operand.ToNumber,
+                                    node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    // some kind of casting in ToNumber caused a situation where we don't want
+                                    // to perform the combination on these operands
+                                }
+                                break;
 
-                                case JSToken.Minus:
-                                    try
-                                    {
-                                        // replace with a constant representing the negative of operand.ToNumber
-                                        node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                    }
-                                    catch (InvalidCastException)
-                                    {
-                                        // some kind of casting in ToNumber caused a situation where we don't want
-                                        // to perform the combination on these operands
-                                    }
-                                    break;
+                            case JSToken.Minus:
+                                try
+                                {
+                                    // replace with a constant representing the negative of operand.ToNumber
+                                    node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    // some kind of casting in ToNumber caused a situation where we don't want
+                                    // to perform the combination on these operands
+                                }
+                                break;
 
-                                case JSToken.BitwiseNot:
-                                    try
-                                    {
-                                        // replace with a constant representing the bitwise-not of operant.ToInt32
-                                        node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
-                                    }
-                                    catch (InvalidCastException)
-                                    {
-                                        // some kind of casting in ToNumber caused a situation where we don't want
-                                        // to perform the combination on these operands
-                                    }
-                                    break;
+                            case JSToken.BitwiseNot:
+                                try
+                                {
+                                    // replace with a constant representing the bitwise-not of operant.ToInt32
+                                    node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    // some kind of casting in ToNumber caused a situation where we don't want
+                                    // to perform the combination on these operands
+                                }
+                                break;
 
-                                case JSToken.LogicalNot:
-                                    // replace with a constant representing the opposite of operand.ToBoolean
-                                    try
-                                    {
-                                        node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
-                                    }
-                                    catch (InvalidCastException)
-                                    {
-                                        // ignore any invalid cast exceptions
-                                    }
-                                    break;
-                            }
+                            case JSToken.LogicalNot:
+                                // replace with a constant representing the opposite of operand.ToBoolean
+                                try
+                                {
+                                    node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    // ignore any invalid cast exceptions
+                                }
+                                break;
                         }
                     }
                 }
@@ -2049,47 +2094,52 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
-                {
-                    // see if our operand is a ConstantWrapper
-                    ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                    if (literalOperand != null)
-                    {
-                        // either number, string, boolean, or null.
-                        // the operand is a literal. Therefore we already know what the typeof
-                        // operator will return. Just short-circuit that behavior now and replace the operator
-                        // with a string literal of the proper value
-                        string typeName = null;
-                        if (literalOperand.IsStringLiteral)
-                        {
-                            // "string"
-                            typeName = "string";
-                        }
-                        else if (literalOperand.IsNumericLiteral)
-                        {
-                            // "number"
-                            typeName = "number";
-                        }
-                        else if (literalOperand.IsBooleanLiteral)
-                        {
-                            // "boolean"
-                            typeName = "boolean";
-                        }
-                        else if (literalOperand.Value == null)
-                        {
-                            // "object"
-                            typeName = "object";
-                        }
+                DoTypeOfNode(node);
+            }
+        }
 
-                        if (!string.IsNullOrEmpty(typeName))
-                        {
-                            node.Parent.ReplaceChild(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
-                        }
-                    }
-                    else if (node.Operand is ObjectLiteral)
+        private void DoTypeOfNode(TypeOfNode node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // see if our operand is a ConstantWrapper
+                ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
+                if (literalOperand != null)
+                {
+                    // either number, string, boolean, or null.
+                    // the operand is a literal. Therefore we already know what the typeof
+                    // operator will return. Just short-circuit that behavior now and replace the operator
+                    // with a string literal of the proper value
+                    string typeName = null;
+                    if (literalOperand.IsStringLiteral)
                     {
-                        node.Parent.ReplaceChild(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
+                        // "string"
+                        typeName = "string";
                     }
+                    else if (literalOperand.IsNumericLiteral)
+                    {
+                        // "number"
+                        typeName = "number";
+                    }
+                    else if (literalOperand.IsBooleanLiteral)
+                    {
+                        // "boolean"
+                        typeName = "boolean";
+                    }
+                    else if (literalOperand.Value == null)
+                    {
+                        // "object"
+                        typeName = "object";
+                    }
+
+                    if (!string.IsNullOrEmpty(typeName))
+                    {
+                        node.Parent.ReplaceChild(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
+                    }
+                }
+                else if (node.Operand is ObjectLiteral)
+                {
+                    node.Parent.ReplaceChild(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
                 }
             }
         }
@@ -2101,18 +2151,23 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                DoVoidNode(node);
+            }
+        }
+
+        private void DoVoidNode(VoidNode node)
+        {
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                // see if our operand is a ConstantWrapper
+                ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
+                if (literalOperand != null)
                 {
-                    // see if our operand is a ConstantWrapper
-                    ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                    if (literalOperand != null)
-                    {
-                        // either number, string, boolean, or null.
-                        // the void operator evaluates its operand and returns undefined. Since evaluating a literal
-                        // does nothing, then it doesn't matter what the heck it is. Replace it with a zero -- a one-
-                        // character literal.
-                        node.ReplaceChild(literalOperand, new ConstantWrapper(0, PrimitiveType.Number, node.Context, m_parser));
-                    }
+                    // either number, string, boolean, or null.
+                    // the void operator evaluates its operand and returns undefined. Since evaluating a literal
+                    // does nothing, then it doesn't matter what the heck it is. Replace it with a zero -- a one-
+                    // character literal.
+                    node.ReplaceChild(literalOperand, new ConstantWrapper(0, PrimitiveType.Number, node.Context, m_parser));
                 }
             }
         }
@@ -2124,60 +2179,65 @@ namespace Microsoft.Ajax.Utilities
                 // depth-first
                 base.Visit(node);
 
-                // see if the condition is a constant
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
-                {
-                    ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
-                    if (constantCondition != null)
-                    {
-                        // TODO: (someday) we'd RATHER eliminate the statement altogether if the condition is always false,
-                        // but we'd need to make sure var'd variables and declared functions are properly handled.
-                        try
-                        {
-                            bool isTrue = constantCondition.ToBoolean();
-                            if (isTrue)
-                            {
-                                // the condition is always true; we should change it to a for(;;) statement.
-                                // less bytes than while(1)
+                DoWhileNode(node);
+            }
+        }
 
-                                // check to see if we want to combine a preceding var with a for-statement
-                                AstNode initializer = null;
-                                if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveVarIntoFor))
+        private void DoWhileNode(WhileNode node)
+        {
+            // see if the condition is a constant
+            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+            {
+                ConstantWrapper constantCondition = node.Condition as ConstantWrapper;
+                if (constantCondition != null)
+                {
+                    // TODO: (someday) we'd RATHER eliminate the statement altogether if the condition is always false,
+                    // but we'd need to make sure var'd variables and declared functions are properly handled.
+                    try
+                    {
+                        bool isTrue = constantCondition.ToBoolean();
+                        if (isTrue)
+                        {
+                            // the condition is always true; we should change it to a for(;;) statement.
+                            // less bytes than while(1)
+
+                            // check to see if we want to combine a preceding var with a for-statement
+                            AstNode initializer = null;
+                            if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveVarIntoFor))
+                            {
+                                // if the previous statement is a var, we can move it to the initializer
+                                // and save even more bytes. The parent should always be a block. If not, 
+                                // then assume there is no previous.
+                                Block parentBlock = node.Parent as Block;
+                                if (parentBlock != null)
                                 {
-                                    // if the previous statement is a var, we can move it to the initializer
-                                    // and save even more bytes. The parent should always be a block. If not, 
-                                    // then assume there is no previous.
-                                    Block parentBlock = node.Parent as Block;
-                                    if (parentBlock != null)
+                                    int whileIndex = parentBlock.StatementIndex(node);
+                                    if (whileIndex > 0)
                                     {
-                                        int whileIndex = parentBlock.StatementIndex(node);
-                                        if (whileIndex > 0)
+                                        Var previousVar = parentBlock[whileIndex - 1] as Var;
+                                        if (previousVar != null)
                                         {
-                                            Var previousVar = parentBlock[whileIndex - 1] as Var;
-                                            if (previousVar != null)
-                                            {
-                                                initializer = previousVar;
-                                                parentBlock.ReplaceChild(previousVar, null);
-                                            }
+                                            initializer = previousVar;
+                                            parentBlock.ReplaceChild(previousVar, null);
                                         }
                                     }
                                 }
+                            }
 
-                                // create the for using our body and replace ourselves with it
-                                ForNode forNode = new ForNode(node.Context, m_parser, initializer, null, null, node.Body);
-                                node.Parent.ReplaceChild(node, forNode);
-                            }
-                            else if (constantCondition.IsNotOneOrPositiveZero)
-                            {
-                                // the condition is always false, so we can replace the condition
-                                // with a zero -- only one byte
-                                node.ReplaceChild(node.Condition, new ConstantWrapper(0, PrimitiveType.Number, null, m_parser));
-                            }
+                            // create the for using our body and replace ourselves with it
+                            ForNode forNode = new ForNode(node.Context, m_parser, initializer, null, null, node.Body);
+                            node.Parent.ReplaceChild(node, forNode);
                         }
-                        catch (InvalidCastException)
+                        else if (constantCondition.IsNotOneOrPositiveZero)
                         {
-                            // ignore any invalid cast exceptions
+                            // the condition is always false, so we can replace the condition
+                            // with a zero -- only one byte
+                            node.ReplaceChild(node.Condition, new ConstantWrapper(0, PrimitiveType.Number, null, m_parser));
                         }
+                    }
+                    catch (InvalidCastException)
+                    {
+                        // ignore any invalid cast exceptions
                     }
                 }
             }

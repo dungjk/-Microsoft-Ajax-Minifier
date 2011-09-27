@@ -293,6 +293,12 @@ namespace Microsoft.Ajax.Utilities
                 scope.ReserveFields();
             }
 
+            // do the actual work now that we've recursed
+            DoReserveFields();
+        }
+
+        private void DoReserveFields()
+        {
             // then reserve all our fields that need reserving
             // check for unused local fields or arguments
             foreach (JSVariableField variableField in m_nameTable.Values)
