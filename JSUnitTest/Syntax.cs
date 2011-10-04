@@ -18,16 +18,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
 {
-  /// <summary>
-  /// Summary description for Syntax
-  /// </summary>
-  [TestClass]
-  public class Syntax
-  {
-    [TestMethod]
-    public void NestedBlocks()
+    /// <summary>
+    /// Summary description for Syntax
+    /// </summary>
+    [TestClass]
+    public class Syntax
     {
-      TestHelper.Instance.RunTest();
+        [TestMethod]
+        public void NestedBlocks()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void BOM()
+        {
+            TestHelper.Instance.RunTest("-term");
+        }
     }
-  }
 }

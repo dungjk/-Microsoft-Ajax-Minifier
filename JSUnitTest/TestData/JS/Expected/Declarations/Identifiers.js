@@ -1,1 +1,1 @@
-for(var \while=10,\for=function(){},i=0;i<10;++i)\for(\while);while(\while<200)\while+=90
+for(var p\u200c\u200doodoo=42,\while=10,\for=function(){},i=0;i<10;++i)\for(\while);while(\while<200)\while+=90

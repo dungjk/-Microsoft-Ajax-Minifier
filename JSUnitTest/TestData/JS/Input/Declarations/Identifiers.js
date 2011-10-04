@@ -1,3 +1,5 @@
+// the ZWNJ and ZWJ characters are valid identifier parts
+var p\u200c\u200doodoo = 42;
 
 
 var \while = 10; // escaping the identifier seems to make it an ident token and not a statement token

@@ -513,34 +513,45 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case '\\':
-                        m_currentPos--;
-                        if (IsIdentifierStartChar(ref c))
+                        // try decoding a unicode escape sequence. We read the backslash and
+                        // now the "current" character is the "u"
+                        if (PeekUnicodeEscape(m_currentPos, ref c))
                         {
-                            m_currentPos++;
-                            ScanIdentifier();
-                            token = JSToken.Identifier;
-                            break;
-                        }
+                            // advance past the escape characters
+                            m_currentPos += 5;
 
-                        m_currentPos++; // move on
-                        c = GetChar(m_currentPos);
-                        if ('a' <= c && c <= 'z')
-                        {
-                            JSKeyword keyword = m_keywords[c - 'a'];
-                            if (null != keyword)
+                            // valid unicode escape sequence
+                            if (IsValidIdentifierStart(c))
                             {
-                                m_currentToken.StartPosition++;
-                                token = ScanKeyword(keyword);
-                                m_currentToken.StartPosition--;
-                                if (token != JSToken.Identifier)
-                                {
-                                    token = JSToken.Identifier;
-                                    break;
-                                }
+                                // use the unescaped character as the first character of the
+                                // decoded identifier, and current character is now the last position
+                                // on the builder
+                                m_identifier.Append(c);
+                                m_idLastPosOnBuilder = m_currentPos;
+
+                                // scan the rest of the identifier
+                                ScanIdentifier();
+
+                                // because it STARTS with an escaped character it cannot be a keyword
+                                token = JSToken.Identifier;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // not a valid unicode escape sequence
+                            // see if the next character is a valid identifier character
+                            if (IsValidIdentifierStart(GetChar(m_currentPos)))
+                            {
+                                // we're going to just assume this is an escaped identifier character
+                                // because some older browsers allow things like \foo ("foo") and 
+                                // \while to be an identifer "while" and not the reserved word
+                                ScanIdentifier();
+                                token = JSToken.Identifier;
+                                break;
                             }
                         }
 
-                        m_currentPos = m_currentToken.StartPosition + 1;
                         HandleError(JSError.IllegalChar);
                         break;
 
@@ -2106,7 +2117,9 @@ namespace Microsoft.Ajax.Utilities
                 case (char)0x0C:
                 case (char)0x20:
                 case (char)0xA0:
+                case (char)0xfeff: // BOM - byte order mark
                     return true;
+
                 default:
                     return (c < 128) ? false : char.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
             }
@@ -2336,7 +2349,9 @@ namespace Microsoft.Ajax.Utilities
                 || ('A' <= letter && letter <= 'Z')
                 || ('0' <= letter && letter <= '9')
                 || letter == '_'
-                || letter == '$')
+                || letter == '$'
+                || letter == 0x200c     // ZWNJ - zero-width non-joiner
+                || letter == 0x200d)    // ZWJ - zero-width joiner
             {
                 return true;
             }
@@ -2386,6 +2401,39 @@ namespace Microsoft.Ajax.Utilities
         internal bool IsIdentifierPartChar(char c)
         {
             return IsIdentifierStartChar(ref c) || IsValidIdentifierPart(c);
+        }
+
+        private bool PeekUnicodeEscape(int index, ref char ch)
+        {
+            bool isEscapeChar = false;
+
+            // call this only if we had just read a backslash and the pointer is
+            // now at the next character, presumably the 'u'
+            if ('u' == GetChar(index))
+            {
+                char h1 = GetChar(index + 1);
+                if (IsHexDigit(h1))
+                {
+                    char h2 = GetChar(index + 2);
+                    if (IsHexDigit(h2))
+                    {
+                        char h3 = GetChar(index + 3);
+                        if (IsHexDigit(h3))
+                        {
+                            char h4 = GetChar(index + 4);
+                            if (IsHexDigit(h4))
+                            {
+                                // this IS a unicode escape, so compute the new character value
+                                // and adjust the current position
+                                isEscapeChar = true;
+                                ch = (char)(GetHexValue(h1) << 12 | GetHexValue(h2) << 8 | GetHexValue(h3) << 4 | GetHexValue(h4));
+                            }
+                        }
+                    }
+                }
+            }
+
+            return isEscapeChar;
         }
 
         // pulling unescaped characters off the input stream
