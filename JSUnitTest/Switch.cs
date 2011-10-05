@@ -81,7 +81,7 @@ namespace JSUnitTest
     [TestMethod]
     public void PrettyPrint_P()
     {
-      TestHelper.Instance.RunTest("-pretty");
+      TestHelper.Instance.RunTest("-pretty -clobber");
     }
 
     [TestMethod]
