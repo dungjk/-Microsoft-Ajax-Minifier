@@ -21,8 +21,9 @@ namespace Microsoft.Ajax.Utilities
     public abstract class UnaryOperator : Expression
     {
         public AstNode Operand { get; private set; }
-
         public JSToken OperatorToken { get; private set; }
+        public bool OperatorInConditionalCompilationComment { get; set; }
+        public bool ConditionalCommentContainsOn { get; set; }
 
         protected UnaryOperator(Context context, JSParser parser, AstNode operand, JSToken operatorToken)
             : base(context, parser)
@@ -30,6 +31,15 @@ namespace Microsoft.Ajax.Utilities
             Operand = operand;
             OperatorToken = operatorToken;
             if (Operand != null) Operand.Parent = this;
+        }
+
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                // assume unary precedence
+                return OperatorPrecedence.Unary;
+            }
         }
 
         internal override string GetFunctionGuess(AstNode target)

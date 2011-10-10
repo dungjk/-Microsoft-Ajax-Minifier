@@ -50,33 +50,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            string operandString = Operand.ToCode(format);
-            if (NeedsParentheses)
-            {
-                operandString = "(" + operandString + ")";
-            }
-
-            switch (Operator)
-            {
-                case PostOrPrefix.PostfixDecrement:
-                    return operandString + "--";
-
-                case PostOrPrefix.PostfixIncrement:
-                    return operandString + "++";
-
-                case PostOrPrefix.PrefixDecrement:
-                    return "--" + operandString;
-
-                case PostOrPrefix.PrefixIncrement:
-                    return "++" + operandString;
-
-                default:
-                    throw new UnexpectedTokenException();
-            }
-        }
-
         public override AstNode LeftHandSide
         {
             get

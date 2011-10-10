@@ -30,10 +30,5 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            return "@else";
-        }
     }
 }

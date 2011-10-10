@@ -21,7 +21,7 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class SwitchCase : AstNode
     {
-        private AstNode m_caseValue;
+        public AstNode CaseValue { get; private set; }
 
         private Block m_statements;
         public Block Statements
@@ -31,13 +31,13 @@ namespace Microsoft.Ajax.Utilities
 
         internal bool IsDefault
         {
-            get { return (m_caseValue == null); }
+            get { return (CaseValue == null); }
         }
 
         public SwitchCase(Context context, JSParser parser, AstNode caseValue, Block statements)
             : base(context, parser)
         {
-            m_caseValue = caseValue;
+            CaseValue = caseValue;
             if (caseValue != null)
             {
                 caseValue.Parent = this;
@@ -75,22 +75,22 @@ namespace Microsoft.Ajax.Utilities
 
         internal override string GetFunctionGuess(AstNode target)
         {
-            return m_caseValue.GetFunctionGuess(target);
+            return CaseValue.GetFunctionGuess(target);
         }
 
         public override IEnumerable<AstNode> Children
         {
             get
             {
-                return EnumerateNonNullNodes(m_caseValue, m_statements);
+                return EnumerateNonNullNodes(CaseValue, m_statements);
             }
         }
 
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
-            if (m_caseValue == oldNode)
+            if (CaseValue == oldNode)
             {
-                m_caseValue = newNode;
+                CaseValue = newNode;
                 if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
@@ -123,65 +123,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 // no statements doesn't require a separator.
                 // otherwise only if statements require it
-                if (m_statements == null)
+                if (m_statements == null || m_statements.Count == 0)
                 {
                     return false;
                 }
-                Block block = m_statements as Block;
-                if (block != null)
-                {
-                    return (
-                      block.Count == 0
-                      ? false
-                      : block[block.Count - 1].RequiresSeparator
-                      );
-                }
-                else
-                {
-                    // not a block -- require a separator
-                    return true;
-                }
+
+                return m_statements[m_statements.Count - 1].RequiresSeparator;
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            // the label should be indented
-            Parser.Settings.Indent();
-            // start a new line
-            Parser.Settings.NewLine(sb);
-            if (m_caseValue != null)
-            {
-                sb.Append("case");
-
-                string caseValue = m_caseValue.ToCode();
-                if (JSScanner.StartsWithIdentifierPart(caseValue))
-                {
-                    sb.Append(' ');
-                }
-                sb.Append(caseValue);
-            }
-            else
-            {
-                sb.Append("default");
-            }
-            sb.Append(':');
-
-            // in pretty-print mode, we indent the statements under the label, too
-            Parser.Settings.Indent();
-
-            // output the statements
-            if (m_statements != null && m_statements.Count > 0)
-            {
-                sb.Append(m_statements.ToCode(ToCodeFormat.NoBraces));
-            }
-
-            // if we are pretty-printing, we need to unindent twice:
-            // once for the label, and again for the statements
-            Parser.Settings.Unindent();
-            Parser.Settings.Unindent();
-            return sb.ToString();
         }
     }
 }

@@ -86,46 +86,8 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // requires a separator if the body does
-                return Body == null ? true : Body.RequiresSeparator;
+                return Body == null || Body.Count == 0 ? false : Body.RequiresSeparator;
             }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return Body == null ? true : Body.EndsWithEmptyBlock;
-            }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("for(");
-
-            string var = Variable.ToCode();
-            sb.Append(var);
-            if (JSScanner.EndsWithIdentifierPart(var))
-            {
-                sb.Append(' ');
-            }
-            sb.Append("in");
-
-            string collection = Collection.ToCode();
-            if (JSScanner.StartsWithIdentifierPart(collection))
-            {
-                sb.Append(' ');
-            }
-            sb.Append(Collection.ToCode());
-            sb.Append(')');
-
-            string bodyString = (
-              Body == null
-              ? string.Empty
-              : Body.ToCode()
-              );
-            sb.Append(bodyString);
-            return sb.ToString();
         }
     }
 }

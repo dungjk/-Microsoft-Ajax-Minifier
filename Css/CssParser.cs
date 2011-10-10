@@ -41,6 +41,7 @@ namespace Microsoft.Ajax.Utilities
         private bool m_mightNeedSpace;
         private bool m_expressionContainsErrors;
         private bool m_skippedSpace;
+        private int m_lineLength;
 
         // this is used to make sure we don't output two newlines in a row.
         // start it as true so we don't start off with a blank line
@@ -951,6 +952,12 @@ namespace Microsoft.Ajax.Utilities
                 {
                     try
                     {
+                        // check the line length before each new declaration -- if we're past the threshold, start a new line
+                        if (m_lineLength >= Settings.LineBreakThreshold)
+                        {
+                            AddNewLine();
+                        }
+
                         Parsed parsedDecl = ParseDeclaration();
 
                         // if we are allowed to have margin at-keywords in this block, and
@@ -1035,6 +1042,10 @@ namespace Microsoft.Ajax.Utilities
                                 if (comments.Length > 0)
                                 {
                                     Append(comments);
+
+                                    // and comments always end on a new line
+                                    m_outputNewLine = true;
+                                    m_lineLength = 0;
                                 }
                             }
                         }
@@ -1215,6 +1226,12 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseRule()
         {
+            // check the line length before each new declaration -- if we're past the threshold, start a new line
+            if (m_lineLength >= Settings.LineBreakThreshold)
+            {
+                AddNewLine();
+            }
+
             Parsed parsed = ParseSelector();
             if (parsed == Parsed.True)
             {
@@ -1251,10 +1268,17 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         Append(',');
-                        if (Settings.OutputMode == OutputMode.MultipleLines)
+
+                        // check the line length before each new declaration -- if we're past the threshold, start a new line
+                        if (m_lineLength >= Settings.LineBreakThreshold)
+                        {
+                            AddNewLine();
+                        }
+                        else if (Settings.OutputMode == OutputMode.MultipleLines)
                         {
                             Append(' ');
                         }
+
                         SkipSpace();
 
                         if (ParseSelector() != Parsed.True)
@@ -2376,12 +2400,11 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // check for important comment
                     string commentText = CurrentTokenText;
-                    bool endsWithNewLine;
                     bool importantComment = commentText.StartsWith("/*!", StringComparison.Ordinal);
                     if (importantComment)
                     {
                         // get rid of the exclamation mark in some situations
-                        commentText = NormalizeImportantComment(commentText, out endsWithNewLine);
+                        commentText = NormalizeImportantComment(commentText);
                     }
 
                     // if the comment mode is none, don't ever output it.
@@ -2441,9 +2464,11 @@ namespace Microsoft.Ajax.Utilities
                         sb.Append(commentText);
                     }
                 }
+
                 // next token
                 m_currentToken = m_scanner.NextToken();
             }
+
             // return any comments we found in the mean time
             return (sb == null ? string.Empty : sb.ToString());
         }
@@ -2686,19 +2711,15 @@ namespace Microsoft.Ajax.Utilities
         private bool AppendCurrent()
         {
             return Append(
-                m_parsed, 
                 CurrentTokenText, 
                 CurrentTokenType);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
-        private bool Append(StringBuilder sb, object obj, TokenType tokenType)
+        private bool Append(object obj, TokenType tokenType)
         {
             bool outputText = false;
             bool textEndsInEscapeSequence = false;
-
-            // assume we are outputting something OTHER than a newline
-            bool endsWithNewLine = false;
 
             // if the no-output flag is true, don't output anything
             // or process value replacement comments
@@ -2830,6 +2851,7 @@ namespace Microsoft.Ajax.Utilities
                 // if it's not a comment, we're going to output it.
                 // if it is a comment, we're not going to SAY we've output anything,
                 // even if we end up outputting the comment
+                var isImportant = false;
                 outputText = (tokenType != TokenType.Comment);
                 if (!outputText)
                 {
@@ -2848,7 +2870,7 @@ namespace Microsoft.Ajax.Utilities
 
                         // this is an important comment that we always want to output
                         // (after we get rid of the exclamation point in some situations)
-                        text = NormalizeImportantComment(text, out endsWithNewLine);
+                        text = NormalizeImportantComment(text);
 
                         // find the index of the initial / character
                         var indexSlash = text.IndexOf('/');
@@ -2910,6 +2932,9 @@ namespace Microsoft.Ajax.Utilities
                             return false;
                         }
                     }
+
+                    // see if it's still important
+                    isImportant = text.StartsWith("/*!", StringComparison.Ordinal);
                 }
                 else if (m_parsingColorValue
                     && tokenType == TokenType.Identifier
@@ -2973,11 +2998,60 @@ namespace Microsoft.Ajax.Utilities
                 if (m_mightNeedSpace
                     && (CssScanner.IsH(text[0]) || text[0] == ' '))
                 {
-                    sb.Append(' ');
+                    if (m_lineLength >= Settings.LineBreakThreshold)
+                    {
+                        // we want to add whitespace, but we're over the line-length threshold, so
+                        // output a line break instead
+                        AddNewLine();
+                    }
+                    else
+                    {
+                        // output a space on the same line
+                        m_parsed.Append(' ');
+                        ++m_lineLength;
+                    }
                 }
 
-                sb.Append(text);
-                m_outputNewLine = endsWithNewLine;
+                if (tokenType == TokenType.Comment && isImportant)
+                {
+                    // don't bother resetting line length after this because 
+                    // we're going to follow the comment with another blank line
+                    // and we'll reset the length at that time
+                    AddNewLine();
+                }
+
+                if (text == " ")
+                {
+                    // we are asking to output a space character. At this point, if we are
+                    // over the line-length threshold, we can substitute a line break for a space.
+                    if (m_lineLength >= Settings.LineBreakThreshold)
+                    {
+                        AddNewLine();
+                    }
+                    else
+                    {
+                        // just output a space, and don't change the newline flag
+                        m_parsed.Append(' ');
+                        ++m_lineLength;
+                    }
+                }
+                else
+                {
+                    // normal text
+                    m_parsed.Append(text);
+                    m_outputNewLine = false;
+
+                    if (tokenType == TokenType.Comment && isImportant)
+                    {
+                        AddNewLine();
+                        m_lineLength = 0;
+                        m_outputNewLine = true;
+                    }
+                    else
+                    {
+                        m_lineLength += text.Length;
+                    }
+                }
 
                 // if the text we just output ENDS in an escape, we might need a space later
                 m_mightNeedSpace = textEndsInEscapeSequence;
@@ -3003,7 +3077,7 @@ namespace Microsoft.Ajax.Utilities
 
         private bool Append(object obj)
         {
-            return Append(m_parsed, obj, TokenType.None);
+            return Append(obj, TokenType.None);
         }
 
         private void NewLine()
@@ -3011,14 +3085,39 @@ namespace Microsoft.Ajax.Utilities
             // if we've output something other than a newline, output one now
             if (Settings.OutputMode == OutputMode.MultipleLines && !m_outputNewLine)
             {
-                AddNewLine(m_parsed);
+                AddNewLine();
+                m_lineLength = 0;
                 m_outputNewLine = true;
             }
         }
 
-        private void AddNewLine(StringBuilder sb)
+        /// <summary>
+        /// Always add new line to the stream
+        /// </summary>
+        /// <param name="sb"></param>
+        private void AddNewLine()
         {
-            Settings.NewLine(sb);
+            if (!m_outputNewLine)
+            {
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    m_parsed.AppendLine();
+
+                    var indentSpaces = Settings.TabSpaces;
+                    m_lineLength = indentSpaces.Length;
+                    if (m_lineLength > 0)
+                    {
+                        m_parsed.Append(indentSpaces);
+                    }
+                }
+                else
+                {
+                    m_parsed.Append('\n');
+                    m_lineLength = 0;
+                }
+
+                m_outputNewLine = true;
+            }
         }
 
         private void Indent()
@@ -3244,11 +3343,8 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        string NormalizeImportantComment(string source, out bool endsWithNewLine)
+        string NormalizeImportantComment(string source)
         {
-            // by default, we don't end in a newline
-            endsWithNewLine = false;
-
             // if this important comment does not contain any text, assume it's for a comment hack
             // and return a normalized string without the exclamation mark.
             if (CommentContainsText(source))
@@ -3263,30 +3359,6 @@ namespace Microsoft.Ajax.Utilities
                     // (and don't put any line-feeds around it)
                     source = "/*" + source.Substring(3);
                 }
-                else
-                {
-                    // contains text -- assume we want it to stay that way. 
-                    if (Settings.OutputMode == OutputMode.MultipleLines)
-                    {
-                        // Important comments should start with a newline (and the appropriate indention)
-                        var sb = new StringBuilder();
-                        AddNewLine(sb);
-                        sb.Append(source);
-
-                        // and in multiline mode they should also end with one
-                        AddNewLine(sb);
-                        endsWithNewLine = true;
-
-                        source = sb.ToString();
-                    }
-                    else
-                    {
-                        // important comments should start with a newline, but in single-line mode
-                        // we won't end with one. And only use \r to save a character.
-                        // And because we're in single-line mode, we don't care about indenting.
-                        source = '\r' + source;
-                    }
-                }
             }
             else
             {
@@ -3298,7 +3370,7 @@ namespace Microsoft.Ajax.Utilities
             // if this is single-line mode, make sure CRLF-pairs are all converted to just CR
             if (Settings.OutputMode == OutputMode.SingleLine)
             {
-                source = source.Replace("\r\n", "\r");
+                source = source.Replace("\r\n", "\n");
             }
             return source;
         }

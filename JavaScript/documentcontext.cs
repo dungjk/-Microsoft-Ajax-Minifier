@@ -27,6 +27,14 @@ namespace Microsoft.Ajax.Utilities
 
         public string Source { get; private set; }
         public string FileContext { get; set; }
+        public bool IsGenerated { get; private set; }
+
+        public DocumentContext(JSParser parser)
+        {
+            m_parser = parser;
+            IsGenerated = true;
+            Source = "[generated code]";
+        }
 
         public DocumentContext(JSParser parser, string source)
         {

@@ -89,26 +89,5 @@ namespace Microsoft.Ajax.Utilities
             }
             return false;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            // switch and value
-            sb.Append("switch(");
-            sb.Append(Expression.ToCode());
-            sb.Append(')');
-
-            // opening brace
-            Parser.Settings.NewLine(sb);
-            sb.Append('{');
-
-            // cases
-            sb.Append(Cases.ToCode(ToCodeFormat.Semicolons));
-
-            // closing brace
-            Parser.Settings.NewLine(sb);
-            sb.Append('}');
-            return sb.ToString();
-        }
     }
 }

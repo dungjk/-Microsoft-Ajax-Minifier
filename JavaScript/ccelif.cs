@@ -58,10 +58,5 @@ namespace Microsoft.Ajax.Utilities
             }
             return false;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            return "@elif(" + Condition.ToCode() + ")";
-        }
     }
 }

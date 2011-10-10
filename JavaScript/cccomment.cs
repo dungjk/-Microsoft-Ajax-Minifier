@@ -75,44 +75,5 @@ namespace Microsoft.Ajax.Utilities
             }
             return false;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // if there aren't any statements, we don't need this comment.
-            // and if there is only one statement and it's a cc_on, we won't need
-            // the comment if we've already output a cc_on.
-            if (Statements.Count > 1
-                || (Statements.Count == 1 && (!(Statements[0] is ConditionalCompilationOn) || !Parser.OutputCCOn
-                || !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))))
-            {
-
-                // get the statements code - if it's empty, nothing else to do
-                var statements = Statements.ToCode(ToCodeFormat.NoBraces);
-                if (!string.IsNullOrEmpty(statements))
-                {
-                    sb.Append("/*");
-
-                    // if it the statements don't already start with an @-sign, then
-                    // we'll need to add one now ourselves
-                    if (!statements.StartsWith("@", StringComparison.Ordinal))
-                    {
-                        sb.Append('@');
-
-                        // and if the first character could be an identifier start,
-                        // we'll need to add a space, too
-                        if (JSScanner.IsValidIdentifierStart(statements[0]))
-                        {
-                            sb.Append(' ');
-                        }
-                    }
-
-                    sb.Append(statements);
-                    sb.Append("@*/");
-                }
-            }
-            return sb.ToString();
-        }
     }
 }

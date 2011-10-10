@@ -29,6 +29,7 @@ namespace Microsoft.Ajax.Utilities
         public Context CatchVarContext { get; private set; }
 
         private JSVariableField m_catchVariable;
+        public JSVariableField CatchVariable { get { return m_catchVariable; } }
 
         public TryNode(Context context, JSParser parser, AstNode tryBlock, string catchVarName, Context catchVarContext, AstNode catchBlock, AstNode finallyBlock)
             : base(context, parser)
@@ -95,71 +96,6 @@ namespace Microsoft.Ajax.Utilities
                 // try requires no separator
                 return false;
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // passing a "T" format means nested try's don't actually nest -- they 
-            // just add the catch clauses to the end
-            if (format != ToCodeFormat.NestedTry)
-            {
-                sb.Append("try");
-                if (TryBlock == null)
-                {
-                    // empty body
-                    sb.Append("{}");
-                }
-                else
-                {
-                    sb.Append(TryBlock.ToCode(ToCodeFormat.NestedTry));
-                }
-            }
-            else
-            {
-                sb.Append(TryBlock.ToCode(ToCodeFormat.NestedTry));
-            }
-
-            // handle the catch clause (if any)
-            // catch should always have braces around it
-            string catchString = (
-                CatchBlock == null
-                ? string.Empty
-                : CatchBlock.Count == 0
-                    ? "{}"
-                    : CatchBlock.ToCode(ToCodeFormat.AlwaysBraces)
-                );
-            if (catchString.Length > 0)
-            {
-                Parser.Settings.NewLine(sb);
-                sb.Append("catch(");
-                if (m_catchVariable != null)
-                {
-                    sb.Append(m_catchVariable.ToString());
-                }
-                else if (CatchVarName != null)
-                {
-                    sb.Append(CatchVarName);
-                }
-                sb.Append(')');
-                sb.Append(catchString);
-            }
-
-            // handle the finally, if any
-            // finally should always have braces around it
-            string finallyString = (
-              FinallyBlock == null
-              ? string.Empty
-              : FinallyBlock.ToCode(ToCodeFormat.AlwaysBraces)
-              );
-            if (finallyString.Length > 0)
-            {
-                Parser.Settings.NewLine(sb);
-                sb.Append("finally");
-                sb.Append(finallyString);
-            }
-            return sb.ToString();
         }
     }
 }

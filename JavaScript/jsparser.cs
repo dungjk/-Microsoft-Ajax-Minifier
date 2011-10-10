@@ -53,9 +53,6 @@ namespace Microsoft.Ajax.Utilities
         enum BlockType { Block, Loop, Switch, Finally }
         private int m_finallyEscaped;
 
-        // whether or not we have output a conditional-compilation statement yet
-        internal bool OutputCCOn { get; set; }
-
         private class LabelInfo
         {
             public readonly int BlockIndex;
@@ -3074,11 +3071,11 @@ namespace Microsoft.Ajax.Utilities
                     if (JSScanner.IsProcessableOperator(m_currentToken.Token) && inToken != m_currentToken.Token)
                     {
 
-                        OpPrec prec = JSScanner.GetOperatorPrecedence(m_currentToken.Token);
+                        OperatorPrecedence prec = JSScanner.GetOperatorPrecedence(m_currentToken.Token);
                         bool rightAssoc = JSScanner.IsRightAssociativeOperator(m_currentToken.Token);
                         // the current operator has lower precedence than the operator at the top of the stack
                         // or it has the same precedence and it is left associative (that is, no 'assign op' or 'conditional')
-                        OpPrec stackPrec = JSScanner.GetOperatorPrecedence(opsStack.Peek());
+                        OperatorPrecedence stackPrec = JSScanner.GetOperatorPrecedence(opsStack.Peek());
                         while (prec < stackPrec || prec == stackPrec && !rightAssoc)
                         {
                             AstNode operand2 = termStack.Pop();

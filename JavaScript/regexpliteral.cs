@@ -46,15 +46,5 @@ namespace Microsoft.Ajax.Utilities
                 && string.CompareOrdinal(Pattern, otherRegExp.Pattern) == 0
                 && string.CompareOrdinal(PatternSwitches, otherRegExp.PatternSwitches) == 0;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            return string.Format(
-              CultureInfo.InvariantCulture,
-              "/{0}/{1}",
-              Pattern,
-              (PatternSwitches == null ? string.Empty : PatternSwitches)
-              );
-        }
     }
 }

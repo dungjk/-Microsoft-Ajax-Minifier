@@ -337,6 +337,9 @@ Valid OPTS are zero or more of:
   -enc:(in|out) ENC &gt; input or output file text encoding.
   -help &gt; display this usage message.
   -ignore:ERRCODE[,ERRCODE]* &gt; ignore one or more possible errors
+  -line[:N] &gt; set the line-break threshold when in single-line mode. After
+        reaching that line length, the line will break. Default is 
+        int.MaxValue - 1000.
   -pretty[:N] &gt; causes output to be on multiple lines, with N spaces per tab
         stop. Default N is 4.
   -res[:IDENT] RFILE &gt; use a resource file to specify localization strings

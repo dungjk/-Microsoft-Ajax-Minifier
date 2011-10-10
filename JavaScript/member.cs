@@ -36,6 +36,14 @@ namespace Microsoft.Ajax.Utilities
             if (Root != null) Root.Parent = this;
         }
 
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                return OperatorPrecedence.FieldAccess;
+            }
+        }
+
         public override void Accept(IVisitor visitor)
         {
             if (visitor != null)
@@ -106,57 +114,6 @@ namespace Microsoft.Ajax.Utilities
                 // the root object is on the left
                 return Root.LeftHandSide;
             }
-        }
-
-        //code in parser relies on the member string (x.y.z...) being returned from here 
-        public override string ToCode(ToCodeFormat format)
-        {
-            // pass P to the root object so it knows we might want parentheses
-            string rootCrunched = Root.ToCode();
-
-            // these tests are for items that DON'T need parens, and then we NOT the results.
-            // non-numeric constant wrappers don't need parens (boolean, string, null).
-            // numeric constant wrappers need parens IF there is no decimal point.
-            // function expressions will take care of their own parens.
-            bool needParen = !(
-              (Root is Lookup)
-              || (Root is Member)
-              || (Root is CallNode)
-              || (Root is ThisLiteral)
-              || (Root is ArrayLiteral)
-              || (Root is ObjectLiteral)
-              || (Root is RegExpLiteral)
-              || (Root is FunctionObject)
-              || (Root is ConstantWrapper && !((ConstantWrapper)Root).IsNumericLiteral)
-              || (Root is ConstantWrapper && ((ConstantWrapper)Root).IsNumericLiteral && rootCrunched.Contains("."))
-              );
-
-            // if the root is a constructor with no arguments, we'll need to wrap it in parens so the 
-            // member-dot comes out with the right precedence.
-            // (don't bother checking if we already are already going to use parens)
-            if (!needParen)
-            {
-                CallNode callNode = Root as CallNode;
-                if (callNode != null && callNode.IsConstructor && (callNode.Arguments == null || callNode.Arguments.Count == 0))
-                {
-                    needParen = true;
-                }
-            }
-
-            StringBuilder sb = new StringBuilder();
-            if (needParen)
-            {
-                sb.Append('(');
-                sb.Append(rootCrunched);
-                sb.Append(')');
-            }
-            else
-            {
-                sb.Append(rootCrunched);
-            }
-            sb.Append('.');
-            sb.Append(Name);
-            return sb.ToString();
         }
     }
 }

@@ -30,20 +30,5 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            var code = string.Empty;
-            
-            // if we haven't output a cc_on yet, or if we haven't allowed redundants to be removed...
-            if (!Parser.OutputCCOn 
-                || !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
-            {
-                Parser.OutputCCOn = true;
-                code = "@cc_on";
-            }
-
-            return code;
-        }
     }
 }

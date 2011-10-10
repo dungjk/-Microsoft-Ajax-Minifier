@@ -15,23 +15,12 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public enum ToCodeFormat
-    {
-        Normal,
-        AlwaysBraces,
-        Commas,
-        NoBraces,
-        NoFunction,
-        Parentheses,
-        Semicolons,
-        NestedTry,
-        Preprocessor,
-        ElseIf
-    }
-
     internal enum EncloseBlockType
     {
         IfWithoutElse,
@@ -66,8 +55,15 @@ namespace Microsoft.Ajax.Utilities
         public virtual bool IsExpression { get { return false; } }
         public bool IsDirectivePrologue { get; set; }
 
-        public abstract string ToCode(ToCodeFormat format);
-        public virtual string ToCode() { return ToCode(ToCodeFormat.Normal); }
+        public virtual string ToCode() 
+        {
+            using (var writer = new StringWriter(CultureInfo.InvariantCulture))
+            {
+                var outputVisitor = new OutputVisitor(writer, Parser.Settings);
+                this.Accept(outputVisitor);
+                return writer.ToString();
+            }
+        }
 
         protected Block ForceToBlock(AstNode astNode)
         {
@@ -103,12 +99,17 @@ namespace Microsoft.Ajax.Utilities
             get { return true; }
         }
 
-        internal virtual bool EndsWithEmptyBlock
+        internal virtual bool IsDebuggerStatement
         {
             get { return false; }
         }
 
-        internal virtual bool IsDebuggerStatement
+        public virtual OperatorPrecedence Precedence
+        {
+            get { return OperatorPrecedence.None; }
+        }
+
+        public virtual bool HideFromOutput
         {
             get { return false; }
         }

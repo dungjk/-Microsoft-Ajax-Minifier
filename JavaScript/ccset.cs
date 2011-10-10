@@ -21,17 +21,17 @@ namespace Microsoft.Ajax.Utilities
 {
     public class ConditionalCompilationSet : ConditionalCompilationStatement
     {
-        private string m_variableName;
-        private AstNode m_value;
+        public string VariableName { get; private set; }
+        public AstNode Value { get; private set; }
 
         public ConditionalCompilationSet(Context context, JSParser parser, string variableName, AstNode value)
             : base(context, parser)
         {
-            m_variableName = variableName;
-            m_value = value;
-            if (m_value != null)
+            VariableName = variableName;
+            Value = value;
+            if (Value != null)
             {
-                m_value.Parent = this;
+                Value.Parent = this;
             }
         }
 
@@ -39,7 +39,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(m_value);
+                return EnumerateNonNullNodes(Value);
             }
         }
 
@@ -53,35 +53,13 @@ namespace Microsoft.Ajax.Utilities
 
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
-            if (m_value == oldNode)
+            if (Value == oldNode)
             {
-                m_value = newNode;
+                Value = newNode;
                 if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             return false;
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("@set@");
-            sb.Append(m_variableName);
-            sb.Append('=');
-
-            // if the value is an operator of any kind, we need to wrap it in parentheses
-            // so it gets properly parsed
-            if (m_value is BinaryOperator || m_value is UnaryOperator)
-            {
-                sb.Append('(');
-                sb.Append(m_value.ToCode());
-                sb.Append(')');
-            }
-            else if (m_value != null)
-            {
-                sb.Append(m_value.ToCode());
-            }
-            return sb.ToString();
         }
     }
 }

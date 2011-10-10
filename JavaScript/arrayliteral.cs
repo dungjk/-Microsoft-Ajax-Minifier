@@ -22,32 +22,20 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class ArrayLiteral : Expression
     {
-        private AstNodeList m_elements;
+        public AstNodeList Elements { get; private set; }
 
         public ArrayLiteral(Context context, JSParser parser, AstNodeList elements)
             : base(context, parser)
         {
-            m_elements = elements;
-            if (m_elements != null) { m_elements.Parent = this; }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append('[');
-            if (m_elements != null)
-            {
-                sb.Append(m_elements.ToCode(ToCodeFormat.Commas));
-            }
-            sb.Append(']');
-            return sb.ToString();
+            Elements = elements;
+            if (Elements != null) { Elements.Parent = this; }
         }
 
         public override IEnumerable<AstNode> Children
         {
             get
             {
-                return EnumerateNonNullNodes(m_elements);
+                return EnumerateNonNullNodes(Elements);
             }
         }
 
@@ -62,12 +50,12 @@ namespace Microsoft.Ajax.Utilities
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
             // if the old node isn't our element list, ignore the cal
-            if (oldNode == m_elements)
+            if (oldNode == Elements)
             {
                 if (newNode == null)
                 {
                     // we want to remove the list altogether
-                    m_elements = null;
+                    Elements = null;
                     return true;
                 }
                 else
@@ -77,7 +65,7 @@ namespace Microsoft.Ajax.Utilities
                     if (newList != null)
                     {
                         // replace it
-                        m_elements = newList;
+                        Elements = newList;
                         newList.Parent = this;
                         return true;
                     }
@@ -89,9 +77,9 @@ namespace Microsoft.Ajax.Utilities
         internal override string GetFunctionGuess(AstNode target)
         {
             // find the index of the target item
-            for (int ndx = 0; ndx < m_elements.Count; ++ndx)
+            for (int ndx = 0; ndx < Elements.Count; ++ndx)
             {
-                if (m_elements[ndx] == target)
+                if (Elements[ndx] == target)
                 {
                     // we'll append the index to the guess for this array
                     string parentGuess = Parent.GetFunctionGuess(this);

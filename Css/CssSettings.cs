@@ -48,6 +48,7 @@ namespace Microsoft.Ajax.Utilities
                 IgnoreErrorList = this.IgnoreErrorList,
                 IndentSize = this.IndentSize,
                 KillSwitch = this.KillSwitch,
+                LineBreakThreshold = this.LineBreakThreshold,
                 MinifyExpressions = this.MinifyExpressions,
                 OutputMode = this.OutputMode,
                 PreprocessorDefineList = this.PreprocessorDefineList,

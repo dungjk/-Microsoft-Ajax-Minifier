@@ -346,6 +346,9 @@
     <Compile Include="..\JavaScript\opprec.cs">
       <Link>JavaScript\opprec.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\OutputVisitor.cs">
+      <Link>JavaScript\OutputVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\parameterdeclaration.cs">
       <Link>JavaScript\parameterdeclaration.cs</Link>
     </Compile>

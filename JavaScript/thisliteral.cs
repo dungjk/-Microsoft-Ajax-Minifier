@@ -41,10 +41,5 @@ namespace Microsoft.Ajax.Utilities
             // it will pop positive -- but it won't actually be equivalent!
             return otherThis != null;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            return "this";
-        }
     }
 }

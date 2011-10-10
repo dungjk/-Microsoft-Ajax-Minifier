@@ -62,21 +62,5 @@ namespace Microsoft.Ajax.Utilities
             }
             return false;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("return");
-            if (m_operand != null)
-            {
-                string operandText = m_operand.ToCode();
-                if (operandText.Length > 0 && JSScanner.StartsWithIdentifierPart(operandText))
-                {
-                    sb.Append(' ');
-                }
-                sb.Append(operandText);
-            }
-            return sb.ToString();
-        }
     }
 }

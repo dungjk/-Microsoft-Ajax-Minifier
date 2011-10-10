@@ -64,22 +64,14 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // requires a separator if the body does
-                return Body == null ? true : Body.RequiresSeparator;
-            }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return Body == null ? true : Body.EndsWithEmptyBlock;
+                return Body == null ? false : Body.RequiresSeparator;
             }
         }
 
         internal override bool EncloseBlock(EncloseBlockType type)
         {
             // pass the query on to the body
-            return Body == null ? false : Body.EncloseBlock(type);
+            return Body == null || Body.Count == 0 ? false : Body.EncloseBlock(type);
         }
 
         public override IEnumerable<AstNode> Children
@@ -117,43 +109,6 @@ namespace Microsoft.Ajax.Utilities
                 return true;
             }
             return false;
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("for(");
-            if (Initializer != null)
-            {
-                sb.Append(Initializer.ToCode());
-            }
-            sb.Append(';');
-            CodeSettings codeSettings = Parser.Settings;
-            if (codeSettings.OutputMode == OutputMode.MultipleLines && codeSettings.IndentSize > 0)
-            {
-                sb.Append(' ');
-            }
-            if (Condition != null)
-            {
-                sb.Append(Condition.ToCode());
-            }
-            sb.Append(';');
-            if (codeSettings.OutputMode == OutputMode.MultipleLines && codeSettings.IndentSize > 0)
-            {
-                sb.Append(' ');
-            }
-            if (Incrementer != null)
-            {
-                sb.Append(Incrementer.ToCode());
-            }
-            sb.Append(')');
-            string bodyString = (
-              Body == null
-              ? string.Empty
-              : Body.ToCode()
-              );
-            sb.Append(bodyString);
-            return sb.ToString();
         }
     }
 }

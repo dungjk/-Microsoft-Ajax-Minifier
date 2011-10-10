@@ -3,7 +3,7 @@
 var str1 = "The quick brown fox jumped over the lazy dog."; // normal crunch
 var str2 = "How now \"brown\" cow?"; // delimiters should change to single-quotes
 var str3 = 'Who\'s the boss?'; // delimiters should change to double-quotes
-var str5 = "\x01\x05\x12\x13"; // ascii less than 32 (escape to octal \ooo)
+var str5 = "\x01\x05\x12\x13"; // ascii less than 32 (escape to octal \ooo) - REVISION: don't use octal; always use hex
 
 // escape sequences. same number double and single quotes -- use double quotes as delims
 // because doubles are used as delims, escape for single-quote should be stripped

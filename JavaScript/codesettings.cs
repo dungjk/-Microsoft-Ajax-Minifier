@@ -78,6 +78,7 @@ namespace Microsoft.Ajax.Utilities
                 InlineSafeStrings = this.InlineSafeStrings,
                 KillSwitch = this.KillSwitch,
                 KnownGlobalNamesList = this.KnownGlobalNamesList,
+                LineBreakThreshold = this.LineBreakThreshold,
                 LocalRenaming = this.LocalRenaming,
                 MacSafariQuirks = this.MacSafariQuirks,
                 ManualRenamesProperties = this.ManualRenamesProperties,

@@ -37,25 +37,5 @@ namespace Microsoft.Ajax.Utilities
             return otherVoid != null
                 && Operand.IsEquivalentTo(otherVoid.Operand);
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            string operandString = Operand.ToCode(format);
-            if (NeedsParentheses)
-            {
-                // need parens
-                return "void(" + operandString + ')';
-            }
-            else if (JSScanner.StartsWithIdentifierPart(operandString))
-            {
-                // need the space
-                return "void " + operandString;
-            }
-            else
-            {
-                // no separator needed
-                return "void" + operandString;
-            }
-        }
     }
 }

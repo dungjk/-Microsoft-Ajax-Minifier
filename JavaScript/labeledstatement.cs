@@ -21,26 +21,20 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class LabeledStatement : AstNode
     {
-        private string m_label;
-        private AstNode m_statement;
-        private int m_nestCount;
-
-        public string Label
-        {
-            get { return m_label; }
-            set { m_label = value; }
-        }
+        public int NestCount { get; private set; }
+        public AstNode Statement { get; private set; }
+        public string Label { get; set; }
 
         public LabeledStatement(Context context, JSParser parser, string label, int nestCount, AstNode statement)
             : base(context, parser)
         {
-            m_label = label;
-            m_statement = statement;
-            m_nestCount = nestCount;
+            Label = label;
+            Statement = statement;
+            NestCount = nestCount;
 
-            if (m_statement != null)
+            if (Statement != null)
             {
-                m_statement.Parent = this;
+                Statement.Parent = this;
             }
         }
 
@@ -57,15 +51,7 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // requires a separator if the statement does
-                return (m_statement != null ? m_statement.RequiresSeparator : false);
-            }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return (m_statement != null ? m_statement.EndsWithEmptyBlock : false);
+                return (Statement != null ? Statement.RequiresSeparator : false);
             }
         }
 
@@ -74,61 +60,33 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // the label is on the left, but it's sorta ignored
-                return (m_statement != null ? m_statement.LeftHandSide : null);
+                return (Statement != null ? Statement.LeftHandSide : null);
             }
         }
 
         internal override bool EncloseBlock(EncloseBlockType type)
         {
             // pass the query on to the statement
-            return (m_statement != null ? m_statement.EncloseBlock(type) : false);
+            return (Statement != null ? Statement.EncloseBlock(type) : false);
         }
 
         public override IEnumerable<AstNode> Children
         {
             get
             {
-                return EnumerateNonNullNodes(m_statement);
+                return EnumerateNonNullNodes(Statement);
             }
         }
 
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
-            if (m_statement == oldNode)
+            if (Statement == oldNode)
             {
-                m_statement = newNode;
+                Statement = newNode;
                 if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             return false;
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (Parser.Settings.LocalRenaming != LocalRenaming.KeepAll
-				&& Parser.Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
-            {
-                // we're hyper-crunching.
-                // we want to output our label as per our nested level.
-                // top-level is "a", next level is "b", etc.
-                // we don't need to worry about collisions with variables.
-                sb.Append(CrunchEnumerator.CrunchedLabel(m_nestCount));
-            }
-            else
-            {
-                // not hypercrunching -- just output our label
-                sb.Append(m_label);
-            }
-            sb.Append(':');
-            if (m_statement != null)
-            {
-                // don't sent the AlwaysBraces down the chain -- we're handling it here.
-                // but send any other formats down -- we don't know why they were sent.
-                sb.Append(m_statement.ToCode(format));
-            }
-            return sb.ToString();
-        }
-
     }
 }

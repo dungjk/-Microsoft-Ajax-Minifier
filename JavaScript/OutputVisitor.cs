@@ -1,0 +1,2445 @@
+﻿// OutputVisitor.cs
+//
+// Copyright 2011 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.ComponentModel;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace Microsoft.Ajax.Utilities
+{
+    public class OutputVisitor : IVisitor
+    {
+        private TextWriter m_outputStream;
+
+        private char m_lastCharacter;
+        private bool m_lastCountOdd;
+        private bool m_onNewLine;
+        private bool m_startOfStatement;
+        private bool m_outputCCOn;
+
+        private int m_indentLevel;
+        private int m_lineLength;
+
+        private CodeSettings m_settings;
+
+        // this is a regular expression that we'll use to minimize numeric values
+        // that don't employ the e-notation
+        private static Regex s_decimalFormat = new Regex(
+            @"^\s*\+?(?<neg>\-)?0*(?<mag>(?<sig>\d*[1-9])(?<zer>0*))?(\.(?<man>\d*[1-9])?0*)?(?<exp>E\+?(?<eng>\-?)0*(?<pow>[1-9]\d*))?$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+
+        public OutputVisitor(TextWriter writer)
+            :this(writer, new CodeSettings())
+        {
+        }
+
+        public OutputVisitor(TextWriter writer, CodeSettings settings)
+        {
+            m_outputStream = writer;
+            m_settings = settings;
+            m_onNewLine = true;
+        }
+
+        #region IVisitor Members
+
+        public void Visit(ArrayLiteral node)
+        {
+            if (node != null)
+            {
+                OutputPossibleLineBreak('[');
+                m_startOfStatement = false;
+
+                if (node.Elements.Count > 0)
+                {
+                    Indent();
+
+                    for (var ndx = 0; ndx < node.Elements.Count; ++ndx)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                        }
+
+                        var element = node.Elements[ndx];
+                        if (element != null)
+                        {
+                            AcceptNodeWithParens(element, element.Precedence == OperatorPrecedence.Comma);
+                        }
+                    }
+
+                    Unindent();
+                }
+
+                Output(']');
+            }
+        }
+
+        public void Visit(AspNetBlockNode node)
+        {
+            if (node != null)
+            {
+                Output(node.AspNetBlockText);
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(AstNodeList node)
+        {
+            if (node != null)
+            {
+            }
+        }
+
+        public void Visit(BinaryOperator node)
+        {
+            if (node != null)
+            {
+                var ourPrecedence = node.Precedence;
+                if (node.Operand1 != null)
+                {
+                    AcceptNodeWithParens(node.Operand1, node.Operand1.Precedence < ourPrecedence);
+                }
+
+                m_startOfStatement = false;
+
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    if (node.OperatorToken == JSToken.Comma)
+                    {
+                        // treat the comma-operator special, since we combine expression statements
+                        // with it very often
+                        OutputPossibleLineBreak(',');
+                        if (m_lineLength > 0)
+                        {
+                            Output(' ');
+                        }
+                    }
+                    else
+                    {
+                        // anything other than a comma operator
+                        Output(' ');
+                        Output(OperatorString(node.OperatorToken));
+                        Output(' ');
+                    }
+                }
+                else
+                {
+                    Output(OperatorString(node.OperatorToken));
+                    BreakLine(false);
+                }
+
+                if (node.Operand2 != null)
+                {
+                    var rightPrecedence = node.Operand2.Precedence;
+                    var rightNeedsParens = rightPrecedence < ourPrecedence;
+
+                    var rightHandBinary = node.Operand2 as BinaryOperator;
+                    if (rightHandBinary != null)
+                    {
+                        // they are BOTH binary expressions. This is where it gets complicated.
+                        // because most binary tokens (except assignment) are evaluated from left to right,
+                        // if we have a binary expression with the same precedence on the RIGHT, then that means the
+                        // developer must've put parentheses around it. For some operators, those parentheses 
+                        // may not be needed (associative operators like multiply and logical AND or logical OR).
+                        // Non-associative operators (divide) will need those parens, so we will want to say they
+                        // are a higher relative precedence because of those parentheses.
+                        // The plus operator is a special case. It is the same physical token, but it can be two
+                        // operations depending on the runtime data: numeric addition or string concatenation.
+                        // Because of that ambiguity, let's also calculate the precedence for it as if it were
+                        // non-associate as well.
+                        // commas never need the parens -- they always evaluate left to right and always return the
+                        // right value, so any parens will always be unneccessary.
+                        if (ourPrecedence == rightPrecedence
+                            && ourPrecedence != OperatorPrecedence.Assignment
+                            && ourPrecedence != OperatorPrecedence.Comma)
+                        {
+                            if (node.OperatorToken == rightHandBinary.OperatorToken)
+                            {
+                                // the tokens are the same and we're not assignment or comma operators.
+                                // so for a few associative operators, we're going to say the relative precedence
+                                // is the same so unneeded parens are removed. But for all others, we'll say the
+                                // right-hand side is a higher precedence so we maintain the sematic structure
+                                // of the expression
+                                switch (node.OperatorToken)
+                                {
+                                    case JSToken.Multiply:
+                                    case JSToken.BitwiseAnd:
+                                    case JSToken.BitwiseXor:
+                                    case JSToken.BitwiseOr:
+                                    case JSToken.LogicalAnd:
+                                    case JSToken.LogicalOr:
+                                        // these are the same regardless
+                                        rightNeedsParens = false;
+                                        break;
+
+                                    // TODO: the plus operator: if we can prove that it is a numeric operator
+                                    // or a string operator on BOTH sides, then it can be associative, too. But
+                                    // if one side is a string and the other numeric, or if we can't tell at 
+                                    // compile-time, then we need to preserve the structural precedence.
+                                    default:
+                                        // all other operators are structurally a lower precedence when they
+                                        // are on the right, so they need to be evaluated first
+                                        rightNeedsParens = true;
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                // they have the same precedence, but the tokens are different.
+                                // and the developer had purposely put parens around the right-hand side
+                                // to get them on the right (otherwise with the same precedence they
+                                // would've ended up on the left. Keep the parens; must've been done for
+                                // a purpose.
+                                rightNeedsParens = true;
+                            }
+                        }
+                        else
+                        {
+                            // different precedence -- just base the decision on the relative precedence values
+                            rightNeedsParens = rightPrecedence < ourPrecedence;
+                        }
+                    }
+
+                    AcceptNodeWithParens(node.Operand2, rightNeedsParens);
+                }
+            }
+        }
+
+        public void Visit(Block node)
+        {
+            if (node != null)
+            {
+                if (node.Parent != null)
+                {
+                    OutputPossibleLineBreak('{');
+                    Indent();
+                }
+
+                var mightNeedSemicolon = false;
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    var statement = node[ndx];
+                    if (statement != null && !statement.HideFromOutput)
+                    {
+                        if (mightNeedSemicolon)
+                        {
+                            ReplaceableSemicolon();
+                        }
+
+                        NewLine();
+                        m_startOfStatement = true;
+                        statement.Accept(this);
+                        mightNeedSemicolon = statement.RequiresSeparator;
+                    }
+                }
+
+                if (node.Parent != null)
+                {
+                    Unindent();
+
+                    // if there weren't any statements, the curly-braces will be on the same line.
+                    // otherwise we want them on a new line
+                    if (node.Count > 0)
+                    {
+                        NewLine();
+                    }
+
+                    Output('}');
+                }
+                else if (mightNeedSemicolon && m_settings.TermSemicolons)
+                {
+                    // this is the root block (parent is null) and we want to make sure we end
+                    // with a terminating semicolon, so don't replace it
+                    OutputPossibleLineBreak(';');
+                }
+            }
+        }
+
+        public void Visit(Break node)
+        {
+            if (node != null)
+            {
+                Output("break");
+                m_startOfStatement = false;
+                if (!string.IsNullOrEmpty(node.Label))
+                {
+                    if (m_settings.LocalRenaming != LocalRenaming.KeepAll
+                        && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                    {
+                        // minify the label -- only depends on nesting level
+                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
+                    }
+                    else
+                    {
+                        // not minified -- just output label
+                        Output(node.Label);
+                    }
+                }
+            }
+        }
+
+        public void Visit(CallNode node)
+        {
+            if (node != null)
+            {
+                if (node.IsConstructor)
+                {
+                    Output("new");
+                    m_startOfStatement = false;
+                }
+
+                if (node.Function != null)
+                {
+                    var needsParens = node.Function.Precedence < node.Precedence;
+
+                    // if we think we don't need parens, we need to make one more check:
+                    // if the function is a new operator with no argument list, then we 
+                    // need to wrap it so our argument list doesn't get mistaken for the new-operator's
+                    // argument list
+                    if (!needsParens)
+                    {
+                        // because if the new-operator associates to the right and the ()-operator associates
+                        // to the left, we need to be careful that we don't change the precedence order when the 
+                        // function of a new operator is itself a call or contains a call. In that case, the call will have it's own
+                        // parameters (and therefore parentheses) that will need to be associated with the call
+                        // and NOT the new -- the call will need to be surrounded with parens to keep that association.
+                        // (if we are already going to wrap it in parens, no need to check further)
+                        if (node.IsConstructor)
+                        {
+                            // check the constructor function of our new operator to see if 
+                            // it requires parens so we don't get the precedence all screwed up.
+                            // pass in whether or not WE have any arguments -- will make a difference when we have embedded
+                            // constructors that don't have arguments
+                            needsParens = NewParensVisitor.NeedsParens(node.Function, node.Arguments == null || node.Arguments.Count == 0);
+                        }
+                        else
+                        {
+                            var newExpression = node.Function as CallNode;
+                            if (newExpression != null && newExpression.IsConstructor
+                                && (newExpression.Arguments == null || newExpression.Arguments.Count == 0))
+                            {
+                                needsParens = true;
+                            }
+                        }
+                    }
+
+                    AcceptNodeWithParens(node.Function, needsParens);
+                }
+
+                if (!node.IsConstructor || node.Arguments.Count > 0)
+                {
+                    OutputPossibleLineBreak(node.InBrackets ? '[' : '(');
+
+                    for (var ndx = 0; ndx < node.Arguments.Count; ++ndx)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                        }
+
+                        var argument = node.Arguments[ndx];
+                        if (argument != null)
+                        {
+                            AcceptNodeWithParens(argument, argument.Precedence <= OperatorPrecedence.Comma);
+                        }
+                    }
+
+                    Output(node.InBrackets ? ']' : ')');
+                }
+            }
+        }
+
+        public void Visit(ConditionalCompilationComment node)
+        {
+            if (node != null)
+            {
+                // if we have already output a cc_on and we don't want to keep any dupes, let's
+                // skip over any @cc_on statements at the beginning now
+                var ndx = 0;
+                if (m_outputCCOn && m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
+                {
+                    while (ndx < node.Statements.Count
+                        && (node.Statements[ndx].HideFromOutput || node.Statements[ndx] is ConditionalCompilationOn))
+                    {
+                        ++ndx;
+                    }
+                }
+
+                // if there's anything left....
+                if (ndx < node.Statements.Count)
+                {
+                    // start of comment
+                    Output("/*");
+
+                    // get the next statement, which will be the first one we output
+                    var statement = node.Statements[ndx];
+                    if (statement is ConditionalCompilationStatement
+                        || statement is ConstantWrapperPP)
+                    {
+                        // the next statement STARTS with an @-sign, so just output it. It will add the @ sign to begin
+                        // the conditional-compilation comment
+                        statement.Accept(this);
+                    }
+                    else
+                    {
+                        // next statement does NOT start with an @-sign, so add one now.
+                        // outputting an @-sign as the last character will ensure that a
+                        // space is inserted before any identifier character coming after.
+                        OutputPossibleLineBreak('@');
+
+                        // and then output the first statement
+                        statement.Accept(this);
+                    }
+
+                    // go through the rest of the statements (if any)
+                    var mightRequireSemicolon = statement.RequiresSeparator;
+                    while (++ndx < node.Statements.Count)
+                    {
+                        statement = node.Statements[ndx];
+                        if (statement != null && !statement.HideFromOutput)
+                        {
+                            if (mightRequireSemicolon)
+                            {
+                                ReplaceableSemicolon();
+                            }
+
+                            NewLine();
+                            m_startOfStatement = true;
+                            statement.Accept(this);
+                            mightRequireSemicolon = statement.RequiresSeparator;
+                        }
+                    }
+
+                    // output the closing comment
+                    Output("@*/");
+                }
+            }
+        }
+
+        public void Visit(ConditionalCompilationElse node)
+        {
+            if (node != null)
+            {
+                Output("@else");
+            }
+        }
+
+        public void Visit(ConditionalCompilationElseIf node)
+        {
+            if (node != null)
+            {
+                Output("@elif(");
+                m_startOfStatement = false;
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+            }
+        }
+
+        public void Visit(ConditionalCompilationEnd node)
+        {
+            if (node != null)
+            {
+                Output("@end");
+            }
+        }
+
+        public void Visit(ConditionalCompilationIf node)
+        {
+            if (node != null)
+            {
+                Output("@if(");
+                m_startOfStatement = false;
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+            }
+        }
+
+        public void Visit(ConditionalCompilationOn node)
+        {
+            if (node != null)
+            {
+                if (!m_outputCCOn
+                    || !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
+                {
+                    m_outputCCOn = true;
+                    Output("@cc_on");
+                }
+            }
+        }
+
+        public void Visit(ConditionalCompilationSet node)
+        {
+            if (node != null)
+            {
+                Output("@set");
+                m_startOfStatement = false;
+                Output(node.VariableName);
+                Output('=');
+
+                // if the value is an operator of any kind, we need to wrap it in parentheses
+                // so it gets properly parsed
+                if (node.Value is BinaryOperator || node.Value is UnaryOperator)
+                {
+                    Output('(');
+                    node.Value.Accept(this);
+                    OutputPossibleLineBreak(')');
+                }
+                else if (node.Value != null)
+                {
+                    node.Value.Accept(this);
+                }
+            }
+        }
+
+        public void Visit(Conditional node)
+        {
+            if (node != null)
+            {
+                if (node.Condition != null)
+                {
+                    AcceptNodeWithParens(node.Condition, node.Condition.Precedence < node.Precedence);
+                }
+
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Output(" ? ");
+                }
+                else
+                {
+                    OutputPossibleLineBreak('?');
+                }
+
+                m_startOfStatement = false;
+                if (node.TrueExpression != null)
+                {
+                    AcceptNodeWithParens(node.TrueExpression, node.TrueExpression.Precedence < OperatorPrecedence.Assignment);
+                }
+
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Output(" : ");
+                }
+                else
+                {
+                    OutputPossibleLineBreak(':');
+                }
+
+                if (node.FalseExpression != null)
+                {
+                    AcceptNodeWithParens(node.FalseExpression, node.FalseExpression.Precedence < OperatorPrecedence.Assignment);
+                }
+            }
+        }
+
+        public void Visit(ConstantWrapper node)
+        {
+            if (node != null)
+            {
+                switch (node.PrimitiveType)
+                {
+                    case PrimitiveType.Boolean:
+                        Output(node.ToBoolean() ? "true" : "false");
+                        break;
+
+                    case PrimitiveType.Null:
+                        Output("null");
+                        break;
+
+                    case PrimitiveType.Number:
+                        if (node.Context == null || m_settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        {
+                            // apply minification to the literal to get it as small as possible
+                            Output(NormalizeNumber(node.ToNumber(), node.Context));
+                        }
+                        else
+                        {
+                            // context is not null but we don't want to minify numeric literals.
+                            // just use the original literal from the context.
+                            Output(node.Context.Code);
+                        }
+                        break;
+
+                    case PrimitiveType.Other:
+                        Output(node.Value.ToString());
+                        break;
+
+                    case PrimitiveType.String:
+                        if (m_settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
+                            && (node.Context == null 
+                            || string.IsNullOrEmpty(node.Context.Code)
+                            || node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) < 0))
+                        {
+                            // escape the string
+                            Output(InlineSafeString(EscapeString(node.Value.ToString())));
+                        }
+                        else
+                        {
+                            // just use the original literal from the context
+                            Output(InlineSafeString(node.Context.Code));
+                        }
+                        break;
+                }
+
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(ConstantWrapperPP node)
+        {
+            if (node != null)
+            {
+                if (node.ForceComments)
+                {
+                    Output("/*");
+                }
+
+                // varname must include the @ sign
+                Output(node.VarName);
+                m_startOfStatement = false;
+
+                if (node.ForceComments)
+                {
+                    Output("@*/");
+                }
+            }
+        }
+
+        public void Visit(ContinueNode node)
+        {
+            if (node != null)
+            {
+                Output("continue");
+                m_startOfStatement = false;
+                if (!string.IsNullOrEmpty(node.Label))
+                {
+                    if (m_settings.LocalRenaming != LocalRenaming.KeepAll
+                        && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                    {
+                        // minify the label -- only depends on nesting level
+                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
+                    }
+                    else
+                    {
+                        // not minified -- just output label
+                        Output(node.Label);
+                    }
+                }
+            }
+        }
+
+        public void Visit(DebuggerNode node)
+        {
+            if (node != null)
+            {
+                Output("debugger");
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(Delete node)
+        {
+            if (node != null)
+            {
+                Output("delete");
+                m_startOfStatement = false;
+                if (node.Operand != null)
+                {
+                    AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                }
+            }
+        }
+
+        public void Visit(DoWhile node)
+        {
+            if (node != null)
+            {
+                Output("do");
+
+                if (node.Body == null || node.Body.Count == 0)
+                {
+                    // semicolon-replacement cannot create an empty statement
+                    OutputPossibleLineBreak(';');
+                }
+                else if (node.Body.Count == 1 && !node.Body.EncloseBlock(EncloseBlockType.SingleDoWhile))
+                {
+                    // there's only one statement, which means we don't need curley braces.
+                    // HOWEVER, if the one statement ends in a do-while statement, then we DO need curley-braces
+                    // because of an IE bug. IE parses the semi-colon that terminates the do-while as an empty
+                    // statement FOLLOWING the do-while, which means the while-clause of the do-while is in the 
+                    // wrong spot. We *could* leave the semi-colon out and all browsers will parse it properly, but
+                    // that isn't strictly correct JS. So just wrap it in curly-braces to remain proper AND work in 
+                    // all browsers.
+                    Indent();
+                    NewLine();
+                    m_startOfStatement = true;
+                    node.Body[0].Accept(this);
+
+                    if (node.Body[0].RequiresSeparator)
+                    {
+                        ReplaceableSemicolon();
+                    }
+
+                    Unindent();
+                    NewLine();
+                }
+                else
+                {
+                    NewLine();
+                    node.Body.Accept(this);
+
+                    if (m_settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        Output(' ');
+                    }
+                }
+
+                Output("while(");
+                BreakLine(false);
+                m_startOfStatement = false;
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+
+                Output(')');
+            }
+        }
+
+        public void Visit(ForIn node)
+        {
+            if (node != null)
+            {
+                Output("for(");
+                m_startOfStatement = false;
+                if (node.Variable != null)
+                {
+                    node.Variable.Accept(this);
+                }
+
+                Output("in");
+
+                if (node.Collection != null)
+                {
+                    node.Collection.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+                OutputBlock(node.Body);
+            }
+        }
+
+        public void Visit(ForNode node)
+        {
+            if (node != null)
+            {
+                Output("for(");
+                m_startOfStatement = false;
+                if (node.Initializer != null)
+                {
+                    node.Initializer.Accept(this);
+                }
+
+                // NEVER do without these semicolons
+                OutputPossibleLineBreak(';');
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Output(' ');
+                }
+
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+
+                OutputPossibleLineBreak(';');
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Output(' ');
+                }
+
+                if (node.Incrementer != null)
+                {
+                    node.Incrementer.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+                OutputBlock(node.Body);
+            }
+        }
+
+        public void Visit(FunctionObject node)
+        {
+            if (node != null)
+            {
+                var encloseInParens = node.IsExpression && m_startOfStatement;
+                if (encloseInParens)
+                {
+                    OutputPossibleLineBreak('(');
+                }
+
+                Output("function");
+                m_startOfStatement = false;
+                if (node.Identifier != null)
+                {
+                    // if this is a function expression, check to see if the field
+                    // if not referenced, in which case we won't output it (depending on switches)
+                    if (!node.IsExpression
+                        || node.RefCount > 0
+                        || !m_settings.RemoveFunctionExpressionNames
+                        || !m_settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
+                    {
+                        node.Identifier.Accept(this);
+                    }
+                }
+
+                OutputFunctionArgsAndBody(node, m_settings.RemoveUnneededCode
+                    && node.EnclosingScope.IsKnownAtCompileTime
+                    && m_settings.MinifyCode
+                    && m_settings.IsModificationAllowed(TreeModifications.RemoveUnusedParameters));
+
+                if (encloseInParens)
+                {
+                    OutputPossibleLineBreak(')');
+                }
+            }
+        }
+
+        public void Visit(GetterSetter node)
+        {
+            if (node != null)
+            {
+                Output(node.IsGetter ? "get" : "set");
+                m_startOfStatement = false;
+                Output(node.Value.ToString());
+            }
+        }
+
+        public void Visit(IfNode node)
+        {
+            if (node != null)
+            {
+                Output("if(");
+                m_startOfStatement = false;
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+
+                if (node.TrueBlock == null || node.TrueBlock.Count == 0)
+                {
+                    // no true-block; just output an empty statement
+                    OutputPossibleLineBreak(';');
+                }
+                else if (node.TrueBlock.Count == 1
+                    && (node.FalseBlock == null || (!node.TrueBlock.EncloseBlock(EncloseBlockType.IfWithoutElse) && !node.TrueBlock.EncloseBlock(EncloseBlockType.SingleDoWhile)))
+                    && (!m_settings.MacSafariQuirks || !(node.TrueBlock[0] is FunctionObject)))
+                {
+                    // we only have a single statement in the true-branch; normally
+                    // we wouldn't wrap that statement in braces. However, if there 
+                    // is an else-branch, we need to make sure that single statement 
+                    // doesn't end with an if-statement that doesn't have an else-branch
+                    // because otherwise OUR else-branch will get associated with that
+                    // other if-statement. AND it can't end in a do-while statement because then
+                    // we run into IE issues with the strict terminating semi-colon.
+                    // AND if we are being safari-strict, we want to wrap a single function declaration in
+                    // curly-braces, too.
+                    Indent();
+                    NewLine();
+
+                    m_startOfStatement = true;
+                    node.TrueBlock[0].Accept(this);
+
+                    if (node.FalseBlock != null && node.FalseBlock.Count > 0
+                        && node.TrueBlock[0].RequiresSeparator)
+                    {
+                        // we have only one statement, we did not wrap it in braces,
+                        // and we have an else-block, and the one true-statement needs
+                        // a semicolon; add it now
+                        ReplaceableSemicolon();
+                    }
+
+                    Unindent();
+                }
+                else
+                {
+                    NewLine();
+                    node.TrueBlock.Accept(this);
+                }
+
+                if (node.FalseBlock != null && node.FalseBlock.Count > 0)
+                {
+                    NewLine();
+                    Output("else");
+                    if (node.FalseBlock.Count == 1)
+                    {
+                        var statement = node.FalseBlock[0];
+                        if (statement is IfNode)
+                        {
+                            // this is an else-if construct. Don't newline or indent, just
+                            // handle the if-statement directly. 
+                            statement.Accept(this);
+                        }
+                        else
+                        {
+                            Indent();
+                            NewLine();
+                            m_startOfStatement = true;
+                            statement.Accept(this);
+                            Unindent();
+                        }
+                    }
+                    else
+                    {
+                        NewLine();
+                        node.FalseBlock.Accept(this);
+                    }
+                }
+            }
+        }
+
+        public void Visit(ImportantComment node)
+        {
+            if (node != null)
+            {
+                // make sure we force the important comments to start on a new line, regardless
+                // of whether or not we are in multi- or single-line mode, and the statement after
+                // should also be on a new line.
+                BreakLine(true);
+                Output(node.Comment);
+                BreakLine(true);
+            }
+        }
+
+        public void Visit(LabeledStatement node)
+        {
+            if (node != null)
+            {
+                if (m_settings.LocalRenaming != LocalRenaming.KeepAll
+                    && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                {
+                    // we're minifying the labels.
+                    // we want to output our label as per our nested level.
+                    // top-level is "a", next level is "b", etc.
+                    // we don't need to worry about collisions with variables.
+                    Output(CrunchEnumerator.CrunchedLabel(node.NestCount));
+                }
+                else
+                {
+                    // not minifying -- just output our label
+                    Output(node.Label);
+                }
+
+                OutputPossibleLineBreak(':');
+                if (node.Statement != null && !node.Statement.HideFromOutput)
+                {
+                    m_startOfStatement = true;
+                    node.Statement.Accept(this);
+                }
+            }
+        }
+
+        public void Visit(Lookup node)
+        {
+            if (node != null)
+            {
+                Output(node.VariableField != null
+                    ? node.VariableField.ToString()
+                    : node.Name);
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(Member node)
+        {
+            if (node != null)
+            {
+                if (node.Root != null)
+                {
+                    var constantWrapper = node.Root as ConstantWrapper;
+                    if (constantWrapper != null && constantWrapper.IsFiniteNumericLiteral)
+                    {
+                        // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version
+                        string numericText;
+                        if (node.Context == null || m_settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        {
+                            // apply minification to the literal to get it as small as possible
+                            numericText = NormalizeNumber(constantWrapper.ToNumber(), node.Context);
+                        }
+                        else
+                        {
+                            // context is not null but we don't want to minify numeric literals.
+                            // just use the original literal from the context.
+                            numericText = node.Context.Code;
+                        }
+
+                        // if there is no period in the number, we need to wrap it in parens
+                        if (numericText.IndexOf('.') < 0)
+                        {
+                            // no period - wrap it in parent
+                            Output('(');
+                            Output(numericText);
+                            Output(')');
+                        }
+                        else
+                        {
+                            // contains a period -- safe to output directly
+                            Output(numericText);
+                        }
+                    }
+                    else
+                    {
+                        // not a numeric constant wrapper
+                        var needsParens = node.Root.Precedence < node.Precedence;
+                        if (!needsParens)
+                        {
+                            // if the root is a new operator with no arguments, then we need to wrap
+                            var callNode = node.Root as CallNode;
+                            if (callNode != null
+                                && callNode.IsConstructor
+                                && (callNode.Arguments == null || callNode.Arguments.Count == 0))
+                            {
+                                needsParens = true;
+                            }
+                        }
+
+                        AcceptNodeWithParens(node.Root, needsParens);
+                    }
+                }
+
+                OutputPossibleLineBreak('.');
+                Output(node.Name);
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(NumericUnary node)
+        {
+            // just call the default unary-operator output method
+            OutputUnaryOperator(node);
+        }
+
+        public void Visit(ObjectLiteral node)
+        {
+            if (node != null)
+            {
+                // if start of statement, need to enclose in parens
+                var encloseInParens = m_startOfStatement;
+                if (encloseInParens)
+                {
+                    OutputPossibleLineBreak('(');
+                }
+
+                OutputPossibleLineBreak('{');
+                m_startOfStatement = false;
+                Indent();
+                if (node.Count > 1)
+                {
+                    NewLine();
+                }
+
+                // output each key/value pair
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    if (ndx > 0)
+                    {
+                        OutputPossibleLineBreak(',');
+                        NewLine();
+                    }
+                    var key = node.Keys[ndx];
+                    key.Accept(this);
+
+                    if (key is GetterSetter)
+                    {
+                        // always output the parameters
+                        OutputFunctionArgsAndBody(node.Values[ndx] as FunctionObject, false);
+                    }
+                    else
+                    {
+                        var propertyValue = node.Values[ndx];
+                        AcceptNodeWithParens(propertyValue, propertyValue.Precedence == OperatorPrecedence.Comma);
+                    }
+                }
+
+                Unindent();
+                if (node.Count > 1)
+                {
+                    NewLine();
+                }
+                Output('}');
+                if (encloseInParens)
+                {
+                    Output(')');
+                }
+            }
+        }
+
+        public void Visit(ObjectLiteralField node)
+        {
+            if (node != null)
+            {
+                // call the base to format the value
+                // determine whether we need quotes or not
+                if (node.PrimitiveType == PrimitiveType.String)
+                {
+                    var propertyName = node.ToString();
+                    if (!string.IsNullOrEmpty(propertyName)
+                        && JSScanner.IsSafeIdentifier(propertyName)
+                        && !JSScanner.IsKeyword(propertyName, node.EnclosingScope.UseStrict))
+                    {
+                        Output(propertyName);
+                    }
+                    else
+                    {
+                        // base implementation adds quotes
+                        Visit(node as ConstantWrapper);
+                    }
+                }
+                else
+                {
+                    // not a string -- just output it
+                    Visit(node as ConstantWrapper);
+                }
+
+                OutputPossibleLineBreak(':');
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Output(' ');
+                }
+            }
+        }
+
+        public void Visit(PostOrPrefixOperator node)
+        {
+            if (node != null)
+            {
+                switch (node.Operator)
+                {
+                    case PostOrPrefix.PostfixDecrement:
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence <= node.Precedence);
+                        Output("--");
+                        break;
+
+                    case PostOrPrefix.PostfixIncrement:
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence <= node.Precedence);
+                        Output("++");
+                        break;
+
+                    case PostOrPrefix.PrefixDecrement:
+                        Output("--");
+                        m_startOfStatement = false;
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                        break;
+
+                    case PostOrPrefix.PrefixIncrement:
+                        Output("++");
+                        m_startOfStatement = false;
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                        break;
+
+                    default:
+                        throw new UnexpectedTokenException();
+                }
+            }
+        }
+
+        public void Visit(RegExpLiteral node)
+        {
+            if (node != null)
+            {
+                m_startOfStatement = false;
+
+                // cannot have a line break anywhere in this node
+                Output('/');
+                Output(node.Pattern);
+                Output('/');
+                if (!string.IsNullOrEmpty(node.PatternSwitches))
+                {
+                    Output(node.PatternSwitches);
+                }
+            }
+        }
+
+        public void Visit(ReturnNode node)
+        {
+            if (node != null)
+            {
+                Output("return");
+                m_startOfStatement = false;
+                if (node.Operand != null)
+                {
+                    node.Operand.Accept(this);
+                }
+            }
+        }
+
+        public void Visit(Switch node)
+        {
+            if (node != null)
+            {
+                Output("switch(");
+                m_startOfStatement = false;
+                if (node.Expression != null)
+                {
+                    node.Expression.Accept(this);
+                }
+                OutputPossibleLineBreak(')');
+                NewLine();
+                OutputPossibleLineBreak('{');
+                Indent();
+
+                var mightNeedSemicolon = false;
+                for (var ndx = 0; ndx < node.Cases.Count; ++ndx)
+                {
+                    var switchCase = node.Cases[ndx];
+                    if (switchCase != null)
+                    {
+                        if (mightNeedSemicolon)
+                        {
+                            ReplaceableSemicolon();
+                        }
+
+                        NewLine();
+                        switchCase.Accept(this);
+                        mightNeedSemicolon = switchCase.RequiresSeparator;
+                    }
+                }
+
+                Unindent();
+                NewLine();
+                OutputPossibleLineBreak('}');
+            }
+        }
+
+        public void Visit(SwitchCase node)
+        {
+            if (node != null)
+            {
+                if (node.CaseValue != null)
+                {
+                    Output("case");
+                    m_startOfStatement = false;
+                    node.CaseValue.Accept(this);
+                }
+                else
+                {
+                    Output("default");
+                }
+
+                OutputPossibleLineBreak(':');
+                if (node.Statements != null && node.Statements.Count > 0)
+                {
+                    Indent();
+                    bool mightNeedSemicolon = false;
+                    for (var ndx = 0; ndx < node.Statements.Count; ++ndx)
+                    {
+                        var statement = node.Statements[ndx];
+                        if (statement != null && !statement.HideFromOutput)
+                        {
+                            if (mightNeedSemicolon)
+                            {
+                                ReplaceableSemicolon();
+                            }
+
+                            NewLine();
+                            m_startOfStatement = true;
+                            statement.Accept(this);
+                            mightNeedSemicolon = statement.RequiresSeparator;
+                        }
+                    }
+
+                    Unindent();
+                }
+            }
+        }
+
+        public void Visit(ThisLiteral node)
+        {
+            if (node != null)
+            {
+                Output("this");
+                m_startOfStatement = false;
+            }
+        }
+
+        public void Visit(ThrowNode node)
+        {
+            if (node != null)
+            {
+                Output("throw");
+                m_startOfStatement = false;
+                if (node.Operand != null)
+                {
+                    node.Operand.Accept(this);
+                }
+
+                if (m_settings.MacSafariQuirks)
+                {
+                    // force the statement ending with a semicolon
+                    OutputPossibleLineBreak(';');
+                }
+            }
+        }
+
+        public void Visit(TryNode node)
+        {
+            if (node != null)
+            {
+                Output("try");
+                if (node.TryBlock == null || node.TryBlock.Count == 0)
+                {
+                    Output("{}");
+                    BreakLine(false);
+                }
+                else
+                {
+                    NewLine();
+                    node.TryBlock.Accept(this);
+                }
+
+                var hasCatchBlock = false;
+                if (!string.IsNullOrEmpty(node.CatchVarName))
+                {
+                    hasCatchBlock = true;
+
+                    NewLine();
+                    Output("catch(");
+                    Output(node.CatchVariable != null ? node.CatchVariable.ToString() : node.CatchVarName);
+                    OutputPossibleLineBreak(')');
+
+                    if (node.CatchBlock == null || node.CatchBlock.Count == 0)
+                    {
+                        Output("{}");
+                        BreakLine(false);
+                    }
+                    else
+                    {
+                        NewLine();
+                        node.CatchBlock.Accept(this);
+                    }
+                }
+
+                if (!hasCatchBlock || (node.FinallyBlock != null && node.FinallyBlock.Count > 0))
+                {
+                    NewLine();
+                    Output("finally");
+                    if (node.FinallyBlock == null || node.FinallyBlock.Count == 0)
+                    {
+                        Output("{}");
+                        BreakLine(false);
+                    }
+                    else
+                    {
+                        NewLine();
+                        node.FinallyBlock.Accept(this);
+                    }
+                }
+            }
+        }
+
+        public void Visit(TypeOfNode node)
+        {
+            // just call the default unary-operator output method
+            OutputUnaryOperator(node);
+        }
+
+        public void Visit(Var node)
+        {
+            if (node != null)
+            {
+                Output("var");
+                m_startOfStatement = false;
+                Indent();
+                var useNewLines = !(node.Parent is ForNode);
+
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    var decl = node[ndx];
+                    if (decl != null)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                            if (useNewLines)
+                            {
+                                NewLine();
+                            }
+                            else if (m_settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                Output(' ');
+                            }
+                        }
+
+                        decl.Accept(this);
+                    }
+                }
+                Unindent();
+            }
+        }
+
+        public void Visit(VariableDeclaration node)
+        {
+            if (node != null)
+            {
+                // output the name (use the field is possible)
+                Output(node.Field != null ? node.Field.ToString() : node.Identifier);
+                m_startOfStatement = false;
+                if (node.Initializer != null)
+                {
+                    if (node.IsCCSpecialCase)
+                    {
+                        // we haven't output a cc_on yet -- output it now.
+                        // if we have, we really only need to output one if we had one to begin with AND
+                        // we are NOT removing unnecessary ones
+                        if (!m_outputCCOn
+                            || (node.UseCCOn && !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                        {
+                            Output("/*@cc_on=");
+                            m_outputCCOn = true;
+                        }
+                        else
+                        {
+                            Output("/*@=");
+                        }
+                    }
+                    else
+                    {
+
+                        if (m_settings.OutputMode == OutputMode.MultipleLines && m_settings.IndentSize > 0)
+                        {
+                            Output(" = ");
+                        }
+                        else
+                        {
+                            OutputPossibleLineBreak('=');
+                        }
+                    }
+
+                    AcceptNodeWithParens(node.Initializer, node.Initializer.Precedence == OperatorPrecedence.Comma);
+
+                    if (node.IsCCSpecialCase)
+                    {
+                        Output("@*/");
+                    }
+                }
+            }
+        }
+
+        public void Visit(VoidNode node)
+        {
+            // just call the default unary-operator output method
+            OutputUnaryOperator(node);
+        }
+
+        public void Visit(WhileNode node)
+        {
+            if (node != null)
+            {
+                Output("while(");
+                m_startOfStatement = false;
+                if (node.Condition != null)
+                {
+                    node.Condition.Accept(this);
+                }
+                OutputPossibleLineBreak(')');
+
+                OutputBlock(node.Body);
+            }
+        }
+
+        public void Visit(WithNode node)
+        {
+            if (node != null)
+            {
+                Output("with(");
+                m_startOfStatement = false;
+                if (node.WithObject != null)
+                {
+                    node.WithObject.Accept(this);
+                }
+                OutputPossibleLineBreak(')');
+
+                OutputBlock(node.Body);
+            }
+        }
+
+        #endregion
+
+        #region output methods
+
+        private void Output([Localizable(false)] string text)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                // insert a space if needed, then the character
+                InsertSpaceIfNeeded(text);
+                m_outputStream.Write(text);
+                m_lineLength += text.Length;
+
+                // if it ends in a newline, we're still on a newline
+                m_onNewLine = (text[text.Length - 1] == '\n' || text[text.Length - 1] == '\r'); ;
+
+                // now set the "last character" state
+                SetLastCharState(text);
+            }
+        }
+
+        private void Output(char ch)
+        {
+            // insert a space if needed, then the character
+            InsertSpaceIfNeeded(ch);
+            m_outputStream.Write(ch);
+            ++m_lineLength;
+
+            // determine if this was a newline character
+            m_onNewLine = (ch == '\n' || ch == '\r');
+
+            // now set the "last character" state
+            SetLastCharState(ch);
+        }
+
+        private void InsertSpaceIfNeeded(char ch)
+        {
+            // if the current character is a + or - and the last character was the same....
+            if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+            {
+                // if we want to put a + or a - in the stream, and the previous character was
+                // an odd number of the same, then we need to add a space so it doesn't
+                // get read as ++ (or --)
+                if (m_lastCountOdd)
+                {
+                    m_outputStream.Write(' ');
+                    ++m_lineLength;
+                }
+            }
+            else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(ch))
+            {
+                // either the last character is a valid part of an identifier and the current character is, too;
+                // OR the last part was numeric and the current character is a .
+                // we need to separate those with spaces as well
+                m_outputStream.Write(' ');
+                ++m_lineLength;
+            }
+        }
+
+        private void InsertSpaceIfNeeded(string text)
+        {
+            // if the current character is a + or - and the last character was the same....
+            var ch = text[0];
+            if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+            {
+                // if we want to put a + or a - in the stream, and the previous character was
+                // an odd number of the same, then we need to add a space so it doesn't
+                // get read as ++ (or --)
+                if (m_lastCountOdd)
+                {
+                    m_outputStream.Write(' ');
+                    ++m_lineLength;
+                }
+            }
+            else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(text))
+            {
+                // either the last character is a valid part of an identifier and the current character is, too;
+                // OR the last part was numeric and the current character is a .
+                // we need to separate those with spaces as well
+                m_outputStream.Write(' ');
+                ++m_lineLength;
+            }
+        }
+
+        private void SetLastCharState(char ch)
+        {
+            // if it's a + or a -, we need to adjust the odd state
+            if (ch == '+' || ch == '-')
+            {
+                if (ch == m_lastCharacter)
+                {
+                    // same as the last string -- so we're adding one to it.
+                    // if it was odd before, it's now even; if it was even before,
+                    // it's now odd
+                    m_lastCountOdd = !m_lastCountOdd;
+                }
+                else
+                {
+                    // not the same as last time, so this is a string of 1
+                    // characters, which is odd
+                    m_lastCountOdd = true;
+                }
+            }
+            else
+            {
+                // neither + nor -; reset the odd state
+                m_lastCountOdd = false;
+            }
+
+            m_lastCharacter = ch;
+        }
+
+        private void SetLastCharState(string text)
+        {
+            // ignore empty strings
+            if (!string.IsNullOrEmpty(text))
+            {
+                // get the last character
+                char lastChar = text[text.Length - 1];
+
+                // if it's not a plus or a minus, we don't care
+                if (lastChar == '+' || lastChar == '-')
+                {
+                    // see HOW MANY of those characters were at the end of the string
+                    var ndxDifferent = text.Length - 1;
+                    while (--ndxDifferent >= 0)
+                    {
+                        if (text[ndxDifferent] != lastChar)
+                        {
+                            break;
+                        }
+                    }
+
+                    // if the first diff index is less than zero, then the whole string is one of
+                    // these two special characters
+                    if (ndxDifferent < 0 && m_lastCharacter == lastChar)
+                    {
+                        // the whole string is the same character, AND it's the same character 
+                        // at the end of the last time we output stuff. We need to take into 
+                        // account the previous state when we set the current state.
+                        // it's a logical XOR -- if the two values are the same, m_lastCountOdd is false;
+                        // it they are different, m_lastCountOdd is true.
+                        m_lastCountOdd = (text.Length % 2 == 1) ^ m_lastCountOdd;
+                    }
+                    else
+                    {
+                        // either the whole string wasn't the same character, OR the previous ending
+                        // wasn't the same character. Either way, the current state is determined 
+                        // exclusively by the number of characters we found at the end of this string
+                        // get the number of same characters ending this string, mod by 2, and if the
+                        // result is 1, it's an odd number of characters.
+                        m_lastCountOdd = (text.Length - 1 - ndxDifferent) % 2 == 1;
+                    }
+                }
+                else
+                {
+                    // say we weren't odd
+                    m_lastCountOdd = false;
+                }
+
+                // save the last character for next time
+                m_lastCharacter = lastChar;
+            }
+        }
+
+        private void Indent()
+        {
+            ++m_indentLevel;
+        }
+
+        private void Unindent()
+        {
+            --m_indentLevel;
+        }
+
+        private void OutputPossibleLineBreak(char ch)
+        {
+            // always output the character, although we can line-break
+            // after it if needed
+            m_outputStream.Write(ch);
+            m_onNewLine = false;
+            m_lastCharacter = ch;
+            ++m_lineLength;
+
+            // break the line if it's too long, but don't force it
+            BreakLine(false);
+        }
+
+        private void ReplaceableSemicolon()
+        {
+            // this is a terminating semicolon that might be replaced with a line-break
+            // if needed. Semicolon-insertion would suffice to reconstitute it.
+            if (m_lineLength < m_settings.LineBreakThreshold)
+            {
+                // output the semicolon
+                m_outputStream.Write(';');
+                m_onNewLine = false;
+                m_lastCharacter = ';';
+                ++m_lineLength;
+            }
+
+            // break the line if it's too long, but don't force it
+            BreakLine(false);
+        }
+
+        private void BreakLine(bool forceBreak)
+        {
+            if (!m_onNewLine && (forceBreak || m_lineLength >= m_settings.LineBreakThreshold))
+            {
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    NewLine();
+                }
+                else
+                {
+                    // terminate the line and start a new one
+                    m_outputStream.Write('\n');
+
+                    // set the appropriate newline state
+                    m_lineLength = 0;
+                    m_onNewLine = true;
+                    m_lastCharacter = ' ';
+                }
+            }
+        }
+
+        private void NewLine()
+        {
+            if (m_settings.OutputMode == OutputMode.MultipleLines && !m_onNewLine)
+            {
+                // output the newline character
+                m_outputStream.WriteLine();
+
+                // if the indent level is greater than zero, output the indent spaces
+                if (m_indentLevel > 0)
+                {
+                    var numSpaces = m_indentLevel * m_settings.IndentSize;
+                    m_lineLength = numSpaces;
+                    while (numSpaces-- > 0)
+                    {
+                        m_outputStream.Write(' ');
+                    }
+                }
+                else
+                {
+                    m_lineLength = 0;
+                }
+
+                // say our last character was a space
+                m_lastCharacter = ' ';
+
+                // we just output a newline
+                m_onNewLine = true;
+            }
+        }
+
+        private static string OperatorString(JSToken token)
+        {
+            switch (token)
+            {
+                case JSToken.Decrement: return "--";
+                case JSToken.Delete: return "delete";
+                case JSToken.Increment: return "++";
+                case JSToken.TypeOf: return "typeof";
+                case JSToken.Void: return "void";
+                case JSToken.LogicalNot: return "!";
+                case JSToken.BitwiseNot: return "~";
+                case JSToken.Minus: return "-";
+                case JSToken.Plus: return "+";
+                case JSToken.Multiply: return "*";
+                case JSToken.BitwiseAnd: return "&";
+                case JSToken.BitwiseOr: return "|";
+                case JSToken.BitwiseXor: return "^";
+                case JSToken.LogicalAnd: return "&&";
+                case JSToken.LogicalOr: return "||";
+                case JSToken.Assign: return "=";
+                case JSToken.BitwiseAndAssign: return "&=";
+                case JSToken.BitwiseOrAssign: return "|=";
+                case JSToken.BitwiseXorAssign: return "^=";
+                case JSToken.Comma: return ",";
+                case JSToken.Equal: return "==";
+                case JSToken.GreaterThan: return ">";
+                case JSToken.GreaterThanEqual: return ">=";
+                case JSToken.In: return "in";
+                case JSToken.InstanceOf: return "instanceof";
+                case JSToken.LeftShift: return "<<";
+                case JSToken.LeftShiftAssign: return "<<=";
+                case JSToken.LessThan: return "<";
+                case JSToken.LessThanEqual: return "<=";
+                case JSToken.MinusAssign: return "-=";
+                case JSToken.Modulo: return "%";
+                case JSToken.ModuloAssign: return "%=";
+                case JSToken.MultiplyAssign: return "*=";
+                case JSToken.NotEqual: return "!=";
+                case JSToken.PlusAssign: return "+=";
+                case JSToken.RightShift: return ">>";
+                case JSToken.RightShiftAssign: return ">>=";
+                case JSToken.StrictEqual: return "===";
+                case JSToken.StrictNotEqual: return "!==";
+                case JSToken.UnsignedRightShift: return ">>>";
+                case JSToken.UnsignedRightShiftAssign: return ">>>=";
+                case JSToken.Divide: return "/";
+                case JSToken.DivideAssign: return "/=";
+
+                default: return string.Empty;
+            }
+        }
+
+        #endregion
+
+        #region Helper methods
+
+        private void AcceptNodeWithParens(AstNode node, bool needsParens)
+        {
+            // if we need parentheses, add the opening
+            if (needsParens)
+            {
+                OutputPossibleLineBreak('(');
+
+                // because we output an open paren, reset the start flag
+                m_startOfStatement = false;
+            }
+
+            // now output the node
+            node.Accept(this);
+
+            // if we need parentheses, add the closing
+            if (needsParens)
+            {
+                Output(')');
+            }
+
+            // make SURE the start flag is reset
+            m_startOfStatement = false;
+        }
+
+        private void OutputUnaryOperator(UnaryOperator node)
+        {
+            if (node != null)
+            {
+                if (node.OperatorInConditionalCompilationComment)
+                {
+                    // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
+                    // sources had one. Otherwise, we only only want to output one if we had one and we aren't
+                    // removing unneccesary ones.
+                    if (!m_outputCCOn
+                        || (node.ConditionalCommentContainsOn && !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                    {
+                        // output it now and set the flag that we have output them
+                        Output("/*@cc_on");
+                        m_outputCCOn = true;
+                    }
+                    else
+                    {
+                        Output("/*@");
+                    }
+
+                    Output(OperatorString(node.OperatorToken));
+                    Output("@*/");
+                }
+                else
+                {
+                    Output(OperatorString(node.OperatorToken));
+                }
+                
+                m_startOfStatement = false;
+                if (node.Operand != null)
+                {
+                    AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Output everything for a function except the initial keyword
+        /// </summary>
+        /// <param name="node"></param>
+        private void OutputFunctionArgsAndBody(FunctionObject node, bool removeUnused)
+        {
+            if (node != null)
+            {
+                m_startOfStatement = false;
+                if (node.ParameterDeclarations != null)
+                {
+                    OutputPossibleLineBreak('(');
+
+                    // figure out the last referenced argument so we can skip
+                    // any that aren't actually referenced
+                    int lastRef = node.ParameterDeclarations.Count - 1;
+
+                    // if we're not known at compile time, then we can't leave off unreferenced parameters
+                    // (also don't leave things off if we're not hypercrunching)
+                    // (also check the kill flag for removing unused parameters)
+                    if (removeUnused)
+                    {
+                        while (lastRef >= 0)
+                        {
+                            // we want to loop backwards until we either find a parameter that is referenced.
+                            // at that point, lastRef will be the index of the last referenced parameter so
+                            // we can output from 0 to lastRef
+                            var argumentField = node.ParameterDeclarations[lastRef].Field;
+                            if (argumentField != null && !argumentField.IsReferenced)
+                            {
+                                --lastRef;
+                            }
+                            else
+                            {
+                                // found a referenced parameter, or something weird -- stop looking
+                                break;
+                            }
+                        }
+                    }
+
+                    for (var ndx = 0; ndx <= lastRef; ++ndx)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                            if (m_settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                Output(' ');
+                            }
+                        }
+
+                        var paramDecl = node.ParameterDeclarations[ndx];
+                        if (paramDecl != null)
+                        {
+                            Output(paramDecl.Name);
+                        }
+                    }
+                    OutputPossibleLineBreak(')');
+                }
+
+                if (node.Body == null || node.Body.Count == 0)
+                {
+                    Output("{}");
+                    BreakLine(false);
+                }
+                else
+                {
+                    NewLine();
+                    node.Body.Accept(this);
+                }
+            }
+        }
+
+        private void OutputBlock(Block block)
+        {
+            if (block == null || block.Count == 0)
+            {
+                // semicolon-replacement cannot generate an empty statement
+                OutputPossibleLineBreak(';');
+            }
+            else if (block.Count == 1)
+            {
+                Indent();
+                NewLine();
+                if (block[0].HideFromOutput)
+                {
+                    // semicolon-replacement cannot generate an empty statement
+                    OutputPossibleLineBreak(';');
+                }
+                else
+                {
+                    m_startOfStatement = true;
+                    block[0].Accept(this);
+                }
+                Unindent();
+            }
+            else
+            {
+                NewLine();
+                block.Accept(this);
+            }
+        }
+
+        private string InlineSafeString(string text)
+        {
+            if (m_settings.InlineSafeStrings)
+            {
+                // if there are ANY closing script tags...
+                if (text.IndexOf("</script>", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    // replace all of them with an escaped version so a text-compare won't match
+                    text = text.Replace("</script>", @"<\/script>");
+                }
+
+                // if there are ANY closing CDATA strings...
+                if (text.IndexOf("]]>", StringComparison.Ordinal) >= 0)
+                {
+                    // replace all of them with an escaped version so a text-compare won't match
+                    text = text.Replace("]]>", @"]\]>");
+                }
+            }
+
+            return text;
+        }
+
+        #endregion
+
+        #region numeric formatting methods
+
+        public static string NormalizeNumber(double numericValue, Context originalContext)
+        {
+            // numerics are doubles in JavaScript, so force it now as a shortcut
+            if (double.IsNaN(numericValue) || double.IsInfinity(numericValue))
+            {
+                // weird number -- just return the original source code as-is. 
+                if (originalContext != null && !string.IsNullOrEmpty(originalContext.Code)
+                    && !originalContext.Document.IsGenerated)
+                {
+                    return originalContext.Code;
+                }
+
+                // Hmmm... don't have an original source. 
+                // Must be generated. Just generate the proper JS literal.
+                //
+                // DANGER! If we just output NaN and Infinity and -Infinity blindly, that assumes
+                // that there aren't any local variables in this scope chain with that
+                // name, and we're pulling the GLOBAL properties. Might want to use properties
+                // on the Number object -- which, of course, assumes that Number doesn't
+                // resolve to a local variable...
+                string objectName = double.IsNaN(numericValue) ? "NaN" : "Infinity";
+
+                // get the enclosing lexical environment
+                /*var enclosingScope = constant.EnclosingLexicalEnvironment;
+                if (enclosingScope != null)
+                {
+                    var reference = enclosingScope.GetIdentifierReference(objectName, null);
+                    if (reference.Category != BindingCategory.Predefined)
+                    {
+                        // NaN/Infinity didn't resolve to the global predefined values!
+                        // see if Number does
+                        reference = enclosingScope.GetIdentifierReference("Number", null);
+                        if (reference.Category == BindingCategory.Predefined)
+                        {
+                            // use the properties off this object. Not very compact, but accurate.
+                            // I don't think there will be any precedence problems with these constructs --
+                            // the member-dot operator is pretty high on the precedence scale.
+                            if (double.IsPositiveInfinity(doubleValue))
+                            {
+                                return "Number.POSITIVE_INFINITY";
+                            }
+                            if (double.IsNegativeInfinity(doubleValue))
+                            {
+                                return "Number.NEGATIVE_INFINITY";
+                            }
+                            return "Number.NaN";
+                        }
+                        else
+                        {
+                            // that doesn't resolve to the global Number object, either!
+                            // well, extreme circumstances. Let's use literals to generate those values.
+                            if (double.IsPositiveInfinity(doubleValue))
+                            {
+                                // 1 divided by zero is +Infinity
+                                return "(1/0)";
+                            }
+                            if (double.IsNegativeInfinity(doubleValue))
+                            {
+                                // 1 divided by negative zero is -Infinity
+                                return "(1/-0)";
+                            }
+                            // the unary plus converts to a number, and "x" will generate NaN
+                            return "(+'x')";
+                        }
+                    }
+                }*/
+
+                // we're good to go -- just return the name because it will resolve to the
+                // global properties (make a special case for negative infinity)
+                return double.IsNegativeInfinity(numericValue) ? "-Infinity" : objectName;
+            }
+            else if (numericValue == 0)
+            {
+                // special case zero because we don't need to go through all those
+                // gyrations to get a "0" -- and because negative zero is different
+                // than a positive zero
+                return 1 / numericValue < 0 ? "-0" : "0";
+            }
+            else
+            {
+                // normal string representations
+                string normal = GetSmallestRep(numericValue.ToString("R", CultureInfo.InvariantCulture));
+
+                // if this is an integer (no decimal portion)....
+                if (Math.Floor(numericValue) == numericValue)
+                {
+                    // then convert to hex and see if it's smaller.
+                    // only really big numbers might be smaller in hex.
+                    string hex = NormalOrHexIfSmaller(numericValue, normal);
+                    if (hex.Length < normal.Length)
+                    {
+                        normal = hex;
+                    }
+                }
+                return normal;
+            }
+        }
+
+        private static string GetSmallestRep(string number)
+        {
+            Match match = s_decimalFormat.Match(number);
+            if (match.Success)
+            {
+                string mantissa = match.Result("${man}");
+                if (string.IsNullOrEmpty(match.Result("${exp}")))
+                {
+                    if (string.IsNullOrEmpty(mantissa))
+                    {
+                        // no decimal portion
+                        if (string.IsNullOrEmpty(match.Result("${sig}")))
+                        {
+                            // no non-zero digits in the magnitude either -- must be a zero
+                            number = match.Result("${neg}") + "0";
+                        }
+                        else
+                        {
+                            // see if there are trailing zeros
+                            // that we can use e-notation to make smaller
+                            int numZeros = match.Result("${zer}").Length;
+                            if (numZeros > 2)
+                            {
+                                number = match.Result("${neg}") + match.Result("${sig}")
+                                    + 'e' + numZeros.ToString(CultureInfo.InvariantCulture);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // there is a decimal portion. Put it back together
+                        // with the bare-minimum stuff -- no plus-sign, no leading magnitude zeros,
+                        // no trailing mantissa zeros. A zero magnitude won't show up, either.
+                        number = match.Result("${neg}") + match.Result("${mag}") + '.' + mantissa;
+                    }
+                }
+                else if (string.IsNullOrEmpty(mantissa))
+                {
+                    // there is an exponent, but no significant mantissa
+                    number = match.Result("${neg}") + match.Result("${mag}")
+                        + "e" + match.Result("${eng}") + match.Result("${pow}");
+                }
+                else
+                {
+                    // there is an exponent and a significant mantissa
+                    // we want to see if we can eliminate it and save some bytes
+
+                    // get the integer value of the exponent
+                    int exponent;
+                    if (int.TryParse(match.Result("${eng}") + match.Result("${pow}"), NumberStyles.Integer, CultureInfo.InvariantCulture, out exponent))
+                    {
+                        // slap the mantissa directly to the magnitude without a decimal point.
+                        // we'll subtract the number of characters we just added to the magnitude from
+                        // the exponent
+                        number = match.Result("${neg}") + match.Result("${mag}") + mantissa
+                            + 'e' + (exponent - mantissa.Length).ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        // should n't get here, but it we do, go with what we have
+                        number = match.Result("${neg}") + match.Result("${mag}") + '.' + mantissa
+                            + 'e' + match.Result("${eng}") + match.Result("${pow}");
+                    }
+                }
+            }
+            return number;
+        }
+
+        private static string NormalOrHexIfSmaller(double doubleValue, string normal)
+        {
+            // keep track of the maximum number of characters we can have in our
+            // hexadecimal number before it'd be longer than the normal version.
+            // subtract two characters for the 0x
+            int maxValue = normal.Length - 2;
+
+            int sign = Math.Sign(doubleValue);
+            if (sign < 0)
+            {
+                // negate the value so it's positive
+                doubleValue = -doubleValue;
+                // subtract another character for the minus sign
+                --maxValue;
+            }
+
+            // we don't want to get larger -- or even the same size, so we know
+            // the maximum length is the length of the normal string less one
+            char[] charArray = new char[normal.Length - 1];
+            // point PAST the last character in the array because we will decrement
+            // the position before we add a character. that way position will always
+            // point to the first valid character in the array.
+            int position = charArray.Length;
+
+            while (maxValue > 0 && doubleValue > 0)
+            {
+                // get the right-most hex character
+                int digit = (int)(doubleValue % 16);
+
+                // if the digit is less than ten, then we want to add it to '0' to get the decimal character.
+                // otherwise we want to add (digit - 10) to 'a' to get the alphabetic hex digit
+                charArray[--position] = (char)((digit < 10 ? '0' : 'a' - 10) + digit);
+
+                // next character
+                doubleValue = Math.Floor(doubleValue / 16);
+                --maxValue;
+            }
+
+            // if the max value is still greater than zero, then the hex value
+            // will be shorter than the normal value and we want to go with it
+            if (maxValue > 0)
+            {
+                // add the 0x prefix
+                charArray[--position] = 'x';
+                charArray[--position] = '0';
+
+                // add the sign if negative
+                if (sign < 0)
+                {
+                    charArray[--position] = '-';
+                }
+
+                // create a new string starting at the current position
+                normal = new string(charArray, position, charArray.Length - position);
+            }
+            return normal;
+        }
+
+        #endregion
+
+        #region string formatting methods
+
+        public static string EscapeString(string text)
+        {
+            // the quote factor is a calculation based on the relative number of
+            // double-quotes in the string in relation to single-quotes. If the factor is
+            // less than zero, then there are more double-quotes than single-quotes and
+            // we can save bytes by using single-quotes as the delimiter. If it's greater
+            // than zero, then there are more single quotes than double-quotes and we should
+            // use double-quotes for the delimiter. If it's exactly zero, then 
+            // there are exactly the same number, so it doesn't matter which delimiter
+            // we use. In that case, use double-quotes because I think it's easier to read.
+            // More like other languages (C/C++, C#, Java) that way.
+            var delimiterCharacter = QuoteFactor(text) < 0 ? '\'' : '"';
+
+            // we also don't want to build a new string builder object if we don't have to.
+            // and we only need to if we end up escaping characters. 
+            var rawStart = 0;
+            StringBuilder sb = null;
+            string escapedText = string.Empty;
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                // check each character of the string
+                for (var index = 0; index < text.Length; ++index)
+                {
+                    var ch = text[index];
+                    switch (ch)
+                    {
+                        case '\'':
+                        case '"':
+                            // we only need to escape whichever one we chose as our delimiter
+                            if (ch == delimiterCharacter)
+                            {
+                                // need to escape instances of the delimiter character
+                                goto case '\\';
+                            }
+
+                            break;
+
+                        case '\b':
+                            // output "\b"
+                            ch = 'b';
+                            goto case '\\';
+
+                        case '\t':
+                            // output "\t"
+                            ch = 't';
+                            goto case '\\';
+
+                        case '\n':
+                            // output "\n"
+                            ch = 'n';
+                            goto case '\\';
+
+                        case '\v':
+                            // w3c-strict can encode this character as a \v escape. 
+                            // BUT... IE<9 doesn't recognize that escape sequence, so
+                            // it should be encoded as \x0b (or \13) instead for
+                            // maximum browser compatibility.
+                            goto default;
+
+                        case '\f':
+                            // output "\f"
+                            ch = 'f';
+                            goto case '\\';
+
+                        case '\r':
+                            // output "\r"
+                            ch = 'r';
+                            goto case '\\';
+
+                        case '\\':
+                            // we need to output an escape, so create the string builder
+                            // if we haven't already
+                            if (sb == null)
+                            {
+                                sb = new StringBuilder();
+                            }
+
+                            // output the block of raw characters we have since the last time
+                            if (rawStart < index)
+                            {
+                                sb.Append(text.Substring(rawStart, index - rawStart));
+                            }
+
+                            // set raw start to the next character
+                            rawStart = index + 1;
+
+                            // output the escape character, then the escaped character
+                            sb.Append('\\');
+                            sb.Append(ch);
+                            break;
+
+                        case '\x2028':
+                        case '\x2029':
+                            // issue #14398 - unescaped, these characters (Unicode LineSeparator and ParagraphSeparator)
+                            // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
+                            // no matter what output encoding we may use.
+                            if (sb == null)
+                            {
+                                sb = new StringBuilder();
+                            }
+
+                            // output the block of raw characters we have since the last time
+                            if (rawStart < index)
+                            {
+                                sb.Append(text.Substring(rawStart, index - rawStart));
+                            }
+
+                            // set raw start to the next character
+                            rawStart = index + 1;
+
+                            // output the escape character, a "u", then the four-digit escaped character
+                            sb.Append(@"\u");
+                            sb.AppendFormat(CultureInfo.InvariantCulture, ((int)ch).ToString("x4", CultureInfo.InvariantCulture));
+                            break;
+
+                        default:
+                            if (ch < ' ')
+                            {
+                                // need to escape control codes that aren't handled
+                                // by the single-letter escape codes
+                                // create the string builder if we haven't already
+                                if (sb == null)
+                                {
+                                    sb = new StringBuilder();
+                                }
+
+                                // output the block of raw characters we have since the last time
+                                if (rawStart < index)
+                                {
+                                    sb.Append(text.Substring(rawStart, index - rawStart));
+                                }
+
+                                // set raw start to the next character
+                                rawStart = index + 1;
+
+                                // strict ECMA-262 does not support octal escapes, but octal will
+                                // crunch down a full character more here than hexadecimal. Plus, if we do
+                                // octal, we'll still need to escape these characters to hex for RexExp
+                                // constructor strings so they don't get confused with back references.
+                                // minifies smaller, but octal is too much trouble.
+                                int intValue = ch;
+                                //if (noOctalEscapes)
+                                {
+                                    // output the hex escape sequence
+                                    sb.Append(@"\x");
+                                    sb.Append(intValue.ToString("x2", CultureInfo.InvariantCulture));
+                                }
+                                //else
+                                //{
+                                //    // octal representation of 0 through 31 are \0 through \37
+                                //    sb.Append('\\');
+                                //    if (intValue < 8)
+                                //    {
+                                //        // single octal digit
+                                //        sb.Append(intValue.ToString(CultureInfo.InvariantCulture));
+                                //    }
+                                //    else
+                                //    {
+                                //        // two octal digits
+                                //        sb.Append((intValue / 8).ToString(CultureInfo.InvariantCulture));
+                                //        sb.Append((intValue % 8).ToString(CultureInfo.InvariantCulture));
+                                //    }
+                                //}
+                            }
+
+                            break;
+                    }
+                }
+
+                if (sb != null)
+                {
+                    // we had escapes; use the string builder
+                    // but first make sure the last batch of raw text is output
+                    if (rawStart < text.Length)
+                    {
+                        sb.Append(text.Substring(rawStart));
+                    }
+
+                    escapedText = sb.ToString();
+                }
+                else
+                {
+                    // no escaped needed; just use the text as-is
+                    escapedText = text;
+                }
+            }
+
+            return delimiterCharacter + escapedText + delimiterCharacter;
+        }
+
+        /// <summary>
+        /// Counts the number of double-quotes and single-quotes in a string
+        /// and returns a numeric indicator for which one should be used as
+        /// the string delimiter.
+        /// </summary>
+        /// <param name="text">string to test</param>
+        /// <returns>less than zero use single-quotes, zero or more, use double-quotes</returns>
+        private static int QuoteFactor(string text)
+        {
+            // determine the delimiter to use based on the quote factor.
+            // a value less than zero means there are more double-quotes than single-quotes,
+            // therefore we should use single-quotes for the delimiter.
+            // otherwise there are more single-quotes than double-quotes (or equal values)
+            // and it's okay to use double-quotes
+            int quoteFactor = 0;
+            for (int index = 0; index < text.Length; ++index)
+            {
+                if (text[index] == '\'')
+                {
+                    ++quoteFactor;
+                }
+                else if (text[index] == '"')
+                {
+                    --quoteFactor;
+                }
+            }
+
+            return quoteFactor;
+        }
+
+        #endregion
+    }
+}

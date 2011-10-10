@@ -93,31 +93,15 @@ namespace Microsoft.Ajax.Utilities
                 // if we have an else block, then the if statement
                 // requires a separator if the else block does. 
                 // otherwise only if the true case requires one.
-                if (FalseBlock != null)
+                if (FalseBlock != null && FalseBlock.Count > 0)
                 {
                     return FalseBlock.RequiresSeparator;
                 }
-                if (TrueBlock != null)
+                if (TrueBlock != null && TrueBlock.Count > 0)
                 {
                     return TrueBlock.RequiresSeparator;
                 }
-                return true;
-            }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                if (FalseBlock != null)
-                {
-                    return FalseBlock.EndsWithEmptyBlock;
-                }
-                if (TrueBlock != null)
-                {
-                    return TrueBlock.EndsWithEmptyBlock;
-                }
-                return true;
+                return false;
             }
         }
 
@@ -138,95 +122,6 @@ namespace Microsoft.Ajax.Utilities
                 return TrueBlock.EncloseBlock(type);
             }
             return false;
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("if(");
-            sb.Append(Condition.ToCode());
-            sb.Append(')');
-
-            // if we're in Safari-quirks mode, we will need to wrap the if block
-            // in curly braces if it only includes a function declaration. Safari
-            // throws parsing errors in those situations
-            ToCodeFormat elseFormat = ToCodeFormat.Normal;
-            if (FalseBlock != null && FalseBlock.Count == 1)
-            {
-                if (Parser.Settings.MacSafariQuirks
-                    && FalseBlock[0] is FunctionObject)
-                {
-                    elseFormat = ToCodeFormat.AlwaysBraces;
-                }
-                else if (FalseBlock[0] is IfNode)
-                {
-                    elseFormat = ToCodeFormat.ElseIf;
-                }
-            }
-
-            // get the else block -- we need to know if there is anything in order
-            // to fully determine if the true-branch needs curly-braces
-            string elseBlock = (
-                FalseBlock == null
-                ? string.Empty
-                : FalseBlock.ToCode(elseFormat));
-
-            // we'll need to force the true block to be enclosed in curly braces if
-            // there is an else block and the true block contains a single statement
-            // that ends in an if that doesn't have an else block
-            ToCodeFormat trueFormat = (FalseBlock != null
-                && TrueBlock != null
-                && TrueBlock.EncloseBlock(EncloseBlockType.IfWithoutElse)
-                ? ToCodeFormat.AlwaysBraces
-                : ToCodeFormat.Normal);
-
-            if (elseBlock.Length > 0
-              && TrueBlock != null
-              && TrueBlock.EncloseBlock(EncloseBlockType.SingleDoWhile))
-            {
-                trueFormat = ToCodeFormat.AlwaysBraces;
-            }
-
-            // if we're in Safari-quirks mode, we will need to wrap the if block
-            // in curly braces if it only includes a function declaration. Safari
-            // throws parsing errors in those situations
-            if (Parser.Settings.MacSafariQuirks
-                && TrueBlock != null
-                && TrueBlock.Count == 1
-                && TrueBlock[0] is FunctionObject)
-            {
-                trueFormat = ToCodeFormat.AlwaysBraces;
-            }
-
-            // add the true block
-            string trueBlock = (
-                TrueBlock == null
-                ? string.Empty
-                : TrueBlock.ToCode(trueFormat));
-            sb.Append(trueBlock);
-
-            if (elseBlock.Length > 0)
-            {
-                if (trueFormat != ToCodeFormat.AlwaysBraces
-                    && !trueBlock.EndsWith(";", StringComparison.Ordinal)
-                    && (TrueBlock == null || TrueBlock.RequiresSeparator))
-                {
-                    sb.Append(';');
-                }
-
-                // if we are in pretty-print mode, drop the else onto a new line
-                Parser.Settings.NewLine(sb);
-                sb.Append("else");
-                // if the first character could be interpreted as a continuation
-                // of the "else" statement, then we need to add a space
-                if (JSScanner.StartsWithIdentifierPart(elseBlock))
-                {
-                    sb.Append(' ');
-                }
-
-                sb.Append(elseBlock);
-            }
-            return sb.ToString();
         }
     }
 }

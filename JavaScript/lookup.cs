@@ -97,15 +97,6 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            // if we have a local field pointer that has a crunched name,
-            // the return the crunched name. Otherwise just return our given name;
-            return (VariableField != null
-                ? VariableField.ToString()
-                : m_name);
-        }
-
         internal override string GetFunctionGuess(AstNode target)
         {
             // return the source name

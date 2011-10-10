@@ -32,25 +32,5 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            string operandString = Operand.ToCode(format);
-            if (NeedsParentheses)
-            {
-                // needs parens
-                return "delete(" + operandString + ')';
-            }
-            else if (JSScanner.StartsWithIdentifierPart(operandString))
-            {
-                // needs a space
-                return "delete " + operandString;
-            }
-            else
-            {
-                // needs no separator
-                return "delete" + operandString;
-            }
-        }
     }
 }

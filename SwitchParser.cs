@@ -738,6 +738,30 @@ namespace Microsoft.Ajax.Utilities
 
                                 break;
 
+                            case "LINE":
+                                if (string.IsNullOrEmpty(paramPartUpper))
+                                {
+                                    // if no number specified, use the max default
+                                    JSSettings.LineBreakThreshold =
+                                        CssSettings.LineBreakThreshold = int.MaxValue - 1000;
+                                }
+                                else
+                                {
+                                    // must be an unsigned decimal integer value
+                                    int lineThreshold;
+                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out lineThreshold))
+                                    {
+                                        JSSettings.LineBreakThreshold =
+                                            CssSettings.LineBreakThreshold = lineThreshold;
+                                    }
+                                    else
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
+                                }
+
+                                break;
+
                             case "LITERALS":
                                 // two options: keep or combine
                                 if (paramPartUpper == "KEEP")

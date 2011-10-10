@@ -38,28 +38,5 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("continue");
-            if (Label != null)
-            {
-                sb.Append(' ');
-                if (Parser.Settings.LocalRenaming != LocalRenaming.KeepAll
-                    && Parser.Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
-                {
-                    // hypercrunched -- only depends on nesting level
-                    sb.Append(CrunchEnumerator.CrunchedLabel(NestLevel));
-                }
-                else
-                {
-                    // not hypercrunched -- just output label
-                    sb.Append(Label);
-                }
-            }
-
-            return sb.ToString();
-        }
     }
 }

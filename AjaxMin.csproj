@@ -112,6 +112,7 @@
   <ItemGroup>
     <Compile Include="CommonSettings.cs" />
     <Compile Include="JavaScript\MatchPropertiesVisitor.cs" />
+    <Compile Include="JavaScript\OutputVisitor.cs" />
     <Compile Include="SwitchParser.cs" />
     <Content Include="App.ico" />
     <Compile Include="ContextError.cs" />

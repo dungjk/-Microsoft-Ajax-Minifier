@@ -38,6 +38,14 @@ namespace Microsoft.Ajax.Utilities
             if (falseExpression != null) falseExpression.Parent = this;
         }
 
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                return OperatorPrecedence.Conditional;
+            }
+        }
+
         public void SwapBranches()
         {
             AstNode temp = TrueExpression;
@@ -117,85 +125,6 @@ namespace Microsoft.Ajax.Utilities
                 // the condition is on the left
                 return Condition.LeftHandSide;
             }
-        }
-
-        private static bool NeedsParens(AstNode node, JSToken refToken)
-        {
-            bool needsParens = false;
-
-            // assignments and commas are the only operators that need parens
-            // around them. Conditional is pretty low down the list
-            BinaryOperator binaryOp = node as BinaryOperator;
-            if (binaryOp != null)
-            {
-                OpPrec thisPrecedence = JSScanner.GetOperatorPrecedence(refToken);
-                OpPrec nodePrecedence = JSScanner.GetOperatorPrecedence(binaryOp.OperatorToken);
-                needsParens = (nodePrecedence < thisPrecedence);
-            }
-
-            return needsParens;
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            bool parens = NeedsParens(Condition, JSToken.ConditionalIf);
-            if (parens)
-            {
-                sb.Append('(');
-            }
-
-            sb.Append(Condition.ToCode());
-            if (parens)
-            {
-                sb.Append(')');
-            }
-
-            CodeSettings codeSettings = Parser.Settings;
-            if (codeSettings.OutputMode == OutputMode.MultipleLines && codeSettings.IndentSize > 0)
-            {
-                sb.Append(" ? ");
-            }
-            else
-            {
-                sb.Append('?');
-            }
-
-            // the true and false operands are parsed as assignment operators, so use that token as the
-            // reference token to compare against for operator precedence to determine if we need parens
-            parens = NeedsParens(TrueExpression, JSToken.Assign);
-            if (parens)
-            {
-                sb.Append('(');
-            }
-
-            sb.Append(TrueExpression.ToCode());
-            if (parens)
-            {
-                sb.Append(')');
-            }
-
-            if (codeSettings.OutputMode == OutputMode.MultipleLines && codeSettings.IndentSize > 0)
-            {
-                sb.Append(" : ");
-            }
-            else
-            {
-                sb.Append(':');
-            }
-
-            parens = NeedsParens(FalseExpression, JSToken.Assign);
-            if (parens)
-            {
-                sb.Append('(');
-            }
-
-            sb.Append(FalseExpression.ToCode());
-            if (parens)
-            {
-                sb.Append(')');
-            }
-            return sb.ToString();
         }
     }
 }

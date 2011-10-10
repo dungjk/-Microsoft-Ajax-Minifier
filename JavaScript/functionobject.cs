@@ -96,6 +96,15 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                // just assume primary -- should only get called for expressions anyway
+                return OperatorPrecedence.Primary;
+            }
+        }
+
         public FunctionObject(Lookup identifier, JSParser parser, FunctionType functionType, ParameterDeclaration[] parameterDeclarations, Block bodyBlock, Context functionContext, FunctionScope functionScope)
             : base(functionContext, parser)
         {
@@ -313,7 +322,7 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        private bool HideFromOutput
+        public override bool HideFromOutput
         {
             get
             {
@@ -329,106 +338,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (!Parser.Settings.MinifyCode || !HideFromOutput)
-            {
-                if (LeftHandFunctionExpression)
-                {
-                    sb.Append('(');
-                }
-                if (format != ToCodeFormat.NoFunction)
-                {
-                    sb.Append("function");
-                    if (Identifier != null)
-                    {
-                        // we don't want to show the name for named function expressions where the
-                        // name is never referenced. Don't use IsReferenced because that will always
-                        // return true for function expressions. Since we really only want to know if
-                        // the field name is referenced, check the refcount directly on the field.
-                        // also output the function expression name if this is debug mode
-                        if (FunctionType != FunctionType.Expression
-                            || !(Parser.Settings.RemoveFunctionExpressionNames && Parser.Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
-                            || m_variableField.RefCount > 0)
-                        {
-                            sb.Append(' ');
-                            sb.Append(Identifier.ToCode());
-                        }
-                    }
-                }
-
-                if (m_parameterDeclarations != null)
-                {
-                    sb.Append('(');
-                    if (m_parameterDeclarations.Length > 0)
-                    {
-                        // figure out the last referenced argument so we can skip
-                        // any that aren't actually referenced
-                        int lastRef = m_parameterDeclarations.Length - 1;
-
-                        // if we're not known at compile time, then we can't leave off unreferenced parameters
-                        // (also don't leave things off if we're not hypercrunching)
-                        // (also check the kill flag for removing unused parameters)
-                        if (Parser.Settings.RemoveUnneededCode
-                            && m_functionScope.IsKnownAtCompileTime
-                            && Parser.Settings.MinifyCode
-                            && Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnusedParameters))
-                        {
-                            while (lastRef >= 0)
-                            {
-                                // we want to loop backwards until we either find a parameter that is referenced.
-                                // at that point, lastRef will be the index of the last referenced parameter so
-                                // we can output from 0 to lastRef
-                                JSArgumentField argumentField = m_parameterDeclarations[lastRef].Field;
-                                if (argumentField != null && !argumentField.IsReferenced)
-                                {
-                                    --lastRef;
-                                }
-                                else
-                                {
-                                    // found a referenced parameter, or something weird -- stop looking
-                                    break;
-                                }
-                            }
-                        }
-
-                        for (int ndx = 0; ndx <= lastRef; ++ndx)
-                        {
-                            if (ndx > 0)
-                            {
-                                sb.Append(',');
-                            }
-                            sb.Append(m_parameterDeclarations[ndx].Name);
-                        }
-                    }
-
-                    sb.Append(')');
-                }
-
-                if (Body != null)
-                {
-                    if (Body.Count == 0)
-                    {
-                        sb.Append("{}");
-                    }
-                    else
-                    {
-                        sb.Append(Body.ToCode(ToCodeFormat.AlwaysBraces));
-                    }
-                }
-
-                if (LeftHandFunctionExpression)
-                {
-                    sb.Append(')');
-                }
-            }
-            return sb.ToString();
-        }
-
         internal override bool RequiresSeparator
         {
-            get { return false; }
+            get { return HideFromOutput; }
         }
 
         internal void AddGeneratedVar(string name, AstNode initializer, bool isLiteral)

@@ -15,6 +15,7 @@ var trim = /^\s*(.*)\s*$/m.match(str);
 
 
 // don't use standard string escapes for string literals passed to RegExp construtor
+// REVISION: no, it's perfectly fine to use regular string escapes in regular expression constructors
 var r1 = new RegExp("\x07\x08\x09\x0a\x0b\x0c\x0d\x0e"); 
 var r2 = new RegExp("\x07\x08\x09\x0a" + str + "\x0b\x0c\x0d\x0e"); // even as part of an expression
 

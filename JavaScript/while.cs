@@ -72,15 +72,7 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // requires a separator if the body does
-                return Body == null ? true : Body.RequiresSeparator;
-            }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return Body == null ? true : Body.EndsWithEmptyBlock;
+                return Body == null || Body.Count == 0 ? false : Body.RequiresSeparator;
             }
         }
 
@@ -88,22 +80,6 @@ namespace Microsoft.Ajax.Utilities
         {
             // pass the query on to the body
             return Body == null ? false : Body.EncloseBlock(type);
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("while(");
-            sb.Append(Condition.ToCode());
-            sb.Append(')');
-
-            string bodyString = (
-              Body == null
-              ? string.Empty
-              : Body.ToCode()
-              );
-            sb.Append(bodyString);
-            return sb.ToString();
         }
     }
 }

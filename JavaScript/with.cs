@@ -22,16 +22,16 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class WithNode : AstNode
     {
-        private AstNode m_withObject;
+        public AstNode WithObject { get; private set; }
         public Block Body { get; private set; }
 
         public WithNode(Context context, JSParser parser, AstNode obj, AstNode body)
             : base(context, parser)
         {
-            m_withObject = obj;
+            WithObject = obj;
             Body = ForceToBlock(body);
 
-            if (m_withObject != null) { m_withObject.Parent = this; }
+            if (WithObject != null) { WithObject.Parent = this; }
             if (Body != null) { Body.Parent = this; }
         }
 
@@ -52,15 +52,15 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(m_withObject, Body);
+                return EnumerateNonNullNodes(WithObject, Body);
             }
         }
 
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
-            if (m_withObject == oldNode)
+            if (WithObject == oldNode)
             {
-                m_withObject = newNode;
+                WithObject = newNode;
                 if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
@@ -78,15 +78,7 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // requires a separator if the body does
-                return Body == null ? true : Body.RequiresSeparator;
-            }
-        }
-
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return Body == null ? true : Body.EndsWithEmptyBlock;
+                return Body == null || Body.Count == 0 ? false : Body.RequiresSeparator;
             }
         }
 
@@ -94,21 +86,6 @@ namespace Microsoft.Ajax.Utilities
         {
             // pass the query on to the body
             return Body == null ? false : Body.EncloseBlock(type);
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("with(");
-            sb.Append(m_withObject.ToCode());
-            sb.Append(")");
-
-            if (Body != null)
-            {
-                sb.Append(Body.ToCode());
-            }
-
-            return sb.ToString();
         }
     }
 }

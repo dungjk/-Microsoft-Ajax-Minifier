@@ -104,55 +104,6 @@ namespace Microsoft.Ajax.Utilities
             return isEquivalent;
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            bool requiresSeparator = false;
-            string separator;
-            switch (format)
-            {
-                case ToCodeFormat.Commas:
-                    separator = ",";
-                    break;
-
-                case ToCodeFormat.Semicolons:
-                    separator = ";";
-                    break;
-
-                default:
-                    separator = string.Empty;
-                    break;
-            }
-
-            StringBuilder sb = new StringBuilder();
-            for (int ndx = 0; ndx < m_list.Count; ++ndx)
-            {
-                // the crunched code for the item, passing in the separator
-                // we are using (in case it affects the code by needing to add parens or something)
-                string itemText = m_list[ndx].ToCode(format);
-
-                // see if we need to add the separator
-                if (separator.Length > 0)
-                {
-                    // don't add it if this is the first item; we only need it between them
-                    // (and only then if it's required)
-                    if (ndx > 0 && requiresSeparator)
-                    {
-                        sb.Append(separator);
-                    }
-
-                    // see if we'll need one for the next iteration (if any).
-                    // if we're separating with commas, then we will always add a comma unless there already is one.
-                    // otherwise we'll only add a separator if there isn't already one AND we require a separator.
-                    requiresSeparator = !itemText.EndsWith(separator, StringComparison.Ordinal)
-                      && (format == ToCodeFormat.Commas || m_list[ndx].RequiresSeparator);
-                }
-
-                // add the item to the stream
-                sb.Append(itemText);
-            }
-            return sb.ToString();
-        }
-
         internal AstNodeList Append(AstNode astNode)
         {
             astNode.Parent = this;

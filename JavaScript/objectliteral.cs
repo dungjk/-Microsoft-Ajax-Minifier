@@ -107,44 +107,6 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append('{');
-
-            int count = (m_keys.Length < m_values.Length ? m_keys.Length : m_values.Length);
-            if (count > 0)
-            {
-                Parser.Settings.Indent();
-                for (int ndx = 0; ndx < count; ++ndx)
-                {
-                    if (ndx > 0)
-                    {
-                        sb.Append(',');
-                    }
-
-                    Parser.Settings.NewLine(sb);
-                    sb.Append(m_keys[ndx].ToCode());
-                    if (m_keys[ndx] is GetterSetter)
-                    {
-                        sb.Append(m_values[ndx].ToCode(ToCodeFormat.NoFunction));
-                    }
-                    else
-                    {
-                        // the key is always an identifier, string or numeric literal
-                        sb.Append(':');
-                        sb.Append(m_values[ndx].ToCode());
-                    }
-                }
-
-                Parser.Settings.Unindent();
-                Parser.Settings.NewLine(sb);
-            }
-
-            sb.Append('}');
-            return sb.ToString();
-        }
-
         internal override string GetFunctionGuess(AstNode target)
         {
             // walk the values until we find the target, then return the key

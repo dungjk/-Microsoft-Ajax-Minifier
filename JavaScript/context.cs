@@ -33,7 +33,7 @@ namespace Microsoft.Ajax.Utilities
         private int m_errorReported;
 
         public Context(JSParser parser)
-            : this(new DocumentContext(parser, "[generated code]"))
+            : this(new DocumentContext(parser))
         {
         }
 

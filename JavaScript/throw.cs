@@ -22,6 +22,7 @@ namespace Microsoft.Ajax.Utilities
     public sealed class ThrowNode : AstNode
     {
         private AstNode m_operand;
+        public AstNode Operand { get { return m_operand; } }
 
         public ThrowNode(Context context, JSParser parser, AstNode operand)
             : base(context, parser)
@@ -67,30 +68,6 @@ namespace Microsoft.Ajax.Utilities
                 // to separate it from.
                 return !Parser.Settings.MacSafariQuirks;
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("throw");
-            string exprString = (
-              m_operand == null
-              ? string.Empty
-              : m_operand.ToCode()
-              );
-            if (exprString.Length > 0)
-            {
-                if (JSScanner.StartsWithIdentifierPart(exprString))
-                {
-                    sb.Append(' ');
-                }
-                sb.Append(exprString);
-            }
-            if (Parser.Settings.MacSafariQuirks)
-            {
-                sb.Append(';');
-            }
-            return sb.ToString();
         }
     }
 }

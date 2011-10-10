@@ -23,13 +23,13 @@ namespace Microsoft.Ajax.Utilities
         private string m_varName;
         public string VarName { get { return m_varName; } }
 
-        private bool m_forceComments;
+        public bool ForceComments { get; private set; }
 
         public ConstantWrapperPP(string varName, bool forceComments, Context context, JSParser parser)
             : base(context, parser)
         {
             m_varName = varName;
-            m_forceComments = forceComments;
+            ForceComments = forceComments;
         }
 
         public override void Accept(IVisitor visitor)
@@ -38,22 +38,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 visitor.Visit(this);
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (m_forceComments)
-            {
-                sb.Append("/*");
-            }
-            sb.Append('@');
-            sb.Append(m_varName);
-            if (m_forceComments)
-            {
-                sb.Append("@*/");
-            }
-            return sb.ToString();
         }
     }
 }

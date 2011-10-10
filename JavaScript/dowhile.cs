@@ -35,6 +35,18 @@ namespace Microsoft.Ajax.Utilities
             if (Condition != null) Condition.Parent = this;
         }
 
+        internal override bool RequiresSeparator
+        {
+            get
+            {
+                // do-while statements TECHNICALLY should end with a semicolon.
+                // but IE seems to parse do-while statements WITHOUT the semicolon, so
+                // the terminating semicolon ends up being an empty statement AFTER the
+                // do-while. Which throws off else or other do-while while-clauses.
+                return true;
+            }
+        }
+
         public override void Accept(IVisitor visitor)
         {
             if (visitor != null)
@@ -75,64 +87,6 @@ namespace Microsoft.Ajax.Utilities
             // statements without a closing curly-brace between them.
             // So if we get here, flag this as possibly requiring a block.
             return (type == EncloseBlockType.SingleDoWhile);
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("do");
-
-            ToCodeFormat bodyFormat = ((Body != null
-              && Body.Count == 1
-              && Body[0].GetType() == typeof(DoWhile))
-              ? ToCodeFormat.AlwaysBraces
-              : ToCodeFormat.Normal
-              );
-
-            // if the body is a single statement that ends in a do-while, then we
-            // will need to wrap the body in curly-braces to get around an IE bug
-            if (Body != null && Body.EncloseBlock(EncloseBlockType.SingleDoWhile))
-            {
-                bodyFormat = ToCodeFormat.AlwaysBraces;
-            }
-
-            string bodyString = (
-              Body == null
-              ? string.Empty
-              : Body.ToCode(bodyFormat)
-              );
-            if (bodyString.Length == 0)
-            {
-                sb.Append(';');
-            }
-            else
-            {
-                // if the first character could be interpreted as a continuation
-                // of the "do" keyword, then we need to add a space
-                if (JSScanner.StartsWithIdentifierPart(bodyString))
-                {
-                    sb.Append(' ');
-                }
-                sb.Append(bodyString);
-
-                // if there is no body, we need a semi-colon
-                // OR if we didn't always wrap in braces AND we require a separator, we need a semi-colon.
-                // and make sure it doesn't already end in a semicolon -- we don't want two in a row.
-                if (Body == null
-                    || (bodyFormat != ToCodeFormat.AlwaysBraces && Body.RequiresSeparator && !bodyString.EndsWith(";", StringComparison.Ordinal)))
-                {
-                    sb.Append(';');
-                }
-            }
-            // add a space for readability for pretty-print mode
-            if (Parser.Settings.OutputMode == OutputMode.MultipleLines && Parser.Settings.IndentSize > 0)
-            {
-                sb.Append(' ');
-            }
-            sb.Append("while(");
-            sb.Append(Condition.ToCode());
-            sb.Append(")");
-            return sb.ToString();
         }
     }
 }

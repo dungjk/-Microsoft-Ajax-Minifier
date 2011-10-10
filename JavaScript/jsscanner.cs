@@ -1012,8 +1012,9 @@ namespace Microsoft.Ajax.Utilities
 
                         // see if the @-sign is immediately followed by an identifier. If it is,
                         // we'll see which one so we can tell if it's a conditional-compilation statement
+                        // need to make sure the context INCLUDES the @ sign
                         int startPosition = m_currentPos;
-                        m_currentToken.StartPosition = startPosition;
+                        m_currentToken.StartPosition = startPosition - 1;
                         m_currentToken.StartLineNumber = CurrentLine;
                         m_currentToken.StartLinePosition = StartLinePosition;
                         ScanIdentifier();
@@ -2341,6 +2342,25 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
+        public static bool IsValidIdentifierPart(string text)
+        {
+            var isValid = false;
+
+            // pull the first character from the string, which may be an escape character
+            if (!string.IsNullOrEmpty(text))
+            {
+                char ch = text[0];
+                if (ch == '\\')
+                {
+                    PeekUnicodeEscape(text, ref ch);
+                }
+
+                isValid = IsValidIdentifierPart(ch);
+            }
+
+            return isValid;
+        }
+
         // unescaped unicode characters
         public static bool IsValidIdentifierPart(char letter)
         {
@@ -2401,6 +2421,22 @@ namespace Microsoft.Ajax.Utilities
         internal bool IsIdentifierPartChar(char c)
         {
             return IsIdentifierStartChar(ref c) || IsValidIdentifierPart(c);
+        }
+
+        private static void PeekUnicodeEscape(string str, ref char ch)
+        {
+            // if the length isn't at least six characters starting with a backslash, do nothing
+            if (!string.IsNullOrEmpty(str) && ch == '\\' && str.Length >= 6)
+            {
+                if (str[1] == 'u' 
+                    && IsHexDigit(str[2])
+                    && IsHexDigit(str[3])
+                    && IsHexDigit(str[4])
+                    && IsHexDigit(str[5]))
+                {
+                    ch = (char)(GetHexValue(str[2]) << 12 | GetHexValue(str[3]) << 8 | GetHexValue(str[4]) << 4 | GetHexValue(str[5]));
+                }
+            }
         }
 
         private bool PeekUnicodeEscape(int index, ref char ch)
@@ -2619,134 +2655,65 @@ namespace Microsoft.Ajax.Utilities
             return JSToken.FirstBinaryOperator <= token && token <= JSToken.ConditionalIf;
         }
 
-        private static readonly OpPrec[] s_OperatorsPrec = InitOperatorsPrec();
+        private static readonly OperatorPrecedence[] s_OperatorsPrec = InitOperatorsPrec();
 
-        internal static OpPrec GetOperatorPrecedence(JSToken token)
+        internal static OperatorPrecedence GetOperatorPrecedence(JSToken token)
         {
-            return token == JSToken.None ? OpPrec.precNone : JSScanner.s_OperatorsPrec[token - JSToken.FirstBinaryOperator];
+            return token == JSToken.None ? OperatorPrecedence.None : JSScanner.s_OperatorsPrec[token - JSToken.FirstBinaryOperator];
         }
 
-        private static readonly string[] s_OperatorsString = InitOperatorsString();
-
-        internal static string GetOperatorString(JSToken token)
+        private static OperatorPrecedence[] InitOperatorsPrec()
         {
-            return JSScanner.s_OperatorsString[token - JSToken.FirstOperator];
-        }
+            OperatorPrecedence[] operatorsPrec = new OperatorPrecedence[JSToken.LastOperator - JSToken.FirstBinaryOperator + 1];
 
-        private static OpPrec[] InitOperatorsPrec()
-        {
-            OpPrec[] operatorsPrec = new OpPrec[JSToken.LastOperator - JSToken.FirstBinaryOperator + 1];
+            operatorsPrec[JSToken.Plus - JSToken.FirstBinaryOperator] = OperatorPrecedence.Additive;
+            operatorsPrec[JSToken.Minus - JSToken.FirstBinaryOperator] = OperatorPrecedence.Additive;
 
-            operatorsPrec[JSToken.Plus - JSToken.FirstBinaryOperator] = OpPrec.precAdditive;
-            operatorsPrec[JSToken.Minus - JSToken.FirstBinaryOperator] = OpPrec.precAdditive;
+            operatorsPrec[JSToken.LogicalOr - JSToken.FirstBinaryOperator] = OperatorPrecedence.LogicalOr;
+            operatorsPrec[JSToken.LogicalAnd - JSToken.FirstBinaryOperator] = OperatorPrecedence.LogicalAnd;
+            operatorsPrec[JSToken.BitwiseOr - JSToken.FirstBinaryOperator] = OperatorPrecedence.BitwiseOr;
+            operatorsPrec[JSToken.BitwiseXor - JSToken.FirstBinaryOperator] = OperatorPrecedence.BitwiseXor;
+            operatorsPrec[JSToken.BitwiseAnd - JSToken.FirstBinaryOperator] = OperatorPrecedence.BitwiseAnd;
 
-            operatorsPrec[JSToken.LogicalOr - JSToken.FirstBinaryOperator] = OpPrec.precLogicalOr;
-            operatorsPrec[JSToken.LogicalAnd - JSToken.FirstBinaryOperator] = OpPrec.precLogicalAnd;
-            operatorsPrec[JSToken.BitwiseOr - JSToken.FirstBinaryOperator] = OpPrec.precBitwiseOr;
-            operatorsPrec[JSToken.BitwiseXor - JSToken.FirstBinaryOperator] = OpPrec.precBitwiseXor;
-            operatorsPrec[JSToken.BitwiseAnd - JSToken.FirstBinaryOperator] = OpPrec.precBitwiseAnd;
+            operatorsPrec[JSToken.Equal - JSToken.FirstBinaryOperator] = OperatorPrecedence.Equality;
+            operatorsPrec[JSToken.NotEqual - JSToken.FirstBinaryOperator] = OperatorPrecedence.Equality;
+            operatorsPrec[JSToken.StrictEqual - JSToken.FirstBinaryOperator] = OperatorPrecedence.Equality;
+            operatorsPrec[JSToken.StrictNotEqual - JSToken.FirstBinaryOperator] = OperatorPrecedence.Equality;
 
-            operatorsPrec[JSToken.Equal - JSToken.FirstBinaryOperator] = OpPrec.precEquality;
-            operatorsPrec[JSToken.NotEqual - JSToken.FirstBinaryOperator] = OpPrec.precEquality;
-            operatorsPrec[JSToken.StrictEqual - JSToken.FirstBinaryOperator] = OpPrec.precEquality;
-            operatorsPrec[JSToken.StrictNotEqual - JSToken.FirstBinaryOperator] = OpPrec.precEquality;
+            operatorsPrec[JSToken.InstanceOf - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
+            operatorsPrec[JSToken.In - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
+            operatorsPrec[JSToken.GreaterThan - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
+            operatorsPrec[JSToken.LessThan - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
+            operatorsPrec[JSToken.LessThanEqual - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
+            operatorsPrec[JSToken.GreaterThanEqual - JSToken.FirstBinaryOperator] = OperatorPrecedence.Relational;
 
-            operatorsPrec[JSToken.InstanceOf - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
-            operatorsPrec[JSToken.In - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
-            operatorsPrec[JSToken.GreaterThan - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
-            operatorsPrec[JSToken.LessThan - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
-            operatorsPrec[JSToken.LessThanEqual - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
-            operatorsPrec[JSToken.GreaterThanEqual - JSToken.FirstBinaryOperator] = OpPrec.precRelational;
+            operatorsPrec[JSToken.LeftShift - JSToken.FirstBinaryOperator] = OperatorPrecedence.Shift;
+            operatorsPrec[JSToken.RightShift - JSToken.FirstBinaryOperator] = OperatorPrecedence.Shift;
+            operatorsPrec[JSToken.UnsignedRightShift - JSToken.FirstBinaryOperator] = OperatorPrecedence.Shift;
 
-            operatorsPrec[JSToken.LeftShift - JSToken.FirstBinaryOperator] = OpPrec.precShift;
-            operatorsPrec[JSToken.RightShift - JSToken.FirstBinaryOperator] = OpPrec.precShift;
-            operatorsPrec[JSToken.UnsignedRightShift - JSToken.FirstBinaryOperator] = OpPrec.precShift;
+            operatorsPrec[JSToken.Multiply - JSToken.FirstBinaryOperator] = OperatorPrecedence.Multiplicative;
+            operatorsPrec[JSToken.Divide - JSToken.FirstBinaryOperator] = OperatorPrecedence.Multiplicative;
+            operatorsPrec[JSToken.Modulo - JSToken.FirstBinaryOperator] = OperatorPrecedence.Multiplicative;
 
-            operatorsPrec[JSToken.Multiply - JSToken.FirstBinaryOperator] = OpPrec.precMultiplicative;
-            operatorsPrec[JSToken.Divide - JSToken.FirstBinaryOperator] = OpPrec.precMultiplicative;
-            operatorsPrec[JSToken.Modulo - JSToken.FirstBinaryOperator] = OpPrec.precMultiplicative;
+            operatorsPrec[JSToken.Assign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.PlusAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.MinusAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.MultiplyAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.DivideAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.BitwiseAndAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.BitwiseOrAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.BitwiseXorAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.ModuloAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.LeftShiftAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.RightShiftAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
+            operatorsPrec[JSToken.UnsignedRightShiftAssign - JSToken.FirstBinaryOperator] = OperatorPrecedence.Assignment;
 
-            operatorsPrec[JSToken.Assign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.PlusAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.MinusAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.MultiplyAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.DivideAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.BitwiseAndAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.BitwiseOrAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.BitwiseXorAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.ModuloAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.LeftShiftAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.RightShiftAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
-            operatorsPrec[JSToken.UnsignedRightShiftAssign - JSToken.FirstBinaryOperator] = OpPrec.precAssignment;
+            operatorsPrec[JSToken.ConditionalIf - JSToken.FirstBinaryOperator] = OperatorPrecedence.Conditional;
+            operatorsPrec[JSToken.Colon - JSToken.FirstBinaryOperator] = OperatorPrecedence.Conditional;
 
-            operatorsPrec[JSToken.ConditionalIf - JSToken.FirstBinaryOperator] = OpPrec.precConditional;
-            operatorsPrec[JSToken.Colon - JSToken.FirstBinaryOperator] = OpPrec.precConditional;
-
-            operatorsPrec[JSToken.Comma - JSToken.FirstBinaryOperator] = OpPrec.precComma;
+            operatorsPrec[JSToken.Comma - JSToken.FirstBinaryOperator] = OperatorPrecedence.Comma;
 
             return operatorsPrec;
-        }
-
-        private static string[] InitOperatorsString()
-        {
-            string[] operatorsString = new string[JSToken.LastOperator - JSToken.FirstOperator + 1];
-
-            operatorsString[JSToken.LogicalNot - JSToken.FirstOperator] = "!";
-            operatorsString[JSToken.BitwiseNot - JSToken.FirstOperator] = "~";
-            operatorsString[JSToken.Void - JSToken.FirstOperator] = "void";
-            operatorsString[JSToken.TypeOf - JSToken.FirstOperator] = "typeof";
-            operatorsString[JSToken.Delete - JSToken.FirstOperator] = "delete";
-            operatorsString[JSToken.Increment - JSToken.FirstOperator] = "++";
-            operatorsString[JSToken.Decrement - JSToken.FirstOperator] = "--";
-
-            operatorsString[JSToken.Plus - JSToken.FirstOperator] = "+";
-            operatorsString[JSToken.Minus - JSToken.FirstOperator] = "-";
-
-            operatorsString[JSToken.LogicalOr - JSToken.FirstOperator] = "||";
-            operatorsString[JSToken.LogicalAnd - JSToken.FirstOperator] = "&&";
-            operatorsString[JSToken.BitwiseOr - JSToken.FirstOperator] = "|";
-            operatorsString[JSToken.BitwiseXor - JSToken.FirstOperator] = "^";
-            operatorsString[JSToken.BitwiseAnd - JSToken.FirstOperator] = "&";
-
-            operatorsString[JSToken.Equal - JSToken.FirstOperator] = "==";
-            operatorsString[JSToken.NotEqual - JSToken.FirstOperator] = "!=";
-            operatorsString[JSToken.StrictEqual - JSToken.FirstOperator] = "===";
-            operatorsString[JSToken.StrictNotEqual - JSToken.FirstOperator] = "!==";
-
-            operatorsString[JSToken.InstanceOf - JSToken.FirstOperator] = "instanceof";
-            operatorsString[JSToken.In - JSToken.FirstOperator] = "in";
-            operatorsString[JSToken.GreaterThan - JSToken.FirstOperator] = ">";
-            operatorsString[JSToken.LessThan - JSToken.FirstOperator] = "<";
-            operatorsString[JSToken.LessThanEqual - JSToken.FirstOperator] = "<=";
-            operatorsString[JSToken.GreaterThanEqual - JSToken.FirstOperator] = ">=";
-
-            operatorsString[JSToken.LeftShift - JSToken.FirstOperator] = "<<";
-            operatorsString[JSToken.RightShift - JSToken.FirstOperator] = ">>";
-            operatorsString[JSToken.UnsignedRightShift - JSToken.FirstOperator] = ">>>";
-
-            operatorsString[JSToken.Multiply - JSToken.FirstOperator] = "*";
-            operatorsString[JSToken.Divide - JSToken.FirstOperator] = "/";
-            operatorsString[JSToken.Modulo - JSToken.FirstOperator] = "%";
-
-            operatorsString[JSToken.Assign - JSToken.FirstOperator] = "=";
-            operatorsString[JSToken.PlusAssign - JSToken.FirstOperator] = "+=";
-            operatorsString[JSToken.MinusAssign - JSToken.FirstOperator] = "-=";
-            operatorsString[JSToken.MultiplyAssign - JSToken.FirstOperator] = "*=";
-            operatorsString[JSToken.DivideAssign - JSToken.FirstOperator] = "/=";
-            operatorsString[JSToken.BitwiseAndAssign - JSToken.FirstOperator] = "&=";
-            operatorsString[JSToken.BitwiseOrAssign - JSToken.FirstOperator] = "|=";
-            operatorsString[JSToken.BitwiseXorAssign - JSToken.FirstOperator] = "^=";
-            operatorsString[JSToken.ModuloAssign - JSToken.FirstOperator] = "%=";
-            operatorsString[JSToken.LeftShiftAssign - JSToken.FirstOperator] = "<<=";
-            operatorsString[JSToken.RightShiftAssign - JSToken.FirstOperator] = ">>=";
-            operatorsString[JSToken.UnsignedRightShiftAssign - JSToken.FirstOperator] = ">>>=";
-
-            operatorsString[JSToken.ConditionalIf - JSToken.FirstOperator] = "?";
-            operatorsString[JSToken.Colon - JSToken.FirstOperator] = ":";
-
-            operatorsString[JSToken.Comma - JSToken.FirstOperator] = ",";
-
-            return operatorsString;
         }
     }
 }

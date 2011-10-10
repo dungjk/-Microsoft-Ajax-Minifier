@@ -204,31 +204,6 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("var ");
-            Parser.Settings.Indent();
-
-            bool first = true;
-            for (int ndx = 0; ndx < m_list.Count; ++ndx)
-            {
-                VariableDeclaration vdecl = m_list[ndx];
-                if (vdecl != null)
-                {
-                    if (!first)
-                    {
-                        sb.Append(',');
-                        Parser.Settings.NewLine(sb);
-                    }
-                    sb.Append(vdecl.ToCode());
-                    first = false;
-                }
-            }
-            Parser.Settings.Unindent();
-            return sb.ToString();
-        }
-
         /*
         public void RemoveUnreferencedGenerated(FunctionScope scope)
         {

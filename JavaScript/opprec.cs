@@ -20,24 +20,26 @@
 
 namespace Microsoft.Ajax.Utilities
 {
-
-    internal enum OpPrec{
-      precNone,
-      precComma,
-      precAssignment,
-      precConditional,
-      precLogicalOr,
-      precLogicalAnd,
-      precBitwiseOr,
-      precBitwiseXor,
-      precBitwiseAnd,
-      precEquality,
-      precRelational,
-      precShift,
-      precAdditive,
-      precMultiplicative,
-      precUnary,
-      precPrimary
+    public enum OperatorPrecedence
+    {
+        None,
+        Comma,
+        Assignment,
+        Conditional,
+        LogicalOr,
+        LogicalAnd,
+        BitwiseOr,
+        BitwiseXor,
+        BitwiseAnd,
+        Equality,
+        Relational,
+        Shift,
+        Additive,
+        Multiplicative,
+        Unary,
+        FieldAccess,
+        Primary,
+        Highest
     }
-}    
+}
 

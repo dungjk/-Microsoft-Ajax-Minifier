@@ -21,9 +21,6 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class NumericUnary : UnaryOperator
     {
-        public bool OperatorInConditionalCompilationComment { get; set; }
-        public bool ConditionalCommentContainsOn { get; set; }
-
         public NumericUnary(Context context, JSParser parser, AstNode operand, JSToken operatorToken)
             : base(context, parser, operand, operatorToken)
         {
@@ -49,59 +46,6 @@ namespace Microsoft.Ajax.Utilities
             return otherUnary != null
                 && this.OperatorToken == otherUnary.OperatorToken
                 && this.Operand.IsEquivalentTo(otherUnary.Operand);
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            var operatorText = JSScanner.GetOperatorString(OperatorToken);
-            if (OperatorInConditionalCompilationComment)
-            {
-                sb.Append("/*@");
-
-                // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
-                // sources had one. Otherwise, we only only want to output one if we had one and we aren't
-                // removing unneccesary ones.
-                if (!Parser.OutputCCOn
-                    || (ConditionalCommentContainsOn && !Parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
-                {
-                    // output it now and set the flag that we have output them
-                    sb.Append("cc_on");
-                    Parser.OutputCCOn = true;
-                }
-                sb.Append(operatorText);
-                sb.Append("@*/");
-            }
-            else
-            {
-                sb.Append(operatorText);
-            }
-            if (Operand != null)
-            {
-                string operandString = Operand.ToCode(format);
-                if (NeedsParentheses)
-                {
-                    sb.Append('(');
-                    sb.Append(operandString);
-                    sb.Append(')');
-                }
-                else
-                {
-                    if (operandString.Length > 0)
-                    {
-                        // make sure that - - or + + doesn't get crunched to -- or ++
-                        // (which would totally change the meaning of the code)
-                        if ((OperatorToken == JSToken.Minus && operandString[0] == '-')
-                          || (OperatorToken == JSToken.Plus && operandString[0] == '+'))
-                        {
-                            sb.Append(' ');
-                        }
-                    }
-                    sb.Append(operandString);
-                }
-            }
-            return sb.ToString();
         }
     }
 }

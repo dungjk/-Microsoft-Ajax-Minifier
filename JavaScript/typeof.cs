@@ -43,25 +43,5 @@ namespace Microsoft.Ajax.Utilities
             return otherTypeOf != null
                 && Operand.IsEquivalentTo(otherTypeOf.Operand);
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            string operandString = Operand.ToCode(format);
-            if (NeedsParentheses)
-            {
-                // need parentheses
-                return "typeof(" + operandString + ')';
-            }
-            else if (JSScanner.StartsWithIdentifierPart(operandString))
-            {
-                // need a space separating them
-                return "typeof " + operandString;
-            }
-            else
-            {
-                // don't need the space
-                return "typeof" + operandString;
-            }
-        }
     }
 }

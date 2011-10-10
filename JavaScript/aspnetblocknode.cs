@@ -23,13 +23,13 @@ namespace Microsoft.Ajax.Utilities
 	public sealed class AspNetBlockNode : AstNode
 	{
 		private bool blockTerminatedByExplicitSemicolon;
-		private string aspNetBlockText;
+        public string AspNetBlockText { get; private set; }
 
 		public AspNetBlockNode(Context context, JSParser parser, string aspNetBlockText,
 			bool blockTerminatedByExplicitSemicolon)
 			: base(context, parser)
 		{
-			this.aspNetBlockText = aspNetBlockText;
+			this.AspNetBlockText = aspNetBlockText;
 			this.blockTerminatedByExplicitSemicolon = blockTerminatedByExplicitSemicolon;
 		}
 
@@ -40,11 +40,6 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-		public override string ToCode(ToCodeFormat format)
-		{
-			return aspNetBlockText;
-		}
 
 		internal override bool RequiresSeparator
 		{

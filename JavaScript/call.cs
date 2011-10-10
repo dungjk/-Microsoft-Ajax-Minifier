@@ -64,6 +64,15 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                // new-operator is the unary precedence; () and [] are  field access
+                return /*IsConstructor ? OperatorPrecedence.Unary :*/ OperatorPrecedence.FieldAccess;
+            }
+        }
+
         public override bool IsExpression
         {
             get
@@ -167,104 +176,6 @@ namespace Microsoft.Ajax.Utilities
                 // if it is, then we will pop positive if the recursive call does
                 return ((m_func is Member || m_func is CallNode || m_func is Lookup) && m_func.IsDebuggerStatement);
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // we will only add a space if we KNOW we might need one
-            bool needsSpace = false;
-
-            // normal processing...
-            if (m_isConstructor)
-            {
-                sb.Append("new");
-                // the new operator might need to be followed by a space, depending
-                // on what will actually follow
-                needsSpace = true;
-            }
-
-            // list of items that DON'T need parens.
-            // lookup, call or member don't need parens. All other items
-            // are lower-precedence and therefore need to be wrapped in
-            // parentheses to keep the right order.
-            // function objects take care of their own parentheses.
-            CallNode funcCall = m_func as CallNode;
-            bool encloseInParens = !(
-                 (m_func is Lookup)
-              || (m_func is Member)
-              || (funcCall != null)
-              || (m_func is ThisLiteral)
-              || (m_func is FunctionObject)
-              || (m_func is ArrayLiteral)
-              || (m_func is ConstantWrapper)
-              || (m_func is ObjectLiteral)
-              );
-
-            // if we already know we're going to wrap in parens, then there's no need for further checks
-            if (!encloseInParens)
-            {
-                // because if the new-operator associates to the right and the ()-operator associates
-                // to the left, we need to be careful that we don't change the precedence order when the 
-                // function of a new operator is itself a call or contains a call. In that case, the call will have it's own
-                // parameters (and therefore parentheses) that will need to be associated with the call
-                // and NOT the new -- the call will need to be surrounded with parens to keep that association.
-                // (if we are already going to wrap it in parens, no need to check further)
-                if (m_isConstructor)
-                {
-                    // check the constructor function of our new operator to see if 
-                    // it requires parens so we don't get the precedence all screwed up.
-                    // pass in whether or not WE have any arguments -- will make a difference when we have embedded
-                    // constructors that don't have arguments
-                    encloseInParens = NewParensVisitor.NeedsParens(Function, Arguments == null || Arguments.Count == 0);
-                }
-                else if (funcCall != null && funcCall.IsConstructor
-                    && (funcCall.Arguments == null || funcCall.Arguments.Count == 0))
-                {
-                    // WE are neither constructor nor member-brackets, which means we will have our own
-                    // parenthesized argument list. But if the function of our call is a constructor with no arguments, 
-                    // we'll need to wrap it in parens so OUR parens are associated with us and not the child
-                    // new-operator
-                    encloseInParens = true;
-                }
-            }
-
-            if (encloseInParens)
-            {
-                // we're adding a parenthesis, so no -- we won't need to
-                // add a space
-                needsSpace = false;
-                sb.Append('(');
-            }
-
-            string functionString = m_func.ToCode();
-            // if we still think we might need a space, check the function we just
-            // formatted. If it starts with an identifier part, then we need the space.
-            if (needsSpace && JSScanner.StartsWithIdentifierPart(functionString))
-            {
-                sb.Append(' ');
-            }
-            sb.Append(functionString);
-
-            if (encloseInParens)
-            {
-                sb.Append(')');
-            }
-            // if this isn't a constructor, or if it is and there are parameters,
-            // then we want to output the parameters. But if this is a constructor with
-            // no parameters, we can skip the whole empty-argument-parens thing altogether.
-            if (!m_isConstructor || (m_args != null && m_args.Count > 0))
-            {
-                sb.Append((m_inBrackets ? '[' : '('));
-                if (m_args != null)
-                {
-                    sb.Append(m_args.ToCode(ToCodeFormat.Commas));
-                }
-                sb.Append((m_inBrackets ? ']' : ')'));
-            }
-
-            return sb.ToString();
         }
 
         internal override string GetFunctionGuess(AstNode target)

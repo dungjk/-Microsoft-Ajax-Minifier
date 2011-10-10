@@ -33,5 +33,14 @@ namespace Microsoft.Ajax.Utilities
                 return !IsDirectivePrologue;
             }
         }
+
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                // assume primary (lookup, literals, etc) and override for operators
+                return OperatorPrecedence.Primary;
+            }
+        }
     }
 }

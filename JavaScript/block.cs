@@ -72,6 +72,7 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // 0 statements, true (lone semicolon)
+                // 1 and list[0].HideFromOutput = false 
                 // 1 = ask list[0]
                 // > 1, false (enclosed in braces
                 // if there are 2 or more statements in the block, then
@@ -79,17 +80,8 @@ namespace Microsoft.Ajax.Utilities
                 return (
                   m_list.Count == 0
                   ? true
-                  : (m_list.Count == 1 ? m_list[0].RequiresSeparator : false)
+                  : (m_list.Count == 1  && !m_list[0].HideFromOutput ? m_list[0].RequiresSeparator : false)
                   );
-            }
-        }
-
-        // if the block has no statements, it ends in an empty block
-        internal override bool EndsWithEmptyBlock
-        {
-            get
-            {
-                return (m_list.Count == 0);
             }
         }
 
@@ -197,125 +189,6 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
             return false;
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            if (format == ToCodeFormat.NoBraces && m_list.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            // if this is the root script block....
-            if (Parent == null)
-            {
-                // make sure the parser's flag for whether or not a cc_on has been output yet
-                // has been cleared
-                Parser.OutputCCOn = false;
-            }
-
-            StringBuilder sb = new StringBuilder();
-            bool closeBrace = false;
-            bool unindent = false;
-
-            // if the format is N, then we never enclose in braces.
-            // if the format is B or T, then we always enclose in braces.
-            // anything else, then we enclose in braces if there's more than
-            // one enclosing line
-            if (format != ToCodeFormat.NoBraces && Parent != null)
-            {
-                if (format == ToCodeFormat.AlwaysBraces
-                  || format == ToCodeFormat.NestedTry
-                  || m_list.Count > 1)
-                {
-                    // opening brace on a new line
-                    Parser.Settings.NewLine(sb);
-
-                    // up the indent level for the content within
-                    Parser.Settings.Indent();
-
-                    sb.Append("{");
-                    closeBrace = true;
-                }
-                else if (m_list.Count == 1 && format != ToCodeFormat.ElseIf)
-                {
-                    // we're pretty-printing a single-line block.
-                    // we still won't enclose in brackets, but we need to indent it
-                    Parser.Settings.Indent();
-                    unindent = true;
-                }
-            }
-
-            bool requireSeparator = false;
-            bool endsWithEmptyBlock = false;
-            bool mightNeedSpace = false;
-            for (int ndx = 0; ndx < m_list.Count; ++ndx)
-            {
-                AstNode item = m_list[ndx];
-                if (item != null)
-                {
-                    string itemText = item.ToCode();
-                    if (itemText.Length > 0)
-                    {
-                        // see if we need to add a semi-colon
-                        if (ndx > 0 && requireSeparator)
-                        {
-                            sb.Append(';');
-                            if (Parser.Settings.OutputMode == OutputMode.SingleLine && item is ImportantComment)
-                            {
-                                // if this item is an important comment and we're in single-line mode, 
-                                // we'll start on a new line. Since this is single-line mode, don't call AppendLine
-                                // because it will send CRLF -- we just want the LF
-                                sb.Append('\n');
-                            }
-                            // we no longer require a separator next time around
-                            requireSeparator = false;
-                        }
-
-                        // if this is an else-if construct, we don't want to break to a new line.
-                        // but all other formats put the next statement on a newline
-                        if (format != ToCodeFormat.ElseIf)
-                        {
-                            Parser.Settings.NewLine(sb);
-                        }
-
-                        if (mightNeedSpace && JSScanner.IsValidIdentifierPart(itemText[0]))
-                        {
-                            sb.Append(' ');
-                        }
-
-                        sb.Append(itemText);
-                        requireSeparator = (item.RequiresSeparator && !itemText.EndsWith(";", StringComparison.Ordinal));
-                        endsWithEmptyBlock = item.EndsWithEmptyBlock;
-
-                        mightNeedSpace =
-                            (item is ConditionalCompilationStatement)
-                            && JSScanner.IsValidIdentifierPart(itemText[itemText.Length - 1]);
-                    }
-                }
-            }
-
-            // if the code ends with an empty block, we need to make sure there's a terminating semicolon.
-            // or if the last statement requires a separator and this is the ROOT block, AND we have the "terminating semicolons" setting on,
-            // then also add it now
-            if (endsWithEmptyBlock
-                || (requireSeparator && Parent == null && Parser.Settings.TermSemicolons))
-            {
-                sb.Append(';');
-            }
-
-            if (closeBrace)
-            {
-                // unindent now that the block is done
-                Parser.Settings.Unindent();
-                Parser.Settings.NewLine(sb);
-                sb.Append("}");
-            }
-            else if (unindent)
-            {
-                Parser.Settings.Unindent();
-            }
-            return sb.ToString();
         }
 
         public void Append(AstNode element)

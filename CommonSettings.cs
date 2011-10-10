@@ -39,12 +39,23 @@ namespace Microsoft.Ajax.Utilities
             OutputMode = OutputMode.SingleLine;
             TermSemicolons = false;
             KillSwitch = 0;
+            LineBreakThreshold = int.MaxValue - 1000;
         }
 
         /// <summary>
         /// Number of spaces per indent level when in MultipleLines output mode
         /// </summary>
         public int IndentSize
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the column position at which the line will be broken at the next available opportunity.
+        /// Default value is int.MaxValue - 1000.
+        /// </summary>
+        public int LineBreakThreshold
         {
             get;
             set;
@@ -95,20 +106,12 @@ namespace Microsoft.Ajax.Utilities
             --m_indentLevel;
         }
 
-        // put indent level and size together for a new-line
-        internal bool NewLine(StringBuilder sb)
+        internal string TabSpaces
         {
-            bool addNewLine = (OutputMode == OutputMode.MultipleLines);
-            if (addNewLine)
+            get
             {
-                sb.AppendLine();
-                if (m_indentLevel > 0 && IndentSize > 0)
-                {
-                    sb.Append(new string(' ', m_indentLevel * IndentSize));
-                }
+                return new string(' ', m_indentLevel * IndentSize);
             }
-
-            return addNewLine;
         }
 
         #endregion

@@ -32,23 +32,5 @@ namespace Microsoft.Ajax.Utilities
                 visitor.Visit(this);
             }
         }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            if (PrimitiveType == PrimitiveType.String
-                && Parser.Settings.IsModificationAllowed(TreeModifications.RemoveQuotesFromObjectLiteralNames))
-            {
-                string rawValue = Value.ToString();
-
-                // if the raw value is safe to be an identifier, then go ahead and ditch the quotes and just output
-                // the raw value. Otherwise call ToCode to wrap the string in quotes.
-                return JSScanner.IsSafeIdentifier(rawValue) && !JSScanner.IsKeyword(rawValue, EnclosingScope.UseStrict) ? rawValue : base.ToCode(format);
-            }
-            else
-            {
-                // call the base to format the value
-                return base.ToCode(format);
-            }
-        }
     }
 }

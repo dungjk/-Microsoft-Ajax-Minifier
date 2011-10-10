@@ -32,11 +32,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override string ToCode(ToCodeFormat format)
-        {
-            return "debugger";
-        }
-
         internal override bool IsDebuggerStatement
         {
             get

@@ -22,12 +22,12 @@ namespace Microsoft.Ajax.Utilities
 
     public sealed class GetterSetter : ObjectLiteralField
     {
-        private bool m_isGetter;
+        public bool IsGetter { get; private set; }
 
         public GetterSetter(String identifier, bool isGetter, Context context, JSParser parser)
             : base(identifier, PrimitiveType.String, context, parser)
         {
-            m_isGetter = isGetter;
+            IsGetter = isGetter;
         }
 
         public override void Accept(IVisitor visitor)
@@ -36,14 +36,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 visitor.Visit(this);
             }
-        }
-
-        public override string ToCode(ToCodeFormat format)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(m_isGetter ? "get " : "set ");
-            sb.Append(Value);
-            return sb.ToString();
         }
 
         public override String ToString()

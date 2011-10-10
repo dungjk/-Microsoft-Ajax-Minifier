@@ -15,5 +15,6 @@ function notStrict(a,b)
     b = +a * 200;
 
     // unrestricted mode (not strict) will encode the \x02 as octal \2
+    // REVISION: actually, octal escapes should just be avoided. Always use hex escapes.
     return "one\x02two" + a + b;
 }
