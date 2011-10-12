@@ -38,6 +38,15 @@ namespace Microsoft.Ajax.Utilities
 #endif
 );
 
+        // used to detect possible ASP.NET substitutions in a string
+        private static Regex s_aspNetSubstitution = new Regex(
+            @"\<%.*%\>",
+            RegexOptions.CultureInvariant
+#if !SILVERLIGHT
+ | RegexOptions.Compiled
+#endif
+);
+
         public Object Value { get; set; }
 
         public PrimitiveType PrimitiveType
@@ -498,9 +507,20 @@ namespace Microsoft.Ajax.Utilities
                 // also, we don't want to combine any strings that contain \v, since
                 // IE doesn't implement the ECMAScript standard of \v being the
                 // vertical tab character. Cross-browser difference there.
-                return (!IsStringLiteral && !IsNumericLiteral)
+                var isOkay = (!IsStringLiteral && !IsNumericLiteral)
                     || (IsNumericLiteral && NumberIsOkayToCombine((double)Value))
                     || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && !Context.Code.Contains("\\v"));
+
+                // broke this out into a separate test because I originally thought I would only do it if the
+                // AllowEmbeddedAspNetBlocks switch was set. But I think this is important enough to do all the time.
+                if (isOkay && IsStringLiteral && s_aspNetSubstitution.IsMatch((string)Value))
+                {
+                    // also, if it's a string, check to see if it contains a possible ASP.NET substitution.
+                    // if it does, we don't want to combine those, either.
+                    isOkay = false;
+                }
+
+                return isOkay;
             }
         }
 

@@ -159,5 +159,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void AspNet()
+        {
+            TestHelper.Instance.RunTest("-term");
+        }
     }
 }
