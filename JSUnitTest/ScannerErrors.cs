@@ -26,21 +26,21 @@ namespace JSUnitTest
     [TestMethod()]
     public void BadHexDigit()
     {
-      TestHelper.Instance.RunErrorTest(JSError.BadHexDigit);
+      TestHelper.Instance.RunErrorTest(null, JSError.BadHexDigit);
     }
 
     [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StringEOF()
     {
-      TestHelper.Instance.RunErrorTest(JSError.UnterminatedString);
+      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
     }
 
     [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StringEOL()
     {
-      TestHelper.Instance.RunErrorTest(JSError.UnterminatedString);
+      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
     }
   }
 }

@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -27,36 +28,84 @@ namespace JSUnitTest
         [TestMethod]
         public void EvalArgsAssign()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-rename:none", 
+                JSError.StrictModeInvalidAssign, 
+                JSError.StrictModeInvalidAssign,
+                JSError.StrictModeInvalidPreOrPost, 
+                JSError.StrictModeInvalidPreOrPost, 
+                JSError.StrictModeInvalidPreOrPost, 
+                JSError.StrictModeInvalidPreOrPost);
         }
 
         [TestMethod]
         public void InvalidVarName()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-rename:none",
+                JSError.StrictModeVariableName,
+                JSError.StrictModeVariableName,
+                JSError.StrictModeVariableName,
+                JSError.StrictModeVariableName,
+                JSError.StrictModeArgumentName,
+                JSError.StrictModeArgumentName,
+                JSError.StrictModeFunctionName,
+                JSError.StrictModeFunctionName,
+                JSError.UndeclaredFunction);
         }
 
         [TestMethod]
         public void DupArg()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-rename:none",
+                JSError.StrictModeDuplicateArgument,
+                JSError.DuplicateName);
         }
 
         [TestMethod]
         public void With()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.StrictModeNoWith);
         }
 
         [TestMethod]
         public void DupProperty()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-rename:none",
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty,
+                JSError.StrictModeDuplicateProperty);
         }
 
         [TestMethod]
         public void InvalidDelete()
         {
+            TestHelper.Instance.RunErrorTest("-rename:none",
+                JSError.StrictModeInvalidDelete,
+                JSError.StrictModeInvalidDelete,
+                JSError.StrictModeInvalidDelete);
+        }
+
+        [TestMethod]
+        public void FuncDeclLoc()
+        {
+            // no errors! not in strict mode
+            TestHelper.Instance.RunErrorTest("-rename:none");
+        }
+
+        [TestMethod]
+        public void FuncDeclStrict()
+        {
+            // error because it's in strict mode
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.MisplacedFunctionDeclaration);
+        }
+
+        [TestMethod]
+        public void ExtraUseStrict()
+        {
+            // error because it's in strict mode
             TestHelper.Instance.RunTest();
         }
     }

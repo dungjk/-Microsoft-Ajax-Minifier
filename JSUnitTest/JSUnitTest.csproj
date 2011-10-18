@@ -285,6 +285,9 @@
     <Content Include="TestData\JS\Expected\Strict\DupArg.js" />
     <Content Include="TestData\JS\Expected\Strict\DupProperty.js" />
     <Content Include="TestData\JS\Expected\Strict\EvalArgsAssign.js" />
+    <Content Include="TestData\JS\Expected\Strict\ExtraUseStrict.js" />
+    <Content Include="TestData\JS\Expected\Strict\FuncDeclLoc.js" />
+    <Content Include="TestData\JS\Expected\Strict\FuncDeclStrict.js" />
     <Content Include="TestData\JS\Expected\Strict\InvalidDelete.js" />
     <Content Include="TestData\JS\Expected\Strict\InvalidVarName.js" />
     <Content Include="TestData\JS\Expected\Strict\With.js" />
@@ -454,6 +457,9 @@
     <Content Include="TestData\JS\Input\Strict\DupArg.js" />
     <Content Include="TestData\JS\Input\Strict\DupProperty.js" />
     <Content Include="TestData\JS\Input\Strict\EvalArgsAssign.js" />
+    <Content Include="TestData\JS\Input\Strict\ExtraUseStrict.js" />
+    <Content Include="TestData\JS\Input\Strict\FuncDeclLoc.js" />
+    <Content Include="TestData\JS\Input\Strict\FuncDeclStrict.js" />
     <Content Include="TestData\JS\Input\Strict\InvalidDelete.js" />
     <Content Include="TestData\JS\Input\Strict\InvalidVarName.js" />
     <Content Include="TestData\JS\Input\Strict\With.js" />

@@ -572,18 +572,7 @@ namespace Microsoft.Ajax.Utilities
                     case JSToken.Function:
                         // parse a function declaration
                         FunctionObject function = ParseFunction(FunctionType.Declaration, m_currentToken.Clone());
-
-                        // now, if we aren't parsing source elements (directly in global scope or function body)
-                        // then we want to throw a warning that different browsers will treat this function declaration
-                        // differently. Technically, this location is not allowed. IE and most other browsers will 
-                        // simply treat it like every other function declaration in this scope. Firefox, however, won't
-                        // add this function declaration's name to the containing scope until the function declaration
-                        // is actually "executed." So if you try to call it BEFORE, you will get a "not defined" error.
-                        if (!fSourceElement)
-                        {
-                            ReportError(JSError.MisplacedFunctionDeclaration, function.IdContext, true);
-                        }
-
+                        function.IsSourceElement = fSourceElement;
                         return function;
                     case JSToken.Else:
                         ReportError(JSError.InvalidElse);

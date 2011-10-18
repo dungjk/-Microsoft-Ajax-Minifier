@@ -300,6 +300,7 @@ namespace Microsoft.Ajax.Utilities
                 // are expression statements consisting entirely of a string literal. So let's walk from
                 // the beginning until we find the first statement that is not a ConstantWrapper of primitive
                 // type string. Mark the ones we find as directive prologues
+                var foundUseStrict = false;
                 for (var ndx = 0; ndx < node.Count; ++ndx)
                 {
                     var constWrapper = node[ndx] as ConstantWrapper;
@@ -321,17 +322,52 @@ namespace Microsoft.Ajax.Utilities
                         if (constWrapper.Context == null
                             || string.CompareOrdinal(constWrapper.Context.Code, 1, "use strict", 0, 10) == 0)
                         {
+                            // treat function and global scope differently
                             var funcObject = node.Parent as FunctionObject;
                             if (funcObject != null)
                             {
                                 // function scope
-                                funcObject.FunctionScope.UseStrict = true;
+                                // if the function scope is ALREADY strict, or if its parent scope is 
+                                // ALREADY strict, then we really don't need the directive at all
+                                var ourScope = funcObject.FunctionScope;
+                                if (ourScope.UseStrict || ourScope.Parent.UseStrict)
+                                {
+                                    // we are already strict, so this directive is unneccessary.
+                                    // remove it
+                                    node.ReplaceChild(constWrapper, null);
+
+                                    // don't forget to bump the counter DOWN so that when we increment it 
+                                    // when we get to the top of the loop again, we're back to this same
+                                    // location -- the NEXT item will become the CURRENT item once we delete
+                                    // the current item, and we don't want to skip it
+                                    --ndx;
+                                }
+
+                                // mark us as strict, regardless
+                                ourScope.UseStrict = true;
                             }
                             else
                             {
                                 // global scope
+                                // if we already have a "use strict" for the global scope, then get rid of this dup.
+                                // we want to get rid of duplicates, but we don't want to get rid of a single one just because
+                                // a previous module (or command line switch) may have put the global scope in strict mode
+                                if (foundUseStrict)
+                                {
+                                    node.ReplaceChild(constWrapper, null);
+
+                                    // don't forget to bump the counter DOWN so that when we increment it 
+                                    // when we get to the top of the loop again, we're back to this same
+                                    // location -- the NEXT item will become the CURRENT item once we delete
+                                    // the current item, and we don't want to skip it
+                                    --ndx;
+                                }
+
                                 node.Parser.GlobalScope.UseStrict = true;
                             }
+
+                            // set the flag indicating that we found a use-strict for this scope
+                            foundUseStrict = true;
                         }
                     }
                 }

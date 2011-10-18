@@ -566,7 +566,7 @@ namespace JSUnitTest
             return outputFiles;
         }
 
-        public void RunErrorTest(params JSError[] expectedErrorArray)
+        public void RunErrorTest(string settingsSwitches, params JSError[] expectedErrorArray)
         {
             // open the stack trace for this call
             StackTrace stackTrace = new StackTrace();
@@ -626,10 +626,18 @@ namespace JSUnitTest
             Trace.WriteLine(string.Empty);
             Trace.WriteLine(string.Format("Expecting error 0x{0:X}", expectedErrorCode));*/
 
+            // if we were passed a string containing command-line settings...
+            var switchParser = new SwitchParser();
+            if (!string.IsNullOrEmpty(settingsSwitches))
+            {
+                // parse the string now
+                switchParser.Parse(settingsSwitches);
+            }
+
             bool testPassed = true;
             List<JSError> expectedErrorList = new List<JSError>(expectedErrorArray);
             ErrorTrap errorTrap = new ErrorTrap();
-            string crunchedCode = errorTrap.RunTest(jsSource);
+            string crunchedCode = errorTrap.RunTest(switchParser.JSSettings, jsSource);
             JScriptException[] errors = errorTrap.Errors;
 
             Trace.WriteLine(string.Empty);
@@ -721,13 +729,12 @@ namespace JSUnitTest
                 m_errorList = new List<JScriptException>();
             }
 
-            public string RunTest(string sourceCode)
+            public string RunTest(CodeSettings codeSettings, string sourceCode)
             {
                 JSParser jsParser = new JSParser(sourceCode);
                 jsParser.CompilerError += OnCompilerError;
 
                 // kick off the parsing
-                CodeSettings codeSettings = new CodeSettings();
                 Block programBlock = jsParser.Parse(codeSettings);
 
                 // return the crunched code

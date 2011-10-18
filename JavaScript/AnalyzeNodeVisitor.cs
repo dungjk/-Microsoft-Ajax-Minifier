@@ -1322,6 +1322,18 @@ namespace Microsoft.Ajax.Utilities
 
                 if (ScopeStack.Peek().UseStrict)
                 {
+                    // if this is a function delcaration, it better be a source element.
+                    // if not, we want to throw a warning that different browsers will treat this function declaration
+                    // differently. Technically, this location is not allowed. IE and most other browsers will 
+                    // simply treat it like every other function declaration in this scope. Firefox, however, won't
+                    // add this function declaration's name to the containing scope until the function declaration
+                    // is actually "executed." So if you try to call it BEFORE, you will get a "not defined" error.
+                    if (!node.IsSourceElement && node.FunctionType == FunctionType.Declaration)
+                    {
+                        node.Context.HandleError(JSError.MisplacedFunctionDeclaration, true);
+                    }
+
+
                     // we need to make sure the function isn't named "eval" or "arguments"
                     if (string.CompareOrdinal(node.Name, "eval") == 0
                         || string.CompareOrdinal(node.Name, "arguments") == 0)

@@ -81,6 +81,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        // when parsed, this flag indicates that a function declaration is in the
+        // proper source-element location
+        public bool IsSourceElement
+        {
+            get;
+            set;
+        }
+
         private JSVariableField m_variableField;
         public JSLocalField LocalField { get { return m_variableField as JSLocalField; } }
         public int RefCount { get { return (m_variableField == null ? 0 : m_variableField.RefCount); } }
