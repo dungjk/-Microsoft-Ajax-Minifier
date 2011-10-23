@@ -169,6 +169,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public virtual void Visit(DirectivePrologue node)
+        {
+            // no children
+        }
+
         public virtual void Visit(DoWhile node)
         {
             if (node != null)

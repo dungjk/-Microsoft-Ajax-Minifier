@@ -113,7 +113,7 @@ namespace DllUnitTest
 
                     // parse the source into an AST
                     var parser = new JSParser(source[ndx]);
-                    var block = parser.Parse(settings);
+                    var block = parser.ParseExpression(settings);
 
                     // there should only be one statement in the block
                     if (block.Count == 1)

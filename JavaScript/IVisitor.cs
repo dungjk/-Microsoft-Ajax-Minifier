@@ -38,6 +38,7 @@ namespace Microsoft.Ajax.Utilities
         void Visit(ContinueNode node);
         void Visit(DebuggerNode node);
         void Visit(Delete node);
+        void Visit(DirectivePrologue node);
         void Visit(DoWhile node);
         void Visit(ForIn node);
         void Visit(ForNode node);

@@ -42,10 +42,8 @@ namespace Microsoft.Ajax.Utilities
 
         #region file processing
 
-        private int ProcessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
+        private int PreprocessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
         {
-            int retVal = 0;
-
             // blank line before
             WriteProgress();
 
@@ -74,14 +72,52 @@ namespace Microsoft.Ajax.Utilities
                 settings.TermSemicolons = true;
             }
 
-            string resultingCode = null;
-            if (m_preprocessOnly)
+            // we only want to preprocess the code. Call that api on the parser
+            var resultingCode = parser.PreprocessOnly(settings);
+
+            // make sure we restore the intended temrinating-semicolon setting, 
+            // since we may have changed it earlier
+            settings.TermSemicolons = termSemicolons;
+
+            if (!string.IsNullOrEmpty(resultingCode))
             {
-                // we only want to preprocess the code. Call that api on the parser
-                resultingCode = parser.PreprocessOnly(settings);
+                // always output the crunched code to debug stream
+                System.Diagnostics.Debug.WriteLine(resultingCode);
+
+                // send the output code to the output stream
+                outputBuilder.Append(resultingCode);
             }
             else
             {
+                // resulting code is null or empty
+                Debug.WriteLine(StringMgr.GetString("OutputEmpty"));
+            }
+
+            return 0;
+        }
+
+        private int ProcessJSFileEcho(string sourceFileName, string encodingName, StringBuilder outputBuilder, ref long sourceLength)
+        {
+            // blank line before
+            WriteProgress();
+
+            // read our chunk of code
+            var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+            if (!string.IsNullOrEmpty(source))
+            {
+                // create the a parser object for our chunk of code
+                JSParser parser = new JSParser(source);
+
+                // set up the file context for the parser
+                parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
+
+                // hook the engine events
+                parser.CompilerError += OnCompilerError;
+                parser.UndefinedReference += OnUndefinedReference;
+
+                // pull our JS settings from the switch-parser class
+                CodeSettings settings = m_switchParser.JSSettings;
+
                 Block scriptBlock = parser.Parse(settings);
                 if (scriptBlock != null)
                 {
@@ -93,32 +129,15 @@ namespace Microsoft.Ajax.Utilities
                         // output our report
                         CreateReport(parser.GlobalScope);
                     }
-
-                    // crunch the output and write it to debug stream
-                    resultingCode = scriptBlock.ToCode();
                 }
                 else
                 {
                     // no code?
                     WriteProgress(StringMgr.GetString("NoParsedCode"));
                 }
-            }
-
-            // make sure we restore the intended temrinating-semicolon setting, 
-            // since we may have changed it earlier
-            settings.TermSemicolons = termSemicolons;
-
-            if (!string.IsNullOrEmpty(resultingCode))
-            {
-                // always output the crunched code to debug stream
-                System.Diagnostics.Debug.WriteLine(resultingCode);
-
-                // we'll output either the crunched code (normal) or
-                // the raw source if we're just echoing the input
-                string outputCode = (m_echoInput ? source : resultingCode);
 
                 // send the output code to the output stream
-                outputBuilder.Append(outputCode);
+                outputBuilder.Append(source);
             }
             else
             {
@@ -126,7 +145,66 @@ namespace Microsoft.Ajax.Utilities
                 Debug.WriteLine(StringMgr.GetString("OutputEmpty"));
             }
 
-            return retVal;
+            return 0;
+        }
+
+        private int ProcessJSFile(string sourceFileName, string encodingName, OutputVisitor outputVisitor, bool isLastFile, ref long sourceLength)
+        {
+            // blank line before
+            WriteProgress();
+
+            // read our chunk of code
+            var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+
+            // create the a parser object for our chunk of code
+            JSParser parser = new JSParser(source);
+
+            // set up the file context for the parser
+            parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
+
+            // hook the engine events
+            parser.CompilerError += OnCompilerError;
+            parser.UndefinedReference += OnUndefinedReference;
+
+            // pull our JS settings from the switch-parser class
+            CodeSettings settings = m_switchParser.JSSettings;
+
+            // if this isn't the last file, make SURE we terminate the last statement with
+            // a semicolon, since we'll be adding more code for the next file. But save the previous
+            // setting so can restore it before we leave
+            var termSemicolons = settings.TermSemicolons;
+            if (!isLastFile)
+            {
+                settings.TermSemicolons = true;
+            }
+
+            Block scriptBlock = parser.Parse(settings);
+            if (scriptBlock != null)
+            {
+                if (m_switchParser.AnalyzeMode)
+                {
+                    // blank line before
+                    WriteProgress();
+
+                    // output our report
+                    CreateReport(parser.GlobalScope);
+                }
+
+                // crunch the output and write it to debug stream, but make sure
+                // the settings we use to output THIS chunk are correct
+                outputVisitor.Settings = settings;
+                scriptBlock.Accept(outputVisitor);
+            }
+            else
+            {
+                // no code?
+                WriteProgress(StringMgr.GetString("NoParsedCode"));
+            }
+
+            // make sure we restore the intended temrinating-semicolon setting, 
+            // since we may have changed it earlier
+            settings.TermSemicolons = termSemicolons;
+            return 0;
         }
 
         #endregion

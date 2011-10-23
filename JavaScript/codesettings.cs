@@ -51,6 +51,7 @@ namespace Microsoft.Ajax.Utilities
             this.ReorderScopeDeclarations = true;
             this.RemoveFunctionExpressionNames = true;
             this.RemoveUnneededCode = true;
+            this.StrictMode = false;
             this.StripDebugStatements = true;
             this.AllowEmbeddedAspNetBlocks = false;
             this.EvalLiteralExpressions = true;
@@ -92,6 +93,7 @@ namespace Microsoft.Ajax.Utilities
                 RemoveUnneededCode = this.RemoveUnneededCode,
                 RenamePairs = this.RenamePairs,
                 ReorderScopeDeclarations = this.ReorderScopeDeclarations,
+                StrictMode = this.StrictMode,
                 StripDebugStatements = this.StripDebugStatements,
                 TermSemicolons = this.TermSemicolons,
             };
@@ -679,6 +681,16 @@ namespace Microsoft.Ajax.Utilities
         public bool RemoveUnneededCode
         {
             get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether or not to force the input code into strict mode
+        /// (can still specify strict-mode in the sources if this value is false) 
+        /// </summary>
+        public bool StrictMode
+        {
+            get;
+            set;
         }
 
         /// <summary>

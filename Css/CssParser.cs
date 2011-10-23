@@ -2272,8 +2272,8 @@ namespace Microsoft.Ajax.Utilities
                         jsParser.CompilerError += OnScriptError;
                         m_expressionContainsErrors = false;
 
-                        // parse the source with default settings
-                        Block block = jsParser.Parse(null);
+                        // parse the source as an expression using the default settings
+                        Block block = jsParser.ParseExpression(null);
 
                         // if we got back a parsed block and there were no errors, output the minified code.
                         // if we didn't get back the block, or if there were any errors at all, just output

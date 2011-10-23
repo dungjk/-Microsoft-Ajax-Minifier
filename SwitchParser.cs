@@ -1047,6 +1047,22 @@ namespace Microsoft.Ajax.Utilities
                                 OnJSOnlyParameter();
                                 break;
 
+                            case "STRICT":
+                                // default is false, but if we specify this switch without a parameter, then
+                                // we assume we are turning it ON
+                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    JSSettings.StrictMode = parameterFlag;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
                             case "TERM":
                                 // optional boolean argument, defaults to true
                                 if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
@@ -1102,7 +1118,9 @@ namespace Microsoft.Ajax.Utilities
                                 levelSpecified = true;
                                 break;
 
+                            //
                             // Backward-compatibility switches different from new switches
+                            //
 
                             case "D":
                                 // equivalent to -debug:false (default behavior)

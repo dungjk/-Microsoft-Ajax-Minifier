@@ -108,5 +108,12 @@ namespace JSUnitTest
             // error because it's in strict mode
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void StrictSwitchOn()
+        {
+            // error because it's in strict mode
+            TestHelper.Instance.RunTest("-strict -xml");
+        }
     }
 }

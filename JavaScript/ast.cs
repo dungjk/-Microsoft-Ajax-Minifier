@@ -53,7 +53,6 @@ namespace Microsoft.Ajax.Utilities
         internal Stack<ActivationObject> ScopeStack { get { return Parser.ScopeStack; } }
 
         public virtual bool IsExpression { get { return false; } }
-        public bool IsDirectivePrologue { get; set; }
 
         public virtual string ToCode() 
         {

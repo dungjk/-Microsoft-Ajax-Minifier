@@ -639,31 +639,24 @@ namespace Microsoft.Ajax.Utilities
 
         #region ProcessCrunchGroup method
 
-        private Encoding GetOutputEncoding(InputType inputType, string encodingName)
+        public static Encoding GetJSEncoding(string encodingName)
         {
-            // pick the right encoder from our file type
-            EncoderFallback encoderFallback = null;
+            return GetEncoding(encodingName, new JSEncoderFallback());
+        }
 
-            // set the appropriate encoder fallback
-            if (inputType == InputType.JavaScript)
-            {
-                // set the fallback handler to our own code. we will take any character not
-                // displayable by the output encoding and change it into \uXXXX escapes.
-                encoderFallback = new JSEncoderFallback();
-            }
-            else if (inputType == InputType.Css)
-            {
-                // set the fallback handler to our own code. we will take any character not
-                // displayable by the output encoding and change it into \uXXXX escapes.
-                encoderFallback = new CssEncoderFallback();
-            }
+        public static Encoding GetCssEncoding(string encodingName)
+        {
+            return GetEncoding(encodingName, new CssEncoderFallback());
+        }
 
+        private static Encoding GetEncoding(string encodingName, EncoderFallback fallback)
+        {
             Encoding encoding = null;
             if (string.IsNullOrEmpty(encodingName))
             {
                 // clone the ascii encoder so we can change the fallback handler
                 encoding = (Encoding)Encoding.ASCII.Clone();
-                encoding.EncoderFallback = encoderFallback;
+                encoding.EncoderFallback = fallback;
             }
             else
             {
@@ -672,15 +665,36 @@ namespace Microsoft.Ajax.Utilities
                     // try to create an encoding from the encoding argument
                     encoding = Encoding.GetEncoding(
                         encodingName,
-                        encoderFallback,
-                        new DecoderReplacementFallback("?")
-                        );
+                        fallback,
+                        new DecoderReplacementFallback("?"));
                 }
                 catch (ArgumentException e)
                 {
                     System.Diagnostics.Debug.WriteLine(e.ToString());
-                    throw new UsageException(m_outputMode, "InvalidOutputEncoding", encodingName);
                 }
+            }
+
+            return encoding;
+        }
+
+        private Encoding GetOutputEncoding(InputType inputType, string encodingName)
+        {
+            // pick the right encoder from our file type
+            Encoding encoding = null;
+
+            // set the appropriate encoder fallback
+            if (inputType == InputType.JavaScript)
+            {
+                encoding = GetJSEncoding(encodingName);
+            }
+            else if (inputType == InputType.Css)
+            {
+                encoding = GetCssEncoding(encodingName);
+            }
+
+            if (encoding == null)
+            {
+                throw new UsageException(m_outputMode, "InvalidOutputEncoding", encodingName);
             }
 
             return encoding;
@@ -688,23 +702,12 @@ namespace Microsoft.Ajax.Utilities
 
         private Encoding GetInputEncoding(string encodingName)
         {
-            Encoding encoding = null;
-            if (string.IsNullOrEmpty(encodingName))
+            // just get the JS encoding; we're not going to be outputting anything with this encoding
+            // object, so it doesn't matter which output encoding fallback object we have on it.
+            var encoding = GetJSEncoding(encodingName);
+            if (encoding == null)
             {
-                // default is UTF8
-                encoding = Encoding.UTF8;
-            }
-            else
-            {
-                try
-                {
-                    encoding = Encoding.GetEncoding(encodingName);
-                }
-                catch (ArgumentException e)
-                {
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                    throw new UsageException(m_outputMode, "InvalidInputEncoding", encodingName);
-                }
+                throw new UsageException(m_outputMode, "InvalidInputEncoding", encodingName);
             }
 
             return encoding;
@@ -844,24 +847,77 @@ namespace Microsoft.Ajax.Utilities
 
                         try
                         {
-                            // see how many input files there are
-                            if (crunchGroup.Count == 0)
+                            if (m_preprocessOnly)
                             {
-                                // take input from stdin.
-                                // since that's the ONLY input file, pass TRUE for isLastFile
-                                retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, true, ref sourceLength);
+                                // see how many input files there are
+                                if (crunchGroup.Count == 0)
+                                {
+                                    // take input from stdin.
+                                    // since that's the ONLY input file, pass TRUE for isLastFile
+                                    retVal = PreprocessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, true, ref sourceLength);
+                                }
+                                else
+                                {
+                                    // process each input file in turn. 
+                                    for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                    {
+                                        retVal = PreprocessJSFile(
+                                            crunchGroup[ndx].Path,
+                                            crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                            outputBuilder,
+                                            ndx == crunchGroup.Count - 1,
+                                            ref sourceLength);
+                                    }
+                                }
+                            }
+                            else if (m_echoInput)
+                            {
+                                // see how many input files there are
+                                if (crunchGroup.Count == 0)
+                                {
+                                    // take input from stdin.
+                                    // since that's the ONLY input file, pass TRUE for isLastFile
+                                    retVal = ProcessJSFileEcho(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
+                                }
+                                else
+                                {
+                                    // process each input file in turn. 
+                                    for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                    {
+                                        retVal = ProcessJSFileEcho(
+                                            crunchGroup[ndx].Path,
+                                            crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                            outputBuilder,
+                                            ref sourceLength);
+                                    }
+                                }
                             }
                             else
                             {
-                                // process each input file in turn. 
-                                for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                                 {
-                                    retVal = ProcessJSFile(
-                                        crunchGroup[ndx].Path, 
-                                        crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName, 
-                                        outputBuilder, 
-                                        ndx == crunchGroup.Count - 1, 
-                                        ref sourceLength);
+                                    var outputVisitor = new OutputVisitor(writer);
+
+                                    // see how many input files there are
+                                    if (crunchGroup.Count == 0)
+                                    {
+                                        // take input from stdin.
+                                        // since that's the ONLY input file, pass TRUE for isLastFile
+                                        retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputVisitor, true, ref sourceLength);
+                                    }
+                                    else
+                                    {
+                                        // process each input file in turn. 
+                                        for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                        {
+                                            retVal = ProcessJSFile(
+                                                crunchGroup[ndx].Path,
+                                                crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                                outputVisitor,
+                                                ndx == crunchGroup.Count - 1,
+                                                ref sourceLength);
+                                        }
+                                    }
                                 }
                             }
                         }

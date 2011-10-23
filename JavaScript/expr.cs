@@ -29,8 +29,8 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                // we're an expression UNLESS we are a directive prologue
-                return !IsDirectivePrologue;
+                // by definition we're an expression
+                return true;
             }
         }
 

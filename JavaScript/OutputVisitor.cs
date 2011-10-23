@@ -32,11 +32,13 @@ namespace Microsoft.Ajax.Utilities
         private bool m_onNewLine;
         private bool m_startOfStatement;
         private bool m_outputCCOn;
+        private bool m_doneWithGlobalDirectives;
+        private bool m_needsStrictDirective;
 
         private int m_indentLevel;
         private int m_lineLength;
 
-        private CodeSettings m_settings;
+        public CodeSettings Settings { get; set; }
 
         // this is a regular expression that we'll use to minimize numeric values
         // that don't employ the e-notation
@@ -46,14 +48,14 @@ namespace Microsoft.Ajax.Utilities
 
 
         public OutputVisitor(TextWriter writer)
-            :this(writer, new CodeSettings())
+            :this(writer, null)
         {
         }
 
         public OutputVisitor(TextWriter writer, CodeSettings settings)
         {
             m_outputStream = writer;
-            m_settings = settings;
+            Settings = settings ?? new CodeSettings();
             m_onNewLine = true;
         }
 
@@ -119,7 +121,7 @@ namespace Microsoft.Ajax.Utilities
 
                 m_startOfStatement = false;
 
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     if (node.OperatorToken == JSToken.Comma)
                     {
@@ -228,8 +230,27 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (node.Parent != null)
                 {
+                    // not the root block.
+                    // if the parent is a function node, we will need a "use strict" directive
+                    // if the function's scope is strict but the parent scope is not
+                    var parentFunction = node.Parent as FunctionObject;
+                    if (parentFunction != null
+                        && parentFunction.FunctionScope.UseStrict
+                        && !parentFunction.FunctionScope.Parent.UseStrict)
+                    {
+                        m_needsStrictDirective = true;
+                    }
+
+                    // always enclose in curly-braces
                     OutputPossibleLineBreak('{');
                     Indent();
+                }
+                else
+                {
+                    // root block.
+                    // we will need a "use strict" directive IF this scope is strict and we
+                    // haven't already gone past where we can insert global directive prologues
+                    m_needsStrictDirective = node.EnclosingScope.UseStrict && !m_doneWithGlobalDirectives;
                 }
 
                 var mightNeedSemicolon = false;
@@ -241,6 +262,19 @@ namespace Microsoft.Ajax.Utilities
                         if (mightNeedSemicolon)
                         {
                             ReplaceableSemicolon();
+                        }
+
+                        if (!(statement is DirectivePrologue))
+                        {
+                            if (m_needsStrictDirective)
+                            {
+                                // we need a strict directive, but we didn't have one.
+                                // add it now
+                                Output("\"use strict\";");
+                                m_needsStrictDirective = false;
+                            }
+
+                            m_doneWithGlobalDirectives = true;
                         }
 
                         NewLine();
@@ -263,7 +297,7 @@ namespace Microsoft.Ajax.Utilities
 
                     Output('}');
                 }
-                else if (mightNeedSemicolon && m_settings.TermSemicolons)
+                else if (mightNeedSemicolon && Settings.TermSemicolons)
                 {
                     // this is the root block (parent is null) and we want to make sure we end
                     // with a terminating semicolon, so don't replace it
@@ -280,8 +314,8 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
-                    if (m_settings.LocalRenaming != LocalRenaming.KeepAll
-                        && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                    if (Settings.LocalRenaming != LocalRenaming.KeepAll
+                        && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
                         // minify the label -- only depends on nesting level
                         Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
@@ -373,7 +407,7 @@ namespace Microsoft.Ajax.Utilities
                 // if we have already output a cc_on and we don't want to keep any dupes, let's
                 // skip over any @cc_on statements at the beginning now
                 var ndx = 0;
-                if (m_outputCCOn && m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
+                if (m_outputCCOn && Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
                 {
                     while (ndx < node.Statements.Count
                         && (node.Statements[ndx].HideFromOutput || node.Statements[ndx] is ConditionalCompilationOn))
@@ -484,7 +518,7 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 if (!m_outputCCOn
-                    || !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
+                    || !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
                 {
                     m_outputCCOn = true;
                     Output("@cc_on");
@@ -525,7 +559,7 @@ namespace Microsoft.Ajax.Utilities
                     AcceptNodeWithParens(node.Condition, node.Condition.Precedence < node.Precedence);
                 }
 
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Output(" ? ");
                 }
@@ -540,7 +574,7 @@ namespace Microsoft.Ajax.Utilities
                     AcceptNodeWithParens(node.TrueExpression, node.TrueExpression.Precedence < OperatorPrecedence.Assignment);
                 }
 
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Output(" : ");
                 }
@@ -571,7 +605,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.Number:
-                        if (node.Context == null || m_settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        if (node.Context == null || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
                             Output(NormalizeNumber(node.ToNumber(), node.Context));
@@ -589,7 +623,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.String:
-                        if (m_settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
+                        if (Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
                             && (node.Context == null 
                             || string.IsNullOrEmpty(node.Context.Code)
                             || node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) < 0))
@@ -637,8 +671,8 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
-                    if (m_settings.LocalRenaming != LocalRenaming.KeepAll
-                        && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                    if (Settings.LocalRenaming != LocalRenaming.KeepAll
+                        && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
                         // minify the label -- only depends on nesting level
                         Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
@@ -670,6 +704,25 @@ namespace Microsoft.Ajax.Utilities
                 if (node.Operand != null)
                 {
                     AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                }
+            }
+        }
+
+        public void Visit(DirectivePrologue node)
+        {
+            if (node != null)
+            {
+                // always output directive prologues that aren't strict; only output
+                // the use-strict directive if we need one
+                node.IsRedundant = node.UseStrict && !m_needsStrictDirective;
+                if (!node.IsRedundant)
+                {
+                    Visit((ConstantWrapper)node);
+                    if (node.UseStrict)
+                    {
+                        // just output a strict directive -- don't need one anymore
+                        m_needsStrictDirective = false;
+                    }
                 }
             }
         }
@@ -712,7 +765,7 @@ namespace Microsoft.Ajax.Utilities
                     NewLine();
                     node.Body.Accept(this);
 
-                    if (m_settings.OutputMode == OutputMode.MultipleLines)
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
                     {
                         Output(' ');
                     }
@@ -766,7 +819,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // NEVER do without these semicolons
                 OutputPossibleLineBreak(';');
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Output(' ');
                 }
@@ -777,7 +830,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(';');
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Output(' ');
                 }
@@ -810,17 +863,17 @@ namespace Microsoft.Ajax.Utilities
                     // if not referenced, in which case we won't output it (depending on switches)
                     if (!node.IsExpression
                         || node.RefCount > 0
-                        || !m_settings.RemoveFunctionExpressionNames
-                        || !m_settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
+                        || !Settings.RemoveFunctionExpressionNames
+                        || !Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
                     {
                         node.Identifier.Accept(this);
                     }
                 }
 
-                OutputFunctionArgsAndBody(node, m_settings.RemoveUnneededCode
+                OutputFunctionArgsAndBody(node, Settings.RemoveUnneededCode
                     && node.EnclosingScope.IsKnownAtCompileTime
-                    && m_settings.MinifyCode
-                    && m_settings.IsModificationAllowed(TreeModifications.RemoveUnusedParameters));
+                    && Settings.MinifyCode
+                    && Settings.IsModificationAllowed(TreeModifications.RemoveUnusedParameters));
 
                 if (encloseInParens)
                 {
@@ -859,7 +912,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (node.TrueBlock.Count == 1
                     && (node.FalseBlock == null || (!node.TrueBlock.EncloseBlock(EncloseBlockType.IfWithoutElse) && !node.TrueBlock.EncloseBlock(EncloseBlockType.SingleDoWhile)))
-                    && (!m_settings.MacSafariQuirks || !(node.TrueBlock[0] is FunctionObject)))
+                    && (!Settings.MacSafariQuirks || !(node.TrueBlock[0] is FunctionObject)))
                 {
                     // we only have a single statement in the true-branch; normally
                     // we wouldn't wrap that statement in braces. However, if there 
@@ -941,8 +994,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                if (m_settings.LocalRenaming != LocalRenaming.KeepAll
-                    && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                if (Settings.LocalRenaming != LocalRenaming.KeepAll
+                    && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                 {
                     // we're minifying the labels.
                     // we want to output our label as per our nested level.
@@ -987,7 +1040,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version
                         string numericText;
-                        if (node.Context == null || m_settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        if (node.Context == null || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
                             numericText = NormalizeNumber(constantWrapper.ToNumber(), node.Context);
@@ -1128,7 +1181,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(':');
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Output(' ');
                 }
@@ -1299,7 +1352,7 @@ namespace Microsoft.Ajax.Utilities
                     node.Operand.Accept(this);
                 }
 
-                if (m_settings.MacSafariQuirks)
+                if (Settings.MacSafariQuirks)
                 {
                     // force the statement ending with a semicolon
                     OutputPossibleLineBreak(';');
@@ -1390,7 +1443,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 NewLine();
                             }
-                            else if (m_settings.OutputMode == OutputMode.MultipleLines)
+                            else if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
                                 Output(' ');
                             }
@@ -1418,7 +1471,7 @@ namespace Microsoft.Ajax.Utilities
                         // if we have, we really only need to output one if we had one to begin with AND
                         // we are NOT removing unnecessary ones
                         if (!m_outputCCOn
-                            || (node.UseCCOn && !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                            || (node.UseCCOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
                         {
                             Output("/*@cc_on=");
                             m_outputCCOn = true;
@@ -1431,7 +1484,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
 
-                        if (m_settings.OutputMode == OutputMode.MultipleLines && m_settings.IndentSize > 0)
+                        if (Settings.OutputMode == OutputMode.MultipleLines && Settings.IndentSize > 0)
                         {
                             Output(" = ");
                         }
@@ -1681,7 +1734,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // this is a terminating semicolon that might be replaced with a line-break
             // if needed. Semicolon-insertion would suffice to reconstitute it.
-            if (m_lineLength < m_settings.LineBreakThreshold)
+            if (m_lineLength < Settings.LineBreakThreshold)
             {
                 // output the semicolon
                 m_outputStream.Write(';');
@@ -1696,9 +1749,9 @@ namespace Microsoft.Ajax.Utilities
 
         private void BreakLine(bool forceBreak)
         {
-            if (!m_onNewLine && (forceBreak || m_lineLength >= m_settings.LineBreakThreshold))
+            if (!m_onNewLine && (forceBreak || m_lineLength >= Settings.LineBreakThreshold))
             {
-                if (m_settings.OutputMode == OutputMode.MultipleLines)
+                if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     NewLine();
                 }
@@ -1717,7 +1770,7 @@ namespace Microsoft.Ajax.Utilities
 
         private void NewLine()
         {
-            if (m_settings.OutputMode == OutputMode.MultipleLines && !m_onNewLine)
+            if (Settings.OutputMode == OutputMode.MultipleLines && !m_onNewLine)
             {
                 // output the newline character
                 m_outputStream.WriteLine();
@@ -1725,7 +1778,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the indent level is greater than zero, output the indent spaces
                 if (m_indentLevel > 0)
                 {
-                    var numSpaces = m_indentLevel * m_settings.IndentSize;
+                    var numSpaces = m_indentLevel * Settings.IndentSize;
                     m_lineLength = numSpaces;
                     while (numSpaces-- > 0)
                     {
@@ -1835,7 +1888,7 @@ namespace Microsoft.Ajax.Utilities
                     // sources had one. Otherwise, we only only want to output one if we had one and we aren't
                     // removing unneccesary ones.
                     if (!m_outputCCOn
-                        || (node.ConditionalCommentContainsOn && !m_settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                        || (node.ConditionalCommentContainsOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
                     {
                         // output it now and set the flag that we have output them
                         Output("/*@cc_on");
@@ -1907,7 +1960,7 @@ namespace Microsoft.Ajax.Utilities
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            if (m_settings.OutputMode == OutputMode.MultipleLines)
+                            if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
                                 Output(' ');
                             }
@@ -1967,7 +2020,7 @@ namespace Microsoft.Ajax.Utilities
 
         private string InlineSafeString(string text)
         {
-            if (m_settings.InlineSafeStrings)
+            if (Settings.InlineSafeStrings)
             {
                 // if there are ANY closing script tags...
                 if (text.IndexOf("</script>", StringComparison.OrdinalIgnoreCase) >= 0)

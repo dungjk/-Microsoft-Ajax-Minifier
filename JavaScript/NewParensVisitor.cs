@@ -268,6 +268,11 @@ namespace Microsoft.Ajax.Utilities
             Debug.Fail("shouldn't get here");
         }
 
+        public void Visit(DirectivePrologue node)
+        {
+            Debug.Fail("shouldn't get here");
+        }
+
         public void Visit(DoWhile node)
         {
             Debug.Fail("shouldn't get here");

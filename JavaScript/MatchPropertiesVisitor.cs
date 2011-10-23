@@ -223,6 +223,11 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
+        public void Visit(DirectivePrologue node)
+        {
+            // not applicable; terminate
+        }
+
         public void Visit(DoWhile node)
         {
             // not applicable; terminate

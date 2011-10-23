@@ -55,8 +55,8 @@ namespace Microsoft.Ajax.Utilities
             // get the first insertion point. Make sure that we skip over any comments and directive prologues.
             // we do NOT want to insert anything between the start of the scope and any directive prologues.
             int insertAt = 0;
-            while (insertAt < block.Count 
-                && (block[insertAt].IsDirectivePrologue || block[insertAt] is ImportantComment))
+            while (insertAt < block.Count
+                && (block[insertAt] is DirectivePrologue || block[insertAt] is ImportantComment))
             {
                 ++insertAt;
             }
@@ -80,7 +80,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     insertAt = RelocateVar(block, insertAt, varStatement);
                 }
-            }           
+            }
 
             // then we want to do the same thing for all child functions (declarations AND other)
             if (visitor.m_functionDeclarations != null)
@@ -292,87 +292,6 @@ namespace Microsoft.Ajax.Utilities
         // unnest any child blocks
         private void UnnestBlocks(Block node)
         {
-            // before we unnest the blocks or do anything else, let's identify any directive prologues.
-            // if the parent is null (we are the program) or a function object...
-            if (node.Parent == null || node.Parent is FunctionObject)
-            {
-                // directive prologues are the first n statements of a program or function body that
-                // are expression statements consisting entirely of a string literal. So let's walk from
-                // the beginning until we find the first statement that is not a ConstantWrapper of primitive
-                // type string. Mark the ones we find as directive prologues
-                var foundUseStrict = false;
-                for (var ndx = 0; ndx < node.Count; ++ndx)
-                {
-                    var constWrapper = node[ndx] as ConstantWrapper;
-                    if (constWrapper == null || constWrapper.PrimitiveType != PrimitiveType.String)
-                    {
-                        // not a constant, not a string -- we are done searching!
-                        break;
-                    }
-
-                    // otherwise it is a directive prologue. Mark it as such
-                    constWrapper.IsDirectivePrologue = true;
-
-                    // if it's a "use strict" prologue, let's mark the appropriate scope as strict
-                    if (string.CompareOrdinal(constWrapper.ToString(), "use strict") == 0)
-                    {
-                        // the actual code cannot contain any escape sequences or line-contunations,
-                        // so check the context code to make sure it ALSO is the right text. Be sure
-                        // not to compare with the quote delimiters.
-                        if (constWrapper.Context == null
-                            || string.CompareOrdinal(constWrapper.Context.Code, 1, "use strict", 0, 10) == 0)
-                        {
-                            // treat function and global scope differently
-                            var funcObject = node.Parent as FunctionObject;
-                            if (funcObject != null)
-                            {
-                                // function scope
-                                // if the function scope is ALREADY strict, or if its parent scope is 
-                                // ALREADY strict, then we really don't need the directive at all
-                                var ourScope = funcObject.FunctionScope;
-                                if (ourScope.UseStrict || ourScope.Parent.UseStrict)
-                                {
-                                    // we are already strict, so this directive is unneccessary.
-                                    // remove it
-                                    node.ReplaceChild(constWrapper, null);
-
-                                    // don't forget to bump the counter DOWN so that when we increment it 
-                                    // when we get to the top of the loop again, we're back to this same
-                                    // location -- the NEXT item will become the CURRENT item once we delete
-                                    // the current item, and we don't want to skip it
-                                    --ndx;
-                                }
-
-                                // mark us as strict, regardless
-                                ourScope.UseStrict = true;
-                            }
-                            else
-                            {
-                                // global scope
-                                // if we already have a "use strict" for the global scope, then get rid of this dup.
-                                // we want to get rid of duplicates, but we don't want to get rid of a single one just because
-                                // a previous module (or command line switch) may have put the global scope in strict mode
-                                if (foundUseStrict)
-                                {
-                                    node.ReplaceChild(constWrapper, null);
-
-                                    // don't forget to bump the counter DOWN so that when we increment it 
-                                    // when we get to the top of the loop again, we're back to this same
-                                    // location -- the NEXT item will become the CURRENT item once we delete
-                                    // the current item, and we don't want to skip it
-                                    --ndx;
-                                }
-
-                                node.Parser.GlobalScope.UseStrict = true;
-                            }
-
-                            // set the flag indicating that we found a use-strict for this scope
-                            foundUseStrict = true;
-                        }
-                    }
-                }
-            }
-
             // walk the list of items backwards -- if we come
             // to any blocks, unnest the block recursively. We walk backwards because
             // we could be adding any number of statements and we don't want to have

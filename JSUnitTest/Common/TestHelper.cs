@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
 
@@ -603,24 +604,30 @@ namespace JSUnitTest
             // the input file is the portion of the test name before the underscore (if any)
             string inputFile = testName.Split('_')[0];
 
-            // get the input path
+            // get the input and output paths
             string inputPath = GetJsPath(
               m_inputFolder,
               testClass,
               inputFile,
-              false
-              );
+              false);
             Assert.IsTrue(File.Exists(inputPath), "Input File does not exist: {0}", inputPath);
 
-            // read the input JS
-            string jsSource;
-            using (StreamReader reader = new StreamReader(inputPath, true))
+            var outputPath = GetJsPath(
+                m_outputFolder,
+                testClass,
+                testName,
+                false);
+
+            if (File.Exists(outputPath))
             {
-                jsSource = reader.ReadToEnd();
+                // if it exists already, delete it
+                File.Delete(outputPath);
             }
-            Trace.Write("INPUT FILE: ");
-            Trace.WriteLine(inputPath);
-            Trace.WriteLine(jsSource);
+            else
+            {
+                // otherwise make sure the directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+            }
 
             /*int expectedErrorCode = (int)(0x800A0000 + (int)expectedError);
             Trace.WriteLine(string.Empty);
@@ -634,11 +641,28 @@ namespace JSUnitTest
                 switchParser.Parse(settingsSwitches);
             }
 
+            // read the input JS
+            string jsSource;
+            using (StreamReader reader = new StreamReader(inputPath, MainClass.GetJSEncoding(switchParser.EncodingInputName)))
+            {
+                jsSource = reader.ReadToEnd();
+            }
+
+            Trace.Write("INPUT FILE: ");
+            Trace.WriteLine(inputPath);
+            Trace.WriteLine(jsSource);
+
             bool testPassed = true;
             List<JSError> expectedErrorList = new List<JSError>(expectedErrorArray);
             ErrorTrap errorTrap = new ErrorTrap();
             string crunchedCode = errorTrap.RunTest(switchParser.JSSettings, jsSource);
             JScriptException[] errors = errorTrap.Errors;
+
+            // output the crunched code using the proper output encoding
+            using (var outputStream = new StreamWriter(outputPath, false, MainClass.GetJSEncoding(switchParser.EncodingOutputName)))
+            {
+                outputStream.Write(crunchedCode);
+            }
 
             Trace.WriteLine(string.Empty);
             Trace.WriteLine("---ERRORS---");
@@ -686,33 +710,25 @@ namespace JSUnitTest
                 Trace.WriteLine("UNEXPECTED ERROR RESULTS");
             }
 
-            Trace.WriteLine(string.Empty);
-            Trace.WriteLine("---Resulting Code---");
-            Trace.WriteLine(crunchedCode);
-
             // compute the path to the expected file
             string expectedPath = GetJsPath(
-              m_expectedFolder,
-              testClass,
-              testName,
-              false
-              );
-            if (File.Exists(expectedPath))
-            {
-                string expectedCode;
-                using (StreamReader reader = new StreamReader(expectedPath, true))
-                {
-                    expectedCode = reader.ReadToEnd();
-                }
-                Trace.WriteLine(string.Empty);
-                Trace.WriteLine("---Expected Code---");
-                Trace.WriteLine(expectedCode);
-                if (string.CompareOrdinal(expectedCode, crunchedCode) != 0)
-                {
-                    Trace.WriteLine("EXPECTED OUTPUT IS DIFFERENT");
-                    testPassed = false;
-                }
-            }
+                m_expectedFolder,
+                testClass,
+                testName,
+                false);
+
+            Trace.WriteLine(string.Empty);
+            Trace.WriteLine("odd \"" + expectedPath + "\" \"" + outputPath + "\"");
+
+            Trace.WriteLine(string.Empty);
+            Trace.WriteLine("---Expected Code---");
+            TraceFileContents(expectedPath);
+
+            Trace.WriteLine(string.Empty);
+            Trace.WriteLine("---Resulting Code---");
+            TraceFileContents(outputPath);
+
+            Assert.IsTrue(CompareTextFiles(outputPath, expectedPath), "The expected output ({1}) and actual output ({0}) do not match!", outputPath, expectedPath);
             Assert.IsTrue(testPassed, "Test failed");
         }
 

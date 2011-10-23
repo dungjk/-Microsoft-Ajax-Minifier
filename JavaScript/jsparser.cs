@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
@@ -268,27 +269,37 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>the source as processed by the preprocessor</returns>
         public string PreprocessOnly(CodeSettings settings)
         {
-            // initialize the scanner
-            // make sure the RawTokens setting is on so that the scanner
-            // just returns everything (after doing preprocessor evaluations)
-            InitializeScanner(settings, true);
-
             // create an empty string builder
-            var sb = new StringBuilder();
-
-            // get the first token
-            GetNextToken();
-
-            // until we hit the end of the file...
-            while (m_currentToken.Token != JSToken.EndOfFile)
+            using (var outputStream = new StringWriter(CultureInfo.InvariantCulture))
             {
-                // just output the token and grab the next one
-                sb.Append(m_currentToken.Code);
-                GetNextToken();
-            }
+                // output to the string builder
+                PreprocessOnly(settings, outputStream);
 
-            // return the resulting text
-            return sb.ToString();
+                // return the resulting text
+                return outputStream.ToString();
+            }
+        }
+
+        public void PreprocessOnly(CodeSettings settings, TextWriter outputStream)
+        {
+            if (outputStream != null)
+            {
+                // initialize the scanner
+                // make sure the RawTokens setting is on so that the scanner
+                // just returns everything (after doing preprocessor evaluations)
+                InitializeScanner(settings, true);
+
+                // get the first token
+                GetNextToken();
+
+                // until we hit the end of the file...
+                while (m_currentToken.Token != JSToken.EndOfFile)
+                {
+                    // just output the token and grab the next one
+                    outputStream.Write(m_currentToken.Code);
+                    GetNextToken();
+                }
+            }
         }
 
         //---------------------------------------------------------------------------------------
@@ -301,6 +312,12 @@ namespace Microsoft.Ajax.Utilities
             // initialize the scanner with our settings
             // make sure the RawTokens setting is OFF or we won't be able to create our AST
             InitializeScanner(settings, false);
+
+            // make sure we initialize the global scope's strict mode to our flag, whether or not it
+            // is true. This means if the setting is false, we will RESET the flag to false if we are 
+            // reusing the scope and a previous Parse call had code that set it to strict with a 
+            // program directive. 
+            GlobalScope.UseStrict = m_settings.StrictMode;
 
             // make sure the global scope knows about our known global names
             GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames);
@@ -322,7 +339,7 @@ namespace Microsoft.Ajax.Utilities
                 // analyze the entire node tree (needed for hypercrunch)
                 // root to leaf (top down)
                 var analyzeVisitor = new AnalyzeNodeVisitor(this);
-                analyzeVisitor.Visit(scriptBlock);
+                scriptBlock.Accept(analyzeVisitor);
 
                 // analyze the scope chain (also needed for hypercrunch)
                 // root to leaf (top down)
@@ -357,7 +374,7 @@ namespace Microsoft.Ajax.Utilities
                 if (m_settings.EvalLiteralExpressions)
                 {
                     var visitor = new EvaluateLiteralVisitor(this);
-                    visitor.Visit(scriptBlock);
+                    scriptBlock.Accept(visitor);
                 }
 
                 // if any of the conditions we check for in the final pass are available, then
@@ -365,7 +382,7 @@ namespace Microsoft.Ajax.Utilities
                 if (m_settings.IsModificationAllowed(TreeModifications.BooleanLiteralsToNotOperators))
                 {
                     var visitor = new FinalPassVisitor(this);
-                    visitor.Visit(scriptBlock);
+                    scriptBlock.Accept(visitor);
                 }
 
                 // we want to walk all the scopes to make sure that any generated
@@ -374,6 +391,106 @@ namespace Microsoft.Ajax.Utilities
                 m_globalScope.ValidateGeneratedNames();
             }
             return scriptBlock;
+        }
+
+        /// <summary>
+        /// Parse an expression from the source code and return a block node containing just that expression.
+        /// The block node is needed because we might perform optimization on the expression that creates
+        /// a new expression, and we need a parent to hold it.
+        /// </summary>
+        /// <param name="codeSettings">settings to use</param>
+        /// <returns>a block node containing the parsed expression as its only child</returns>
+        public Block ParseExpression(CodeSettings settings)
+        {
+            // initialize the scanner with our settings
+            // make sure the RawTokens setting is OFF or we won't be able to create our AST
+            InitializeScanner(settings, false);
+
+            // make sure we initialize the global scope's strict mode to our flag, whether or not it
+            // is true. This means if the setting is false, we will RESET the flag to false if we are 
+            // reusing the scope and a previous Parse call had code that set it to strict with a 
+            // program directive. 
+            GlobalScope.UseStrict = m_settings.StrictMode;
+
+            // make sure the global scope knows about our known global names
+            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames);
+
+            // container for the expression
+            Block block = null;
+
+            // prime the scanner
+            GetNextToken();
+
+            // parse an expression
+            var expression = ParseExpression();
+            if (expression != null)
+            {
+                block = new Block(expression.Context.Clone(), this);
+                block.Append(expression);
+            }
+            
+            if (block != null && Settings.MinifyCode)
+            {
+                // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
+                // and unnests blocks. 
+                ReorderScopeVisitor.Apply(block, this);
+
+                // analyze the entire node tree (needed for hypercrunch)
+                // root to leaf (top down)
+                var analyzeVisitor = new AnalyzeNodeVisitor(this);
+                block.Accept(analyzeVisitor);
+
+                // analyze the scope chain (also needed for hypercrunch)
+                // root to leaf (top down)
+                m_globalScope.AnalyzeScope();
+
+                if (m_settings.CombineDuplicateLiterals)
+                {
+                    // check to see if we need to create a literal shortcuts and add them to
+                    // the appropriate scope
+                    m_globalScope.AnalyzeLiterals();
+                }
+
+                // then do a depth-first traversal of the scope tree. When we come to a global
+                // field referenced by the scope, add it to the verboten set for this scope
+                // and all its parent scopes, all the way up the chain. If we come across an
+                // outer-scope local field, add it to the verboten field of this scope and
+                // all scopes up to but not including the scope where it is actually defined.
+                // leaf to root (bottom up)
+                m_globalScope.ReserveFields();
+
+                // if we want to crunch any names....
+                if (m_settings.LocalRenaming != LocalRenaming.KeepAll
+                    && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+                {
+                    // then do a top-down traversal of the scope tree. For each field that had not
+                    // already been crunched (globals and outers will already be crunched), crunch
+                    // the name with a crunch iterator that does not use any names in the verboten set.
+                    m_globalScope.HyperCrunch();
+                }
+
+                // if we want to evaluate literal expressions, do so now
+                if (m_settings.EvalLiteralExpressions)
+                {
+                    var visitor = new EvaluateLiteralVisitor(this);
+                    block.Accept(visitor);
+                }
+
+                // if any of the conditions we check for in the final pass are available, then
+                // make the final pass
+                if (m_settings.IsModificationAllowed(TreeModifications.BooleanLiteralsToNotOperators))
+                {
+                    var visitor = new FinalPassVisitor(this);
+                    block.Accept(visitor);
+                }
+
+                // we want to walk all the scopes to make sure that any generated
+                // variables that haven't been crunched have been assigned valid
+                // variable names that don't collide with any existing variables.
+                m_globalScope.ValidateGeneratedNames();
+            }
+
+            return block;
         }
 
         //---------------------------------------------------------------------------------------
@@ -397,6 +514,7 @@ namespace Microsoft.Ajax.Utilities
 
                 try
                 {
+                    var possibleDirectivePrologue = true;
                     while (m_currentToken.Token != JSToken.EndOfFile)
                     {
                         AstNode ast = null;
@@ -406,6 +524,28 @@ namespace Microsoft.Ajax.Utilities
                             // which is a Statement OR a FunctionDeclaration. Technically, FunctionDeclarations
                             // are not statements!
                             ast = ParseStatement(true);
+
+                            // if we are still possibly looking for directive prologues....
+                            if (possibleDirectivePrologue)
+                            {
+                                var constantWrapper = ast as ConstantWrapper;
+                                if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
+                                {
+                                    // use a directive prologue node instead
+                                    var directive = new DirectivePrologue(constantWrapper.Value.ToString(), ast.Context, ast.Parser);
+                                    if (directive.UseStrict)
+                                    {
+                                        // set the global scope to strict mode
+                                        m_globalScope.UseStrict = true;
+                                    }
+                                    ast = directive;
+                                }
+                                else
+                                {
+                                    // nope -- no longer finding directive prologues
+                                    possibleDirectivePrologue = false;
+                                }
+                            }
                         }
                         catch (RecoveryTokenException exc)
                         {
@@ -2863,12 +3003,39 @@ namespace Microsoft.Ajax.Utilities
                     body = new Block(m_currentToken.Clone(), this);
                     GetNextToken();
 
+                    var possibleDirectivePrologue = true;
                     while (JSToken.RightCurly != m_currentToken.Token)
                     {
                         try
                         {
                             // function body's are SourceElements (Statements + FunctionDeclarations)
-                            body.Append(ParseStatement(true));
+                            var statement = ParseStatement(true);
+                            if (possibleDirectivePrologue)
+                            {
+                                var constantWrapper = statement as ConstantWrapper;
+                                if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
+                                {
+                                    var directive = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
+                                    if (directive.UseStrict)
+                                    {
+                                        // mark the function's scope as strict
+                                        functionScope.UseStrict = true;
+                                    }
+
+                                    body.Append(directive);
+                                }
+                                else
+                                {
+                                    // no longer considering constant wrappers
+                                    possibleDirectivePrologue = false;
+                                    body.Append(statement);
+                                }
+                            }
+                            else
+                            {
+                                // just slap it in
+                                body.Append(statement);
+                            }
                         }
                         catch (RecoveryTokenException exc)
                         {

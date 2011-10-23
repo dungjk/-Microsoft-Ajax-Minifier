@@ -226,6 +226,9 @@
     <Compile Include="..\JavaScript\delete.cs">
       <Link>JavaScript\delete.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\directiveprologue.cs">
+      <Link>JavaScript\directiveprologue.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\documentcontext.cs">
       <Link>JavaScript\documentcontext.cs</Link>
     </Compile>
