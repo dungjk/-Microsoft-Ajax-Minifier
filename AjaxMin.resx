@@ -397,6 +397,10 @@ Valid JSOPTS are zero or more of:
         will turn off property-renaming (renaming only variables and functions).
   -reorder[:BOOL] &gt; whether or not to reorder function declarations, putting
         then at the top of their respective scopes. Default is True.
+  -strict[:BOOL] &gt; whether to force the input script into ECMA5 strict-mode.
+        When in strict mode, additional strict-mode related checks will be 
+        made, and a "use strict" directive prologue will be added to the output
+        script. Default is false.
   -unused:(remove|keep) &gt; whether to keep or remove unused code. Default
         is remove.
 
