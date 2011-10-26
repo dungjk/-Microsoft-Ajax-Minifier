@@ -108,10 +108,7 @@ namespace Microsoft.Ajax.Utilities
             get { return OperatorPrecedence.None; }
         }
 
-        public virtual bool HideFromOutput
-        {
-            get { return false; }
-        }
+        public bool HideFromOutput { get; set; }
 
         public virtual PrimitiveType FindPrimitiveType()
         {

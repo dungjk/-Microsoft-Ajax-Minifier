@@ -238,6 +238,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // doesn't exist -- create it now
                     m_variableField = enclosingScope.DeclareField(functionName, this, 0);
+                    m_variableField.OriginalContext = Identifier.Context;
 
                     // and it's a pointing to a function object
                     m_variableField.IsFunction = true;
@@ -328,22 +329,6 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
             return false;
-        }
-
-        public override bool HideFromOutput
-        {
-            get
-            {
-                // don't remove function expressions or getter/setters;
-                // don't remove global functions; and if the scope is
-                // unknown, then we can't remove it either, because we don't know
-                // what the unknown code might call.
-                return (FunctionType == FunctionType.Declaration 
-                    && LocalField != null 
-                    && !LocalField.IsReferenced 
-                    && m_functionScope.Parent.IsKnownAtCompileTime 
-                    && Parser.Settings.RemoveUnneededCode);
-            }
         }
 
         internal override bool RequiresSeparator

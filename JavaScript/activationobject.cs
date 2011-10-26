@@ -129,8 +129,19 @@ namespace Microsoft.Ajax.Utilities
                 JSLocalField locField = variableField as JSLocalField;
                 if (locField != null && !locField.IsReferenced && locField.OriginalContext != null)
                 {
-                    if (locField.FieldValue is FunctionObject)
+                    var funcObject = locField.FieldValue as FunctionObject;
+                    if (funcObject != null)
                     {
+                        // unreferenced function declaration.
+                        // hide it from the output if our settings say we can
+                        if (IsKnownAtCompileTime
+                            && funcObject.Parser.Settings.MinifyCode
+                            && funcObject.Parser.Settings.RemoveUnneededCode)
+                        {
+                            funcObject.HideFromOutput = true;
+                        }
+
+                        // and fire an error
                         Context ctx = ((FunctionObject)locField.FieldValue).IdContext;
                         if (ctx == null) { ctx = locField.OriginalContext; }
                         ctx.HandleError(JSError.FunctionNotReferenced, false);
@@ -553,8 +564,14 @@ namespace Microsoft.Ajax.Utilities
                         || !variableField.Name.StartsWith("L_", StringComparison.Ordinal))
                         && !(m_parser.Settings.PreserveFunctionNames && variableField.IsFunction))
                     {
-                        // add to our list
-                        list.Add(variableField);
+                        // don't add to our list if it's a function that's going to be hidden anyway
+                        FunctionObject funcObject;
+                        if (!variableField.IsFunction
+                            || (funcObject = variableField.FieldValue as FunctionObject) == null
+                            || !funcObject.HideFromOutput)
+                        {
+                            list.Add(variableField);
+                        }
                     }
                 }
             }
