@@ -64,6 +64,7 @@
     <Compile Include="EmbeddedAspNetBlock.cs" />
     <Compile Include="Encoding.cs" />
     <Compile Include="Errors.cs" />
+    <Compile Include="Hacks.cs" />
     <Compile Include="TestData\CSS\Input\Replacements\ValueReplacement.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -128,6 +129,7 @@
     <Content Include="TestData\CSS\Expected\Encoding\escaped_utf8.css" />
     <Content Include="TestData\CSS\Expected\Errors\InvalidClassName.css" />
     <Content Include="TestData\CSS\Expected\Errors\UnterminatedString.css" />
+    <Content Include="TestData\CSS\Expected\Hacks\IEhacks.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_hex.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_major.css" />
@@ -198,6 +200,7 @@
     <Content Include="TestData\CSS\Input\Encoding\escaped.css" />
     <Content Include="TestData\CSS\Input\Errors\InvalidClassName.css" />
     <Content Include="TestData\CSS\Input\Errors\UnterminatedString.css" />
+    <Content Include="TestData\CSS\Input\Hacks\IEhacks.css" />
     <Content Include="TestData\CSS\Input\Replacements\ColorNames.css" />
     <Content Include="TestData\CSS\Input\Replacements\MajorColors.css" />
     <Content Include="TestData\CSS\Input\Replacements\StringReplacement.css" />
@@ -268,5 +271,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

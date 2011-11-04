@@ -1318,7 +1318,21 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseSelector()
         {
+            // should start with a selector
             Parsed parsed = ParseSimpleSelector();
+            if (parsed == Parsed.False && CurrentTokenType != TokenType.None)
+            {
+                // no selector? See if it starts with a combinator.
+                // common IE-7 hack to start with a combinator, because that browser will assume a beginning *
+                var currentContext = m_currentToken.Context;
+                var possibleCombinator = CurrentTokenText;
+                parsed = ParseCombinator();
+                if (parsed == Parsed.True)
+                {
+                    ReportError(4, StringEnum.HackGeneratesInvalidCSS, currentContext, possibleCombinator);
+                }
+            }
+
             if (parsed == Parsed.True)
             {
                 // save whether or not we are skipping anything by checking the type before we skip
@@ -1733,7 +1747,8 @@ namespace Microsoft.Ajax.Utilities
             // with an asterisk -- IE seems to ignore it; other browsers will recognize
             // the invalid property name and ignore it.
             string prefix = null;
-            if (CurrentTokenType == TokenType.Character && CurrentTokenText == "*")
+            if (CurrentTokenType == TokenType.Character 
+                && (CurrentTokenText == "*" || CurrentTokenText == "."))
             {
                 // spot a low-pri error because this is actually invalid CSS
                 // taking advantage of an IE "feature"
@@ -1822,7 +1837,42 @@ namespace Microsoft.Ajax.Utilities
                 }
                 AppendCurrent();
                 SkipSpace();
+
+                // a common IE7-and-below hack is to append another ! at the end of !important.
+                if (CurrentTokenType == TokenType.Character && CurrentTokenText == "!")
+                {
+                    ReportError(4, StringEnum.HackGeneratesInvalidCSS, CurrentTokenText);
+                    AppendCurrent();
+                    SkipSpace();
+                }
+
                 parsed = Parsed.True;
+            }
+            else if (CurrentTokenType == TokenType.Character && CurrentTokenText == "!")
+            {
+                // another common IE7-and-below hack is to use an identifier OTHER than "important". All other browsers will see this
+                // as an error, but IE7 and below will keep on processing. A common thing is to put !ie at the end to mark
+                // the declaration as only for IE.
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Append(' ');
+                }
+
+                AppendCurrent();
+                NextToken();
+                if (CurrentTokenType == TokenType.Identifier)
+                {
+                    ReportError(4, StringEnum.HackGeneratesInvalidCSS, CurrentTokenText);
+
+                    AppendCurrent();
+                    SkipSpace();
+                    parsed = Parsed.True;
+                }
+                else
+                {
+                    // but we need SOME identifier here....
+                    ReportError(0, StringEnum.ExpectedIdentifier, CurrentTokenText);
+                }
             }
             return parsed;
         }
@@ -3221,7 +3271,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region Error methods
 
-        private void ReportError(int severity, StringEnum errorNumber, params object[] arguments)
+        private void ReportError(int severity, StringEnum errorNumber, CssContext context, params object[] arguments)
         {
             // guide: 0 == syntax error
             //        1 == the programmer probably did not intend to do this
@@ -3233,13 +3283,18 @@ namespace Microsoft.Ajax.Utilities
             CssParserException exc = new CssParserException(
                 (int)errorNumber,
                 severity,
-                (m_currentToken != null) ? m_currentToken.Context.Start.Line : 0,
-                (m_currentToken != null) ? m_currentToken.Context.Start.Char : 0,
-                message
-                );
+                (context != null) ? context.Start.Line : 0,
+                (context != null) ? context.Start.Char : 0,
+                message);
 
             // but warnings we want to just report and carry on
             OnCssError(exc);
+        }
+
+        // just use the current context for the error
+        private void ReportError(int severity, StringEnum errorNumber, params object[] arguments)
+        {
+            ReportError(severity, errorNumber, (m_currentToken != null ? m_currentToken.Context : null), arguments);
         }
 
         public event EventHandler<CssErrorEventArgs> CssError;
