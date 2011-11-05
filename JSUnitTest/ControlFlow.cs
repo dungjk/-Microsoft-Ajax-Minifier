@@ -212,5 +212,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod()]
+        public void ForNoIn()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

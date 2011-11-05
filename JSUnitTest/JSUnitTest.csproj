@@ -177,6 +177,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\DoWhile_3.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\EncloseBlock.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForIn.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\ForNoIn.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForVar.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForVar_reorder.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForWhile.js" />
@@ -378,6 +379,7 @@
     <Content Include="TestData\JS\Input\ControlFlow\Continue.js" />
     <Content Include="TestData\JS\Input\ControlFlow\Debugger.js" />
     <Content Include="TestData\JS\Input\ControlFlow\EncloseBlock.js" />
+    <Content Include="TestData\JS\Input\ControlFlow\ForNoIn.js" />
     <Content Include="TestData\JS\Input\ControlFlow\ForVar.js" />
     <Content Include="TestData\JS\Input\ControlFlow\Labels.js" />
     <Content Include="TestData\JS\Input\ControlFlow\DoWhile.js" />

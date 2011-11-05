@@ -38,6 +38,10 @@ namespace Microsoft.Ajax.Utilities
         private int m_indentLevel;
         private int m_lineLength;
 
+        // normally false; gets set to true if we are in a no-in scenario
+        // (in-operator not directly allowed)
+        private bool m_noIn;
+
         public CodeSettings Settings { get; set; }
 
         // this is a regular expression that we'll use to minimize numeric values
@@ -63,6 +67,9 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(ArrayLiteral node)
         {
+            var isNoIn = m_noIn;
+            m_noIn = false;
+
             if (node != null)
             {
                 OutputPossibleLineBreak('[');
@@ -91,6 +98,8 @@ namespace Microsoft.Ajax.Utilities
 
                 Output(']');
             }
+
+            m_noIn = isNoIn;
         }
 
         public void Visit(AspNetBlockNode node)
@@ -114,6 +123,22 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 var ourPrecedence = node.Precedence;
+                var isNoIn = m_noIn;
+                if (isNoIn)
+                {
+                    if (node.OperatorToken == JSToken.In)
+                    {
+                        // we're in a no-in situation, but our operator is an in-operator.
+                        // so we need to wrap this operator in parens
+                        OutputPossibleLineBreak('(');
+                        m_noIn = false;
+                    }
+                    else
+                    {
+                        m_noIn = ourPrecedence <= OperatorPrecedence.Relational;
+                    }
+                }
+
                 if (node.Operand1 != null)
                 {
                     AcceptNodeWithParens(node.Operand1, node.Operand1.Precedence < ourPrecedence);
@@ -219,8 +244,17 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
+                    m_noIn = isNoIn && ourPrecedence <= OperatorPrecedence.Relational;
                     AcceptNodeWithParens(node.Operand2, rightNeedsParens);
                 }
+
+                if (isNoIn && node.OperatorToken == JSToken.In)
+                {
+                    // we're in a no-in situation, but our operator is an in-operator.
+                    // so we need to wrap this entire operator in parens
+                    OutputPossibleLineBreak(')');
+                }
+                m_noIn = isNoIn;
             }
         }
 
@@ -333,6 +367,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 if (node.IsConstructor)
                 {
                     Output("new");
@@ -397,6 +434,8 @@ namespace Microsoft.Ajax.Utilities
 
                     Output(node.InBrackets ? ']' : ')');
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -554,6 +593,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+
                 if (node.Condition != null)
                 {
                     AcceptNodeWithParens(node.Condition, node.Condition.Precedence < node.Precedence);
@@ -571,6 +612,7 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.TrueExpression != null)
                 {
+                    m_noIn = isNoIn;
                     AcceptNodeWithParens(node.TrueExpression, node.TrueExpression.Precedence < OperatorPrecedence.Assignment);
                 }
 
@@ -585,8 +627,11 @@ namespace Microsoft.Ajax.Utilities
 
                 if (node.FalseExpression != null)
                 {
+                    m_noIn = isNoIn;
                     AcceptNodeWithParens(node.FalseExpression, node.FalseExpression.Precedence < OperatorPrecedence.Assignment);
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -594,6 +639,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 switch (node.PrimitiveType)
                 {
                     case PrimitiveType.Boolean:
@@ -640,6 +688,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_startOfStatement = false;
+                m_noIn = isNoIn;
             }
         }
 
@@ -699,12 +748,17 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 Output("delete");
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
                     AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -791,7 +845,10 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.Variable != null)
                 {
+                    // we have a no-in scenario for the variable
+                    m_noIn = true;
                     node.Variable.Accept(this);
+                    m_noIn = false;
                 }
 
                 Output("in");
@@ -814,7 +871,10 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.Initializer != null)
                 {
+                    // we have a no-in scenario for the initializer
+                    m_noIn = true;
                     node.Initializer.Accept(this);
+                    m_noIn = false;
                 }
 
                 // NEVER do without these semicolons
@@ -849,6 +909,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 var encloseInParens = node.IsExpression && m_startOfStatement;
                 if (encloseInParens)
                 {
@@ -879,6 +942,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     OutputPossibleLineBreak(')');
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -1033,6 +1098,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 if (node.Root != null)
                 {
                     var constantWrapper = node.Root as ConstantWrapper;
@@ -1089,6 +1157,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak('.');
                 Output(node.Name);
                 m_startOfStatement = false;
+                m_noIn = isNoIn;
             }
         }
 
@@ -1102,6 +1171,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 // if start of statement, need to enclose in parens
                 var encloseInParens = m_startOfStatement;
                 if (encloseInParens)
@@ -1150,6 +1222,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output(')');
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -1192,6 +1266,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 switch (node.Operator)
                 {
                     case PostOrPrefix.PostfixDecrement:
@@ -1219,6 +1296,8 @@ namespace Microsoft.Ajax.Utilities
                     default:
                         throw new UnexpectedTokenException();
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
@@ -1426,6 +1505,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // save the no-in state -- we'll reset before processing each initializer
+                var isNoIn = m_noIn;
+
                 Output("var");
                 m_startOfStatement = false;
                 Indent();
@@ -1449,6 +1531,10 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
+                        // be sure to set the no-in state to whatever it was when we entered
+                        // this node, because each declaration might reset it as it's outputting
+                        // its child nodes
+                        m_noIn = isNoIn;
                         decl.Accept(this);
                     }
                 }
@@ -1863,12 +1949,15 @@ namespace Microsoft.Ajax.Utilities
 
                 // because we output an open paren, reset the start flag
                 m_startOfStatement = false;
+
+                // and because we are outputting a paren, we are no longer in a no-in scenario
+                m_noIn = false;
             }
 
             // now output the node
             node.Accept(this);
 
-            // if we need parentheses, add the closing
+            // if we need parentheses, add the closing and restore whatever noin state we had
             if (needsParens)
             {
                 Output(')');
@@ -1882,6 +1971,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
                 if (node.OperatorInConditionalCompilationComment)
                 {
                     // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
@@ -1912,6 +2004,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
                 }
+
+                m_noIn = isNoIn;
             }
         }
 
