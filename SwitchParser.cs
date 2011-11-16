@@ -299,7 +299,7 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "ASPNET":
-                                if (BooleanSwitch(paramPartUpper, false, out parameterFlag))
+                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
                                 {
                                     // same setting for both CSS and JS
                                     JSSettings.AllowEmbeddedAspNetBlocks =

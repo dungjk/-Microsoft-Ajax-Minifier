@@ -671,19 +671,25 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.String:
-                        if (Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
-                            && (node.Context == null 
-                            || string.IsNullOrEmpty(node.Context.Code)
-                            || node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) < 0))
+                        if (node.Context == null || string.IsNullOrEmpty(node.Context.Code))
                         {
-                            // escape the string
+                            // escape the string value because we don't have a raw context value
+                            // to show anyways
                             Output(InlineSafeString(EscapeString(node.Value.ToString())));
+                        }
+                        else if (!Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
+                            || node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0
+                            || (Settings.AllowEmbeddedAspNetBlocks && node.StringContainsAspNetReplacement))
+                        {
+                            // we'd rather show the raw string
+                            Output(InlineSafeString(node.Context.Code));
                         }
                         else
                         {
-                            // just use the original literal from the context
-                            Output(InlineSafeString(node.Context.Code));
+                            // we'd rather show the escaped string
+                            Output(InlineSafeString(EscapeString(node.Value.ToString())));
                         }
+
                         break;
                 }
 

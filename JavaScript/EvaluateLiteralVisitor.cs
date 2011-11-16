@@ -993,7 +993,15 @@ namespace Microsoft.Ajax.Utilities
                         && (!right.IsNumericLiteral || right.IsExactInteger || right.IsNaN || right.IsInfinity))
                     {
                         // they are both either string, bool, null, or integer 
-                        newLiteral = new ConstantWrapper(left.ToString() + right.ToString(), PrimitiveType.String, null, m_parser);
+                        // ONE MORE CHECK: if we are giving ASP.NET special handling, and
+                        // if either of the operands is a string literal containing an ASP.NET replacement, then
+                        // just to make things simple, let's NOT combine them.
+                        if (!m_parser.Settings.AllowEmbeddedAspNetBlocks
+                            || (!(left.IsStringLiteral && left.StringContainsAspNetReplacement 
+                            || right.IsStringLiteral && right.StringContainsAspNetReplacement)))
+                        {
+                            newLiteral = new ConstantWrapper(left.ToString() + right.ToString(), PrimitiveType.String, null, m_parser);
+                        }
                     }
                 }
             }

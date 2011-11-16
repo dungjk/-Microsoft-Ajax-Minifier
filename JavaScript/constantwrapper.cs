@@ -21,7 +21,6 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
 {
-
     public class ConstantWrapper : Expression
     {
         // this is a regular expression that we'll use to strip a leading "0x" from
@@ -201,6 +200,14 @@ namespace Microsoft.Ajax.Utilities
                     isSpecialNumeric = (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue));
                 }
                 return isSpecialNumeric;
+            }
+        }
+
+        public bool StringContainsAspNetReplacement
+        {
+            get
+            {
+                return IsStringLiteral && s_aspNetSubstitution.IsMatch((string)Value);
             }
         }
 

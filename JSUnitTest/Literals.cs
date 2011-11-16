@@ -125,5 +125,11 @@ namespace JSUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void AspNetString()
+    {
+        TestHelper.Instance.RunTest("-aspnet");
+    }
   }
 }

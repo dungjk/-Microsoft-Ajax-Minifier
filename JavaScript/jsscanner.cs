@@ -923,8 +923,6 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case '"':
-                        goto case '\'';
-
                     case '\'':
                         token = JSToken.StringLiteral;
                         ScanString(c);
@@ -1680,6 +1678,17 @@ namespace Microsoft.Ajax.Utilities
                         HandleError(JSError.UnterminatedString);
                         break;
                     }
+
+                    if (AllowEmbeddedAspNetBlocks
+                        && ch == '<'
+                        && GetChar(m_currentPos) == '%')
+                    {
+                        // start of an ASP.NET block INSIDE a string literal.
+                        // just skip the entire ASP.NET block -- move forward until
+                        // we find the closing %> delimiter, then we'll continue on
+                        // with the next character.
+                        SkipAspNetReplacement();
+                    }
                 }
                 else
                 {
@@ -2009,6 +2018,29 @@ namespace Microsoft.Ajax.Utilities
                 {
                     int numDelimiters = (GetChar(m_currentPos - 1) == cStringTerminator ? 2 : 1);
                     m_escapedString = m_strSourceCode.Substring(m_currentToken.StartPosition + 1, m_currentPos - m_currentToken.StartPosition - numDelimiters);
+                }
+            }
+        }
+
+        private void SkipAspNetReplacement()
+        {
+            // the current position is on the % of the opening delimiter, so
+            // advance the pointer forward to the first character AFTER the opening
+            // delimiter, then keep skipping
+            // forward until we find the closing %>. Be sure to set the current pointer
+            // to the NEXT character AFTER the > when we find it.
+            ++m_currentPos;
+
+            char ch;
+            while ((ch = GetChar(m_currentPos++)) != '\0')
+            {
+                if (ch == '%'
+                    && GetChar(m_currentPos) == '>')
+                {
+                    // found the closing delimiter -- the current position in on the >
+                    // so we need to advance to the next character and break out of the loop
+                    ++m_currentPos;
+                    break;
                 }
             }
         }

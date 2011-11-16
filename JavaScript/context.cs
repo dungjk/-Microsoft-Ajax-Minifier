@@ -111,7 +111,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return (EndPosition > StartPosition && EndPosition <= Document.Source.Length)
+                return (!Document.IsGenerated && EndPosition > StartPosition && EndPosition <= Document.Source.Length)
                   ? Document.Source.Substring(StartPosition, EndPosition - StartPosition)
                   : null;
             }
