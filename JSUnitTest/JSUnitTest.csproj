@@ -296,6 +296,11 @@
     <Content Include="TestData\JS\Expected\Strict\With.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault_h.js" />
+    <Content Include="TestData\JS\Expected\Switch\LineBreak.js" />
+    <Content Include="TestData\JS\Expected\Switch\LineBreak_BreakMultiIndent.js" />
+    <Content Include="TestData\JS\Expected\Switch\LineBreak_BreakSingle.js" />
+    <Content Include="TestData\JS\Expected\Switch\LineBreak_Multi.js" />
+    <Content Include="TestData\JS\Expected\Switch\LineBreak_MultiIndent.js" />
     <Content Include="TestData\JS\Expected\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Expected\Switch\MacQuirks_M.js" />
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases.js" />
@@ -472,6 +477,7 @@
     <Content Include="TestData\JS\Input\Strict\StrictSwitchOn.xml" />
     <Content Include="TestData\JS\Input\Strict\With.js" />
     <Content Include="TestData\JS\Input\Switch\EmptyDefault.js" />
+    <Content Include="TestData\JS\Input\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Input\Switch\NoDefaultEmptyCases.js" />
     <Content Include="TestData\JS\Input\Switch\PrettyPrint.js" />

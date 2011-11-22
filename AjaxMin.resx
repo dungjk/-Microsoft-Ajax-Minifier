@@ -337,11 +337,20 @@ Valid OPTS are zero or more of:
   -enc:(in|out) ENC &gt; input or output file text encoding.
   -help &gt; display this usage message.
   -ignore:ERRCODE[,ERRCODE]* &gt; ignore one or more possible errors
-  -line[:N] &gt; set the line-break threshold when in single-line mode. After
-        reaching that line length, the line will break. Default is 
-        int.MaxValue - 1000.
+  -line[:[N][,[multiple|single][,[N]]]] &gt; set the line-break treatments. 
+        The first integer value is the line-break threshold: after reaching 
+        that many characters in a single line, the line will break at the next
+        opportunity; default is really big (int.MaxValue - 1000). The second 
+        options is whether to break statements along multiple indented lines 
+        (multiple) or to put them all on the same line (single), according to
+        the previous threshold value; default is single. The last option is 
+        how many spaces to use for each indent level if multi-line output is 
+        used; default is 4. Any or all of the three value may be omitted to
+        indicate the default value.
   -pretty[:N] &gt; causes output to be on multiple lines, with N spaces per tab
-        stop. Default N is 4.
+        stop (default N is 4). Also turns off all local renaming and other 
+        code-optimizations, unless otherwise explicitly turned on via other
+        switches.
   -res[:IDENT] RFILE &gt; use a resource file to specify localization strings
         using non-existent object IDENT, Strings if not specified.
   -silent &gt; silent mode; no error, warning, or message output.

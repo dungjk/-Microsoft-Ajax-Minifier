@@ -18,88 +18,118 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
 {
-  /// <summary>
-  /// Summary description for Switch
-  /// </summary>
-  [TestClass]
-  public class Switch
-  {
-    [TestMethod]
-    public void EmptyDefault()
+    /// <summary>
+    /// Summary description for Switch
+    /// </summary>
+    [TestClass]
+    public class Switch
     {
-      TestHelper.Instance.RunTest("-unused:keep");
-    }
+        [TestMethod]
+        public void EmptyDefault()
+        {
+            TestHelper.Instance.RunTest("-unused:keep");
+        }
 
-    [TestMethod]
-    public void EmptyDefault_h()
-    {
-        TestHelper.Instance.RunTest("-rename:all");
-    }
+        [TestMethod]
+        public void EmptyDefault_h()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
 
-    [TestMethod]
-    public void NoDefaultEmptyCases()
-    {
-      TestHelper.Instance.RunTest("-unused:keep");
-    }
+        [TestMethod]
+        public void NoDefaultEmptyCases()
+        {
+            TestHelper.Instance.RunTest("-unused:keep");
+        }
 
-    [TestMethod]
-    public void NoDefaultEmptyCases_h()
-    {
-        TestHelper.Instance.RunTest("-rename:all");
-    }
+        [TestMethod]
+        public void NoDefaultEmptyCases_h()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
 
-    [TestMethod]
-    public void PromoteBreak()
-    {
-      TestHelper.Instance.RunTest("-unused:keep");
-    }
+        [TestMethod]
+        public void PromoteBreak()
+        {
+            TestHelper.Instance.RunTest("-unused:keep");
+        }
 
-    [TestMethod]
-    public void PromoteBreak_h()
-    {
-        TestHelper.Instance.RunTest("-rename:all");
-    }
+        [TestMethod]
+        public void PromoteBreak_h()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
 
-    [TestMethod]
-    public void SwitchLabels()
-    {
-      TestHelper.Instance.RunTest("-unused:keep");
-    }
+        [TestMethod]
+        public void SwitchLabels()
+        {
+            TestHelper.Instance.RunTest("-unused:keep");
+        }
 
-    [TestMethod]
-    public void SwitchLabels_h()
-    {
-        TestHelper.Instance.RunTest("-rename:all");
-    }
+        [TestMethod]
+        public void SwitchLabels_h()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
 
-    [TestMethod]
-    public void PrettyPrint()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void PrettyPrint()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void PrettyPrint_P()
-    {
-      TestHelper.Instance.RunTest("-pretty -clobber");
-    }
+        [TestMethod]
+        public void PrettyPrint_P()
+        {
+            TestHelper.Instance.RunTest("-pretty -clobber");
+        }
 
-    [TestMethod]
-    public void MacQuirks()
-    {
-      TestHelper.Instance.RunTest("-mac:No");
-    }
+        [TestMethod]
+        public void MacQuirks()
+        {
+            TestHelper.Instance.RunTest("-mac:No");
+        }
 
-    [TestMethod]
-    public void MacQuirks_M()
-    {
-        TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void MacQuirks_M()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod]
-    public void Unreachable()
-    {
-        TestHelper.Instance.RunTest();
+        [TestMethod]
+        public void Unreachable()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void LineBreak()
+        {
+            TestHelper.Instance.RunTest("-line:10");
+        }
+
+        [TestMethod]
+        public void LineBreak_Multi()
+        {
+            TestHelper.Instance.RunTest("-line:,multi");
+        }
+
+        [TestMethod]
+        public void LineBreak_MultiIndent()
+        {
+            TestHelper.Instance.RunTest("-line:,multiple,8");
+        }
+
+        [TestMethod]
+        public void LineBreak_BreakSingle()
+        {
+            TestHelper.Instance.RunTest("-line:10,single");
+        }
+
+        [TestMethod]
+        public void LineBreak_BreakMultiIndent()
+        {
+            TestHelper.Instance.RunTest("-line:10,m,2");
+        }
     }
-  }
 }

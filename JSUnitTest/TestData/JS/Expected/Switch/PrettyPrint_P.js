@@ -3,8 +3,7 @@ function foo()
     var a = 1,
         b = 2,
         c = "three",
-        d,
-        f;
+        d;
     try
     {
         d = a * b;
@@ -19,18 +18,28 @@ function foo()
                     c = -1;
                     break;
                 default:
-                    c = c * 2
+                    c = c * 2;
+                    break
             }
-            c ? (d = d * c, a *= d) : c = 1
+            if(!c)
+                c = 1;
+            else
+            {
+                d = d * c;
+                a *= d
+            }
         }
     }
     catch(e)
     {
-        for(f = 0; f < b; ++f)
+        for(var f = 0; f < b; ++f)
             a = a * d
     }
     finally
     {
-        b = a ? a : -1
+        if(!a)
+            b = -1;
+        else
+            b = a
     }
 }

@@ -148,21 +148,18 @@ namespace Microsoft.Ajax.Utilities
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    if (node.OperatorToken == JSToken.Comma)
+                    // treat the comma-operator special, since we combine expression statements
+                    // with it very often
+                    if (node.OperatorToken != JSToken.Comma)
                     {
-                        // treat the comma-operator special, since we combine expression statements
-                        // with it very often
-                        OutputPossibleLineBreak(',');
-                        if (m_lineLength > 0)
-                        {
-                            Output(' ');
-                        }
-                    }
-                    else
-                    {
-                        // anything other than a comma operator
+                        // anything other than a comma operator has a space before it, too
                         Output(' ');
-                        Output(OperatorString(node.OperatorToken));
+                    }
+
+                    Output(OperatorString(node.OperatorToken));
+                    BreakLine(false);
+                    if (!m_onNewLine)
+                    {
                         Output(' ');
                     }
                 }
@@ -602,7 +599,12 @@ namespace Microsoft.Ajax.Utilities
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(" ? ");
+                    Output(" ?");
+                    BreakLine(false);
+                    if (!m_onNewLine)
+                    {
+                        Output(' ');
+                    }
                 }
                 else
                 {
@@ -618,7 +620,12 @@ namespace Microsoft.Ajax.Utilities
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(" : ");
+                    Output(" :");
+                    BreakLine(false);
+                    if (!m_onNewLine)
+                    {
+                        Output(' ');
+                    }
                 }
                 else
                 {
@@ -1332,7 +1339,9 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
+                    Indent();
                     node.Operand.Accept(this);
+                    Unindent();
                 }
             }
         }
@@ -1578,7 +1587,12 @@ namespace Microsoft.Ajax.Utilities
 
                         if (Settings.OutputMode == OutputMode.MultipleLines && Settings.IndentSize > 0)
                         {
-                            Output(" = ");
+                            Output(" =");
+                            BreakLine(false);
+                            if (!m_onNewLine)
+                            {
+                                Output(' ');
+                            }
                         }
                         else
                         {
@@ -2026,6 +2040,7 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.ParameterDeclarations != null)
                 {
+                    Indent();
                     OutputPossibleLineBreak('(');
 
                     // figure out the last referenced argument so we can skip
@@ -2072,6 +2087,7 @@ namespace Microsoft.Ajax.Utilities
                             Output(paramDecl.Name);
                         }
                     }
+                    Unindent();
                     OutputPossibleLineBreak(')');
                 }
 

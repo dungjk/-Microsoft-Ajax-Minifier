@@ -263,6 +263,8 @@ namespace Microsoft.Ajax.Utilities
 
                 var levelSpecified = false;
                 var renamingSpecified = false;
+                var killSpecified = false;
+                var minifySpecified = false;
                 bool parameterFlag;
                 for (var ndx = 0; ndx < args.Length; ++ndx)
                 {
@@ -689,6 +691,8 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "KILL":
+                                killSpecified = true;
+
                                 // optional integer switch argument
                                 if (paramPartUpper == null)
                                 {
@@ -741,21 +745,99 @@ namespace Microsoft.Ajax.Utilities
                             case "LINE":
                                 if (string.IsNullOrEmpty(paramPartUpper))
                                 {
-                                    // if no number specified, use the max default
+                                    // if no number specified, use the max default threshold
                                     JSSettings.LineBreakThreshold =
                                         CssSettings.LineBreakThreshold = int.MaxValue - 1000;
+                                    
+                                    // single-line mode
+                                    JSSettings.OutputMode = 
+                                        CssSettings.OutputMode = OutputMode.SingleLine;
+
+                                    // and four spaces per indent level
+                                    JSSettings.IndentSize =
+                                        CssSettings.IndentSize = 4;
                                 }
                                 else
                                 {
-                                    // must be an unsigned decimal integer value
-                                    int lineThreshold;
-                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out lineThreshold))
+                                    // split along commas (case-insensitive)
+                                    var lineParts = paramPartUpper.Split(',');
+                                    if (lineParts.Length <= 3)
                                     {
-                                        JSSettings.LineBreakThreshold =
-                                            CssSettings.LineBreakThreshold = lineThreshold;
+                                        // first optional part is the line threashold
+                                        // (don't need to check length greater than zero -- will always be at least one element returned from Split)
+                                        if (!string.IsNullOrEmpty(lineParts[0]))
+                                        {
+                                            // must be an unsigned decimal integer value
+                                            int lineThreshold;
+                                            if (int.TryParse(lineParts[0], NumberStyles.None, CultureInfo.InvariantCulture, out lineThreshold))
+                                            {
+                                                JSSettings.LineBreakThreshold =
+                                                    CssSettings.LineBreakThreshold = lineThreshold;
+                                            }
+                                            else
+                                            {
+                                                OnInvalidSwitch(switchPart, lineParts[0]);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // use the default
+                                            JSSettings.LineBreakThreshold =
+                                                CssSettings.LineBreakThreshold = int.MaxValue - 1000;
+                                        }
+
+                                        if (lineParts.Length > 1)
+                                        {
+                                            // second optional part is single or multiple line output
+                                            if (string.IsNullOrEmpty(lineParts[1]) || lineParts[1][0] == 'S')
+                                            {
+                                                // single-line mode
+                                                JSSettings.OutputMode =
+                                                    CssSettings.OutputMode = OutputMode.SingleLine;
+                                            }
+                                            else if (lineParts[1][0] == 'M')
+                                            {
+                                                // multiple-line mode
+                                                JSSettings.OutputMode =
+                                                    CssSettings.OutputMode = OutputMode.MultipleLines;
+                                            }
+                                            else
+                                            {
+                                                // must either be missing, or start with S (single) or M (multiple)
+                                                OnInvalidSwitch(switchPart, lineParts[1]);
+                                            }
+
+                                            if (lineParts.Length > 2)
+                                            {
+                                                // third optional part is the spaces-per-indent value
+                                                if (!string.IsNullOrEmpty(lineParts[2]))
+                                                {
+                                                    // get the numeric portion; must be a decimal integer
+                                                    int indentSize;
+                                                    if (int.TryParse(lineParts[2], NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
+                                                    {
+                                                        // same value for JS and CSS.
+                                                        // don't need to check for negative, because the tryparse method above does NOT
+                                                        // allow for a sign -- no sign, no negative.
+                                                        JSSettings.IndentSize = CssSettings.IndentSize = indentSize;
+                                                    }
+                                                    else
+                                                    {
+                                                        OnInvalidSwitch(switchPart, lineParts[2]);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // default of 4
+                                                    JSSettings.IndentSize =
+                                                        CssSettings.IndentSize = 4;
+                                                }
+                                            }
+                                        }
                                     }
                                     else
                                     {
+                                        // only 1-3 parts allowed
                                         OnInvalidSwitch(switchPart, paramPart);
                                     }
                                 }
@@ -806,6 +888,8 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "MINIFY":
+                                minifySpecified = true;
+
                                 // optional boolean switch
                                 // no arg is a valid scenario (default is true)
                                 if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
@@ -902,6 +986,32 @@ namespace Microsoft.Ajax.Utilities
                                 if (!renamingSpecified)
                                 {
                                     JSSettings.LocalRenaming = LocalRenaming.KeepAll;
+                                }
+
+                                // if minify hasn't been specified yet, turn it off. This will stop
+                                // most (but not all) AST modifications. BUT if we specified the -rename
+                                // options and set it to something other than keepall, then we don't want
+                                // to turn off minification.
+                                if (!minifySpecified
+                                    && (!renamingSpecified || JSSettings.LocalRenaming == LocalRenaming.KeepAll ))
+                                {
+                                    JSSettings.MinifyCode = false;
+                                }
+
+                                // if a kill switch hasn't been specified yet, set all its bits on.
+                                if (!killSpecified)
+                                {
+                                    if (renamingSpecified && JSSettings.LocalRenaming != LocalRenaming.KeepAll)
+                                    {
+                                        // we specifically turned on local renaming, so set the kill switch to everything BUT
+                                        JSSettings.KillSwitch = ~((long)TreeModifications.LocalRenaming);
+                                        CssSettings.KillSwitch = -1;
+                                    }
+                                    else
+                                    {
+                                        // we didn't specifically turn on local renaming. Turn everything off.
+                                        JSSettings.KillSwitch = CssSettings.KillSwitch = -1;
+                                    }
                                 }
 
                                 // optional integer switch argument
@@ -1026,6 +1136,14 @@ namespace Microsoft.Ajax.Utilities
                                     {
                                         OnInvalidSwitch(switchPart, paramPart);
                                     }
+                                }
+
+                                // since we specified a rename switch OTHER than none, 
+                                // let's make sure we don't *automatically* turn off switches that would 
+                                // stop renaming, which we have explicitly said we want.
+                                if (JSSettings.LocalRenaming != LocalRenaming.KeepAll)
+                                {
+                                    ResetRenamingKill(minifySpecified, killSpecified);
                                 }
 
                                 // this is a JS-only switch
@@ -1162,6 +1280,11 @@ namespace Microsoft.Ajax.Utilities
 
                                 // renaming is specified by this option
                                 renamingSpecified = true;
+
+                                // since we specified a rename switch OTHER than none, 
+                                // let's make sure we don't *automatically* turn off switches that would 
+                                // stop renaming, which we have explicitly said we want.
+                                ResetRenamingKill(minifySpecified, killSpecified);
                                 break;
 
                             case "HL":
@@ -1172,6 +1295,11 @@ namespace Microsoft.Ajax.Utilities
 
                                 // renaming is specified by this option
                                 renamingSpecified = true;
+
+                                // since we specified a rename switch OTHER than none, 
+                                // let's make sure we don't *automatically* turn off switches that would 
+                                // stop renaming, which we have explicitly said we want.
+                                ResetRenamingKill(minifySpecified, killSpecified);
                                 break;
 
                             case "HC":
@@ -1436,6 +1564,25 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return isValid;
+        }
+
+        private void ResetRenamingKill(bool minifySpecified, bool killSpecified)
+        {
+            // Reset the LocalRenaming kill bit IF the kill switch hadn't been specified
+            // and it's also not zero. If that's the case, that's because we set it to something
+            // automatically based on other switched, but now we're explcitly turning ON renaming,
+            // so we need to reset that switch so renaming will occur. Of course, might be overridden
+            // later with an explcit kill switch.
+            if (!killSpecified && JSSettings.KillSwitch != 0)
+            {
+                JSSettings.KillSwitch &= ~((long)TreeModifications.LocalRenaming);
+            }
+
+            // and make sure the minify flag is turned on if it wasn't explicity turned off
+            if (!minifySpecified)
+            {
+                JSSettings.MinifyCode = true;
+            }
         }
 
         #endregion
