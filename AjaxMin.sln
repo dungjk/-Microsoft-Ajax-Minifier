@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		ajaxmin.doc = ajaxmin.doc
 		AjaxMin.vsmdi = AjaxMin.vsmdi
 		localtestrun.testrunconfig = localtestrun.testrunconfig
+		NuGet.exe = NuGet.exe
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AjaxMin", "AjaxMin.csproj", "{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}"

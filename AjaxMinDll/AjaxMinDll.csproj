@@ -436,6 +436,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AjaxMinDll.nuspec" />
     <None Include="Migrated rules for AjaxMinDll.ruleset" />
   </ItemGroup>
   <ItemGroup>
@@ -470,4 +471,11 @@
     <PostBuildEvent>
     </PostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <PackageOutputDir Condition="$(PackageOutputDir)==''">$(TargetDir.Trim('\\'))</PackageOutputDir>
+    <NuGetBuildCommand>"$(SolutionDir)nuget.exe" pack "$(ProjectPath)" -prop Configuration=$(Configuration) -out "$(PackageOutputDir)" -sym</NuGetBuildCommand>
+  </PropertyGroup>
+  <Target Name="AfterBuild">
+    <Exec Command="$(NuGetBuildCommand)" Condition="'$(Configuration)'=='Release'" LogStandardErrorAsError="true" />
+  </Target>
 </Project>
