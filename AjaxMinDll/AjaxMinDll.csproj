@@ -482,7 +482,7 @@
   <Target Name="AfterBuild">
     <Exec Command="$(NuGetBuildCommand)" Condition="'$(Configuration)'=='Release'" LogStandardErrorAsError="true" />
   </Target>
-    <Target Name="CleanNuGetPackages">
+    <Target Name="CleanNuGetPackages" Condition="$(Configuration)=='Release'">
       <ItemGroup>
         <OldNuGetPackages Include="$(PackageOutputDir)\*.nupkg" />      
       </ItemGroup>
