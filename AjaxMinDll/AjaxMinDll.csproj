@@ -474,8 +474,18 @@
   <PropertyGroup>
     <PackageOutputDir Condition="$(PackageOutputDir)==''">$(TargetDir.Trim('\\'))</PackageOutputDir>
     <NuGetBuildCommand>"$(SolutionDir)nuget.exe" pack "$(ProjectPath)" -prop Configuration=$(Configuration) -out "$(PackageOutputDir)" -sym</NuGetBuildCommand>
+    <CleanDependsOn>
+      $(CleanDependsOn);
+      CleanNuGetPackages
+    </CleanDependsOn>
   </PropertyGroup>
   <Target Name="AfterBuild">
     <Exec Command="$(NuGetBuildCommand)" Condition="'$(Configuration)'=='Release'" LogStandardErrorAsError="true" />
   </Target>
+    <Target Name="CleanNuGetPackages">
+      <ItemGroup>
+        <OldNuGetPackages Include="$(PackageOutputDir)\*.nupkg" />      
+      </ItemGroup>
+      <Delete Files="@(OldNuGetPackages)" ContinueOnError="true"/>
+    </Target>
 </Project>
