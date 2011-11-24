@@ -44,6 +44,13 @@
 /* way minimum one */
 @foobar;
 
+/* a non-sense vendor-specific at-rule */
+@-moz-something url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAABnRSTlMAAAAAAABupgeRAAAABmJLR0QA%2FwD%2FAP%2BgvaeTAAAAEUlEQVR42mP4%2F58BCv7%2FZwAAHfAD%2FabwPj4AAAAASUVORK5CYII%3D)
+{
+    1 { foobar: 20hz; }
+    2 { whack: a-mole; scooby: doo; }
+}
+
 /* a vendor-specific at-rule (Safari animation) */
 @-webkit-keyframes bounce {
  from {

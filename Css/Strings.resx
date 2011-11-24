@@ -315,4 +315,13 @@
   <data name="PossibleInvalidClassName" xml:space="preserve">
     <value>Possible cross-browser invalid class name: {0}</value>
   </data>
+  <data name="ExpectedClosingBrace" xml:space="preserve">
+    <value>Expected closing curly-brace, found '{0}'</value>
+  </data>
+  <data name="ExpectedPercentageFromOrTo" xml:space="preserve">
+    <value>Expected percentage, 'from', or 'to'; found '{0}'</value>
+  </data>
+  <data name="ExpectedSemicolonOrClosingBrace" xml:space="preserve">
+    <value>Expected semicolon or closing curly-brace, found '{0}'</value>
+  </data>
 </root>

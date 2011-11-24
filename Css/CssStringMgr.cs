@@ -89,6 +89,9 @@ namespace Microsoft.Ajax.Utilities
         ExpectedMediaQuery,
         MediaQueryRequiresSpace,
         PossibleInvalidClassName,
+        ExpectedClosingBrace,
+        ExpectedPercentageFromOrTo,
+        ExpectedSemicolonOrClosingBrace,
     };
 
     internal class CssStringMgr

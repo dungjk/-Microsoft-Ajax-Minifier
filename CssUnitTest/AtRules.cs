@@ -79,7 +79,19 @@ namespace CssUnitTest
     }
 
     [TestMethod]
-      public void ImportComment_x()
+    public void ImportComment_x()
+    {
+        TestHelper.Instance.RunTest("-pretty");
+    }
+
+    [TestMethod]
+    public void KeyFrames()
+    {
+        TestHelper.Instance.RunTest();
+    }
+
+    [TestMethod]
+    public void KeyFrames_p()
     {
         TestHelper.Instance.RunTest("-pretty");
     }

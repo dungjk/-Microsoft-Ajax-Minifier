@@ -83,7 +83,6 @@ namespace Microsoft.Ajax.Utilities
             NextChar();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         public CssToken NextToken()
         {
             // advance the context
@@ -278,28 +277,27 @@ namespace Microsoft.Ajax.Utilities
             return token;
         }
 
-		private CssToken ScanAspNetBlock()
-		{
-			StringBuilder sb = new StringBuilder();
-			char prev = ' ';
-			while (m_currentChar != '\0' &&
-				   !(m_currentChar == '>' &&
-					 prev == '%'))
-			{
-				sb.Append(m_currentChar);
-				prev = m_currentChar;
-				NextChar();
-			}
-			if (m_currentChar != '\0')
-			{
-				sb.Append(m_currentChar);
-				// Read the last '>'
-				NextChar();
-			}
-			return new CssToken(TokenType.AspNetBlock, sb.ToString(), m_context);
-		}
+        private CssToken ScanAspNetBlock()
+        {
+            StringBuilder sb = new StringBuilder();
+            char prev = ' ';
+            while (m_currentChar != '\0' &&
+                   !(m_currentChar == '>' &&
+                     prev == '%'))
+            {
+                sb.Append(m_currentChar);
+                prev = m_currentChar;
+                NextChar();
+            }
+            if (m_currentChar != '\0')
+            {
+                sb.Append(m_currentChar);
+                // Read the last '>'
+                NextChar();
+            }
+            return new CssToken(TokenType.AspNetBlock, sb.ToString(), m_context);
+        }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanCDO()
         {
             CssToken token = null;
@@ -327,7 +325,6 @@ namespace Microsoft.Ajax.Utilities
             return (token != null ? token : token = new CssToken(TokenType.Character, '<', m_context));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanCDC()
         {
             CssToken token = null;
@@ -344,7 +341,6 @@ namespace Microsoft.Ajax.Utilities
             return token;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanIncludes()
         {
             CssToken token = null;
@@ -357,7 +353,6 @@ namespace Microsoft.Ajax.Utilities
             return (token != null ? token : new CssToken(TokenType.Character, '~', m_context));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanDashMatch()
         {
             CssToken token = null;
@@ -384,7 +379,6 @@ namespace Microsoft.Ajax.Utilities
             return token;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanPrefixMatch()
         {
             CssToken token = null;
@@ -397,7 +391,6 @@ namespace Microsoft.Ajax.Utilities
             return (token != null ? token : new CssToken(TokenType.Character, '^', m_context));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanSuffixMatch()
         {
             CssToken token = null;
@@ -410,7 +403,6 @@ namespace Microsoft.Ajax.Utilities
             return (token != null ? token : new CssToken(TokenType.Character, '$', m_context));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanSubstringMatch()
         {
             CssToken token = null;
@@ -579,6 +571,13 @@ namespace Microsoft.Ajax.Utilities
                         tokenType = TokenType.RightBottomSymbol;
                         break;
 
+                    case "KEYFRAMES":
+                    case "-MS-KEYFRAMES":
+                    case "-MOZ-KEYFRAMES":
+                    case "-WEBKIT-KEYFRAMES":
+                        tokenType = TokenType.KeyFramesSymbol;
+                        break;
+
                     default:
                         tokenType = TokenType.AtKeyword;
                         break;
@@ -595,7 +594,6 @@ namespace Microsoft.Ajax.Utilities
             return new CssToken(tokenType, '@' + (ident == null ? string.Empty : ident), m_context);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.CssToken.#ctor(Microsoft.Ajax.Utilities.TokenType,System.String,Microsoft.Ajax.Utilities.CssContext)")]
         private CssToken ScanImportant()
         {
             CssToken token = null;

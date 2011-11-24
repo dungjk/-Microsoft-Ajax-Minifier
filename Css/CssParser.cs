@@ -47,6 +47,9 @@ namespace Microsoft.Ajax.Utilities
         // start it as true so we don't start off with a blank line
         private bool m_outputNewLine = true;
 
+        // set this to true to force a newline before any other output
+        private bool m_forceNewLine = false;
+
         public CssSettings Settings
         {
             get; set;
@@ -388,6 +391,7 @@ namespace Microsoft.Ajax.Utilities
               || ParseMedia() == Parsed.True
               || ParsePage() == Parsed.True
               || ParseFontFace() == Parsed.True
+              || ParseKeyFrames() == Parsed.True
               || ParseAtKeyword() == Parsed.True
 			  || ParseAspNetBlock() == Parsed.True)
             {
@@ -589,6 +593,148 @@ namespace Microsoft.Ajax.Utilities
             {
                 ReportError(0, StringEnum.UndeclaredNamespace, namespaceIdent);
             }
+        }
+
+        private Parsed ParseKeyFrames()
+        {
+            // '@keyframes' IDENT '{' keyframes-blocks '}'
+            Parsed parsed = Parsed.False;
+            if (CurrentTokenType == TokenType.KeyFramesSymbol)
+            {
+                // found the @keyframes at-rule
+                parsed = Parsed.True;
+
+                NewLine();
+                AppendCurrent();
+                SkipSpace();
+
+                // needs to be followed by an identifier
+                if (CurrentTokenType == TokenType.Identifier || CurrentTokenType == TokenType.String)
+                {
+                    // if this is an identifier, then we need to make sure we output a space
+                    // character so the identifier doesn't get attached to the previous @-rule
+                    if (CurrentTokenType == TokenType.Identifier || Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        Append(' ');
+                    }
+
+                    AppendCurrent();
+                    SkipSpace();
+                }
+                else
+                {
+                    ReportError(0, StringEnum.ExpectedIdentifier, CurrentTokenText);
+                }
+
+                // followed by keyframe blocks surrounded with curly-braces
+                if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
+                {
+                    NewLine();
+                    AppendCurrent();
+                    Indent();
+                    NewLine();
+                    SkipSpace();
+
+                    ParseKeyFrameBlocks();
+
+                    // better end with a curly-brace
+                    Unindent();
+                    NewLine();
+                    if (CurrentTokenType == TokenType.Character && CurrentTokenText == "}")
+                    {
+                        NewLine();
+                        AppendCurrent();
+                        SkipSpace();
+                    }
+                    else
+                    {
+                        ReportError(0, StringEnum.ExpectedClosingBrace, CurrentTokenText);
+                        SkipToEndOfDeclaration();
+                    }
+                }
+                else
+                {
+                    ReportError(0, StringEnum.ExpectedOpenBrace, CurrentTokenText);
+                    SkipToEndOfStatement();
+                }
+            }
+            return parsed;
+        }
+
+        private void ParseKeyFrameBlocks()
+        {
+            // [ keyframe-selectors block ]*
+            while (ParseKeyFrameSelectors() == Parsed.True)
+            {
+                ParseDeclarationBlock(false);
+
+                // set the force-newline flag to true so that any selectors we may find next
+                // will start on a new line
+                m_forceNewLine = true;
+            }
+
+            // reset the flag
+            m_forceNewLine = false;
+        }
+
+        private Parsed ParseKeyFrameSelectors()
+        {
+            // [ 'from' | 'to' | PERCENTAGE ] [ ',' [ 'from' | 'to' | PERCENTAGE ] ]*
+            Parsed parsed = Parsed.False;
+
+            // see if we start with a percentage or the words "from" or "to"
+            if (CurrentTokenType == TokenType.Percentage)
+            {
+                AppendCurrent();
+                SkipSpace();
+                parsed = Parsed.True;
+            }
+            else if (CurrentTokenType == TokenType.Identifier)
+            {
+                var upperIdent = CurrentTokenText.ToUpperInvariant();
+                if (string.CompareOrdinal(upperIdent, "FROM") == 0
+                    || string.CompareOrdinal(upperIdent, "TO") == 0)
+                {
+                    AppendCurrent();
+                    SkipSpace();
+                    parsed = Parsed.True;
+                }
+            }
+
+            // if we found one, keep going as long as there are others comma-separated
+            while (parsed == Parsed.True && CurrentTokenType == TokenType.Character && CurrentTokenText == ",")
+            {
+                // append the comma, and if this is multiline mode, follow it with a space for readability
+                AppendCurrent();
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Append(' ');
+                }
+                SkipSpace();
+
+                // needs to be either a percentage or "from" or "to"
+                if (CurrentTokenType == TokenType.Percentage)
+                {
+                    AppendCurrent();
+                    SkipSpace();
+                }
+                else if (CurrentTokenType == TokenType.Identifier)
+                {
+                    var upperIdent = CurrentTokenText.ToUpperInvariant();
+                    if (string.CompareOrdinal(upperIdent, "FROM") == 0
+                        || string.CompareOrdinal(upperIdent, "TO") == 0)
+                    {
+                        AppendCurrent();
+                        SkipSpace();
+                    }
+                }
+                else
+                {
+                    ReportError(0, StringEnum.ExpectedPercentageFromOrTo, CurrentTokenText);
+                }
+            }
+
+            return parsed;
         }
 
         private Parsed ParseImport()
@@ -975,7 +1121,7 @@ namespace Microsoft.Ajax.Utilities
                             if (CurrentTokenType != TokenType.Character
                               || (CurrentTokenText != ";" && CurrentTokenText != "}"))
                             {
-                                ReportError(0, StringEnum.ExpectedSemicolonOrOpenBrace, CurrentTokenText);
+                                ReportError(0, StringEnum.ExpectedSemicolonOrClosingBrace, CurrentTokenText);
 
                                 // we'll get here if we decide to ignore the error and keep trudging along. But we still
                                 // need to skip to the end of the declaration.
@@ -997,7 +1143,6 @@ namespace Microsoft.Ajax.Utilities
                             Unindent();
                             NewLine();
                             Append('}');
-                            NewLine();
                             // skip past it
                             SkipSpace();
                             parsed = Parsed.True;
@@ -1099,14 +1244,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // allow margin at-keywords
                     parsed = ParseDeclarationBlock(true);
-
-                    // if we parsed a declaration block, then the block
-                    // ends with its own newline. But if we haven't, we
-                    // need to add our own.
-                    if (parsed != Parsed.True)
-                    {
-                        NewLine();
-                    }
+                    NewLine();
                 }
                 else
                 {
@@ -1166,6 +1304,7 @@ namespace Microsoft.Ajax.Utilities
 
                     // don't allow margin at-keywords
                     parsed = ParseDeclarationBlock(false);
+                    NewLine();
                     break;
 
                 default:
@@ -1186,14 +1325,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // don't allow margin at-keywords
                 parsed = ParseDeclarationBlock(false);
-
-                // if we parsed a declaration block, then the block
-                // ends with its own newline. But if we haven't, we
-                // need to add our own.
-                if (parsed != Parsed.True)
-                {
-                    NewLine();
-                }
+                NewLine();
             }
             return parsed;
         }
@@ -1232,6 +1364,7 @@ namespace Microsoft.Ajax.Utilities
                 AddNewLine();
             }
 
+            m_forceNewLine = true;
             Parsed parsed = ParseSelector();
             if (parsed == Parsed.True)
             {
@@ -3088,6 +3221,20 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     // normal text
+                    // see if we wanted to force a newline
+                    if (m_forceNewLine)
+                    {
+                        // only output a newline if we aren't already on a new line
+                        // AND we are in multiple-line mode
+                        if (!m_outputNewLine && Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            AddNewLine();
+                        }
+                        
+                        // reset the flag
+                        m_forceNewLine = false;
+                    }
+
                     m_parsed.Append(text);
                     m_outputNewLine = false;
 

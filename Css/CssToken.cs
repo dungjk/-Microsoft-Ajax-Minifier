@@ -16,6 +16,8 @@
 
 namespace Microsoft.Ajax.Utilities
 {
+    using System.ComponentModel;
+
     /// <summary>
     /// Token class represents a parsed token of information consumed by the parser
     /// </summary>
@@ -30,7 +32,7 @@ namespace Microsoft.Ajax.Utilities
         private CssContext m_context;
         public CssContext Context { get { return m_context; } }
 
-        public CssToken(TokenType tokenType, string text, CssContext context)
+        public CssToken(TokenType tokenType, [Localizable(false)] string text, CssContext context)
         {
             m_tokenType = tokenType;
             m_text = text;
@@ -153,6 +155,7 @@ namespace Microsoft.Ajax.Utilities
         AtKeyword,
         ImportantSymbol,
         NamespaceSymbol,
+        KeyFramesSymbol,
         RelativeLength,
         AbsoluteLength,
         Resolution,

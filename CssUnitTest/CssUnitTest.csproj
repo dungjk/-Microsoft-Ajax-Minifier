@@ -90,6 +90,8 @@
     <Content Include="TestData\CSS\Expected\AtRules\ImportLevel1Baz_i.css" />
     <Content Include="TestData\CSS\Expected\AtRules\ImportLevel2Foo_i.css" />
     <Content Include="TestData\CSS\Expected\AtRules\ImportLevel3Foo2_i.css" />
+    <Content Include="TestData\CSS\Expected\AtRules\KeyFrames.css" />
+    <Content Include="TestData\CSS\Expected\AtRules\KeyFrames_p.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Media.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Namespace.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Other.css" />
@@ -176,6 +178,7 @@
     <Content Include="TestData\CSS\Input\AtRules\ImportLevel1Baz.css" />
     <Content Include="TestData\CSS\Input\AtRules\ImportLevel2Foo.css" />
     <Content Include="TestData\CSS\Input\AtRules\ImportLevel3Foo2.css" />
+    <Content Include="TestData\CSS\Input\AtRules\KeyFrames.css" />
     <Content Include="TestData\CSS\Input\AtRules\Media.css" />
     <Content Include="TestData\CSS\Input\AtRules\Namespace.css" />
     <Content Include="TestData\CSS\Input\AtRules\Other.css" />
