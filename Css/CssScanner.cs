@@ -1318,8 +1318,23 @@ namespace Microsoft.Ajax.Utilities
                       || ('(' <= m_currentChar && m_currentChar <= '~')
                       || (m_currentChar == (delimiter == '"' ? '\'' : '"')))
                     {
+                        // save the current character, add it to the builder we are keeping,
+                        // and get the next character
+                        var ch = m_currentChar;
                         sb.Append(m_currentChar);
                         NextChar();
+
+                        // if we are allowing embedded ASP.NET blocks and that last character ws
+                        // a less-than character and the current character is a percent...
+                        if (AllowEmbeddedAspNetBlocks 
+                            && ch == '<'
+                            && m_currentChar == '%')
+                        {
+                            // we have the start of an ASP.NET block. Skip to the end of that block, which
+                            // is determined by a closing "%>" string. When this function returns, the current
+                            // character should be the first character AFTER the %>
+                            SkipAspNetBlock(sb);
+                        }
                     }
                     else if (m_currentChar == '\n'
                         || m_currentChar == '\r')
@@ -1359,6 +1374,41 @@ namespace Microsoft.Ajax.Utilities
                 str = sb.ToString();
             }
             return str;
+        }
+
+        private void SkipAspNetBlock(StringBuilder sb)
+        {
+            // add the current character (should be the % character from the <% opening)
+            sb.Append(m_currentChar);
+
+            // loop until we find the %> closing sequence, adding everything inbetween to the string builder
+            NextChar();
+
+            var mightBeClosing = false;
+            while (m_currentChar != '\0')
+            {
+                if (m_currentChar == '%')
+                {
+                    // might be the first character of a closing sequence
+                    mightBeClosing = true;
+                }
+                else if (mightBeClosing && m_currentChar == '>')
+                {
+                    // we found hte closing sequence.
+                    // output the closing >, advance the character pointer, and bail
+                    sb.Append(m_currentChar);
+                    NextChar();
+                    break;
+                }
+                else
+                {
+                    // nah -- not a closing sequence
+                    mightBeClosing = false;
+                }
+
+                sb.Append(m_currentChar);
+                NextChar();
+            }
         }
 
         private string GetIdent()

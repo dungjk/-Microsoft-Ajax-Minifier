@@ -18,16 +18,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CssUnitTest
 {
-  /// <summary>
-  /// Summary description for AtRules
-  /// </summary>
-  [TestClass]
-  public class EmbeddedAspNetBlock
-  {
-    [TestMethod]
-    public void TopLevel()
+    /// <summary>
+    /// Summary description for AtRules
+    /// </summary>
+    [TestClass]
+    public class EmbeddedAspNetBlock
     {
-      TestHelper.Instance.RunTest("-aspnet:true");
+        [TestMethod]
+        public void TopLevel()
+        {
+            TestHelper.Instance.RunTest("-aspnet:true");
+        }
+
+        [TestMethod]
+        public void StringWithBlock()
+        {
+            TestHelper.Instance.RunTest("-aspnet:Y");
+        }
     }
-  }
 }
