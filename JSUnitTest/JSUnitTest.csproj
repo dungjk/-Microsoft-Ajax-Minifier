@@ -85,6 +85,7 @@
     <Compile Include="Renaming.cs" />
     <Compile Include="ResourceMerge.cs" />
     <Compile Include="ScannerErrors.cs" />
+    <Compile Include="StdIn.cs" />
     <Compile Include="Strict.cs" />
     <Compile Include="Switch.cs" />
     <Compile Include="Syntax.cs" />
@@ -284,6 +285,7 @@
     <Content Include="TestData\JS\Expected\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Expected\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Expected\Strict\DupArg.js" />
     <Content Include="TestData\JS\Expected\Strict\DupProperty.js" />
     <Content Include="TestData\JS\Expected\Strict\EvalArgsAssign.js" />
@@ -464,6 +466,7 @@
     <Content Include="TestData\JS\Input\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Input\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Input\Strict\DupArg.js" />
     <Content Include="TestData\JS\Input\Strict\DupProperty.js" />
     <Content Include="TestData\JS\Input\Strict\EvalArgsAssign.js" />
