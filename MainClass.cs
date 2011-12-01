@@ -550,7 +550,7 @@ namespace Microsoft.Ajax.Utilities
                 crunchGroups = new CrunchGroup[] { new CrunchGroup(
                     m_outputFile, 
                     m_switchParser.EncodingOutputName, 
-                    m_inputFiles.ToArray(), 
+                    m_inputFiles != null ? m_inputFiles.ToArray() : new string[] {}, 
                     m_switchParser.EncodingInputName, 
                     m_inputType) };
             }
