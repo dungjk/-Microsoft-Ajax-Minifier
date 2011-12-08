@@ -59,6 +59,8 @@ namespace Microsoft.Ajax.Utilities
 
         public string FileContext { get; set; }
 
+        private CodeSettings m_jsSettings;
+
         #endregion
 
         #region Comment-related fields
@@ -258,6 +260,11 @@ namespace Microsoft.Ajax.Utilities
         {
             // default settings
             Settings = new CssSettings();
+
+            // create the settings we'll use for JS expression minification
+            // use the defaults, other than to set the kill switch so that it leaves
+            // string literals alone (so we don't inadvertently change any delimiter chars)
+            m_jsSettings = new CodeSettings() { KillSwitch = (long)TreeModifications.MinifyStringLiterals };
 
             // create a list of strings that represent the namespaces declared
             // in a @namespace statement. We will clear this every time we parse a new source string.
@@ -2455,8 +2462,8 @@ namespace Microsoft.Ajax.Utilities
                         jsParser.CompilerError += OnScriptError;
                         m_expressionContainsErrors = false;
 
-                        // parse the source as an expression using the default settings
-                        Block block = jsParser.ParseExpression(null);
+                        // parse the source as an expression using our common JS settings
+                        Block block = jsParser.ParseExpression(m_jsSettings);
 
                         // if we got back a parsed block and there were no errors, output the minified code.
                         // if we didn't get back the block, or if there were any errors at all, just output
