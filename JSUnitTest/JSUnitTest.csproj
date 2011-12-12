@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayHandling.cs" />
+    <Compile Include="AspNet.cs" />
     <Compile Include="Assignments.cs" />
     <Compile Include="AstMods.cs" />
     <Compile Include="BlockOpts.cs" />
@@ -104,6 +105,9 @@
     <Content Include="TestData\JS\Expected\ArrayHandling\Length.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Reverse.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Sort.js" />
+    <Content Include="TestData\JS\Expected\AspNet\Blocks.js" />
+    <Content Include="TestData\JS\Expected\AspNet\Expressions.js" />
+    <Content Include="TestData\JS\Expected\AspNet\Identifiers.js" />
     <Content Include="TestData\JS\Expected\Assignments\Assign.js" />
     <Content Include="TestData\JS\Expected\Assignments\AssignAspNetBlock.js" />
     <Content Include="TestData\JS\Expected\Assignments\Assign_utf8.js" />
@@ -330,6 +334,9 @@
     <Content Include="TestData\JS\Input\ArrayHandling\Length.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Reverse.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Sort.js" />
+    <Content Include="TestData\JS\Input\AspNet\Blocks.js" />
+    <Content Include="TestData\JS\Input\AspNet\Expressions.js" />
+    <Content Include="TestData\JS\Input\AspNet\Identifiers.js" />
     <Content Include="TestData\JS\Input\Assignments\Assign.js" />
     <Content Include="TestData\JS\Input\Assignments\AssignAspNetBlock.js" />
     <Content Include="TestData\JS\Input\Assignments\CompoundAssign.js" />

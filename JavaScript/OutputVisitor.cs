@@ -1100,6 +1100,14 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // if the last character is an identifier part, then we will
+                // want to insert a space character so our identifier doesn't
+                // merge with the previous character
+                if (JSScanner.IsValidIdentifierPart(m_lastCharacter))
+                {
+                    Output(' ');
+                }
+
                 Output(node.VariableField != null
                     ? node.VariableField.ToString()
                     : node.Name);

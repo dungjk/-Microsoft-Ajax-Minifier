@@ -745,9 +745,6 @@ namespace Microsoft.Ajax.Utilities
                             return endStatement;
                         }
 
-                    case JSToken.AspNetBlock:
-                        return ParseAspNetBlock(consumeSemicolonIfPossible: true);
-
                     default:
                         m_noSkipTokenSet.Add(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet);
                         bool exprError = false;
@@ -838,9 +835,28 @@ namespace Microsoft.Ajax.Utilities
                         break;
                 }
 
+                var lookup = statement as Lookup;
+                if (lookup != null
+                    && lookup.Name.StartsWith("<%=", StringComparison.Ordinal) && lookup.Name.EndsWith("%>", StringComparison.Ordinal))
+                {
+                    // single lookup, but it's actually one or more ASP.NET blocks.
+                    // convert back to an asp.net block node
+                    statement = new AspNetBlockNode(statement.Context, this, lookup.Name, false);
+                }
+
                 if (JSToken.Semicolon == m_currentToken.Token)
                 {
+                    // update the statement's context to include the semicolon
                     statement.Context.UpdateWith(m_currentToken);
+
+                    // if the statement is an asp.net block, then set the property on it that indicates that this
+                    // block was terminated with a semicolon.
+                    var aspNetBlock = statement as AspNetBlockNode;
+                    if (aspNetBlock != null)
+                    {
+                        aspNetBlock.IsTerminatedByExplicitSemicolon = true;
+                    }
+
                     GetNextToken();
                 }
                 else if (!m_scanner.GotEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
@@ -1012,29 +1028,6 @@ namespace Microsoft.Ajax.Utilities
             codeBlock.Context.UpdateWith(m_currentToken);
             GetNextToken();
             return codeBlock;
-        }
-
-        private AstNode ParseAspNetBlock(bool consumeSemicolonIfPossible)
-        {
-            Context context = m_currentToken.Clone();
-            GetNextToken();
-            string aspNetBlockText = context.Code;
-            bool blockTerminatedByExplicitSemicolon = false;
-
-            // This token may have a semi-colon after it or the semi-colon may come from the asp.net 
-            // block. If we have one consume it.
-            if (JSToken.Semicolon == m_currentToken.Token &&
-                consumeSemicolonIfPossible)
-            {
-                // add the semicolon to the cloned context
-                context.UpdateWith(m_currentToken);
-                // and skip it
-                GetNextToken();
-                blockTerminatedByExplicitSemicolon = true;
-            }
-
-            // return the new AST object
-            return new AspNetBlockNode(context, this, aspNetBlockText, blockTerminatedByExplicitSemicolon);
         }
 
         //---------------------------------------------------------------------------------------
@@ -3648,7 +3641,7 @@ namespace Microsoft.Ajax.Utilities
         private AstNode ParseLeftHandSideExpression(bool isMinus)
         {
             AstNode ast = null;
-            bool isFunction = false;
+            bool skipToken = true;
             List<Context> newContexts = null;
 
             TryItAgain:
@@ -4119,11 +4112,11 @@ namespace Microsoft.Ajax.Utilities
                 // function expression
                 case JSToken.Function:
                     ast = ParseFunction(FunctionType.Expression, m_currentToken.Clone());
-                    isFunction = true;
+                    skipToken = false;
                     break;
 
                 case JSToken.AspNetBlock:
-                    ast = ParseAspNetBlock(consumeSemicolonIfPossible: false);
+                    ast = new AspNetBlockNode(m_currentToken.Clone(), this, m_currentToken.Code,false);
                     break;
 
                 default:
@@ -4141,7 +4134,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // can be a CallExpression, that is, followed by '.' or '(' or '['
-            if (!isFunction)
+            if (skipToken)
                 GetNextToken();
 
             return MemberExpression(ast, newContexts);
@@ -4598,6 +4591,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     m_goodTokensProcessed++;
                     m_breakRecursion = 0;
+
                     // the scanner shares this.currentToken with the parser
                     m_scanner.GetNextToken();
                 }

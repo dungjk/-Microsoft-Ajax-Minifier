@@ -22,7 +22,7 @@ namespace Microsoft.Ajax.Utilities
 {
 	public sealed class AspNetBlockNode : AstNode
 	{
-		private bool blockTerminatedByExplicitSemicolon;
+        public bool IsTerminatedByExplicitSemicolon { get; set; }
         public string AspNetBlockText { get; private set; }
 
 		public AspNetBlockNode(Context context, JSParser parser, string aspNetBlockText,
@@ -30,7 +30,7 @@ namespace Microsoft.Ajax.Utilities
 			: base(context, parser)
 		{
 			this.AspNetBlockText = aspNetBlockText;
-			this.blockTerminatedByExplicitSemicolon = blockTerminatedByExplicitSemicolon;
+			this.IsTerminatedByExplicitSemicolon = blockTerminatedByExplicitSemicolon;
 		}
 
         public override void Accept(IVisitor visitor)
@@ -45,7 +45,7 @@ namespace Microsoft.Ajax.Utilities
 		{
 			get
 			{
-				return this.blockTerminatedByExplicitSemicolon;
+				return this.IsTerminatedByExplicitSemicolon;
 			}
 		}
 	}

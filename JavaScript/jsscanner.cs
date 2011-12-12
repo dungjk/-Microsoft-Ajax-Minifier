@@ -113,7 +113,7 @@ namespace Microsoft.Ajax.Utilities
 
         public bool IgnoreConditionalCompilation { get; set; }
 
-		public bool AllowEmbeddedAspNetBlocks { get; set; }
+        public bool AllowEmbeddedAspNetBlocks { get; set; }
 
         // turning this property on makes the scanner just return raw tokens without any
         // conditional-compilation comment processing.
@@ -366,34 +366,33 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case '<':
-						if (AllowEmbeddedAspNetBlocks &&
-							'%' == GetChar(m_currentPos))
-						{
-							token = JSToken.AspNetBlock;
-							ScanAspNetBlock();
-						}
-						else
-						{
-							token = JSToken.LessThan;
-							if ('<' == GetChar(m_currentPos))
-							{
-								m_currentPos++;
-								token = JSToken.LeftShift;
-							}
+                        if (AllowEmbeddedAspNetBlocks &&
+                            '%' == GetChar(m_currentPos))
+                        {
+                            token = ScanAspNetBlock();
+                        }
+                        else
+                        {
+                            token = JSToken.LessThan;
+                            if ('<' == GetChar(m_currentPos))
+                            {
+                                m_currentPos++;
+                                token = JSToken.LeftShift;
+                            }
 
-							if ('=' == GetChar(m_currentPos))
-							{
-								m_currentPos++;
-								if (token == JSToken.LessThan)
-								{
-									token = JSToken.LessThanEqual;
-								}
-								else
-								{
-									token = JSToken.LeftShiftAssign;
-								}
-							}
-						}
+                            if ('=' == GetChar(m_currentPos))
+                            {
+                                m_currentPos++;
+                                if (token == JSToken.LessThan)
+                                {
+                                    token = JSToken.LessThanEqual;
+                                }
+                                else
+                                {
+                                    token = JSToken.LeftShiftAssign;
+                                }
+                            }
+                        }
 
                         break;
 
@@ -1611,33 +1610,120 @@ namespace Microsoft.Ajax.Utilities
             return null;
         }
 
-		/// <summary>
-		/// Scans for the end of an Asp.Net block.
-		///  On exit this.currentPos will be at the next char to scan after the asp.net block.
-		/// </summary>
-		private void ScanAspNetBlock()
-		{
-			while (!(this.GetChar(this.m_currentPos - 1) == '%' &&
-					 this.GetChar(this.m_currentPos) == '>') ||
-					 (m_currentPos >= m_endPos))
-			{
-				this.m_currentPos++;
-			}
+        /// <summary>
+        /// Scans for the end of an Asp.Net block.
+        ///  On exit this.currentPos will be at the next char to scan after the asp.net block.
+        /// </summary>
+        private JSToken ScanAspNetBlock()
+        {
+            // assume we find an asp.net block
+            var tokenType = JSToken.AspNetBlock;
 
-			m_currentToken.EndPosition = m_currentPos;
-			m_currentToken.EndLineNumber = CurrentLine;
-			m_currentToken.EndLinePosition = StartLinePosition;
+            // the current position is the % that opens the <%.
+            // advance to the next character and save it because we will want 
+            // to know whether it's an equals-sign later
+            var thirdChar = GetChar(++m_currentPos);
 
-			if (m_currentPos >= m_endPos)
-			{
-				HandleError(JSError.UnterminatedAspNetBlock);
-			}
-			else
-			{
-				// Eat the last >.
-				this.m_currentPos++;
-			}
-		}
+            // advance to the next character
+            ++m_currentPos;
+
+            // loop until we find a > with a % before it (%>)
+            while (!(this.GetChar(this.m_currentPos - 1) == '%' &&
+                     this.GetChar(this.m_currentPos) == '>') ||
+                     (m_currentPos >= m_endPos))
+            {
+                this.m_currentPos++;
+            }
+
+            // we should be at the > of the %> right now.
+            // set the end point of this token
+            m_currentToken.EndPosition = m_currentPos + 1;
+            m_currentToken.EndLineNumber = CurrentLine;
+            m_currentToken.EndLinePosition = StartLinePosition;
+
+            // see if we found an unterminated asp.net block
+            if (m_currentPos >= m_endPos)
+            {
+                HandleError(JSError.UnterminatedAspNetBlock);
+            }
+            else
+            {
+                // Eat the last >.
+                this.m_currentPos++;
+
+                if (thirdChar == '=')
+                {
+                    // this is a <%= ... %> token.
+                    // we're going to treat this like an identifier
+                    tokenType = JSToken.Identifier;
+
+                    // now, if the next character is an identifier part
+                    // then skip to the end of the identifier. And if this is
+                    // another <%= then skip to the end (%>)
+                    if (IsValidIdentifierPart(GetChar(m_currentPos))
+                        || CheckSubstring(m_currentPos, "<%="))
+                    {
+                        // and do it however many times we need
+                        while (true)
+                        {
+                            if (IsValidIdentifierPart(GetChar(m_currentPos)))
+                            {
+                                // skip to the end of the identifier part
+                                while (IsValidIdentifierPart(GetChar(++m_currentPos)))
+                                {
+                                    // loop
+                                }
+
+                                // when we get here, the current position is the first
+                                // character that ISN"T an identifier-part. That means everything 
+                                // UP TO this point must have been on the 
+                                // same line, so we only need to update the position
+                                m_currentToken.EndPosition = m_currentPos;
+                            }
+                            else if (CheckSubstring(m_currentPos, "<%="))
+                            {
+                                // skip forward four characters -- the minimum position
+                                // for the closing %>
+                                m_currentPos += 4;
+
+                                // and keep looping until we find it
+                                while (!(this.GetChar(this.m_currentPos - 1) == '%' &&
+                                         this.GetChar(this.m_currentPos) == '>') ||
+                                         (m_currentPos >= m_endPos))
+                                {
+                                    this.m_currentPos++;
+                                }
+
+                                // update the end of the token
+                                m_currentToken.EndPosition = m_currentPos + 1;
+                                m_currentToken.EndLineNumber = CurrentLine;
+                                m_currentToken.EndLinePosition = StartLinePosition;
+
+                                // we should be at the > of the %> right now.
+                                // see if we found an unterminated asp.net block
+                                if (m_currentPos >= m_endPos)
+                                {
+                                    HandleError(JSError.UnterminatedAspNetBlock);
+                                }
+                                else
+                                {
+                                    // skip the > and go around another time
+                                    ++m_currentPos;
+                                }
+                            }
+                            else
+                            {
+                                // neither an identifer part nor another <%= sequence,
+                                // so we're done here
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return tokenType;
+        }
 
         //--------------------------------------------------------------------------------------------------
         // ScanString
