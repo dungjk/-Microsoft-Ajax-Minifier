@@ -277,63 +277,79 @@ namespace Microsoft.Ajax.Utilities
             m_namespaces.Clear();
 
             // pre-process the comments
-            if (Settings.CommentMode == CssComment.Hacks)
+            var resetToHacks = false;
+            try
             {
-                // change the various hacks to important comments so they will be kept
-                // in the output
-                source = s_regexHack1.Replace(source, "/*! \\*/${inner}/*!*/");
-                source = s_regexHack2.Replace(source, "/*!/*//*/${inner}/**/");
-                source = s_regexHack3.Replace(source, "/*!/*/${inner}/*!*/");
-                source = s_regexHack4.Replace(source, "/*!*/");
-                source = s_regexHack5.Replace(source, "/*!*/");
-                source = s_regexHack6.Replace(source, "/*!*/");
-                source = s_regexHack7.Replace(source, "/*!*/");
-
-                // now that we've changed all our hack comments to important comments, we can
-                // change the flag to None so all non-important hacks are removed.
-                Settings.CommentMode = CssComment.Important;
-            }
-
-            // set up for the parse
-            using (StringReader reader = new StringReader(source))
-            {
-                m_scanner = new CssScanner(reader);
-				m_scanner.AllowEmbeddedAspNetBlocks = this.Settings.AllowEmbeddedAspNetBlocks;
-                m_scanner.ScannerError += new EventHandler<CssScannerErrorEventArgs>(OnScannerError);
-
-                // create the string builder into which we will be 
-                // building our crunched stylesheet
-                m_parsed = new StringBuilder();
-
-                // get the first token
-                NextToken();
-
-                try
+                if (Settings.CommentMode == CssComment.Hacks)
                 {
-                    // parse a style sheet!
-                    ParseStylesheet();
+                    // change the various hacks to important comments so they will be kept
+                    // in the output
+                    source = s_regexHack1.Replace(source, "/*! \\*/${inner}/*!*/");
+                    source = s_regexHack2.Replace(source, "/*!/*//*/${inner}/**/");
+                    source = s_regexHack3.Replace(source, "/*!/*/${inner}/*!*/");
+                    source = s_regexHack4.Replace(source, "/*!*/");
+                    source = s_regexHack5.Replace(source, "/*!*/");
+                    source = s_regexHack6.Replace(source, "/*!*/");
+                    source = s_regexHack7.Replace(source, "/*!*/");
 
-                    if (!m_scanner.EndOfFile)
+                    // now that we've changed all our hack comments to important comments, we can
+                    // change the flag to Important so all non-important hacks are removed. 
+                    // And set a flag to remind us to change it back before we exit, or the NEXT
+                    // file we process will have the wrong setting.
+                    Settings.CommentMode = CssComment.Important;
+                    resetToHacks = true;
+                }
+
+                // set up for the parse
+                using (StringReader reader = new StringReader(source))
+                {
+                    m_scanner = new CssScanner(reader);
+                    m_scanner.AllowEmbeddedAspNetBlocks = this.Settings.AllowEmbeddedAspNetBlocks;
+                    m_scanner.ScannerError += new EventHandler<CssScannerErrorEventArgs>(OnScannerError);
+
+                    // create the string builder into which we will be 
+                    // building our crunched stylesheet
+                    m_parsed = new StringBuilder();
+
+                    // get the first token
+                    NextToken();
+
+                    try
                     {
-                        string errorMessage = CssStringMgr.GetString(StringEnum.ExpectedEndOfFile);
-                        throw new CssScannerException(
-                            (int)StringEnum.ExpectedEndOfFile, 
-                            0,
-                            m_currentToken.Context.Start.Line,
-                            m_currentToken.Context.Start.Char,
-                            errorMessage);
-                    }
-                }
-                catch (CssException exc)
-                {
-                    // show the error
-                    OnCssError(exc);
-                }
+                        // parse a style sheet!
+                        ParseStylesheet();
 
-                // get the crunched string and dump the string builder
-                // (we don't need it anymore)
-                source = m_parsed.ToString();
-                m_parsed = null;
+                        if (!m_scanner.EndOfFile)
+                        {
+                            string errorMessage = CssStringMgr.GetString(StringEnum.ExpectedEndOfFile);
+                            throw new CssScannerException(
+                                (int)StringEnum.ExpectedEndOfFile,
+                                0,
+                                m_currentToken.Context.Start.Line,
+                                m_currentToken.Context.Start.Char,
+                                errorMessage);
+                        }
+                    }
+                    catch (CssException exc)
+                    {
+                        // show the error
+                        OnCssError(exc);
+                    }
+
+                    // get the crunched string and dump the string builder
+                    // (we don't need it anymore)
+                    source = m_parsed.ToString();
+                    m_parsed = null;
+                }
+            }
+            finally
+            {
+                // if we had changed our setting object...
+                if (resetToHacks)
+                {
+                    // ...be sure to change it BACK for next time.
+                    Settings.CommentMode = CssComment.Hacks;
+                }
             }
 
             return source;
