@@ -983,5 +983,10 @@ namespace Microsoft.Ajax.Utilities
         /// get rid of the not-operator and swap the true/false branches.
         /// </summary>
         IfNotTrueFalseToIfFalseTrue                 = 0x0000020000000000,
+
+        /// <summary>
+        /// Whether it's okay to move an expression containing an in-operator into a for-statement.
+        /// </summary>
+        MoveInExpressionsIntoForStatement           = 0x0000040000000000,
     }
 }

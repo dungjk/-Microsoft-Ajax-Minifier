@@ -288,5 +288,20 @@ namespace Microsoft.Ajax.Utilities
         {
             return Operand1.GetFunctionGuess(target);
         }
+
+        /// <summary>
+        /// Returns true if the expression contains an in-operator
+        /// </summary>
+        public override bool ContainsInOperator
+        {
+            get
+            {
+                // if we are an in-operator, then yeah: we contain one.
+                // otherwise recurse the operands.
+                return OperatorToken == JSToken.In
+                    ? true
+                    : Operand1.ContainsInOperator || Operand2.ContainsInOperator;
+            }
+        }
     }
 }

@@ -193,26 +193,33 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else if ((forNode = node[ndx] as ForNode) != null)
                     {
-                        if (forNode.Initializer == null)
+                        // if we aren't allowing in-operators to be moved into for-statements, then
+                        // first check to see if that previous expression statement is free of in-operators
+                        // before trying to move it.
+                        if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveInExpressionsIntoForStatement)
+                            || !node[ndx - 1].ContainsInOperator)
                         {
-                            // transform: expr1;for(;...) to for(expr1;...)
-                            // simply move the previous expression to the for-statement's initializer
-                            forNode.SetInitializer(node[ndx - 1]);
-                            node.ReplaceChild(node[ndx - 1], null);
-                        }
-                        else if (forNode.Initializer.IsExpression)
-                        {
-                            // transform: expr1;for(expr2;...) to for(expr1,expr2;...)
-                            var binOp = new BinaryOperator(null,
-                                m_parser,
-                                node[ndx - 1],
-                                forNode.Initializer,
-                                JSToken.Comma);
-
-                            // replace the initializer with the new binary operator and remove the previous node
-                            if (forNode.ReplaceChild(forNode.Initializer, binOp))
+                            if (forNode.Initializer == null)
                             {
+                                // transform: expr1;for(;...) to for(expr1;...)
+                                // simply move the previous expression to the for-statement's initializer
+                                forNode.SetInitializer(node[ndx - 1]);
                                 node.ReplaceChild(node[ndx - 1], null);
+                            }
+                            else if (forNode.Initializer.IsExpression)
+                            {
+                                // transform: expr1;for(expr2;...) to for(expr1,expr2;...)
+                                var binOp = new BinaryOperator(null,
+                                    m_parser,
+                                    node[ndx - 1],
+                                    forNode.Initializer,
+                                    JSToken.Comma);
+
+                                // replace the initializer with the new binary operator and remove the previous node
+                                if (forNode.ReplaceChild(forNode.Initializer, binOp))
+                                {
+                                    node.ReplaceChild(node[ndx - 1], null);
+                                }
                             }
                         }
                     }
@@ -391,67 +398,74 @@ namespace Microsoft.Ajax.Utilities
                         var previousVar = node[ndx - 1] as Var;
                         if (previousVar != null && (forNode = node[ndx] as ForNode) != null)
                         {
-                            // and see if the forNode's initializer is empty
-                            if (forNode.Initializer != null)
+                            // BUT if the var statement has any initializers containing an in-operator, first check
+                            // to see if we haven't killed that move before we try moving it. Opera 11 seems to have
+                            // an issue with that syntax, even if properly parenthesized.
+                            if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveInExpressionsIntoForStatement)
+                                || !previousVar.ContainsInOperator)
                             {
-                                // not empty -- see if it is a Var node
-                                Var varInitializer = forNode.Initializer as Var;
-                                if (varInitializer != null)
+                                // and see if the forNode's initializer is empty
+                                if (forNode.Initializer != null)
                                 {
-                                    // transform: var decls1;for(var decls2;...) to for(var decls1,decls2;...)
-                                    // we want to PREPEND the initializers in the previous var-statement
-                                    // to our for-statement's initializer var-statement list
-                                    varInitializer.InsertAt(0, previousVar);
+                                    // not empty -- see if it is a Var node
+                                    Var varInitializer = forNode.Initializer as Var;
+                                    if (varInitializer != null)
+                                    {
+                                        // transform: var decls1;for(var decls2;...) to for(var decls1,decls2;...)
+                                        // we want to PREPEND the initializers in the previous var-statement
+                                        // to our for-statement's initializer var-statement list
+                                        varInitializer.InsertAt(0, previousVar);
 
-                                    // then remove the previous var statement
-                                    node.RemoveAt(ndx - 1);
-                                    // this will bump the for node up one position in the list, so the next iteration
-                                    // will be right back on this node in case there are other var statements we need
-                                    // to combine
+                                        // then remove the previous var statement
+                                        node.RemoveAt(ndx - 1);
+                                        // this will bump the for node up one position in the list, so the next iteration
+                                        // will be right back on this node in case there are other var statements we need
+                                        // to combine
+                                    }
+                                    else
+                                    {
+                                        // we want to see if the initializer expression is a series of one or more
+                                        // simple assignments to variables that are in the previous var statement.
+                                        // if all the expressions are assignments to variables that are defined in the
+                                        // previous var statement, then we can just move the var statement into the 
+                                        // for statement.
+                                        BinaryOperator binaryOp = forNode.Initializer as BinaryOperator;
+                                        if (binaryOp != null && AreAssignmentsInVar(binaryOp, previousVar))
+                                        {
+                                            // transform: var decls;for(expr1;...) to for(var decls,expr1;...)
+                                            // create a list and fill it with all the var-decls created from the assignment
+                                            // operators in the expression
+                                            var varDecls = new List<VariableDeclaration>();
+                                            ConvertAssignmentsToVarDecls(binaryOp, varDecls, m_parser);
+
+                                            // then go through and append each one to the var statement before us
+                                            foreach (var varDecl in varDecls)
+                                            {
+                                                previousVar.Append(varDecl);
+                                            }
+
+                                            // move the previous var-statement into our initializer
+                                            forNode.ReplaceChild(forNode.Initializer, previousVar);
+
+                                            // and remove the previous var-statement from the list.
+                                            node.RemoveAt(ndx - 1);
+
+                                            // this will bump the for node up one position in the list, so the next iteration
+                                            // will be right back on this node, but the initializer will not be null
+                                        }
+                                    }
                                 }
                                 else
                                 {
-                                    // we want to see if the initializer expression is a series of one or more
-                                    // simple assignments to variables that are in the previous var statement.
-                                    // if all the expressions are assignments to variables that are defined in the
-                                    // previous var statement, then we can just move the var statement into the 
-                                    // for statement.
-                                    BinaryOperator binaryOp = forNode.Initializer as BinaryOperator;
-                                    if (binaryOp != null && AreAssignmentsInVar(binaryOp, previousVar))
-                                    {
-                                        // transform: var decls;for(expr1;...) to for(var decls,expr1;...)
-                                        // create a list and fill it with all the var-decls created from the assignment
-                                        // operators in the expression
-                                        var varDecls = new List<VariableDeclaration>();
-                                        ConvertAssignmentsToVarDecls(binaryOp, varDecls, m_parser);
-
-                                        // then go through and append each one to the var statement before us
-                                        foreach (var varDecl in varDecls)
-                                        {
-                                            previousVar.Append(varDecl);
-                                        }
-
-                                        // move the previous var-statement into our initializer
-                                        forNode.ReplaceChild(forNode.Initializer, previousVar);
-
-                                        // and remove the previous var-statement from the list.
-                                        node.RemoveAt(ndx - 1);
-
-                                        // this will bump the for node up one position in the list, so the next iteration
-                                        // will be right back on this node, but the initializer will not be null
-                                    }
+                                    // transform: var decls;for(;...) to for(var decls;...)
+                                    // if it's empty, then we're free to add the previous var statement
+                                    // to this for statement's initializer. remove it from it's current
+                                    // position and add it as the initializer
+                                    node.RemoveAt(ndx - 1);
+                                    forNode.SetInitializer(previousVar);
+                                    // this will bump the for node up one position in the list, so the next iteration
+                                    // will be right back on this node, but the initializer will not be null
                                 }
-                            }
-                            else
-                            {
-                                // transform: var decls;for(;...) to for(var decls;...)
-                                // if it's empty, then we're free to add the previous var statement
-                                // to this for statement's initializer. remove it from it's current
-                                // position and add it as the initializer
-                                node.RemoveAt(ndx - 1);
-                                forNode.SetInitializer(previousVar);
-                                // this will bump the for node up one position in the list, so the next iteration
-                                // will be right back on this node, but the initializer will not be null
                             }
                         }
                     }

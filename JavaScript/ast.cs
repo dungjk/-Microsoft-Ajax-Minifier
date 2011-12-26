@@ -188,5 +188,26 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         /// <param name="visitor">visitor to accept</param>
         public abstract void Accept(IVisitor visitor);
+
+        /// <summary>
+        /// Returns true if the node contains an in-operator
+        /// </summary>
+        public virtual bool ContainsInOperator
+        {
+            get
+            {
+                // recursivelt check all children
+                foreach (var child in Children)
+                {
+                    if (child.ContainsInOperator)
+                    {
+                        return true;
+                    }
+                }
+
+                // if we get here, we didn'thave any in-operators
+                return false;
+            }
+        }
     }
 }

@@ -18,3 +18,13 @@ function bar(name, obj)
         return i;
     }
 }
+
+function ack(name, obj, isIn)
+{
+    var i = 0;
+    isIn = name in obj;
+    for (; i < 10; ++i)
+    {
+        return i;
+    }
+}

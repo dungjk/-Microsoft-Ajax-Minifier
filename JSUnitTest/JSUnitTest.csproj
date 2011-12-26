@@ -183,6 +183,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\EncloseBlock.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForIn.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForNoIn.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\ForNoIn_kill.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForVar.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForVar_reorder.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForWhile.js" />

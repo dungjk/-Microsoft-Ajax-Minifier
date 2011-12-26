@@ -999,18 +999,19 @@ namespace Microsoft.Ajax.Utilities
                                 }
 
                                 // if a kill switch hasn't been specified yet, set all its bits on.
+                                // EXCEPT the important-comment bit -- we DO want to preserve important comments in pretty mode.
                                 if (!killSpecified)
                                 {
                                     if (renamingSpecified && JSSettings.LocalRenaming != LocalRenaming.KeepAll)
                                     {
                                         // we specifically turned on local renaming, so set the kill switch to everything BUT
-                                        JSSettings.KillSwitch = ~((long)TreeModifications.LocalRenaming);
-                                        CssSettings.KillSwitch = -1;
+                                        JSSettings.KillSwitch = ~((long)(TreeModifications.LocalRenaming | TreeModifications.PreserveImportantComments));
+                                        CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
                                     }
                                     else
                                     {
                                         // we didn't specifically turn on local renaming. Turn everything off.
-                                        JSSettings.KillSwitch = CssSettings.KillSwitch = -1;
+                                        JSSettings.KillSwitch = CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
                                     }
                                 }
 

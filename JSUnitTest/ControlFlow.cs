@@ -218,5 +218,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod()]
+        public void ForNoIn_kill()
+        {
+            TestHelper.Instance.RunTest("-kill:0x40000000000");
+        }
     }
 }
