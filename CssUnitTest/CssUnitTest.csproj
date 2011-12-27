@@ -76,6 +76,7 @@
     <Compile Include="Replacements.cs" />
     <Compile Include="Selectors.cs" />
     <Compile Include="Syntax.cs" />
+    <Compile Include="Values.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestData\CSS\Expected\AtRules\Charset.css" />
@@ -168,6 +169,9 @@
     <Content Include="TestData\CSS\Expected\Syntax\Term.css" />
     <Content Include="TestData\CSS\Expected\Syntax\UnicodeRange.css" />
     <Content Include="TestData\CSS\Expected\Syntax\uri.css" />
+    <Content Include="TestData\CSS\Expected\Values\Attr.css" />
+    <Content Include="TestData\CSS\Expected\Values\Calc.css" />
+    <Content Include="TestData\CSS\Expected\Values\Cycle.css" />
     <Content Include="TestData\CSS\Input\AtRules\Charset.css" />
     <Content Include="TestData\CSS\Input\AtRules\FontFace.css" />
     <Content Include="TestData\CSS\Input\AtRules\green.css" />
@@ -236,6 +240,9 @@
     <Content Include="TestData\CSS\Input\Syntax\Term.css" />
     <Content Include="TestData\CSS\Input\Syntax\UnicodeRange.css" />
     <Content Include="TestData\CSS\Input\Syntax\uri.css" />
+    <Content Include="TestData\CSS\Input\Values\Attr.css" />
+    <Content Include="TestData\CSS\Input\Values\Calc.css" />
+    <Content Include="TestData\CSS\Input\Values\Cycle.css" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AjaxMin.csproj">

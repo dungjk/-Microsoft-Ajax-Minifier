@@ -843,27 +843,29 @@ namespace Microsoft.Ajax.Utilities
                         {
                             case "EM":
                             case "EX":
-                            case "PX":
-                            case "GD":
+                            case "CH":
                             case "REM":
                             case "VW":
                             case "VH":
                             case "VM":
-                            case "CH":
+                            case "FR":
+                            case "GR":
+                            case "GD":
                                 tokenType = TokenType.RelativeLength;
                                 break;
 
                             case "CM":
                             case "MM":
                             case "IN":
+                            case "PX":
                             case "PT":
                             case "PC":
                                 tokenType = TokenType.AbsoluteLength;
                                 break;
 
                             case "DEG":
-                            case "RAD":
                             case "GRAD":
+                            case "RAD":
                             case "TURN":
                                 tokenType = TokenType.Angle;
                                 break;

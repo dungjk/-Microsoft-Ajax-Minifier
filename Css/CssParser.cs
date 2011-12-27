@@ -1954,8 +1954,8 @@ namespace Microsoft.Ajax.Utilities
                     // clear the replacement string
                     m_valueReplacement = null;
 
-                    // set the no-output flag, parse the expression, the reset the flag.
-                    // we don't care if ParsExpr actually found an expression or not
+                    // set the no-output flag, parse the value, the reset the flag.
+                    // we don't care if it actually finds a value or not
                     m_noOutput = true;
                     ParseExpr();
                     m_noOutput = false;
@@ -2271,7 +2271,7 @@ namespace Microsoft.Ajax.Utilities
             if (CurrentTokenType == TokenType.Function)
             {
                 bool crunchedRGB = false;
-                if (CurrentTokenText == "rgb(")
+                if (string.Compare(CurrentTokenText, "rgb(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     // rgb function parsing
                     bool useRGB = false;
@@ -2413,9 +2413,9 @@ namespace Microsoft.Ajax.Utilities
                         crunchedRGB = true;
                     }
                 }
-                else if (CurrentTokenText == "expression(")
+                else if (string.Compare(CurrentTokenText, "expression(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    AppendCurrent();
+                    Append("expression(");
                     NextToken();
 
                     // for now, just echo out everything up to the matching closing paren, 
@@ -2500,6 +2500,32 @@ namespace Microsoft.Ajax.Utilities
                         Append(expressionCode);
                     }
                 }
+                else if (string.Compare(CurrentTokenText, "calc(", StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    Append("calc(");
+                    SkipSpace();
+
+                    // one sum
+                    parsed = ParseSum();
+                }
+                else if (string.Compare(CurrentTokenText, "min(", StringComparison.OrdinalIgnoreCase) == 0
+                    || string.Compare(CurrentTokenText, "max(", StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    Append(CurrentTokenText.ToLowerInvariant());
+                    SkipSpace();
+
+                    // need to be one or more sums, separated by commas
+                    // (ParseSum will only return true or false -- never empty)
+                    parsed = ParseSum();
+                    while (parsed == Parsed.True
+                        && CurrentTokenType == TokenType.Character
+                        && CurrentTokenText == ",")
+                    {
+                        AppendCurrent();
+                        SkipSpace();
+                        parsed = ParseSum();
+                    }
+                }
                 else
                 {
                     // generic function parsing
@@ -2520,12 +2546,12 @@ namespace Microsoft.Ajax.Utilities
                         Append(')');
                     }
                     SkipSpace();
+                    parsed = Parsed.True;
                 }
                 else
                 {
                     ReportError(0, StringEnum.UnexpectedToken, CurrentTokenText);
                 }
-                parsed = Parsed.True;
             }
             return parsed;
         }
@@ -2560,6 +2586,236 @@ namespace Microsoft.Ajax.Utilities
                 Append(hexColor);
                 SkipSpace();
             }
+            return parsed;
+        }
+
+        private Parsed ParseUnit()
+        {
+            var parsed = Parsed.Empty;
+
+            // optional sign
+            if (CurrentTokenType == TokenType.Character
+                && (CurrentTokenText == "+" || CurrentTokenText == "-"))
+            {
+                AppendCurrent();
+                NextToken();
+
+                // set the parsed flag to false -- if we don't get a valid token
+                // next and set it to true, then we know we had an error
+                parsed = Parsed.False;
+            }
+
+            // followed by a number, a percentage, a dimension, a min(, a max(, or a parenthesized sum
+            switch (CurrentTokenType)
+            {
+                case TokenType.Number:
+                case TokenType.Percentage:
+                case TokenType.Dimension:
+                case TokenType.RelativeLength:
+                case TokenType.AbsoluteLength:
+                case TokenType.Angle:
+                case TokenType.Time:
+                case TokenType.Resolution:
+                case TokenType.Frequency:
+                    // output it, skip any whitespace, and mark us as okay
+                    AppendCurrent();
+                    SkipSpace();
+                    parsed = Parsed.True;
+                    break;
+
+                case TokenType.Function:
+                    // only min and max allowed here
+                    parsed = ParseMinMax();
+
+                    // if parsed is false, then we encountered an error with min( or max(
+                    // and probably already output an error message. So only output an error
+                    // message if we didn't find anything -- which means this function isn't
+                    // even min( or max(
+                    if (parsed == Parsed.Empty)
+                    {
+                        ReportError(0, StringEnum.ExpectedMinMax, CurrentTokenText);
+                        parsed = Parsed.False;
+                    }
+                    break;
+
+                case TokenType.Character:
+                    // only open parenthesis allowed
+                    if (CurrentTokenText == "(")
+                    {
+                        // TODO: make sure there is whitespace before the ( if it would cause
+                        // it to be the opening paren of a function token
+
+                        AppendCurrent();
+                        SkipSpace();
+
+                        // better be a sum inside the parens
+                        parsed = ParseSum();
+                        if (parsed != Parsed.True)
+                        {
+                            // report error and change the parsed flag to false so we know there was an error
+                            ReportError(0, StringEnum.ExpectedSum, CurrentTokenText);
+                            parsed = Parsed.False;
+                        }
+                        else if (CurrentTokenType != TokenType.Character || CurrentTokenText != ")")
+                        {
+                            // needs to be a closing paren here
+                            ReportError(0, StringEnum.ExpectedClosingParen, CurrentTokenText);
+                            parsed = Parsed.False;
+                        }
+                        else
+                        {
+                            // we're at the closing paren, so output it now, advance past any
+                            // subsequent whitespace, and mark us as okay
+                            AppendCurrent();
+                            SkipSpace();
+                            parsed = Parsed.True;
+                        }
+                    }
+                    break;
+            }
+
+            return parsed;
+        }
+
+        private Parsed ParseProduct()
+        {
+            // there needs to be at least one unit here
+            var parsed = ParseUnit();
+            if (parsed == Parsed.True)
+            {
+                // keep going while we have product operators
+                while ((CurrentTokenType == TokenType.Character && (CurrentTokenText == "*" || CurrentTokenText == "/"))
+                    || (CurrentTokenType == TokenType.Identifier && string.Compare(CurrentTokenText, "mod", StringComparison.OrdinalIgnoreCase) == 0))
+                {
+                    if (CurrentTokenText == "*" || CurrentTokenText == "/")
+                    {
+                        // multiplication and dicision operators don't need spaces around them
+                        // UNLESS we are outputting multi-line mode
+                        if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            Append(' ');
+                        }
+
+                        AppendCurrent();
+                        if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            Append(' ');
+                        }
+                    }
+                    else
+                    {
+                        // the mod-operator usually needs space around it.
+                        // and keep it lower-case.
+                        Append(" mod ");
+                    }
+
+                    // skip any whitespace
+                    SkipSpace();
+
+                    // grab the next unit -- and there better be one
+                    parsed = ParseUnit();
+                    if (parsed != Parsed.True)
+                    {
+                        ReportError(0, StringEnum.ExpectedUnit, CurrentTokenText);
+                        parsed = Parsed.False;
+                    }
+                }
+            }
+            else
+            {
+                // report an error and make sure we return false
+                ReportError(0, StringEnum.ExpectedUnit, CurrentTokenText);
+                parsed = Parsed.False;
+            }
+
+            return parsed;
+        }
+
+        private Parsed ParseSum()
+        {
+            // there needs to be at least one product here
+            var parsed = ParseProduct();
+            if (parsed == Parsed.True)
+            {
+                // keep going while we have sum operators
+                while (CurrentTokenType == TokenType.Character && (CurrentTokenText == "+" || CurrentTokenText == "-"))
+                {
+                    // plus operators don't seem to need a space before them, but minus do in
+                    // order to keep them from being part of a previous identifier. However, if the
+                    // previous token is a percentage, then we don't need the space.
+                    // but if this is multi-line mode, always put the space in, regardless.
+                    if (Settings.OutputMode == OutputMode.MultipleLines
+                        || (CurrentTokenText == "-" && !m_lastOutputString.EndsWith("%", StringComparison.Ordinal)))
+                    {
+                        Append(' ');
+                    }
+                    AppendCurrent();
+
+                    // plus and minus operators both need spaces after them.
+                    // the minus needs to not be an identifier.
+                    Append(' ');
+
+                    SkipSpace();
+
+                    // grab the next product -- and there better be one
+                    parsed = ParseProduct();
+                    if (parsed != Parsed.True)
+                    {
+                        ReportError(0, StringEnum.ExpectedProduct, CurrentTokenText);
+                        parsed = Parsed.False;
+                    }
+                }
+            }
+            else
+            {
+                // report an error and make sure we return false
+                ReportError(0, StringEnum.ExpectedProduct, CurrentTokenText);
+                parsed = Parsed.False;
+            }
+
+            return parsed;
+        }
+
+        private Parsed ParseMinMax()
+        {
+            // return false if the function isn't min or max
+            Parsed parsed = Parsed.False;
+            if (CurrentTokenType == TokenType.Function
+                && (string.Compare(CurrentTokenText, "min(", StringComparison.OrdinalIgnoreCase) == 0
+                || string.Compare(CurrentTokenText, "max(", StringComparison.OrdinalIgnoreCase) == 0))
+            {
+                // output lower-case version and skip any space
+                Append(CurrentTokenText.ToLowerInvariant());
+                SkipSpace();
+
+                // must be at least one sum
+                parsed = ParseSum();
+
+                // comma-delimited sums continue
+                while (parsed == Parsed.True
+                    && CurrentTokenType == TokenType.Character
+                    && CurrentTokenText == ",")
+                {
+                    AppendCurrent();
+                    SkipSpace();
+
+                    parsed = ParseSum();
+                }
+
+                // end with the closing paren
+                if (CurrentTokenType == TokenType.Character && CurrentTokenText == ")")
+                {
+                    AppendCurrent();
+                    SkipSpace();
+                    parsed = Parsed.True;
+                }
+                else
+                {
+                    ReportError(0, StringEnum.ExpectedClosingParen, CurrentTokenText);
+                    parsed = Parsed.False;
+                }
+            }
+
             return parsed;
         }
 

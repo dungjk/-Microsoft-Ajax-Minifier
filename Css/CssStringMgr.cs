@@ -92,6 +92,10 @@ namespace Microsoft.Ajax.Utilities
         ExpectedClosingBrace,
         ExpectedPercentageFromOrTo,
         ExpectedSemicolonOrClosingBrace,
+        ExpectedUnit,
+        ExpectedProduct,
+        ExpectedSum,
+        ExpectedMinMax,
     };
 
     internal class CssStringMgr
