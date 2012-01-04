@@ -2140,11 +2140,22 @@ namespace Microsoft.Ajax.Utilities
                         ReportError(0, StringEnum.TokenAfterUnaryNotAllowed, CurrentTokenText);
                     }
 
+                    // wasEmpty will be false if we DIDN'T find an operator
+                    // as the last token. If we had an operator, then we can ignore
+                    // any whitespace; but if we DIDN'T find an operator, then we
+                    // will need to preserve a whitespace character to keep them 
+                    // separated.
                     if (wasEmpty)
                     {
-                        Append(' ');
+                        // if we had skipped any space, then add one now
+                        if (m_skippedSpace)
+                        {
+                            Append(' ');
+                        }
+                        
                         wasEmpty = false;
                     }
+
                     AppendCurrent();
                     SkipSpace();
                     parsed = Parsed.True;
