@@ -42,6 +42,7 @@ namespace Microsoft.Ajax.Utilities
         private bool m_expressionContainsErrors;
         private bool m_skippedSpace;
         private int m_lineLength;
+        private bool m_noColorAbbreviation;
 
         // this is used to make sure we don't output two newlines in a row.
         // start it as true so we don't start off with a blank line
@@ -2227,6 +2228,10 @@ namespace Microsoft.Ajax.Utilities
             {
                 ReportError(4, StringEnum.ProgIdIEOnly);
 
+                // set the state flag that tells us we should NOT abbreviate color
+                // hash values as we are parsing our parameters
+                m_noColorAbbreviation = true;
+
                 // append the progid and opening paren
                 AppendCurrent();
                 SkipSpace();
@@ -2259,6 +2264,9 @@ namespace Microsoft.Ajax.Utilities
                         SkipSpace();
                     }
                 }
+
+                // reset the color-abbreviation flag
+                m_noColorAbbreviation = false;
 
                 // make sure we're at the close paren
                 if (CurrentTokenType == TokenType.Character
@@ -2417,7 +2425,7 @@ namespace Microsoft.Ajax.Utilities
                         // we can collapse it to either #rrggbb or #rgb
                         // calculate the full hex string and crunch it
                         string fullCode = string.Format(CultureInfo.InvariantCulture, "#{0:x2}{1:x2}{2:x2}", rgb[0], rgb[1], rgb[2]);
-                        string hexString = CrunchHexColor(fullCode, Settings.ColorNames);
+                        string hexString = CrunchHexColor(fullCode, Settings.ColorNames, m_noColorAbbreviation);
                         Append(hexString);
 
                         // set the flag so we know we don't want to add the closing paren
@@ -2584,7 +2592,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 parsed = Parsed.True;
 
-                string hexColor = CrunchHexColor(CurrentTokenText, Settings.ColorNames);
+                string hexColor = CrunchHexColor(CurrentTokenText, Settings.ColorNames, m_noColorAbbreviation);
 
                 // this is a dumb error message -- this is the sort of the thing the minimizer should
                 // handle automatically. Maybe throw this alert if in analyze mode.
@@ -3624,27 +3632,30 @@ namespace Microsoft.Ajax.Utilities
         #region color methods
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
-        private static string CrunchHexColor(string hexColor, CssColor colorNames)
+        private static string CrunchHexColor(string hexColor, CssColor colorNames, bool noAbbr)
         {
-            // see if this is a repeated color (#rrggbb) that we can collapse to #rgb
-            Match match = s_rrggbb.Match(hexColor);
-            if (match.Success)
+            if (!noAbbr)
             {
-                // yes -- collapse it and make sure it's lower-case so we don't 
-                // have to do any case-insensitive comparisons
-                hexColor = string.Format(
-                  CultureInfo.InvariantCulture,
-                  "#{0}{1}{2}",
-                  match.Result("${r}"),
-                  match.Result("${g}"),
-                  match.Result("${b}")
-                  ).ToLower(CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                // make sure it's lower-case so we don't have to do any
-                // case-insensitive comparisons
-                hexColor = hexColor.ToLower(CultureInfo.InvariantCulture);
+                // see if this is a repeated color (#rrggbb) that we can collapse to #rgb
+                Match match = s_rrggbb.Match(hexColor);
+                if (match.Success)
+                {
+                    // yes -- collapse it and make sure it's lower-case so we don't 
+                    // have to do any case-insensitive comparisons
+                    hexColor = string.Format(
+                      CultureInfo.InvariantCulture,
+                      "#{0}{1}{2}",
+                      match.Result("${r}"),
+                      match.Result("${g}"),
+                      match.Result("${b}")
+                      ).ToLower(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    // make sure it's lower-case so we don't have to do any
+                    // case-insensitive comparisons
+                    hexColor = hexColor.ToLower(CultureInfo.InvariantCulture);
+                }
             }
 
             if (colorNames != CssColor.Hex)
@@ -3680,6 +3691,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
+
             return hexColor;
         }
 
