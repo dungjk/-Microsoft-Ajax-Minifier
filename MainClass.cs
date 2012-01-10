@@ -399,6 +399,10 @@ namespace Microsoft.Ajax.Utilities
                     case "3":
                         // just ignore -- for backwards-compatibility
                         break;
+
+                    default:
+                        // truly an unknown parameter -- throw a usage error
+                        throw new UsageException(m_outputMode, "InvalidArgument", ea.Arguments[ea.Index]);
                 }
             }
             else
