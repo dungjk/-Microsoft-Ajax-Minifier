@@ -1357,6 +1357,16 @@ namespace Microsoft.Ajax.Utilities
                 ++m_currentPos;
             }
 
+            if (AllowEmbeddedAspNetBlocks
+                && CheckSubstring(m_currentPos, "<%="))
+            {
+                // the identifier has an ASP.NET <%= ... %> block as part of it.
+                // move the current position to the opening % character and call 
+                // the method that will parse it from there.
+                ++m_currentPos;
+                ScanAspNetBlock();
+            }
+
             if (m_idLastPosOnBuilder > 0)
             {
                 m_identifier.Append(m_strSourceCode.Substring(m_idLastPosOnBuilder, m_currentPos - m_idLastPosOnBuilder));
@@ -1375,7 +1385,8 @@ namespace Microsoft.Ajax.Utilities
                     continue;
                 }
 
-                if (IsIdentifierPartChar(c))
+                if (IsIdentifierPartChar(c) 
+                    || (AllowEmbeddedAspNetBlocks && CheckSubstring(m_currentPos, "<%=")))
                 {
                     ScanIdentifier();
                     return JSToken.Identifier;
