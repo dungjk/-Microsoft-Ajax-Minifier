@@ -1,18 +1,18 @@
-﻿!foo[ndx]||ndx>=10
+﻿!foo[ndx]||!(ndx<10)
 false
 true
 !ralph&&!{}
-boo-10||foo>10
-a!=b
-a==b
-a!==b
-a===b
+boo-10||!(foo<=10)
+!(a==b)
+!(a!=b)
+!(a===b)
+!(a!==b)
 !+5
 ![1,2,3]
 !(a=b)
 foo(),bar(),!ack()
-a<=b
-a<b
+!(a>b)
+!(a>=b)
 a?!foo():true
 !"string"
 !delete a.foo

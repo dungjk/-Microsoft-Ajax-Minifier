@@ -87,21 +87,21 @@ namespace Microsoft.Ajax.Utilities
                         case JSToken.StrictNotEqual:
                             // these operators can be turned into a logical not without any
                             // delta in code size. == becomes !=, etc.
-                            break;
+                            //break;
 
                         case JSToken.LessThan:
                         case JSToken.GreaterThan:
                             // these operators would add another character when turnbed into a not.
                             // for example, < becomes >=, etc
-                            ++m_delta;
-                            break;
+                            //++m_delta;
+                            //break;
 
                         case JSToken.LessThanEqual:
                         case JSToken.GreaterThanEqual:
                             // these operators would subtract another character when turnbed into a not.
                             // for example, <= becomes >, etc
-                            --m_delta;
-                            break;
+                            //--m_delta;
+                            //break;
 
                         case JSToken.Assign:
                         case JSToken.PlusAssign:
@@ -166,36 +166,36 @@ namespace Microsoft.Ajax.Utilities
                     switch (node.OperatorToken)
                     {
                         case JSToken.Equal:
-                            node.OperatorToken = JSToken.NotEqual;
-                            break;
+                            //node.OperatorToken = JSToken.NotEqual;
+                            //break;
 
                         case JSToken.NotEqual:
-                            node.OperatorToken = JSToken.Equal;
-                            break;
+                            //node.OperatorToken = JSToken.Equal;
+                            //break;
 
                         case JSToken.StrictEqual:
-                            node.OperatorToken = JSToken.StrictNotEqual;
-                            break;
+                            //node.OperatorToken = JSToken.StrictNotEqual;
+                            //break;
 
                         case JSToken.StrictNotEqual:
-                            node.OperatorToken = JSToken.StrictEqual;
-                            break;
+                            //node.OperatorToken = JSToken.StrictEqual;
+                            //break;
 
                         case JSToken.LessThan:
-                            node.OperatorToken = JSToken.GreaterThanEqual;
-                            break;
+                            //node.OperatorToken = JSToken.GreaterThanEqual;
+                            //break;
 
                         case JSToken.GreaterThan:
-                            node.OperatorToken = JSToken.LessThanEqual;
-                            break;
+                            //node.OperatorToken = JSToken.LessThanEqual;
+                            //break;
 
                         case JSToken.LessThanEqual:
-                            node.OperatorToken = JSToken.GreaterThan;
-                            break;
+                            //node.OperatorToken = JSToken.GreaterThan;
+                            //break;
 
                         case JSToken.GreaterThanEqual:
-                            node.OperatorToken = JSToken.LessThan;
-                            break;
+                            //node.OperatorToken = JSToken.LessThan;
+                            //break;
 
                         case JSToken.Assign:
                         case JSToken.PlusAssign:

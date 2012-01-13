@@ -45,18 +45,19 @@ else
     alert("foo");
 }
 
-// try a few more conditions to test the logical-not of the condition
-if (p1 == 0); else p1 = 0; // changed to != 0
-if (p1 != 0); else p1 = 0; // changed to == 0
-if (p1 === 0); else p1 = 0; // changed to !== 0
-if (p1 !== 0); else p1 = 0; // changed to === 0
-if (p1 < 0); else p1 = 0; // changed to >= 0
-if (p1 <= 0); else p1 = 0; // changed to > 0
-if (p1 > 0); else p1 = 0; // changed to <= 0
-if (p1 >= 0); else p1 = 0; // changed to < 0
-if (p1 % 2); else p1--; // changed to !(p1%2)
-if (!p1); else p1 = 0; // change to just p1
-if (--p1); else p1 = 1; // change to !--p1
+// try a few more conditions to test whether logical-not or || operator is used
+if (p1 == 0); else p1 = 0; // ||
+if (p1 != 0); else p1 = 0; // ||
+if (p1 === 0); else p1 = 0; // ||
+if (p1 !== 0); else p1 = 0; // ||
+if (p1 < 0); else p1 = 0; // ||
+if (p1 <= 0); else p1 = 0; // ||
+if (p1 > 0); else p1 = 0; // ||
+if (p1 >= 0); else p1 = 0; // ||
+if (p1 % 2); else p1--; // ||
+if (!p1); else p1 = 0; // p1&&(p1=0)
+if (--p1); else p1 = 1; // ||
+if (!(p1 == 0)); else p1 = 0; // p1==0&&(p1=0)
 
 // empty true-block at the end of the file
 if ( p1 ) {}
