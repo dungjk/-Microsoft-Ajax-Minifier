@@ -19,20 +19,18 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    internal class CrunchEnumerator
+    public class CrunchEnumerator
     {
         private Dictionary<string, string> m_skipNames;
         private int m_currentName = -1;
 
-        // we essentially take a zero-based integer and turn it into a string identifier by using a base-54
-        // digit for the "ones," and base-64 for all digits after that -- then reverse the string (ones first).
-        // the first letter is zero-based, so we start with the "a" character for the first variable (index 0)
-        private static string s_varFirstLetters = "ntirufeoshclavypwbkdg";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";//"ntirufeoshclavypwbkdgjmqxz";//
-
-        // we don't display "leading zeros" for subsequent letters, so they are 1-based. We only hit the zero position
-        // when we roll over into another letter (which also starts at 1). So put the "last" digit we want to use FIRST,
-        // and the first one second (and go up from there)
-        private static string s_varPartLetters = "ntirufeoshclavypwbkdg";//"$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";//"ntirufeoshclavypwbkdgjmqxz";//
+        // this first set of characters is broken out from the second set because the allowed first-characters
+        // in JS variable names is smaller than allowed subseqent characters. These two strings don't HAVE to
+        // be the same. For instance, names can't start with numbers, but they can contain numbers after the first char.
+        // we're actually going to tune these two sets rather than just have the max allowed because we want to 
+        // make the final g-zipped results smaller.
+        private static string s_varFirstLetters = "ntirufeoshclavypwbkdg";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
+        private static string s_varPartLetters  = "tirufeoshclavypwbkdgn";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
 
         internal CrunchEnumerator(Dictionary<string, string> avoidNames)
         {
@@ -98,12 +96,33 @@ namespace Microsoft.Ajax.Utilities
         {
             StringBuilder sb = new StringBuilder();
 
-            // get the first number
+            // this REALLY needs some 'splainin.
+            // first off, we want to use a different set of characters for the first digit
+            // than we use for the second digit (they could be the same, but if we want the shortest
+            // possible names, there are more characters available for the second digit than
+            // the first. We could use the same strings if we wanted to limit the available characters
+            // and therefore increase the length of the strings. 
+            // But let's think digits for a sec. normal base-10 would be:
+            // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 ... 9 0 1
+            //                     1 1 1 1 1 1 1 1 1 1 2 2 2 2 ... 9 0 0
+            //                                                       1 1
+            // but we want to go:
+            // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 ... ... ... 9 0 1
+            //                     0 0 0 0 0 0 0 0 0 0 1 1 1 1 ... ... ... 9 0 0
+            //                                                     ... ...   0 0
+            // this is because for base-10, the leading zeros are blanks, but in our strings,
+            // the leading blanks are NOT zeros. In essence what we do it START OVER FROM ZERO 
+            // but with explicit leading zeros every time we add another character to the length 
+            // of the string.
+            // so after we peel off the last character, we divide by the number of possibilities to get
+            // the next number in base-10. But WE want to divide by possibilities AND THEN SUBSTRACT ONE.
+            // that not only gets us starting at 0, it also makes us push out the the number of iterations
+            // we can go through before we need to increase the number of digits again.
             sb.Append(s_varFirstLetters[num % s_varFirstLetters.Length]);
             num /= s_varFirstLetters.Length;
 
-            // if we need more than one number, generate them now
-            while (num > 0)
+            // this is where we substract the one after our division to get the next character (if any)
+            while (--num >= 0)
             {
                 sb.Append(s_varPartLetters[num % s_varPartLetters.Length]);
                 num /= s_varPartLetters.Length;

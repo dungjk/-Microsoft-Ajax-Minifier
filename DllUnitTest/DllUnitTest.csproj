@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLine.cs" />
+    <Compile Include="MinifiedNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="LogicalNot.cs" />
   </ItemGroup>
