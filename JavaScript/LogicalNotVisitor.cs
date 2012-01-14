@@ -87,7 +87,7 @@ namespace Microsoft.Ajax.Utilities
                         case JSToken.StrictNotEqual:
                             // these operators can be turned into a logical not without any
                             // delta in code size. == becomes !=, etc.
-                            //break;
+                            break;
 
                         case JSToken.LessThan:
                         case JSToken.GreaterThan:
@@ -166,20 +166,20 @@ namespace Microsoft.Ajax.Utilities
                     switch (node.OperatorToken)
                     {
                         case JSToken.Equal:
-                            //node.OperatorToken = JSToken.NotEqual;
-                            //break;
+                            node.OperatorToken = JSToken.NotEqual;
+                            break;
 
                         case JSToken.NotEqual:
-                            //node.OperatorToken = JSToken.Equal;
-                            //break;
+                            node.OperatorToken = JSToken.Equal;
+                            break;
 
                         case JSToken.StrictEqual:
-                            //node.OperatorToken = JSToken.StrictNotEqual;
-                            //break;
+                            node.OperatorToken = JSToken.StrictNotEqual;
+                            break;
 
                         case JSToken.StrictNotEqual:
-                            //node.OperatorToken = JSToken.StrictEqual;
-                            //break;
+                            node.OperatorToken = JSToken.StrictEqual;
+                            break;
 
                         case JSToken.LessThan:
                             //node.OperatorToken = JSToken.GreaterThanEqual;

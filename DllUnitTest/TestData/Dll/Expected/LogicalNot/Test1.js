@@ -3,10 +3,10 @@ false
 true
 !ralph&&!{}
 boo-10||!(foo<=10)
-!(a==b)
-!(a!=b)
-!(a===b)
-!(a!==b)
+a!=b
+a==b
+a!==b
+a===b
 !+5
 ![1,2,3]
 !(a=b)
