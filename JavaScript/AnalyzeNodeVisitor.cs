@@ -1461,91 +1461,12 @@ namespace Microsoft.Ajax.Utilities
                     node.ReplaceChild(node.FalseBlock, null);
                 }
 
-                // if there is no true branch but a false branch, then
-                // put a not on the condition and move the false branch to the true branch.
-                if (node.TrueBlock == null && node.FalseBlock != null
-                    && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionFalseToIfNotConditionTrue))
+                if (node.TrueBlock != null && node.FalseBlock != null)
                 {
-                    // logical-not the condition
-                    var logicalNot = new LogicalNot(node.Condition, m_parser);
-                    logicalNot.Apply();
-
-                    // and swap the branches
-                    node.SwapBranches();
-                }
-                else if (node.TrueBlock != null && node.FalseBlock != null)
-                {
-                    // see if logical-notting the condition produces something smaller
-                    var logicalNot = new LogicalNot(node.Condition, m_parser);
-                    if (logicalNot.Measure() < 0)
-                    {
-                        // it does -- not the condition and swap the branches
-                        logicalNot.Apply();
-                        node.SwapBranches();
-                    }
-                    
-                    // see if the true- and false-branches each contain only a single statement
-                    if (node.TrueBlock.Count == 1 && node.FalseBlock.Count == 1)
-                    {
-                        // they do -- see if the true-branch's statement is a return-statement
-                        var trueReturn = node.TrueBlock[0] as ReturnNode;
-                        if (trueReturn != null && trueReturn.Operand != null)
-                        {
-                            // it is -- see if the false-branch is also a return statement
-                            var falseReturn = node.FalseBlock[0] as ReturnNode;
-                            if (falseReturn != null && falseReturn.Operand != null)
-                            {
-                                // transform: if(cond)return expr1;else return expr2 to return cond?expr1:expr2
-                                var conditional = new Conditional(null, m_parser, 
-                                    node.Condition, 
-                                    trueReturn.Operand, 
-                                    falseReturn.Operand);
-
-                                // create a new return node from the conditional and replace
-                                // our if-node with it
-                                var returnNode = new ReturnNode(
-                                    node.Context,
-                                    m_parser,
-                                    conditional);
-
-                                node.Parent.ReplaceChild(
-                                    node,
-                                    returnNode);
-
-                                Optimize(conditional);
-                            }
-                        }
-                    }
-                }
-                else if (node.TrueBlock == null && node.FalseBlock == null
-                    && m_parser.Settings.IsModificationAllowed(TreeModifications.IfEmptyToExpression))
-                {
-                    // NEITHER branches have anything now!
-
-                    // something we can do in the future: as long as the condition doesn't
-                    // contain calls or assignments, we should be able to completely delete
-                    // the statement altogether rather than changing it to an expression
-                    // statement on the condition.
-
-                    // I'm just not doing it yet because I don't
-                    // know what the effect will be on the iteration of block statements.
-                    // if we're on item, 5, for instance, and we delete it, will the next
-                    // item be item 6, or will it return the NEW item 5 (since the old item
-                    // 5 was deleted and everything shifted up)?
-
-                    // We don't know what it is and what the side-effects may be, so
-                    // just change this statement into an expression statement by replacing us with 
-                    // the expression
-                    node.Parent.ReplaceChild(node, node.Condition);
-                    // no need to analyze -- we already recursed
-                }
-
-                // if the true block is not empty, but it's an expression, there are a couple more
-                // optimizations we can make
-                if (node.TrueBlock != null && node.TrueBlock.IsExpression
-                    && m_parser.Settings.IsModificationAllowed(TreeModifications.IfExpressionsToExpression))
-                {
-                    if (node.FalseBlock != null && node.FalseBlock.IsExpression)
+                    // neither true block nor false block is null.
+                    // if they're both expressions, convert them to a condition operator
+                    if (node.TrueBlock.IsExpression && node.FalseBlock.IsExpression
+                        && m_parser.Settings.IsModificationAllowed(TreeModifications.IfExpressionsToExpression))
                     {
                         // if this statement has both true and false blocks, and they are both expressions,
                         // then we can simplify this to a conditional expression.
@@ -1568,10 +1489,10 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // regular order
                             conditional = new Conditional(
-                                node.Context, 
-                                m_parser, 
-                                node.Condition, 
-                                node.TrueBlock[0], 
+                                node.Context,
+                                m_parser,
+                                node.Condition,
+                                node.TrueBlock[0],
                                 node.FalseBlock[0]);
                         }
 
@@ -1581,7 +1502,100 @@ namespace Microsoft.Ajax.Utilities
 
                         Optimize(conditional);
                     }
-                    else if (node.FalseBlock == null
+                    else
+                    {
+                        // see if logical-notting the condition produces something smaller
+                        var logicalNot = new LogicalNot(node.Condition, m_parser);
+                        if (logicalNot.Measure() < 0)
+                        {
+                            // it does -- not the condition and swap the branches
+                            logicalNot.Apply();
+                            node.SwapBranches();
+                        }
+
+                        // see if the true- and false-branches each contain only a single statement
+                        if (node.TrueBlock.Count == 1 && node.FalseBlock.Count == 1)
+                        {
+                            // they do -- see if the true-branch's statement is a return-statement
+                            var trueReturn = node.TrueBlock[0] as ReturnNode;
+                            if (trueReturn != null && trueReturn.Operand != null)
+                            {
+                                // it is -- see if the false-branch is also a return statement
+                                var falseReturn = node.FalseBlock[0] as ReturnNode;
+                                if (falseReturn != null && falseReturn.Operand != null)
+                                {
+                                    // transform: if(cond)return expr1;else return expr2 to return cond?expr1:expr2
+                                    var conditional = new Conditional(null, m_parser,
+                                        node.Condition,
+                                        trueReturn.Operand,
+                                        falseReturn.Operand);
+
+                                    // create a new return node from the conditional and replace
+                                    // our if-node with it
+                                    var returnNode = new ReturnNode(
+                                        node.Context,
+                                        m_parser,
+                                        conditional);
+
+                                    node.Parent.ReplaceChild(
+                                        node,
+                                        returnNode);
+
+                                    Optimize(conditional);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (node.FalseBlock != null)
+                {
+                    // true block must be null.
+                    // if there is no true branch but a false branch, then
+                    // put a not on the condition and move the false branch to the true branch.
+                    if (node.FalseBlock.IsExpression
+                        && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
+                    {
+                        // if (cond); else expr ==> cond || expr
+                        // but first -- which operator to use? if(a);else b --> a||b, and if(!a);else b --> a&&b
+                        // so determine which one is smaller: a or !a
+                        // assume we'll use the logical-or, since that doesn't require changing the condition
+                        var newOperator = JSToken.LogicalOr;
+                        var logicalNot = new LogicalNot(node.Condition, m_parser);
+                        if (logicalNot.Measure() < 0)
+                        {
+                            // !a is smaller, so apply it and use the logical-or operator
+                            logicalNot.Apply();
+                            newOperator = JSToken.LogicalAnd;
+                        }
+
+                        var binaryOp = new BinaryOperator(
+                            node.Context,
+                            m_parser,
+                            node.Condition,
+                            node.FalseBlock[0],
+                            newOperator);
+
+                        // we don't need to analyse this new node because we've already analyzed
+                        // the pieces parts as part of the if. And this visitor's method for the BinaryOperator
+                        // doesn't really do anything else. Just replace our current node with this
+                        // new node
+                        node.Parent.ReplaceChild(node, binaryOp);
+                    }
+                    else if (m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionFalseToIfNotConditionTrue))
+                    {
+                        // logical-not the condition
+                        // if(cond);else stmt ==> if(!cond)stmt
+                        var logicalNot = new LogicalNot(node.Condition, m_parser);
+                        logicalNot.Apply();
+
+                        // and swap the branches
+                        node.SwapBranches();
+                    }
+                }
+                else if (node.TrueBlock != null)
+                {
+                    // false block must be null
+                    if (node.TrueBlock.IsExpression
                         && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
                     {
                         // but first -- which operator to use? if(a)b --> a&&b, and if(!a)b --> a||b
@@ -1612,6 +1626,27 @@ namespace Microsoft.Ajax.Utilities
                         // new node
                         node.Parent.ReplaceChild(node, binaryOp);
                     }
+                }
+                else if (m_parser.Settings.IsModificationAllowed(TreeModifications.IfEmptyToExpression))
+                {
+                    // NEITHER branches have anything now!
+
+                    // something we can do in the future: as long as the condition doesn't
+                    // contain calls or assignments, we should be able to completely delete
+                    // the statement altogether rather than changing it to an expression
+                    // statement on the condition.
+
+                    // I'm just not doing it yet because I don't
+                    // know what the effect will be on the iteration of block statements.
+                    // if we're on item, 5, for instance, and we delete it, will the next
+                    // item be item 6, or will it return the NEW item 5 (since the old item
+                    // 5 was deleted and everything shifted up)?
+
+                    // We don't know what it is and what the side-effects may be, so
+                    // just change this statement into an expression statement by replacing us with 
+                    // the expression
+                    node.Parent.ReplaceChild(node, node.Condition);
+                    // no need to analyze -- we already recursed
                 }
             }
         }

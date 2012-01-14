@@ -189,8 +189,9 @@ namespace JSUnitTest
         [TestMethod()]
         public void EncloseBlock()
         {
-            // kill switch: IfExpressionsToExpression, CombineAdjacentExpressionStatements, IfNotTrueFalseToIfFalseTrue
-            TestHelper.Instance.RunTest("-reorder:no -kill:0x21800000000");
+            // kill switch: IfExpressionsToExpression, CombineAdjacentExpressionStatements, IfNotTrueFalseToIfFalseTrue,
+            // IfConditionCallToConditionAndCall
+            TestHelper.Instance.RunTest("-reorder:no -kill:0x21800002000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
