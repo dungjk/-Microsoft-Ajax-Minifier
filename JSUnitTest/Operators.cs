@@ -104,5 +104,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-kill:0x0000001000000000");
         }
+
+        [TestMethod()]
+        public void ConditionalPrecedence()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

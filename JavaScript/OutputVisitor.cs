@@ -594,7 +594,7 @@ namespace Microsoft.Ajax.Utilities
 
                 if (node.Condition != null)
                 {
-                    AcceptNodeWithParens(node.Condition, node.Condition.Precedence < node.Precedence);
+                    AcceptNodeWithParens(node.Condition, node.Condition.Precedence < OperatorPrecedence.LogicalOr);
                 }
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)

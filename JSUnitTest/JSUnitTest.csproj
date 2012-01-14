@@ -261,6 +261,7 @@
     <Content Include="TestData\JS\Expected\Operators\Associative.js" />
     <Content Include="TestData\JS\Expected\Operators\Comma.js" />
     <Content Include="TestData\JS\Expected\Operators\Conditional.js" />
+    <Content Include="TestData\JS\Expected\Operators\ConditionalPrecedence.js" />
     <Content Include="TestData\JS\Expected\Operators\In.js" />
     <Content Include="TestData\JS\Expected\Operators\InstanceOf.js" />
     <Content Include="TestData\JS\Expected\Operators\Member.js" />
@@ -450,6 +451,7 @@
     <Content Include="TestData\JS\Input\Operators\Associative.js" />
     <Content Include="TestData\JS\Input\Operators\Comma.js" />
     <Content Include="TestData\JS\Input\Operators\Conditional.js" />
+    <Content Include="TestData\JS\Input\Operators\ConditionalPrecedence.js" />
     <Content Include="TestData\JS\Input\Operators\In.js" />
     <Content Include="TestData\JS\Input\Operators\InstanceOf.js" />
     <Content Include="TestData\JS\Input\Operators\Member.js" />
