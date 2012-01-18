@@ -761,9 +761,15 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // split along commas (case-insensitive)
                                     var lineParts = paramPartUpper.Split(',');
+
+                                    // by default, the line-break index will be 1 (the second option).
+                                    // we will change this index to 0 if the first parameter is multi/single
+                                    // instead of the line-break character count.
+                                    var breakIndex = 1;
                                     if (lineParts.Length <= 3)
                                     {
-                                        // first optional part is the line threashold
+                                        // if the first optional part is numeric, then it's the line threshold.
+                                        // might also be "multi" or "single", thereby skipping the line threshold.
                                         // (don't need to check length greater than zero -- will always be at least one element returned from Split)
                                         if (!string.IsNullOrEmpty(lineParts[0]))
                                         {
@@ -773,6 +779,24 @@ namespace Microsoft.Ajax.Utilities
                                             {
                                                 JSSettings.LineBreakThreshold =
                                                     CssSettings.LineBreakThreshold = lineThreshold;
+                                            }
+                                            else if (lineParts[0][0] == 'S')
+                                            {
+                                                // single-line mode
+                                                JSSettings.OutputMode =
+                                                    CssSettings.OutputMode = OutputMode.SingleLine;
+
+                                                // the line-break index was the first one (zero)
+                                                breakIndex = 0;
+                                            }
+                                            else if (lineParts[0][0] == 'M')
+                                            {
+                                                // multiple-line mode
+                                                JSSettings.OutputMode =
+                                                    CssSettings.OutputMode = OutputMode.MultipleLines;
+
+                                                // the line-break index was the first one (zero)
+                                                breakIndex = 0;
                                             }
                                             else
                                             {
@@ -786,35 +810,42 @@ namespace Microsoft.Ajax.Utilities
                                                 CssSettings.LineBreakThreshold = int.MaxValue - 1000;
                                         }
 
-                                        if (lineParts.Length > 1)
+                                        if (lineParts.Length > breakIndex)
                                         {
-                                            // second optional part is single or multiple line output
-                                            if (string.IsNullOrEmpty(lineParts[1]) || lineParts[1][0] == 'S')
+                                            // if the line-break index was zero, then we already processed it
+                                            // and we can skip the logic
+                                            if (breakIndex > 0)
                                             {
-                                                // single-line mode
-                                                JSSettings.OutputMode =
-                                                    CssSettings.OutputMode = OutputMode.SingleLine;
-                                            }
-                                            else if (lineParts[1][0] == 'M')
-                                            {
-                                                // multiple-line mode
-                                                JSSettings.OutputMode =
-                                                    CssSettings.OutputMode = OutputMode.MultipleLines;
-                                            }
-                                            else
-                                            {
-                                                // must either be missing, or start with S (single) or M (multiple)
-                                                OnInvalidSwitch(switchPart, lineParts[1]);
+                                                // second optional part is single or multiple line output
+                                                if (string.IsNullOrEmpty(lineParts[breakIndex]) || lineParts[breakIndex][0] == 'S')
+                                                {
+                                                    // single-line mode
+                                                    JSSettings.OutputMode =
+                                                        CssSettings.OutputMode = OutputMode.SingleLine;
+                                                }
+                                                else if (lineParts[breakIndex][0] == 'M')
+                                                {
+                                                    // multiple-line mode
+                                                    JSSettings.OutputMode =
+                                                        CssSettings.OutputMode = OutputMode.MultipleLines;
+                                                }
+                                                else
+                                                {
+                                                    // must either be missing, or start with S (single) or M (multiple)
+                                                    OnInvalidSwitch(switchPart, lineParts[breakIndex]);
+                                                }
                                             }
 
-                                            if (lineParts.Length > 2)
+                                            // move on to the next part
+                                            ++breakIndex;
+                                            if (lineParts.Length > breakIndex)
                                             {
                                                 // third optional part is the spaces-per-indent value
-                                                if (!string.IsNullOrEmpty(lineParts[2]))
+                                                if (!string.IsNullOrEmpty(lineParts[breakIndex]))
                                                 {
                                                     // get the numeric portion; must be a decimal integer
                                                     int indentSize;
-                                                    if (int.TryParse(lineParts[2], NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
+                                                    if (int.TryParse(lineParts[breakIndex], NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
                                                     {
                                                         // same value for JS and CSS.
                                                         // don't need to check for negative, because the tryparse method above does NOT
@@ -823,7 +854,7 @@ namespace Microsoft.Ajax.Utilities
                                                     }
                                                     else
                                                     {
-                                                        OnInvalidSwitch(switchPart, lineParts[2]);
+                                                        OnInvalidSwitch(switchPart, lineParts[breakIndex]);
                                                     }
                                                 }
                                                 else
