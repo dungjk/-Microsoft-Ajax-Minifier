@@ -36,6 +36,7 @@ namespace Microsoft.Ajax.Utilities
         void Visit(ConstantWrapper node);
         void Visit(ConstantWrapperPP node);
         void Visit(ContinueNode node);
+        void Visit(CustomNode node);
         void Visit(DebuggerNode node);
         void Visit(Delete node);
         void Visit(DirectivePrologue node);

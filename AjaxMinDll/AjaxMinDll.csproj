@@ -220,6 +220,9 @@
     <Compile Include="..\JavaScript\crunchenumerator.cs">
       <Link>JavaScript\crunchenumerator.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\CustomNode.cs">
+      <Link>JavaScript\CustomNode.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\debugger.cs">
       <Link>JavaScript\debugger.cs</Link>
     </Compile>
@@ -482,10 +485,10 @@
   <Target Name="AfterBuild">
     <Exec Command="$(NuGetBuildCommand)" Condition="'$(Configuration)'=='Release'" LogStandardErrorAsError="true" />
   </Target>
-    <Target Name="CleanNuGetPackages" Condition="$(Configuration)=='Release'">
-      <ItemGroup>
-        <OldNuGetPackages Include="$(PackageOutputDir)\*.nupkg" />      
-      </ItemGroup>
-      <Delete Files="@(OldNuGetPackages)" ContinueOnError="true"/>
-    </Target>
+  <Target Name="CleanNuGetPackages" Condition="$(Configuration)=='Release'">
+    <ItemGroup>
+      <OldNuGetPackages Include="$(PackageOutputDir)\*.nupkg" />
+    </ItemGroup>
+    <Delete Files="@(OldNuGetPackages)" ContinueOnError="true" />
+  </Target>
 </Project>

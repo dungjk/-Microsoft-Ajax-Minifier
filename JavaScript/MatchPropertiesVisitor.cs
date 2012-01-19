@@ -213,6 +213,11 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
+        public void Visit(CustomNode node)
+        {
+            // not applicable; terminate
+        }
+
         public void Visit(DebuggerNode node)
         {
             // not applicable; terminate

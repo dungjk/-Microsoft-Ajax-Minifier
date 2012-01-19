@@ -349,7 +349,7 @@ namespace Microsoft.Ajax.Utilities
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
                         // minify the label -- only depends on nesting level
-                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
+                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel) ?? node.Label);
                     }
                     else
                     {
@@ -737,7 +737,7 @@ namespace Microsoft.Ajax.Utilities
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
                         // minify the label -- only depends on nesting level
-                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel));
+                        Output(CrunchEnumerator.CrunchedLabel(node.NestLevel) ?? node.Label);
                     }
                     else
                     {
@@ -745,6 +745,17 @@ namespace Microsoft.Ajax.Utilities
                         Output(node.Label);
                     }
                 }
+            }
+        }
+
+        public void Visit(CustomNode node)
+        {
+            if (node != null)
+            {
+                // custom nodes override the ToCode method to return a blank string.
+                // nodes DERIVED from CustomNode should override ToCode is they want
+                // to introduce anything into the output stream.
+                Output(node.ToCode());
             }
         }
 
@@ -1079,7 +1090,7 @@ namespace Microsoft.Ajax.Utilities
                     // we want to output our label as per our nested level.
                     // top-level is "a", next level is "b", etc.
                     // we don't need to worry about collisions with variables.
-                    Output(CrunchEnumerator.CrunchedLabel(node.NestCount));
+                    Output(CrunchEnumerator.CrunchedLabel(node.NestCount) ?? node.Label);
                 }
                 else
                 {

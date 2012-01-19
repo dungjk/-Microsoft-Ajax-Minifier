@@ -152,6 +152,11 @@ namespace Microsoft.Ajax.Utilities
             // we're good
         }
 
+        public void Visit(CustomNode node)
+        {
+            // we're good
+        }
+
         public void Visit(Delete node)
         {
             // lesser precedence than the new operator; use parens

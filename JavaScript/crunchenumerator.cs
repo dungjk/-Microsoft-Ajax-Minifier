@@ -80,9 +80,10 @@ namespace Microsoft.Ajax.Utilities
 
         public static string CrunchedLabel(int nestLevel)
         {
-            // nestCount is 1-based, so subtract one to make the character index 0-based
+            // nestCount is 1-based, so subtract one to make the character index 0-based.
+            // return null if the nestLevel is invalid (<= 0).
             // TODO: make sure the generated name isn't a keyword!
-            return GenerateNameFromNumber(nestLevel - 1);
+            return nestLevel > 0 ? GenerateNameFromNumber(nestLevel - 1) : null;
         }
 
         /// <summary>
@@ -90,9 +91,9 @@ namespace Microsoft.Ajax.Utilities
         /// zero is the first name, 1 is the next, etc. This method needs to be tuned to
         /// get better gzip results.
         /// </summary>
-        /// <param name="num">integer position of the name to retrieve</param>
+        /// <param name="index">integer position of the name to retrieve</param>
         /// <returns>minified variable name</returns>
-        public static string GenerateNameFromNumber(int num)
+        public static string GenerateNameFromNumber(int index)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -118,14 +119,17 @@ namespace Microsoft.Ajax.Utilities
             // the next number in base-10. But WE want to divide by possibilities AND THEN SUBSTRACT ONE.
             // that not only gets us starting at 0, it also makes us push out the the number of iterations
             // we can go through before we need to increase the number of digits again.
-            sb.Append(s_varFirstLetters[num % s_varFirstLetters.Length]);
-            num /= s_varFirstLetters.Length;
-
-            // this is where we substract the one after our division to get the next character (if any)
-            while (--num >= 0)
+            if (index >= 0)
             {
-                sb.Append(s_varPartLetters[num % s_varPartLetters.Length]);
-                num /= s_varPartLetters.Length;
+                sb.Append(s_varFirstLetters[index % s_varFirstLetters.Length]);
+                index /= s_varFirstLetters.Length;
+
+                // this is where we substract the one after our division to get the next character (if any)
+                while (--index >= 0)
+                {
+                    sb.Append(s_varPartLetters[index % s_varPartLetters.Length]);
+                    index /= s_varPartLetters.Length;
+                }
             }
 
             return sb.ToString();

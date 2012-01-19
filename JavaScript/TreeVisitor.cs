@@ -156,6 +156,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public virtual void Visit(CustomNode node)
+        {
+            if (node != null)
+            {
+                AcceptChildren(node);
+            }
+        }
+
         public virtual void Visit(DebuggerNode node)
         {
             // no children
