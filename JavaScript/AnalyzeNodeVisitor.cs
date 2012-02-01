@@ -132,13 +132,14 @@ namespace Microsoft.Ajax.Utilities
             //      2) previous=expr1; this=for(;...)       ==> for(expr1;...)
             //      3) previous=expr1; this=for(expr2;...)  ==> for(expr1,expr2;...)
             //      4) previous=expr1; this=return expr2    ==> return expr1,expr2
+            //      5) previous=expr1; this=if(cond)...     ==> if(expr1,cond)...
             for (var ndx = node.Count - 1; ndx > 0; --ndx)
             {
-                ForNode forNode;
-
                 // see if the previous statement is an expression
                 if (node[ndx - 1].IsExpression)
                 {
+                    IfNode ifNode;
+                    ForNode forNode;
                     ReturnNode returnNode;
                     if (node[ndx].IsExpression)
                     {
@@ -222,6 +223,15 @@ namespace Microsoft.Ajax.Utilities
                                 }
                             }
                         }
+                    }
+                    else if ((ifNode = node[ndx] as IfNode) != null)
+                    {
+                        // transform: expr;if(cond)... => if(expr,cond)...
+                        // combine the previous expression with the if-condition via comma, then delete
+                        // the previous statement.
+                        ifNode.ReplaceChild(ifNode.Condition,
+                            new BinaryOperator(null, m_parser, node[ndx - 1], ifNode.Condition, JSToken.Comma));
+                        node.RemoveAt(ndx - 1);
                     }
                 }
             }
@@ -717,7 +727,131 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
 
+                if (m_parser.Settings.IsModificationAllowed(TreeModifications.CombineEquivalentIfReturns))
+                {
+                    // walk backwards looking for if(cond1)return expr1;if(cond2)return expr2;
+                    // (backwards, because we'll be combining those into one statement, reducing the number of statements.
+                    // don't go all the way to zero, because each loop will compare the statement to the PREVIOUS
+                    // statement, and the first statement (index==0) has no previous statement.
+                    for (var ndx = node.Count - 1; ndx > 0; --ndx)
+                    {
+                        // see if the current statement is an if-statement with no else block, and a true
+                        // block that contains a single return-statement WITH an expression.
+                        AstNode matchedExpression = null;
+                        AstNode condition2;
+                        if (IsIfReturnExpr(node[ndx], out condition2, ref matchedExpression) != null)
+                        {
+                            // see if the previous statement is also the same pattern, but with
+                            // the equivalent expression as its return operand
+                            AstNode condition1;
+                            var ifNode = IsIfReturnExpr(node[ndx - 1], out condition1, ref matchedExpression);
+                            if (ifNode != null)
+                            {
+                                // it is a match!
+                                // let's combine them -- we'll add the current condition to the
+                                // previous condition with a logical-or and delete the current statement.
+                                // transform: if(cond1)return expr;if(cond2)return expr; to if(cond1||cond2)return expr;
+                                ifNode.ReplaceChild(ifNode.Condition,
+                                    new BinaryOperator(null, m_parser, condition1, condition2, JSToken.LogicalOr));
+                                node.RemoveAt(ndx);
+                            }
+                        }
+                    }
+                }
+
+                if (isFunctionLevel
+                    && m_parser.Settings.IsModificationAllowed(TreeModifications.InvertIfReturn))
+                {
+                    // walk backwards looking for if (cond) return; whenever we encounter that statement,
+                    // we can change it to if (!cond) and put all subsequent statements in the block inside the
+                    // if's true-block.
+                    for (var ndx = node.Count - 1; ndx >= 0; --ndx)
+                    {
+                        var ifNode = node[ndx] as IfNode;
+                        if (ifNode != null 
+                            && ifNode.FalseBlock == null
+                            && ifNode.TrueBlock != null
+                            && ifNode.TrueBlock.Count == 1)
+                        {
+                            var returnNode = ifNode.TrueBlock[0] as ReturnNode;
+                            if (returnNode != null && returnNode.Operand == null)
+                            {
+                                // we have if(cond)return;
+                                // logical-not the condition, remove the return statement,
+                                // and move all subsequent sibling statements inside the if-statement.
+                                LogicalNot.Apply(ifNode.Condition, m_parser);
+                                ifNode.TrueBlock.ReplaceChild(returnNode, null);
+
+                                var ndxMove = ndx + 1;
+                                if (node.Count == ndxMove + 1)
+                                {
+                                    // there's only one statement after our if-node.
+                                    // see if it's ALSO an if-node with no else block.
+                                    var secondIfNode = node[ndxMove] as IfNode;
+                                    if (secondIfNode != null && secondIfNode.FalseBlock == null)
+                                    {
+                                        // it is!
+                                        // transform: if(cond1)return;if(cond2){...} => if(!cond1&&cond2){...}
+                                        // (the cond1 is already inverted at this point)
+                                        // combine cond2 with cond1 via a logical-and,
+                                        // move all secondIf statements inside the if-node,
+                                        // remove the secondIf node.
+                                        ifNode.ReplaceChild(ifNode.Condition, new BinaryOperator(
+                                            null,
+                                            m_parser,
+                                            ifNode.Condition,
+                                            secondIfNode.Condition,
+                                            JSToken.LogicalAnd));
+                                        
+                                        ifNode.ReplaceChild(ifNode.TrueBlock, secondIfNode.TrueBlock);
+                                        node.RemoveAt(ndxMove);
+                                    }
+                                }
+
+                                // just move all the following statements inside the if-statement
+                                while(node.Count > ndxMove)
+                                {
+                                    var movedNode = node[ndxMove];
+                                    node.RemoveAt(ndxMove);
+                                    ifNode.TrueBlock.Append(movedNode);
+                                }
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        private static IfNode IsIfReturnExpr(AstNode node, out AstNode condition, ref AstNode matchExpression)
+        {
+            // set the condition to null initially
+            condition = null;
+
+            // must be an if-node with no false block, and a true block with one statement
+            var ifNode = node as IfNode;
+            if (ifNode != null
+                && ifNode.FalseBlock == null
+                && ifNode.TrueBlock != null
+                && ifNode.TrueBlock.Count == 1)
+            {
+                // and that one statement needs to be a return statement
+                var returnNode = ifNode.TrueBlock[0] as ReturnNode;
+                if (returnNode != null)
+                {
+                    if (matchExpression == null
+                        || matchExpression.IsEquivalentTo(returnNode.Operand))
+                    {
+                        // either we don't care what the return expression is,
+                        // or we do care and it's a match.
+                        matchExpression = returnNode.Operand;
+                        condition = ifNode.Condition;
+                    }
+                }
+            }
+
+            // but we will only return the if-node IF the matchedExpression and the
+            // condition are both non-null (our TRUE state)
+            return condition != null && matchExpression != null ? ifNode : null;
         }
 
         private static int PreviousStatementIndex(Block node, AstNode child)
@@ -1647,6 +1781,24 @@ namespace Microsoft.Ajax.Utilities
                     // the expression
                     node.Parent.ReplaceChild(node, node.Condition);
                     // no need to analyze -- we already recursed
+                }
+
+                if (node.FalseBlock == null
+                    && node.TrueBlock != null
+                    && node.TrueBlock.Count == 1
+                    && m_parser.Settings.IsModificationAllowed(TreeModifications.CombineNestedIfs))
+                {
+                    var nestedIf = node.TrueBlock[0] as IfNode;
+                    if (nestedIf != null && nestedIf.FalseBlock == null)
+                    {
+                        // we have nested if-blocks.
+                        // transform if(cond1)if(cond2){...} to if(cond1&&cond2){...}
+                        // change the first if-statement's condition to be cond1&&cond2
+                        // move the nested if-statement's true block to the outer if-statement
+                        node.ReplaceChild(node.Condition,
+                            new BinaryOperator(null, m_parser, node.Condition, nestedIf.Condition, JSToken.LogicalAnd));
+                        node.ReplaceChild(node.TrueBlock, nestedIf.TrueBlock);
+                    }
                 }
             }
         }

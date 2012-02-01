@@ -117,6 +117,8 @@
     <Content Include="TestData\JS\Expected\AstMods\CallToMember.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus_H.js" />
+    <Content Include="TestData\JS\Expected\AstMods\ExpressionIf.js" />
+    <Content Include="TestData\JS\Expected\AstMods\IfReturn.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralExpressions.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralOverflows.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralsFarToLeft.js" />
@@ -124,6 +126,7 @@
     <Content Include="TestData\JS\Expected\AstMods\LiteralsToLeft.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralsToRight.js" />
     <Content Include="TestData\JS\Expected\AstMods\MoveFunctions.js" />
+    <Content Include="TestData\JS\Expected\AstMods\NestedIf.js" />
     <Content Include="TestData\JS\Expected\AstMods\SimplifyStrToNum.js" />
     <Content Include="TestData\JS\Expected\AstMods\SimplifyStrToNum_noeval.js" />
     <Content Include="TestData\JS\Expected\AstMods\StrictToRegular.js" />
@@ -346,6 +349,8 @@
     <Content Include="TestData\JS\Input\AstMods\AspNet.js" />
     <Content Include="TestData\JS\Input\AstMods\CallToMember.js" />
     <Content Include="TestData\JS\Input\AstMods\DateGetTimeToUnaryPlus.js" />
+    <Content Include="TestData\JS\Input\AstMods\ExpressionIf.js" />
+    <Content Include="TestData\JS\Input\AstMods\IfReturn.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralExpressions.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralOverflows.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralsFarToLeft.js" />
@@ -353,6 +358,7 @@
     <Content Include="TestData\JS\Input\AstMods\LiteralsToLeft.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralsToRight.js" />
     <Content Include="TestData\JS\Input\AstMods\MoveFunctions.js" />
+    <Content Include="TestData\JS\Input\AstMods\NestedIf.js" />
     <Content Include="TestData\JS\Input\AstMods\SimplifyStrToNum.js" />
     <Content Include="TestData\JS\Input\AstMods\StrictToRegular.js" />
     <Content Include="TestData\JS\Input\AstMods\VerticalTab.js" />

@@ -988,5 +988,21 @@ namespace Microsoft.Ajax.Utilities
         /// Whether it's okay to move an expression containing an in-operator into a for-statement.
         /// </summary>
         MoveInExpressionsIntoForStatement           = 0x0000040000000000,
+
+        /// <summary>
+        /// Whether it's okay to convert function...{...if(cond)return;s1;s2} to function...{...if(!cond){s1;s2}}
+        /// </summary>
+        InvertIfReturn                              = 0x0000080000000000,
+
+        /// <summary>
+        /// Whether it's okay to combine nested if-statments if(cond1)if(cond2){...} to if(cond1&&cond2){...}
+        /// </summary>
+        CombineNestedIfs                            = 0x0000100000000000,
+
+        /// <summary>
+        /// Whether it's okay to combine equivalent if-statments that return the same expression.
+        /// if(cond1)return expr;if(cond2)return expr; =&gt; if(cond1||cond2)return expr;
+        /// </summary>
+        CombineEquivalentIfReturns                  = 0x0000200000000000,
     }
 }

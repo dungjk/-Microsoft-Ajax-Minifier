@@ -165,5 +165,23 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-term");
         }
+
+        [TestMethod]
+        public void IfReturn()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void NestedIf()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void ExpressionIf()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

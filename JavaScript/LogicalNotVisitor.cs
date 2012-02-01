@@ -35,6 +35,12 @@ namespace Microsoft.Ajax.Utilities
             m_expression.Accept(this);
         }
 
+        public static void Apply(AstNode node, JSParser parser)
+        {
+            var logicalNot = new LogicalNot(node, parser);
+            logicalNot.Apply();
+        }
+
         private void WrapWithLogicalNot(AstNode operand)
         {
             operand.Parent.ReplaceChild(
