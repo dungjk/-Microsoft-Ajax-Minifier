@@ -133,6 +133,7 @@ namespace Microsoft.Ajax.Utilities
             //      3) previous=expr1; this=for(expr2;...)  ==> for(expr1,expr2;...)
             //      4) previous=expr1; this=return expr2    ==> return expr1,expr2
             //      5) previous=expr1; this=if(cond)...     ==> if(expr1,cond)...
+            //      6) previous=expr1; this=while(cond)...  ==> for(expr;cond;)...
             for (var ndx = node.Count - 1; ndx > 0; --ndx)
             {
                 // see if the previous statement is an expression
@@ -140,6 +141,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     IfNode ifNode;
                     ForNode forNode;
+                    WhileNode whileNode;
                     ReturnNode returnNode;
                     if (node[ndx].IsExpression)
                     {
@@ -232,6 +234,22 @@ namespace Microsoft.Ajax.Utilities
                         ifNode.ReplaceChild(ifNode.Condition,
                             new BinaryOperator(null, m_parser, node[ndx - 1], ifNode.Condition, JSToken.Comma));
                         node.RemoveAt(ndx - 1);
+                    }
+                    else if ((whileNode = node[ndx] as WhileNode) != null
+                        && m_parser.Settings.IsModificationAllowed(TreeModifications.ChangeWhileToFor))
+                    {
+                        // transform: expr;while(cond)... => for(expr;cond;)...
+                        // zero-sum, and maybe a little worse for performance because of the nop iterator,
+                        // but combines two statements into one, which may have savings later on.
+                        var initializer = node[ndx - 1];
+                        node.RemoveAt(ndx - 1);
+                        node.ReplaceChild(whileNode, new ForNode(
+                            null,
+                            m_parser,
+                            initializer,
+                            whileNode.Condition,
+                            null,
+                            whileNode.Body));
                     }
                 }
             }
@@ -405,6 +423,7 @@ namespace Microsoft.Ajax.Utilities
                         // see if the previous statement is a var statement
                         // (we've already combined adjacent var-statements)
                         ForNode forNode;
+                        WhileNode whileNode;
                         var previousVar = node[ndx - 1] as Var;
                         if (previousVar != null && (forNode = node[ndx] as ForNode) != null)
                         {
@@ -477,6 +496,20 @@ namespace Microsoft.Ajax.Utilities
                                     // will be right back on this node, but the initializer will not be null
                                 }
                             }
+                        }
+                        else if (previousVar != null 
+                            && (whileNode = node[ndx] as WhileNode) != null
+                            && m_parser.Settings.IsModificationAllowed(TreeModifications.ChangeWhileToFor))
+                        {
+                            // transform: var ...;while(cond)... => for(var ...;cond;)...
+                            node.RemoveAt(ndx - 1);
+                            node.ReplaceChild(whileNode, new ForNode(
+                                null,
+                                m_parser,
+                                previousVar,
+                                whileNode.Condition,
+                                null,
+                                whileNode.Body));
                         }
                     }
                 }

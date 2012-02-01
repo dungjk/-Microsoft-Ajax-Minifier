@@ -1004,5 +1004,13 @@ namespace Microsoft.Ajax.Utilities
         /// if(cond1)return expr;if(cond2)return expr; =&gt; if(cond1||cond2)return expr;
         /// </summary>
         CombineEquivalentIfReturns                  = 0x0000200000000000,
+
+        /// <summary>
+        /// Whether to convert certain while-statements to for-statements.
+        /// while(1)... => for(;;)...
+        /// var ...;while(1)... => for(var ...;;)
+        /// var ...;while(cond)... => for(var ...;cond;)...
+        /// </summary>
+        ChangeWhileToFor                            = 0x0000400000000000,
     }
 }

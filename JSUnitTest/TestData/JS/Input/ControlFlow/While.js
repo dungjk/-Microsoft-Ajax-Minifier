@@ -6,3 +6,10 @@ while(true)
 {
     if (!--b) break;
 }
+
+
+// always true so gets changed to for(;;)
+while("foo")
+{
+    alert("infinite loop!");
+}

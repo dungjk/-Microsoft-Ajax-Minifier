@@ -201,6 +201,8 @@
     <Content Include="TestData\JS\Expected\ControlFlow\TryCatch.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\TryCatch_m.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\While_ForNoVar.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\While_NoFor.js" />
     <Content Include="TestData\JS\Expected\Declarations\Function.js" />
     <Content Include="TestData\JS\Expected\Declarations\Identifiers.js" />
     <Content Include="TestData\JS\Expected\Declarations\LocalizationVars.js" />

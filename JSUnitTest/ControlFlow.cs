@@ -43,14 +43,14 @@ namespace JSUnitTest
         [TestMethod()]
         public void Debugger()
         {
-            TestHelper.Instance.RunTest("-debug:Y");
+            TestHelper.Instance.RunTest("-debug:Y -kill:0x400000000000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_D()
         {
-            TestHelper.Instance.RunTest("-debug:N");
+            TestHelper.Instance.RunTest("-debug:N -kill:0x400000000000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
@@ -61,14 +61,14 @@ namespace JSUnitTest
             // means no replacement of debug lookups, it doesn't really matter what
             // comes after the comma. We'll process them, but we won't be replacing anything
             // anyway!
-            TestHelper.Instance.RunTest("-debug:,AckBar,FooBar");
+            TestHelper.Instance.RunTest("-debug:,AckBar,FooBar -kill:0x400000000000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_OffCustom()
         {
-            TestHelper.Instance.RunTest("-debug:N,AckBar,FooBar,Debug,$Debug,Web.Debug");
+            TestHelper.Instance.RunTest("-debug:N,AckBar,FooBar,Debug,$Debug,Web.Debug -kill:0x400000000000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
@@ -78,7 +78,7 @@ namespace JSUnitTest
             // adding the comma after means we want to specify the debug lookups.
             // but since we have nothing after the comma, we replace the defaults
             // ($Debug, Debug, WAssert) with nothing.
-            TestHelper.Instance.RunTest("-debug:N,");
+            TestHelper.Instance.RunTest("-debug:N, -kill:0x400000000000");
         }
 
         [DeploymentItem("AjaxMin.exe")]
@@ -212,6 +212,18 @@ namespace JSUnitTest
         public void While()
         {
             TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod()]
+        public void While_NoFor()
+        {
+            TestHelper.Instance.RunTest("-kill:0x400000000000");
+        }
+
+        [TestMethod()]
+        public void While_ForNoVar()
+        {
+            TestHelper.Instance.RunTest("-kill:0x400");
         }
 
         [TestMethod()]

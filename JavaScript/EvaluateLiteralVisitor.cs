@@ -2206,35 +2206,45 @@ namespace Microsoft.Ajax.Utilities
                         bool isTrue = constantCondition.ToBoolean();
                         if (isTrue)
                         {
-                            // the condition is always true; we should change it to a for(;;) statement.
-                            // less bytes than while(1)
-
-                            // check to see if we want to combine a preceding var with a for-statement
-                            AstNode initializer = null;
-                            if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveVarIntoFor))
+                            // the condition is always true, so we should change it to 1
+                            if (m_parser.Settings.IsModificationAllowed(TreeModifications.ChangeWhileToFor))
                             {
-                                // if the previous statement is a var, we can move it to the initializer
-                                // and save even more bytes. The parent should always be a block. If not, 
-                                // then assume there is no previous.
-                                Block parentBlock = node.Parent as Block;
-                                if (parentBlock != null)
+                                // the condition is always true; we should change it to a for(;;) statement.
+                                // less bytes than while(1)
+
+                                // check to see if we want to combine a preceding var with a for-statement
+                                AstNode initializer = null;
+                                if (m_parser.Settings.IsModificationAllowed(TreeModifications.MoveVarIntoFor))
                                 {
-                                    int whileIndex = parentBlock.StatementIndex(node);
-                                    if (whileIndex > 0)
+                                    // if the previous statement is a var, we can move it to the initializer
+                                    // and save even more bytes. The parent should always be a block. If not, 
+                                    // then assume there is no previous.
+                                    Block parentBlock = node.Parent as Block;
+                                    if (parentBlock != null)
                                     {
-                                        Var previousVar = parentBlock[whileIndex - 1] as Var;
-                                        if (previousVar != null)
+                                        int whileIndex = parentBlock.StatementIndex(node);
+                                        if (whileIndex > 0)
                                         {
-                                            initializer = previousVar;
-                                            parentBlock.ReplaceChild(previousVar, null);
+                                            Var previousVar = parentBlock[whileIndex - 1] as Var;
+                                            if (previousVar != null)
+                                            {
+                                                initializer = previousVar;
+                                                parentBlock.ReplaceChild(previousVar, null);
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // create the for using our body and replace ourselves with it
-                            ForNode forNode = new ForNode(node.Context, m_parser, initializer, null, null, node.Body);
-                            node.Parent.ReplaceChild(node, forNode);
+                                // create the for using our body and replace ourselves with it
+                                ForNode forNode = new ForNode(node.Context, m_parser, initializer, null, null, node.Body);
+                                node.Parent.ReplaceChild(node, forNode);
+                            }
+                            else
+                            {
+                                // the condition is always true, so we can replace the condition
+                                // with a 1 -- only one byte
+                                node.ReplaceChild(node.Condition, new ConstantWrapper(1, PrimitiveType.Number, null, m_parser));
+                            }
                         }
                         else if (constantCondition.IsNotOneOrPositiveZero)
                         {
