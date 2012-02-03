@@ -801,7 +801,7 @@ namespace Microsoft.Ajax.Utilities
                     for (var ndx = node.Count - 1; ndx >= 0; --ndx)
                     {
                         var ifNode = node[ndx] as IfNode;
-                        if (ifNode != null 
+                        if (ifNode != null
                             && ifNode.FalseBlock == null
                             && ifNode.TrueBlock != null
                             && ifNode.TrueBlock.Count == 1)
@@ -821,7 +821,7 @@ namespace Microsoft.Ajax.Utilities
                                     // there's only one statement after our if-node.
                                     // see if it's ALSO an if-node with no else block.
                                     var secondIfNode = node[ndxMove] as IfNode;
-                                    if (secondIfNode != null && secondIfNode.FalseBlock == null)
+                                    if (secondIfNode != null && (secondIfNode.FalseBlock == null || secondIfNode.FalseBlock.Count == 0))
                                     {
                                         // it is!
                                         // transform: if(cond1)return;if(cond2){...} => if(!cond1&&cond2){...}
@@ -829,20 +829,28 @@ namespace Microsoft.Ajax.Utilities
                                         // combine cond2 with cond1 via a logical-and,
                                         // move all secondIf statements inside the if-node,
                                         // remove the secondIf node.
+                                        node.RemoveAt(ndxMove);
                                         ifNode.ReplaceChild(ifNode.Condition, new BinaryOperator(
                                             null,
                                             m_parser,
                                             ifNode.Condition,
                                             secondIfNode.Condition,
                                             JSToken.LogicalAnd));
-                                        
+
                                         ifNode.ReplaceChild(ifNode.TrueBlock, secondIfNode.TrueBlock);
+                                    }
+                                    else if (node[ndxMove].IsExpression
+                                        && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
+                                    {
+                                        // now we have if(cond)expr; optimize that!
+                                        var expression = node[ndxMove];
                                         node.RemoveAt(ndxMove);
+                                        IfConditionExpressionToExpression(ifNode, expression);
                                     }
                                 }
 
                                 // just move all the following statements inside the if-statement
-                                while(node.Count > ndxMove)
+                                while (node.Count > ndxMove)
                                 {
                                     var movedNode = node[ndxMove];
                                     node.RemoveAt(ndxMove);
@@ -852,7 +860,123 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                 }
+                else
+                {
+                    var isIteratorBlock = node.Parent is ForNode
+                        || node.Parent is ForIn
+                        || node.Parent is WhileNode
+                        || node.Parent is DoWhile;
+
+                    if (isIteratorBlock
+                        && m_parser.Settings.IsModificationAllowed(TreeModifications.InvertIfContinue))
+                    {
+                        // walk backwards looking for if (cond) continue; whenever we encounter that statement,
+                        // we can change it to if (!cond) and put all subsequent statements in the block inside the
+                        // if's true-block.
+                        for (var ndx = node.Count - 1; ndx >= 0; --ndx)
+                        {
+                            var ifNode = node[ndx] as IfNode;
+                            if (ifNode != null
+                                && ifNode.FalseBlock == null
+                                && ifNode.TrueBlock != null
+                                && ifNode.TrueBlock.Count == 1)
+                            {
+                                var continueNode = ifNode.TrueBlock[0] as ContinueNode;
+
+                                // if there's no label, then we're good. Otherwise we can only make this optimization
+                                // if the label refers to the parent iterator node.
+                                if (continueNode != null 
+                                    && (string.IsNullOrEmpty(continueNode.Label) || (LabelMatchesParent(continueNode.Label, node.Parent))))
+                                {
+                                    // if this is the last statement, then we don't really need the if at all
+                                    // and can just replace it with its condition
+                                    if (ndx < node.Count - 1)
+                                    {
+                                        // we have if(cond)continue;st1;...stn;
+                                        // logical-not the condition, remove the continue statement,
+                                        // and move all subsequent sibling statements inside the if-statement.
+                                        LogicalNot.Apply(ifNode.Condition, m_parser);
+                                        ifNode.TrueBlock.ReplaceChild(continueNode, null);
+
+                                        // TODO: if we removed a labeled continue, do we need to fix up some label references?
+
+                                        var ndxMove = ndx + 1;
+                                        if (node.Count == ndxMove + 1)
+                                        {
+                                            // there's only one statement after our if-node.
+                                            // see if it's ALSO an if-node with no else block.
+                                            var secondIfNode = node[ndxMove] as IfNode;
+                                            if (secondIfNode != null && (secondIfNode.FalseBlock == null || secondIfNode.FalseBlock.Count == 0))
+                                            {
+                                                // it is!
+                                                // transform: if(cond1)continue;if(cond2){...} => if(!cond1&&cond2){...}
+                                                // (the cond1 is already inverted at this point)
+                                                // combine cond2 with cond1 via a logical-and,
+                                                // move all secondIf statements inside the if-node,
+                                                // remove the secondIf node.
+                                                ifNode.ReplaceChild(ifNode.Condition, new BinaryOperator(
+                                                    null,
+                                                    m_parser,
+                                                    ifNode.Condition,
+                                                    secondIfNode.Condition,
+                                                    JSToken.LogicalAnd));
+
+                                                ifNode.ReplaceChild(ifNode.TrueBlock, secondIfNode.TrueBlock);
+                                                node.RemoveAt(ndxMove);
+                                            }
+                                            else if (node[ndxMove].IsExpression
+                                                && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
+                                            {
+                                                // now we have if(cond)expr; optimize that!
+                                                var expression = node[ndxMove];
+                                                node.RemoveAt(ndxMove);
+                                                IfConditionExpressionToExpression(ifNode, expression);
+                                            }
+                                        }
+
+                                        // just move all the following statements inside the if-statement
+                                        while (node.Count > ndxMove)
+                                        {
+                                            var movedNode = node[ndxMove];
+                                            node.RemoveAt(ndxMove);
+                                            ifNode.TrueBlock.Append(movedNode);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // we have if(cond)continue} -- nothing after the if.
+                                        // the loop is going to continue anyway, so replace the if-statement
+                                        // with the condition and be done
+                                        ifNode.Parent.ReplaceChild(ifNode, ifNode.Condition);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        private static bool LabelMatchesParent(string label, AstNode parentNode)
+        {
+            var isMatch = false;
+
+            // see if the parent's parent is a labeled statement
+            LabeledStatement labeledStatement;
+            while ((labeledStatement = parentNode.Parent as LabeledStatement) != null)
+            {
+                // see if the label we are looking for matches the labeled statement
+                if (string.Compare(labeledStatement.Label, label, StringComparison.InvariantCulture) == 0)
+                {
+                    // it's a match -- we're done
+                    isMatch = true;
+                    break;
+                }
+
+                // try the next node up (a labeled statement can itself be labeled)
+                parentNode = labeledStatement;
+            }
+            return isMatch;
         }
 
         private static IfNode IsIfReturnExpr(AstNode node, out AstNode condition, ref AstNode matchExpression)
@@ -1765,33 +1889,8 @@ namespace Microsoft.Ajax.Utilities
                     if (node.TrueBlock.IsExpression
                         && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
                     {
-                        // but first -- which operator to use? if(a)b --> a&&b, and if(!a)b --> a||b
-                        // so determine which one is smaller: a or !a
-                        // assume we'll use the logical-and, since that doesn't require changing the condition
-                        var newOperator = JSToken.LogicalAnd;
-                        var logicalNot = new LogicalNot(node.Condition, m_parser);
-                        if (logicalNot.Measure() < 0)
-                        {
-                            // !a is smaller, so apply it and use the logical-or operator
-                            logicalNot.Apply();
-                            newOperator = JSToken.LogicalOr;
-                        }
-
-                        // because the true block is an expression, we know it must only have
-                        // ONE statement in it, so we can just dereference it directly.
-                        var binaryOp = new BinaryOperator(
-                            node.Context,
-                            m_parser,
-                            node.Condition,
-                            node.TrueBlock[0],
-                            newOperator
-                            );
-
-                        // we don't need to analyse this new node because we've already analyzed
-                        // the pieces parts as part of the if. And this visitor's method for the BinaryOperator
-                        // doesn't really do anything else. Just replace our current node with this
-                        // new node
-                        node.Parent.ReplaceChild(node, binaryOp);
+                        // convert the if-node to an expression
+                        IfConditionExpressionToExpression(node, node.TrueBlock[0]);
                     }
                 }
                 else if (m_parser.Settings.IsModificationAllowed(TreeModifications.IfEmptyToExpression))
@@ -1834,6 +1933,37 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
+        }
+
+        private void IfConditionExpressionToExpression(IfNode ifNode, AstNode expression)
+        {
+            // but first -- which operator to use? if(a)b --> a&&b, and if(!a)b --> a||b
+            // so determine which one is smaller: a or !a
+            // assume we'll use the logical-and, since that doesn't require changing the condition
+            var newOperator = JSToken.LogicalAnd;
+            var logicalNot = new LogicalNot(ifNode.Condition, m_parser);
+            if (logicalNot.Measure() < 0)
+            {
+                // !a is smaller, so apply it and use the logical-or operator
+                logicalNot.Apply();
+                newOperator = JSToken.LogicalOr;
+            }
+
+            // because the true block is an expression, we know it must only have
+            // ONE statement in it, so we can just dereference it directly.
+            var binaryOp = new BinaryOperator(
+                ifNode.Context,
+                m_parser,
+                ifNode.Condition,
+                expression,
+                newOperator
+                );
+
+            // we don't need to analyse this new node because we've already analyzed
+            // the pieces parts as part of the if. And this visitor's method for the BinaryOperator
+            // doesn't really do anything else. Just replace our current node with this
+            // new node
+            ifNode.Parent.ReplaceChild(ifNode, binaryOp);
         }
 
         public override void Visit(Lookup node)

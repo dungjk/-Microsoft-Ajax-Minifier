@@ -183,5 +183,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void IfContinue()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

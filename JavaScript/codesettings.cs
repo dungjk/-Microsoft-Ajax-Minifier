@@ -1012,5 +1012,10 @@ namespace Microsoft.Ajax.Utilities
         /// var ...;while(cond)... => for(var ...;cond;)...
         /// </summary>
         ChangeWhileToFor                            = 0x0000400000000000,
+
+        /// <summary>
+        /// Whether to invert iterator{if(cond)continue;st1;st2} to iterator{if(!cond){st1;st2}}
+        /// </summary>
+        InvertIfContinue                            = 0x0000800000000000,
     }
 }

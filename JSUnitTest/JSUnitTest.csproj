@@ -118,6 +118,7 @@
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus_H.js" />
     <Content Include="TestData\JS\Expected\AstMods\ExpressionIf.js" />
+    <Content Include="TestData\JS\Expected\AstMods\IfContinue.js" />
     <Content Include="TestData\JS\Expected\AstMods\IfReturn.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralExpressions.js" />
     <Content Include="TestData\JS\Expected\AstMods\LiteralOverflows.js" />
@@ -176,6 +177,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\CatchScope.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\CatchScope_Local.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Continue.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\Continue_inv.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Debugger.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Debugger_D.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Debugger_OffCustom.js" />
@@ -352,6 +354,7 @@
     <Content Include="TestData\JS\Input\AstMods\CallToMember.js" />
     <Content Include="TestData\JS\Input\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Input\AstMods\ExpressionIf.js" />
+    <Content Include="TestData\JS\Input\AstMods\IfContinue.js" />
     <Content Include="TestData\JS\Input\AstMods\IfReturn.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralExpressions.js" />
     <Content Include="TestData\JS\Input\AstMods\LiteralOverflows.js" />

@@ -36,6 +36,13 @@ namespace JSUnitTest
         [TestMethod()]
         public void Continue()
         {
+            // don't optimize if(cond)continue;
+            TestHelper.Instance.RunTest("-kill:0x800000000000");
+        }
+
+        [TestMethod()]
+        public void Continue_inv()
+        {
             TestHelper.Instance.RunTest();
         }
 

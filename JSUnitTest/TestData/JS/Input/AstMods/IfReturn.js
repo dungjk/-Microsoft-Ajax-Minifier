@@ -53,3 +53,13 @@ function ack(a, b, c)
 
     return foo;
 }
+
+function ret(a, b)
+{
+    if (!a)
+    {
+        return;
+    }
+
+    a(b);
+}
