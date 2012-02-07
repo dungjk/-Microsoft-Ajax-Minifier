@@ -477,7 +477,7 @@ namespace Microsoft.Ajax.Utilities
                         ));
                 }
             }
-            else if (!funcObj.FunctionScope.IsReferenced(null))
+            else if (!funcObj.FunctionScope.IsReferenced(null) && m_switchParser.JSSettings.MinifyCode)
             {
                 // local function that isn't referenced -- unreachable!
                 // output a comma separator if not the first item, otherwise 
