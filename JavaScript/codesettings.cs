@@ -60,6 +60,10 @@ namespace Microsoft.Ajax.Utilities
             // by default there are five names in the debug lookup collection
             var initialList = new string[] { "Debug", "$Debug", "WAssert", "Msn.Debug", "Web.Debug" };
             this.DebugLookups = new ReadOnlyCollection<string>(initialList);
+
+            // by default, let's NOT rename $super, so we don't break the Prototype library.
+            // going to try to come up with a better solution, so this is just a stop-gap for now.
+            this.NoAutoRenameIdentifiers = new ReadOnlyCollection<string>(new string[] { "$super" });
         }
 
         public CodeSettings Clone()
