@@ -999,7 +999,7 @@ namespace Microsoft.Ajax.Utilities
         InvertIfReturn                              = 0x0000080000000000,
 
         /// <summary>
-        /// Whether it's okay to combine nested if-statments if(cond1)if(cond2){...} to if(cond1&&cond2){...}
+        /// Whether it's okay to combine nested if-statments if(cond1)if(cond2){...} to if(cond1&amp;&amp;cond2){...}
         /// </summary>
         CombineNestedIfs                            = 0x0000100000000000,
 
