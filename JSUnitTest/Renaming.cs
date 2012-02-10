@@ -56,5 +56,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-rename:all -rename NoRename.xml");
         }
+
+        [TestMethod]
+        public void Super()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
     }
 }

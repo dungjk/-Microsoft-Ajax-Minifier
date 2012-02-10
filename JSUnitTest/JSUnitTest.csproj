@@ -290,6 +290,7 @@
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_norename.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_rename.js" />
     <Content Include="TestData\JS\Expected\Renaming\NestedGlobals.js" />
+    <Content Include="TestData\JS\Expected\Renaming\Super.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceJS.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx_I.js" />
@@ -479,6 +480,7 @@
     <Content Include="TestData\JS\Input\Renaming\NestedGlobals.js" />
     <Content Include="TestData\JS\Input\Renaming\NoRename.xml" />
     <Content Include="TestData\JS\Input\Renaming\Rename.xml" />
+    <Content Include="TestData\JS\Input\Renaming\Super.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceResx.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS_res.js" />
