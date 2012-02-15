@@ -88,3 +88,25 @@ xx\7b foo
 {
 	margin: 10;
 }
+
+/* the "i" and the "v" are escaped - normally evaluates as "div"
+   the backslashes MUST not be escaped to \5c, but we should leave them
+   in in case the dev intentionally wanted to escape them for some sort
+   of browser-hack type of thing. */
+d\i\v 
+{
+    font: 20pt Arial, Helvetica, Sans-serif;
+}
+
+/* the backslash in the identifier is escaped as hex -- it should remain so */
+do\5cit
+{
+    color: blue;
+}
+
+/* a mix of the previous two, plus we need to keep the space after the \5c so
+   it doesn't become \5cb */
+how\now\5c brown\\cow
+{
+    color: red;
+}

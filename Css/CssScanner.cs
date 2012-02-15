@@ -1064,7 +1064,7 @@ namespace Microsoft.Ajax.Utilities
         /// returns the VALUE of a unicode number, up to six hex digits
         /// </summary>
         /// <returns>int value representing up to 6 hex digits</returns>
-        private int GetUnicodeEncodingValue()
+        private int GetUnicodeEncodingValue(out bool follwedByWhitespace)
         {
             int unicodeValue = 0;
 
@@ -1078,10 +1078,12 @@ namespace Microsoft.Ajax.Utilities
 
             // if there is a space character afterwards, skip it
             // (but only skip one space character if present)
-            if (IsSpace(m_currentChar))
+            follwedByWhitespace = IsSpace(m_currentChar);
+            if (follwedByWhitespace)
             {
                 NextChar();
             }
+
             return unicodeValue;
         }
 
@@ -1100,54 +1102,69 @@ namespace Microsoft.Ajax.Utilities
 
                     // decode the hexadecimal digits at the current character point,
                     // up to six characters
-                    int unicodeValue = GetUnicodeEncodingValue();
-
-                    // we shouldn't NEED to check for surrogate pairs here because
-                    // the encoding is up to six digits, which encompasses all the
-                    // available Unicode characters without having to resort to
-                    // surrogate pairs. However, some bone-head can always manually
-                    // encode two surrogate pair values in their source.
-                    if (0xd800 <= unicodeValue && unicodeValue <= 0xdbff)
+                    bool followedByWhitespace;
+                    int unicodeValue = GetUnicodeEncodingValue(out followedByWhitespace);
+                    if (unicodeValue == 0x5c || unicodeValue == 0x20)
                     {
-                        // this is a high-surrogate value.
-                        int hi = unicodeValue;
-                        // the next encoding BETTER be a unicode value
-                        if (m_currentChar == '\\' && IsH(PeekChar()))
+                        // okay, we have an escaped backslash or space. Ideally, if we were making an interpreter,
+                        // this sequence would return the decoded "\" or " " character. HOWEVER, because we're NOT
+                        // interpreting this code and instead trying to produce the equivalent source output,
+                        // we need to SPECIAL CASE these escape sequences so that they always gets reproduced
+                        // as "\5c" or "\20" in our output -- because we will not escape the "\" or " " characters 
+                        // because they might be part of an actual escape sequence.
+                        // So just return the escaped sequence as-is and don't forget to keep any whitespace that
+                        // may follow.
+                        unicode = string.Format(CultureInfo.InvariantCulture, followedByWhitespace ? @"\{0:x} " : @"\{0:x}", unicodeValue);
+                    }
+                    else
+                    {
+                        // we shouldn't NEED to check for surrogate pairs here because
+                        // the encoding is up to six digits, which encompasses all the
+                        // available Unicode characters without having to resort to
+                        // surrogate pairs. However, some bone-head can always manually
+                        // encode two surrogate pair values in their source.
+                        if (0xd800 <= unicodeValue && unicodeValue <= 0xdbff)
                         {
-                            // skip the slash
-                            NextChar();
-                            // get the lo value
-                            int lo = GetUnicodeEncodingValue();
-                            if (0xdc00 <= lo && lo <= 0xdfff)
+                            // this is a high-surrogate value.
+                            int hi = unicodeValue;
+                            // the next encoding BETTER be a unicode value
+                            if (m_currentChar == '\\' && IsH(PeekChar()))
                             {
-                                // combine the hi/lo pair into one character value
-                                unicodeValue = 0x10000
-                                  + (hi - 0xd800) * 0x400
-                                  + (lo - 0xdc00);
+                                // skip the slash
+                                NextChar();
+                                // get the lo value
+                                int lo = GetUnicodeEncodingValue(out followedByWhitespace);
+                                if (0xdc00 <= lo && lo <= 0xdfff)
+                                {
+                                    // combine the hi/lo pair into one character value
+                                    unicodeValue = 0x10000
+                                      + (hi - 0xd800) * 0x400
+                                      + (lo - 0xdc00);
+                                }
+                                else
+                                {
+                                    // ERROR! not a valid unicode lower-surrogate value!
+                                    ReportError(
+                                      0,
+                                      StringEnum.InvalidLowSurrogate, hi, lo
+                                      );
+                                }
                             }
                             else
                             {
-                                // ERROR! not a valid unicode lower-surrogate value!
+                                // ERROR! the high-surrogate is not followed by a low surrogate!
                                 ReportError(
                                   0,
-                                  StringEnum.InvalidLowSurrogate, hi, lo
+                                  StringEnum.HighSurrogateNoLow, unicodeValue
                                   );
                             }
                         }
-                        else
-                        {
-                            // ERROR! the high-surrogate is not followed by a low surrogate!
-                            ReportError(
-                              0,
-                              StringEnum.HighSurrogateNoLow, unicodeValue
-                              );
-                        }
-                    }
 
-                    // get the unicode character. might be multiple characters because
-                    // the 21-bit value stired in the int might be encoded into a surrogate pair.
-                    //unicode = char.ConvertFromUtf32(unicodeValue);
-                    unicode = ConvertUtf32ToUtf16(unicodeValue);
+                        // get the unicode character. might be multiple characters because
+                        // the 21-bit value stired in the int might be encoded into a surrogate pair.
+                        //unicode = char.ConvertFromUtf32(unicodeValue);
+                        unicode = ConvertUtf32ToUtf16(unicodeValue);
+                    }
                 }
             }
             return unicode;

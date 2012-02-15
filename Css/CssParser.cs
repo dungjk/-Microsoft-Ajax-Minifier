@@ -3233,8 +3233,11 @@ namespace Microsoft.Ajax.Utilities
                         if (firstChar < 0x80)
                         {
                             // if it's not an a-z or A-Z, we want to escape it
+                            // also leave literal back-slashes as-is, too. The identifier might start with an escape
+                            // sequence that we didn't decode to its Unicode character for whatever reason.
                             if ((firstChar < 'A' || 'Z' < firstChar)
-                                && (firstChar < 'a' || 'z' < firstChar))
+                                && (firstChar < 'a' || 'z' < firstChar)
+                                && firstChar != '\\')
                             {
                                 // invalid first character -- create the string builder
                                 escapedBuilder = new StringBuilder();
@@ -3262,8 +3265,13 @@ namespace Microsoft.Ajax.Utilities
                         if (nextChar < 0x80)
                         {
                             // only -, _, 0-9, a-z, A-Z are allowed without escapes
+                            // but we also want to NOT escape \ or space characters. If the identifier had
+                            // an escaped space character, it will still be escaped -- so any spaces would
+                            // be necessary whitespace for the end of unicode escapes.
                             if (nextChar != '-'
                                 && nextChar != '_'
+                                && nextChar != '\\'
+                                && nextChar != ' '
                                 && ('0' > nextChar || nextChar > '9')
                                 && ('a' > nextChar || nextChar > 'z')
                                 && ('A' > nextChar || nextChar > 'Z'))
