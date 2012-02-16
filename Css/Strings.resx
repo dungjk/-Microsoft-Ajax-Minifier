@@ -336,4 +336,7 @@
   <data name="ExpectedUnit" xml:space="preserve">
     <value>Expected calculation unit, found '{0}'</value>
   </data>
+  <data name="UnexpectedEndOfFile" xml:space="preserve">
+    <value>Unexpected end of file encountered</value>
+  </data>
 </root>

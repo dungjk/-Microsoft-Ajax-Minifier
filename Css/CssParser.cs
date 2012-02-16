@@ -1392,6 +1392,13 @@ namespace Microsoft.Ajax.Utilities
             Parsed parsed = ParseSelector();
             if (parsed == Parsed.True)
             {
+                if (m_scanner.EndOfFile)
+                {
+                    // we parsed a selector expecting this to be a rule, but then WHAM! we hit
+                    // the end of the file. That isn't correct. Throw an error.
+                    ReportError(0, StringEnum.UnexpectedEndOfFile);
+                }
+
                 while (!m_scanner.EndOfFile)
                 {
                     try
