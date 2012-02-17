@@ -966,7 +966,7 @@ namespace Microsoft.Ajax.Utilities
             while ((labeledStatement = parentNode.Parent as LabeledStatement) != null)
             {
                 // see if the label we are looking for matches the labeled statement
-                if (string.Compare(labeledStatement.Label, label, StringComparison.InvariantCulture) == 0)
+                if (string.Compare(labeledStatement.Label, label, StringComparison.Ordinal) == 0)
                 {
                     // it's a match -- we're done
                     isMatch = true;
