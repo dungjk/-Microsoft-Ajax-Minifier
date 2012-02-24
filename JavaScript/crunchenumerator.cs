@@ -30,7 +30,10 @@ namespace Microsoft.Ajax.Utilities
         // we're actually going to tune these two sets rather than just have the max allowed because we want to 
         // make the final g-zipped results smaller.
         private static string s_varFirstLetters = "ntirufeoshclavypwbkdg";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
+        public static string FirstLetters { get { return s_varFirstLetters; } set { s_varFirstLetters = value; } }
+
         private static string s_varPartLetters  = "tirufeoshclavypwbkdgn";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
+        public static string PartLetters { get { return s_varPartLetters ?? s_varFirstLetters; } set { s_varPartLetters = value; } }     
 
         internal CrunchEnumerator(Dictionary<string, string> avoidNames)
         {

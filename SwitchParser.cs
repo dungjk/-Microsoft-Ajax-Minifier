@@ -1245,6 +1245,52 @@ namespace Microsoft.Ajax.Utilities
                                 OnJSOnlyParameter();
                                 break;
 
+                            case "VAR":
+                                if (string.IsNullOrEmpty(paramPartUpper))
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                else
+                                {
+                                    var firstLetters = paramPart;
+                                    string partLetters = null;
+
+                                    var commaPosition = paramPart.IndexOf(',');
+                                    if (commaPosition == 0)
+                                    {
+                                        // no first letters; just part letters
+                                        firstLetters = null;
+                                        partLetters = paramPart.Substring(commaPosition + 1);
+                                    }
+                                    else if (commaPosition > 0)
+                                    {
+                                        // first letters and part letters
+                                        firstLetters = paramPart.Substring(0, commaPosition);
+                                        partLetters = paramPart.Substring(commaPosition + 1);
+                                    }
+
+                                    // if we specified first letters, set them now
+                                    if (!string.IsNullOrEmpty(firstLetters))
+                                    {
+                                        CrunchEnumerator.FirstLetters = firstLetters;
+                                    }
+
+                                    // if we specified part letters, use it -- otherwise use the first letters.
+                                    if (!string.IsNullOrEmpty(partLetters))
+                                    {
+                                        CrunchEnumerator.PartLetters = partLetters;
+                                    }
+                                    else if (!string.IsNullOrEmpty(firstLetters))
+                                    {
+                                        // we don't have any part letters, but we do have first letters. reuse.
+                                        CrunchEnumerator.PartLetters = firstLetters;
+                                    }
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
                             case "WARN":
                             case "W": // <-- old style
                                 if (string.IsNullOrEmpty(paramPartUpper))
