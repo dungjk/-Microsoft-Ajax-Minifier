@@ -848,6 +848,7 @@ namespace Microsoft.Ajax.Utilities
                             case "VW":
                             case "VH":
                             case "VM":
+                            case "VMIN":
                             case "FR":
                             case "GR":
                             case "GD":
@@ -877,6 +878,7 @@ namespace Microsoft.Ajax.Utilities
 
                             case "DPI":
                             case "DPCM":
+                            case "DPPX":
                                 tokenType = TokenType.Resolution;
                                 break;
 
