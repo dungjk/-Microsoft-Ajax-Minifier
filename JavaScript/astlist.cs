@@ -39,11 +39,21 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override OperatorPrecedence Precedence
+        {
+            get
+            {
+                // the only time this should be called is when we are outputting a
+                // comma-operator, so the list should have the comma precedence.
+                return OperatorPrecedence.Comma;
+            }
+        }
+
         public int Count
         {
             get { return m_list.Count; }
         }
-
+       
         public override IEnumerable<AstNode> Children
         {
             get
@@ -106,9 +116,45 @@ namespace Microsoft.Ajax.Utilities
 
         internal AstNodeList Append(AstNode astNode)
         {
-            astNode.Parent = this;
-            m_list.Add(astNode);
-            Context.UpdateWith(astNode.Context);
+            var list = astNode as AstNodeList;
+            if (list != null)
+            {
+                // another list -- append each item, not the whole list
+                for (var ndx = 0; ndx < list.Count; ++ndx)
+                {
+                    Append(list[ndx]);
+                }
+            }
+            else if (astNode != null)
+            {
+                // not another list
+                astNode.Parent = this;
+                m_list.Add(astNode);
+                Context.UpdateWith(astNode.Context);
+            }
+
+            return this;
+        }
+
+        public AstNodeList Insert(int position, AstNode astNode)
+        {
+            var list = astNode as AstNodeList;
+            if (list != null)
+            {
+                // another list. 
+                for (var ndx = 0; ndx < list.Count; ++ndx)
+                {
+                    Insert(position + ndx, list[ndx]);
+                }
+            }
+            else if (astNode != null)
+            {
+                // not another list
+                astNode.Parent = this;
+                m_list.Insert(position, astNode);
+                Context.UpdateWith(astNode.Context);
+            }
+
             return this;
         }
 

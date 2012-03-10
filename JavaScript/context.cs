@@ -107,6 +107,17 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public bool HasCode
+        {
+            get
+            {
+                return !Document.IsGenerated 
+                    && EndPosition > StartPosition 
+                    && EndPosition <= Document.Source.Length
+                    && EndPosition != StartPosition;
+            }
+        }
+
         public String Code
         {
             get

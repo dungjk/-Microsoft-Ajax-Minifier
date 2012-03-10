@@ -202,6 +202,9 @@
     <Compile Include="..\JavaScript\codesettings.cs">
       <Link>JavaScript\codesettings.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\CommaOperator.cs">
+      <Link>JavaScript\CommaOperator.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\conditional.cs">
       <Link>JavaScript\conditional.cs</Link>
     </Compile>

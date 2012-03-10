@@ -113,8 +113,40 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(AstNodeList node)
         {
-            if (node != null)
+            if (node != null && node.Count > 0)
             {
+                // output as comma-separated expressions starting with the first one
+                node[0].Accept(this);
+
+                // this should never be the first element of the line, but
+                // just in case, reset the flag after the first expression.
+                m_startOfStatement = false;
+
+                // see if this parent is a comma operator whose parent in turn is a block.
+                // if so, then these expressions were expression statements that we've combined.
+                // if that's the case, we're going to put newlines in so it's a little easier
+                // to read in multi-line mode
+                var addNewLines = node.Parent is CommaOperator
+                    && node.Parent.Parent is Block
+                    && Settings.OutputMode == OutputMode.MultipleLines;
+
+                // in case we need to go to a new line, let's indent so it looks nice.
+                Indent();
+                for (var ndx = 1; ndx < node.Count; ++ndx)
+                {
+                    // output a comma
+                    Output(',');
+                    if (addNewLines)
+                    {
+                        NewLine();
+                    }
+
+                    // output the next node
+                    node[ndx].Accept(this);
+                }
+
+                // unindent our indention
+                Unindent();
             }
         }
 
@@ -122,136 +154,161 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                var ourPrecedence = node.Precedence;
-                var isNoIn = m_noIn;
-                if (isNoIn)
+                if (node.OperatorToken == JSToken.Comma)
                 {
-                    if (node.OperatorToken == JSToken.In)
+                    // output the left-hand operand, if we have one
+                    if (node.Operand1 != null)
                     {
-                        // we're in a no-in situation, but our operator is an in-operator.
-                        // so we need to wrap this operator in parens
-                        OutputPossibleLineBreak('(');
-                        m_noIn = false;
-                    }
-                    else
-                    {
-                        m_noIn = ourPrecedence <= OperatorPrecedence.Relational;
-                    }
-                }
+                        node.Operand1.Accept(this);
 
-                if (node.Operand1 != null)
-                {
-                    AcceptNodeWithParens(node.Operand1, node.Operand1.Precedence < ourPrecedence);
-                }
-
-                m_startOfStatement = false;
-
-                if (Settings.OutputMode == OutputMode.MultipleLines)
-                {
-                    // treat the comma-operator special, since we combine expression statements
-                    // with it very often
-                    if (node.OperatorToken != JSToken.Comma)
-                    {
-                        // anything other than a comma operator has a space before it, too
-                        Output(' ');
+                        // if we don't have a right-hand operator, don't bother with the comma
+                        if (node.Operand2 != null)
+                        {
+                            Output(',');
+                            m_startOfStatement = false;
+                        }
                     }
 
-                    Output(OperatorString(node.OperatorToken));
-                    BreakLine(false);
-                    if (!m_onNewLine)
+                    // output the right-hand operator, if we have one
+                    if (node.Operand2 != null)
                     {
-                        Output(' ');
+                        node.Operand2.Accept(this);
+                        m_startOfStatement = false;
                     }
                 }
                 else
                 {
-                    Output(OperatorString(node.OperatorToken));
-                    BreakLine(false);
-                }
-
-                if (node.Operand2 != null)
-                {
-                    var rightPrecedence = node.Operand2.Precedence;
-                    var rightNeedsParens = rightPrecedence < ourPrecedence;
-
-                    var rightHandBinary = node.Operand2 as BinaryOperator;
-                    if (rightHandBinary != null)
+                    var ourPrecedence = node.Precedence;
+                    var isNoIn = m_noIn;
+                    if (isNoIn)
                     {
-                        // they are BOTH binary expressions. This is where it gets complicated.
-                        // because most binary tokens (except assignment) are evaluated from left to right,
-                        // if we have a binary expression with the same precedence on the RIGHT, then that means the
-                        // developer must've put parentheses around it. For some operators, those parentheses 
-                        // may not be needed (associative operators like multiply and logical AND or logical OR).
-                        // Non-associative operators (divide) will need those parens, so we will want to say they
-                        // are a higher relative precedence because of those parentheses.
-                        // The plus operator is a special case. It is the same physical token, but it can be two
-                        // operations depending on the runtime data: numeric addition or string concatenation.
-                        // Because of that ambiguity, let's also calculate the precedence for it as if it were
-                        // non-associate as well.
-                        // commas never need the parens -- they always evaluate left to right and always return the
-                        // right value, so any parens will always be unneccessary.
-                        if (ourPrecedence == rightPrecedence
-                            && ourPrecedence != OperatorPrecedence.Assignment
-                            && ourPrecedence != OperatorPrecedence.Comma)
+                        if (node.OperatorToken == JSToken.In)
                         {
-                            if (node.OperatorToken == rightHandBinary.OperatorToken)
-                            {
-                                // the tokens are the same and we're not assignment or comma operators.
-                                // so for a few associative operators, we're going to say the relative precedence
-                                // is the same so unneeded parens are removed. But for all others, we'll say the
-                                // right-hand side is a higher precedence so we maintain the sematic structure
-                                // of the expression
-                                switch (node.OperatorToken)
-                                {
-                                    case JSToken.Multiply:
-                                    case JSToken.BitwiseAnd:
-                                    case JSToken.BitwiseXor:
-                                    case JSToken.BitwiseOr:
-                                    case JSToken.LogicalAnd:
-                                    case JSToken.LogicalOr:
-                                        // these are the same regardless
-                                        rightNeedsParens = false;
-                                        break;
+                            // we're in a no-in situation, but our operator is an in-operator.
+                            // so we need to wrap this operator in parens
+                            OutputPossibleLineBreak('(');
+                            m_noIn = false;
+                        }
+                        else
+                        {
+                            m_noIn = ourPrecedence <= OperatorPrecedence.Relational;
+                        }
+                    }
 
-                                    // TODO: the plus operator: if we can prove that it is a numeric operator
-                                    // or a string operator on BOTH sides, then it can be associative, too. But
-                                    // if one side is a string and the other numeric, or if we can't tell at 
-                                    // compile-time, then we need to preserve the structural precedence.
-                                    default:
-                                        // all other operators are structurally a lower precedence when they
-                                        // are on the right, so they need to be evaluated first
-                                        rightNeedsParens = true;
-                                        break;
+                    if (node.Operand1 != null)
+                    {
+                        AcceptNodeWithParens(node.Operand1, node.Operand1.Precedence < ourPrecedence);
+                    }
+
+                    m_startOfStatement = false;
+
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        // treat the comma-operator special, since we combine expression statements
+                        // with it very often
+                        if (node.OperatorToken != JSToken.Comma)
+                        {
+                            // anything other than a comma operator has a space before it, too
+                            Output(' ');
+                        }
+
+                        Output(OperatorString(node.OperatorToken));
+                        BreakLine(false);
+                        if (!m_onNewLine)
+                        {
+                            Output(' ');
+                        }
+                    }
+                    else
+                    {
+                        Output(OperatorString(node.OperatorToken));
+                        BreakLine(false);
+                    }
+
+                    if (node.Operand2 != null)
+                    {
+                        var rightPrecedence = node.Operand2.Precedence;
+                        var rightNeedsParens = rightPrecedence < ourPrecedence;
+
+                        var rightHandBinary = node.Operand2 as BinaryOperator;
+                        if (rightHandBinary != null)
+                        {
+                            // they are BOTH binary expressions. This is where it gets complicated.
+                            // because most binary tokens (except assignment) are evaluated from left to right,
+                            // if we have a binary expression with the same precedence on the RIGHT, then that means the
+                            // developer must've put parentheses around it. For some operators, those parentheses 
+                            // may not be needed (associative operators like multiply and logical AND or logical OR).
+                            // Non-associative operators (divide) will need those parens, so we will want to say they
+                            // are a higher relative precedence because of those parentheses.
+                            // The plus operator is a special case. It is the same physical token, but it can be two
+                            // operations depending on the runtime data: numeric addition or string concatenation.
+                            // Because of that ambiguity, let's also calculate the precedence for it as if it were
+                            // non-associate as well.
+                            // commas never need the parens -- they always evaluate left to right and always return the
+                            // right value, so any parens will always be unneccessary.
+                            if (ourPrecedence == rightPrecedence
+                                && ourPrecedence != OperatorPrecedence.Assignment
+                                && ourPrecedence != OperatorPrecedence.Comma)
+                            {
+                                if (node.OperatorToken == rightHandBinary.OperatorToken)
+                                {
+                                    // the tokens are the same and we're not assignment or comma operators.
+                                    // so for a few associative operators, we're going to say the relative precedence
+                                    // is the same so unneeded parens are removed. But for all others, we'll say the
+                                    // right-hand side is a higher precedence so we maintain the sematic structure
+                                    // of the expression
+                                    switch (node.OperatorToken)
+                                    {
+                                        case JSToken.Multiply:
+                                        case JSToken.BitwiseAnd:
+                                        case JSToken.BitwiseXor:
+                                        case JSToken.BitwiseOr:
+                                        case JSToken.LogicalAnd:
+                                        case JSToken.LogicalOr:
+                                            // these are the same regardless
+                                            rightNeedsParens = false;
+                                            break;
+
+                                        // TODO: the plus operator: if we can prove that it is a numeric operator
+                                        // or a string operator on BOTH sides, then it can be associative, too. But
+                                        // if one side is a string and the other numeric, or if we can't tell at 
+                                        // compile-time, then we need to preserve the structural precedence.
+                                        default:
+                                            // all other operators are structurally a lower precedence when they
+                                            // are on the right, so they need to be evaluated first
+                                            rightNeedsParens = true;
+                                            break;
+                                    }
+                                }
+                                else
+                                {
+                                    // they have the same precedence, but the tokens are different.
+                                    // and the developer had purposely put parens around the right-hand side
+                                    // to get them on the right (otherwise with the same precedence they
+                                    // would've ended up on the left. Keep the parens; must've been done for
+                                    // a purpose.
+                                    rightNeedsParens = true;
                                 }
                             }
                             else
                             {
-                                // they have the same precedence, but the tokens are different.
-                                // and the developer had purposely put parens around the right-hand side
-                                // to get them on the right (otherwise with the same precedence they
-                                // would've ended up on the left. Keep the parens; must've been done for
-                                // a purpose.
-                                rightNeedsParens = true;
+                                // different precedence -- just base the decision on the relative precedence values
+                                rightNeedsParens = rightPrecedence < ourPrecedence;
                             }
                         }
-                        else
-                        {
-                            // different precedence -- just base the decision on the relative precedence values
-                            rightNeedsParens = rightPrecedence < ourPrecedence;
-                        }
+
+                        m_noIn = isNoIn && ourPrecedence <= OperatorPrecedence.Relational;
+                        AcceptNodeWithParens(node.Operand2, rightNeedsParens);
                     }
 
-                    m_noIn = isNoIn && ourPrecedence <= OperatorPrecedence.Relational;
-                    AcceptNodeWithParens(node.Operand2, rightNeedsParens);
+                    if (isNoIn && node.OperatorToken == JSToken.In)
+                    {
+                        // we're in a no-in situation, but our operator is an in-operator.
+                        // so we need to wrap this entire operator in parens
+                        OutputPossibleLineBreak(')');
+                    }
+                    m_noIn = isNoIn;
                 }
-
-                if (isNoIn && node.OperatorToken == JSToken.In)
-                {
-                    // we're in a no-in situation, but our operator is an in-operator.
-                    // so we need to wrap this entire operator in parens
-                    OutputPossibleLineBreak(')');
-                }
-                m_noIn = isNoIn;
             }
         }
 
@@ -660,7 +717,8 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.Number:
-                        if (node.Context == null || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        if (node.Context == null 
+                            || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
                             Output(NormalizeNumber(node.ToNumber(), node.Context));
@@ -678,7 +736,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.String:
-                        if (node.Context == null || string.IsNullOrEmpty(node.Context.Code))
+                        if (node.Context == null || !node.Context.HasCode)
                         {
                             // escape the string value because we don't have a raw context value
                             // to show anyways
@@ -1140,7 +1198,9 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version
                         string numericText;
-                        if (node.Context == null || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        if (node.Context == null 
+                            || !node.Context.HasCode
+                            || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
                             numericText = NormalizeNumber(constantWrapper.ToNumber(), node.Context);

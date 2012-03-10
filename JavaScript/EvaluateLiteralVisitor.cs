@@ -1638,6 +1638,37 @@ namespace Microsoft.Ajax.Utilities
         // IVisitor implementations
         //
 
+        public override void Visit(AstNodeList node)
+        {
+            if (node != null)
+            {
+                var commaOperator = node.Parent as CommaOperator;
+                AstNodeList list;
+                if (commaOperator != null
+                    && (list = commaOperator.Operand2 as AstNodeList) != null)
+                {
+                    // this list is part of a comma-operator, which is a collection of contiguous
+                    // expression statements that we combined together. What we want to do is
+                    // delete all constant elements from the list.
+                    // if the parent is a block, then this was just a collection of statements and
+                    // we can delete ALL constant expressions. But if the parent is not a block, then
+                    // we will want to keep the last one as-is because it is the return value of the
+                    // overall expression.
+                    for (var ndx = list.Count - (node.Parent is Block ? 1 : 2); ndx >= 0; --ndx)
+                    {
+                        if (list[ndx] is ConstantWrapper)
+                        {
+                            list.RemoveAt(ndx);
+                        }
+                    }
+
+                }
+
+                // then normally recurse whatever is left over
+                base.Visit(node);
+            }
+        }
+
         public override void Visit(BinaryOperator node)
         {
             if (node != null)
@@ -1709,6 +1740,47 @@ namespace Microsoft.Ajax.Utilities
                                 if (!ReplaceMemberBracketWithDot(node, rightConstant))
                                 {
                                     node.Parent.ReplaceChild(node, rightConstant);
+                                }
+                            }
+                            else if (node is CommaOperator)
+                            {
+                                // this is a collection of expression statements that we've joined together as
+                                // an extended comma operator. 
+                                var list = node.Operand2 as AstNodeList;
+                                if (list == null)
+                                {
+                                    // not a list, just a single item, so we can just
+                                    // replace this entire node with the one element
+                                    node.Parent.ReplaceChild(node, node.Operand2);
+                                }
+                                else if (list.Count == 1)
+                                {
+                                    // If the list has a single element, then we can just
+                                    // replace this entire node with the one element
+                                    node.Parent.ReplaceChild(node, list[0]);
+                                }
+                                else if (list.Count == 0)
+                                {
+                                    // the recursion ended up emptying the list, so we can just delete
+                                    // this node altogether
+                                    node.Parent.ReplaceChild(node, null);
+                                }
+                                else
+                                {
+                                    // more than one item in the list
+                                    // move the first item from the list to the left-hand side
+                                    var firstItem = list[0];
+                                    list.RemoveAt(0);
+                                    node.ReplaceChild(node.Operand1, firstItem);
+
+                                    // if there's only one item left in the list, we can get rid of the
+                                    // extra list node and make it just the remaining node
+                                    if (list.Count == 1)
+                                    {
+                                        firstItem = list[0];
+                                        list.RemoveAt(0);
+                                        node.ReplaceChild(node.Operand2, firstItem);
+                                    }
                                 }
                             }
                             else

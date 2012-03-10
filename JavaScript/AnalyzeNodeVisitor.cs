@@ -146,11 +146,12 @@ namespace Microsoft.Ajax.Utilities
                     if (node[ndx].IsExpression)
                     {
                         // transform: expr1;expr2 to expr1,expr2
-                        var binOp = new BinaryOperator(node[ndx - 1].Context.Clone().CombineWith(node[ndx].Context),
+                        // use the special comma operator object so we can handle it special
+                        // and don't create stack-breakingly deep trees
+                        var binOp = new CommaOperator(node[ndx - 1].Context.Clone().CombineWith(node[ndx].Context),
                             m_parser,
                             node[ndx - 1],
-                            node[ndx],
-                            JSToken.Comma);
+                            node[ndx]);
 
                         // replace the current node and delete the previous
                         if (node.ReplaceChild(node[ndx], binOp))
@@ -179,11 +180,10 @@ namespace Microsoft.Ajax.Utilities
                             else
                             {
                                 // transform: expr1;return expr2 to return expr1,expr2
-                                var binOp = new BinaryOperator(null,
+                                var binOp = new CommaOperator(null,
                                     m_parser,
                                     node[ndx - 1],
-                                    returnNode.Operand,
-                                    JSToken.Comma);
+                                    returnNode.Operand);
 
                                 // replace the operand on the return node with the new expression and
                                 // delete the previous node
@@ -212,11 +212,10 @@ namespace Microsoft.Ajax.Utilities
                             else if (forNode.Initializer.IsExpression)
                             {
                                 // transform: expr1;for(expr2;...) to for(expr1,expr2;...)
-                                var binOp = new BinaryOperator(null,
+                                var binOp = new CommaOperator(null,
                                     m_parser,
                                     node[ndx - 1],
-                                    forNode.Initializer,
-                                    JSToken.Comma);
+                                    forNode.Initializer);
 
                                 // replace the initializer with the new binary operator and remove the previous node
                                 if (forNode.ReplaceChild(forNode.Initializer, binOp))
@@ -232,7 +231,7 @@ namespace Microsoft.Ajax.Utilities
                         // combine the previous expression with the if-condition via comma, then delete
                         // the previous statement.
                         ifNode.ReplaceChild(ifNode.Condition,
-                            new BinaryOperator(null, m_parser, node[ndx - 1], ifNode.Condition, JSToken.Comma));
+                            new CommaOperator(null, m_parser, node[ndx - 1], ifNode.Condition));
                         node.RemoveAt(ndx - 1);
                     }
                     else if ((whileNode = node[ndx] as WhileNode) != null
@@ -643,7 +642,7 @@ namespace Microsoft.Ajax.Utilities
                                     // replace the operand on the final-return with the new binary operator,
                                     // and then delete the previous if-statement
                                     if (lastReturn.ReplaceChild(lastReturn.Operand,
-                                        new BinaryOperator(null, m_parser, previousIf.Condition, lastReturn.Operand, JSToken.Comma)))
+                                        new CommaOperator(null, m_parser, previousIf.Condition, lastReturn.Operand)))
                                     {
                                         node.RemoveAt(indexPrevious);
                                         somethingChanged = true;

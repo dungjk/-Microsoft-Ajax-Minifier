@@ -22,10 +22,10 @@ using System.Text;
 namespace Microsoft.Ajax.Utilities
 {
 
-    public sealed class BinaryOperator : Expression
+    public class BinaryOperator : Expression
     {
-        public AstNode Operand1 { get; private set; }
-        public AstNode Operand2 { get; private set; }
+        public AstNode Operand1 { get; protected set; }
+        public AstNode Operand2 { get; protected set; }
         public JSToken OperatorToken { get; set; }
 
         public BinaryOperator(Context context, JSParser parser, AstNode operand1, AstNode operand2, JSToken operatorToken)
