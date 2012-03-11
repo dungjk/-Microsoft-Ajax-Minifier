@@ -3213,40 +3213,42 @@ namespace Microsoft.Ajax.Utilities
             {
                 for (; ; )
                 {
-                    // if 'binary op' or 'conditional' but not 'comma'
-                    // inToken is a special case because of the for..in crap. When ParseExpression is called from
+                    // if 'binary op' or 'conditional'
+                    // if we are looking for a single expression, then also bail when we hit a comma
+                    // inToken is a special case because of the for..in syntax. When ParseExpression is called from
                     // for, inToken = JSToken.In which excludes JSToken.In from the list of operators, otherwise
                     // inToken = JSToken.None which is always true if the first condition is true
-                    if (JSScanner.IsProcessableOperator(m_currentToken.Token) && inToken != m_currentToken.Token)
+                    if (JSScanner.IsProcessableOperator(m_currentToken.Token)
+                        && inToken != m_currentToken.Token
+                        && (!single || m_currentToken.Token != JSToken.Comma))
                     {
-
+                        // for the current token, get the operator precedence and whether it's a right-association operator
                         OperatorPrecedence prec = JSScanner.GetOperatorPrecedence(m_currentToken.Token);
                         bool rightAssoc = JSScanner.IsRightAssociativeOperator(m_currentToken.Token);
-                        // the current operator has lower precedence than the operator at the top of the stack
+
+                        // while the current operator has lower precedence than the operator at the top of the stack
                         // or it has the same precedence and it is left associative (that is, no 'assign op' or 'conditional')
                         OperatorPrecedence stackPrec = JSScanner.GetOperatorPrecedence(opsStack.Peek());
                         while (prec < stackPrec || prec == stackPrec && !rightAssoc)
                         {
+                            // pop the top two elements off the stack along with the current operator, 
+                            // combine them, then push the results back onto the term stack
                             AstNode operand2 = termStack.Pop();
                             AstNode operand1 = termStack.Pop();
-                            //Console.Out.WriteLine("lower prec or same and left assoc");
                             expr = CreateExpressionNode(opsStack.Pop(), operand1, operand2);
-
-                            // push node onto the stack
                             termStack.Push(expr);
+
+                            // get the precendence of the current item on the top of the op stack
                             stackPrec = JSScanner.GetOperatorPrecedence(opsStack.Peek());
                         }
 
-                        // the current operator has higher precedence that every scanned operators on the stack, or
+                        // now the current operator has higher precedence that every scanned operators on the stack, or
                         // it has the same precedence as the one at the top of the stack and it is right associative
-
                         // push operator and next term
 
-                        // special case conditional '?:'
+                        // but first: special case conditional '?:'
                         if (JSToken.ConditionalIf == m_currentToken.Token)
                         {
-                            //Console.Out.WriteLine("Condition expression");
-
                             // pop term stack
                             AstNode condition = termStack.Pop();
 
@@ -3256,7 +3258,10 @@ namespace Microsoft.Ajax.Utilities
                             AstNode operand1 = ParseExpression(true);
 
                             if (JSToken.Colon != m_currentToken.Token)
+                            {
                                 ReportError(JSError.NoColon);
+                            }
+
                             GetNextToken();
 
                             // get expr2 in logOrExpr ? expr1 : expr2
@@ -3267,8 +3272,6 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            //Console.Out.WriteLine("higher prec or right assoc");
-
                             if (JSScanner.IsAssignmentOperator(m_currentToken.Token))
                             {
                                 if (!bCanAssign)
@@ -3278,14 +3281,20 @@ namespace Microsoft.Ajax.Utilities
                                 }
                             }
                             else
-                                bCanAssign = false;
+                            {
+                                // if the operator is a comma, we can get another assign; otherwise we can't
+                                bCanAssign = (m_currentToken.Token == JSToken.Comma);
+                            }
 
                             // push the operator onto the operators stack
                             opsStack.Push(m_currentToken.Token);
+
                             // push new term
                             GetNextToken();
                             if (bCanAssign)
+                            {
                                 termStack.Push(ParseUnaryExpression(out bCanAssign, false));
+                            }
                             else
                             {
                                 bool dummy;
@@ -3294,30 +3303,23 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                     else
-                        break; // done, go and unwind the stack of expressions/operators
+                    {
+                        // done with expression; go and unwind the stack of expressions/operators
+                        break; 
+                    }
                 }
 
-                //Console.Out.WriteLine("unwinding stack");
                 // there are still operators to be processed
                 while (opsStack.Peek() != JSToken.None)
                 {
+                    // pop the top two term and the top operator, combine them into a new term,
+                    // and push the results back onto the term stacck
                     AstNode operand2 = termStack.Pop();
                     AstNode operand1 = termStack.Pop();
-                    // make the ast operator node
                     expr = CreateExpressionNode(opsStack.Pop(), operand1, operand2);
 
                     // push node onto the stack
                     termStack.Push(expr);
-                }
-
-                // if we have a ',' and we are not looking for a single expression reenter
-                if (!single && JSToken.Comma == m_currentToken.Token)
-                {
-                    //Console.Out.WriteLine("Next expr");
-                    GetNextToken();
-                    AstNode expr2 = ParseExpression(false, inToken);
-                    AstNode term = termStack.Pop();
-                    termStack.Push(new BinaryOperator(term.Context.CombineWith(expr2.Context), this, term, expr2, JSToken.Comma));
                 }
 
                 Debug.Assert(termStack.Count == 1);
@@ -4526,7 +4528,6 @@ namespace Microsoft.Ajax.Utilities
                 case JSToken.BitwiseOrAssign:
                 case JSToken.BitwiseXor:
                 case JSToken.BitwiseXorAssign:
-                case JSToken.Comma:
                 case JSToken.Divide:
                 case JSToken.DivideAssign:
                 case JSToken.Equal:
@@ -4555,8 +4556,17 @@ namespace Microsoft.Ajax.Utilities
                 case JSToken.StrictNotEqual:
                 case JSToken.UnsignedRightShift:
                 case JSToken.UnsignedRightShiftAssign:
+                    // regular binary operator
                     return new BinaryOperator(context, this, operand1, operand2, op);
+
+                case JSToken.Comma:
+                    // use the special comma-operator class derived from binary operator.
+                    // it has special logic to combine adjacent comma operators into a single
+                    // node with an ast node list rather than nested binary operators
+                    return new CommaOperator(context, this, operand1, operand2);
+
                 default:
+                    // shouldn't get here!
                     Debug.Assert(false);
                     return null;
             }

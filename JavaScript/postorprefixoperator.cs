@@ -67,5 +67,19 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+
+        public override string ToString()
+        {
+            if (Operator == PostOrPrefix.PrefixIncrement || Operator == PostOrPrefix.PrefixDecrement)
+            {
+                return OutputVisitor.OperatorString(OperatorToken)
+                    + (Operand == null ? "<null>" : Operand.ToString());
+            }
+            else
+            {
+                return (Operand == null ? "<null>" : Operand.ToString())
+                    + OutputVisitor.OperatorString(OperatorToken);
+            }
+        }
     }
 }

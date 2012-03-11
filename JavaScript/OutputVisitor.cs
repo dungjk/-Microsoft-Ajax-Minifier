@@ -1983,7 +1983,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private static string OperatorString(JSToken token)
+        public static string OperatorString(JSToken token)
         {
             switch (token)
             {

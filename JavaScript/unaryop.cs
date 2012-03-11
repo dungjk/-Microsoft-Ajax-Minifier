@@ -75,5 +75,11 @@ namespace Microsoft.Ajax.Utilities
                 return (Operand is BinaryOperator || Operand is Conditional);
             }
         }
+
+        public override string ToString()
+        {
+            return OutputVisitor.OperatorString(OperatorToken)
+                + (Operand == null ? "<null>" : Operand.ToString());
+        }
     }
 }

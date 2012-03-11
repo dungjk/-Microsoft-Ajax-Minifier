@@ -71,6 +71,18 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override void Visit(AstNodeList node)
+        {
+            if (node != null && node.Count > 0)
+            {
+                // this is really only ever not-ed when it's the right-hand operand
+                // of a comma operator, which we flattened to decrease stack recursion.
+                // so to logical-not this element, we only need to not the last item
+                // in the list (because all the others are comma-separated)
+                node[node.Count - 1].Accept(this);
+            }
+        }
+
         public override void Visit(ArrayLiteral node)
         {
             // same logic for most nodes

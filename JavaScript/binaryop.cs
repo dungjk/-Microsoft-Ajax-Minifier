@@ -303,5 +303,12 @@ namespace Microsoft.Ajax.Utilities
                     : Operand1.ContainsInOperator || Operand2.ContainsInOperator;
             }
         }
+
+        public override string ToString()
+        {
+            return (Operand1 == null ? "<null>" : Operand1.ToString())
+                + ' ' + OutputVisitor.OperatorString(OperatorToken) + ' '
+                + (Operand2 == null ? "<null>" : Operand2.ToString());
+        }
     }
 }

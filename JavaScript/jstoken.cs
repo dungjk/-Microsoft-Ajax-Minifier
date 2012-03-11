@@ -103,6 +103,11 @@ namespace Microsoft.Ajax.Utilities
         LogicalAnd,                     // &&
         LogicalOr,                      // ||
 
+        InstanceOf,
+        In,
+
+        Comma,                          // ,
+
         Assign,                         // =
         PlusAssign,                     // +=
         MinusAssign,                    // -=
@@ -117,13 +122,9 @@ namespace Microsoft.Ajax.Utilities
         UnsignedRightShiftAssign,       // <<<=
         LastAssign = UnsignedRightShiftAssign,
 
-        InstanceOf,
-        In,
-
         ConditionalIf,                  // ? // MUST FOLLOW LastBinaryOp
         Colon,                          // :
-        Comma,                          // ,
-        LastOperator = Comma,
+        LastOperator = Colon,
 
         // context specific keywords
         Case,
