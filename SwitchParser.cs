@@ -397,6 +397,9 @@ namespace Microsoft.Ajax.Utilities
                                         // actually the inverse - a TRUE on the -debug switch means we DON'T want to
                                         // strip debug statements, and a FALSE means we DO want to strip them
                                         JSSettings.StripDebugStatements = !parameterFlag;
+
+                                        // make sure we align the DEBUG define to the new switch value
+                                        AlignDebugDefine(JSSettings.StripDebugStatements, ref defines);
                                     }
                                     else
                                     {
@@ -460,6 +463,9 @@ namespace Microsoft.Ajax.Utilities
                                     // actually the inverse - a TRUE on the -debug switch means we DON'T want to
                                     // strip debug statements, and a FALSE means we DO want to strip them
                                     JSSettings.StripDebugStatements = !parameterFlag;
+
+                                    // make sure we align the DEBUG define to the new switch value
+                                    AlignDebugDefine(JSSettings.StripDebugStatements, ref defines);
                                 }
 
                                 // this is a JS-only switch
@@ -493,6 +499,12 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             // don't add duplicates
                                             defines.Add(upperCaseName);
+                                        }
+
+                                        // if we're defining the DEBUG name, set the strip-debug-statements flag to false
+                                        if (string.CompareOrdinal(upperCaseName, "DEBUG") == 0)
+                                        {
+                                            JSSettings.StripDebugStatements = false;
                                         }
                                     }
                                 }
@@ -1603,6 +1615,38 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region helper methods
+
+        private static void AlignDebugDefine(bool stripDebugStatements, ref List<string> defines)
+        {
+            // if we are setting the debug switch on, then make sure we 
+            // add the DEBUG value to the defines
+            if (stripDebugStatements)
+            {
+                // we are turning debug off.
+                // make sure we DON'T have the DEBUG define in the list
+                if (defines != null && defines.Contains("DEBUG"))
+                {
+                    defines.Remove("DEBUG");
+                    if (defines.Count == 0)
+                    {
+                        defines = null;
+                    }
+                }
+            }
+            else if (defines == null)
+            {
+                // turning debug on, but we haven't created the list yet.
+                // do it now, and add the DEBUG define to it
+                defines = new List<string>();
+                defines.Add("DEBUG");
+            }
+            else if (!defines.Contains("DEBUG"))
+            {
+                // turning debug on, we have already created the list,
+                // and debug is not already in it -- add it now.
+                defines.Add("DEBUG");
+            }
+        }
 
         public static bool BooleanSwitch(string booleanText, bool defaultValue, out bool booleanValue)
         {

@@ -115,10 +115,10 @@ namespace DllUnitTest
                 new ArgumentsSettings(){CommandLine="-expr:minify -colors:hex -comments:All", JSSettings=null, CssSettings=new CssSettings(){MinifyExpressions=true,ColorNames=CssColor.Hex,CommentMode=CssComment.All}},
                 new ArgumentsSettings(){CommandLine="-expr:raw -colors:MAJOR /comments:HaCkS", JSSettings=null, CssSettings=new CssSettings(){MinifyExpressions=false,ColorNames=CssColor.Major,CommentMode=CssComment.Hacks}},
                 new ArgumentsSettings(){CommandLine="-cc:1 -comments:None -debug:true -inline:yes -literals:keep -literals:evAL -mac:Y -minify:T -new:Keep -reorder:yes -unused:remove -rename:all", 
-                    JSSettings=new CodeSettings(){IgnoreConditionalCompilation=false,PreserveImportantComments=false,StripDebugStatements=false,InlineSafeStrings=true,CombineDuplicateLiterals=false,EvalLiteralExpressions=true,MacSafariQuirks=true,MinifyCode=true,CollapseToLiteral=false,ReorderScopeDeclarations=true,RemoveUnneededCode=true,LocalRenaming=LocalRenaming.CrunchAll}, CssSettings=null},
+                    JSSettings=new CodeSettings(){IgnoreConditionalCompilation=false,PreserveImportantComments=false,StripDebugStatements=false,InlineSafeStrings=true,CombineDuplicateLiterals=false,EvalLiteralExpressions=true,MacSafariQuirks=true,MinifyCode=true,CollapseToLiteral=false,ReorderScopeDeclarations=true,RemoveUnneededCode=true,LocalRenaming=LocalRenaming.CrunchAll, PreprocessorDefineList="DEBUG"}, CssSettings=null},
                 new ArgumentsSettings(){CommandLine="-cc:0 -comments:ImportanT -debug:false -inline:no /literals:combine -literals:NoEval -mac:N -minify:F -new:Collapse -reorder:N -unused:keep -rename:localization", 
                     JSSettings=new CodeSettings(){IgnoreConditionalCompilation=true,PreserveImportantComments=true,StripDebugStatements=true,InlineSafeStrings=false,CombineDuplicateLiterals=true,EvalLiteralExpressions=false,MacSafariQuirks=false,MinifyCode=false,CollapseToLiteral=true,ReorderScopeDeclarations=false,RemoveUnneededCode=false, LocalRenaming=LocalRenaming.KeepLocalizationVars}, CssSettings=null},
-                new ArgumentsSettings(){CommandLine="–debug:,", JSSettings=new CodeSettings(){StripDebugStatements=false,DebugLookupList=""}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="–debug:,", JSSettings=new CodeSettings(){StripDebugStatements=false,DebugLookupList="",PreprocessorDefineList="DEBUG"}, CssSettings=null},
                 new ArgumentsSettings(){CommandLine="-debug:N,", JSSettings=new CodeSettings(){StripDebugStatements=true,DebugLookupList=""}, CssSettings=null},
                 new ArgumentsSettings(){CommandLine="-debug:N,Foo,Bar,Ack.Gag.Barf,14,Name.42.First", JSSettings=new CodeSettings(){StripDebugStatements=true,DebugLookupList="Foo,Bar,Ack.Gag.Barf"}, CssSettings=null},
                 new ArgumentsSettings(){CommandLine="-global:foo,bar,ack,gag,212", JSSettings=new CodeSettings(){KnownGlobalNamesList="foo,bar,ack,gag"}, CssSettings=null},
@@ -139,6 +139,9 @@ namespace DllUnitTest
                 new ArgumentsSettings(){CommandLine="–d -h -j -k -m", JSSettings=new CodeSettings(), CssSettings=null},
                 new ArgumentsSettings(){CommandLine="-l -z -hCL", JSSettings=new CodeSettings() {CollapseToLiteral=false, TermSemicolons=true, CombineDuplicateLiterals=true, LocalRenaming=LocalRenaming.KeepLocalizationVars}, CssSettings=null},
                 new ArgumentsSettings(){CommandLine="/HC", JSSettings=new CodeSettings() {CombineDuplicateLiterals=true}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-define:debug", JSSettings=new CodeSettings() {StripDebugStatements=false, PreprocessorDefineList="DEBUG"}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-define:debug -debug:0", JSSettings=new CodeSettings() {StripDebugStatements=true}, CssSettings=null},
+                new ArgumentsSettings(){CommandLine="-debug:0 -define:debug", JSSettings=new CodeSettings() {StripDebugStatements=false, PreprocessorDefineList="DEBUG"}, CssSettings=null},
             };
 
             var ndxTest = 0;
@@ -226,7 +229,10 @@ namespace DllUnitTest
                     // if one is null or not a collection, then it's a fail
                     if (parsedCollection == null || expectedCollection == null)
                     {
-                        Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedCollection, expectedCollection, property.Name, type.Name));
+                        Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", 
+                            (parsedCollection == null ? "<null>" : parsedCollection.ToString()), 
+                            (expectedCollection == null ? "<null>" : expectedCollection.ToString()), 
+                            property.Name, type.Name));
                         success = false;
                     }
                     else if (parsedCollection.Count != expectedCollection.Count)
