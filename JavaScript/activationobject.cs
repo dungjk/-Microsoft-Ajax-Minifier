@@ -783,11 +783,12 @@ namespace Microsoft.Ajax.Utilities
                                             {
                                                 // it has been negated! Change the replacement to a unary minus operator
                                                 // with the lookup as its operand
-                                                replacement = new NumericUnary(
+                                                replacement = new UnaryOperator(
                                                     constantWrapper.Context,
                                                     Parser,
                                                     lookup,
-                                                    JSToken.Minus);
+                                                    JSToken.Minus,
+                                                    false);
                                             }
                                         }
 

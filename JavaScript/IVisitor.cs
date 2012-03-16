@@ -38,7 +38,6 @@ namespace Microsoft.Ajax.Utilities
         void Visit(ContinueNode node);
         void Visit(CustomNode node);
         void Visit(DebuggerNode node);
-        void Visit(Delete node);
         void Visit(DirectivePrologue node);
         void Visit(DoWhile node);
         void Visit(ForIn node);
@@ -50,10 +49,8 @@ namespace Microsoft.Ajax.Utilities
         void Visit(LabeledStatement node);
         void Visit(Lookup node);
         void Visit(Member node);
-        void Visit(NumericUnary node);
         void Visit(ObjectLiteral node);
         void Visit(ObjectLiteralField node);
-        void Visit(PostOrPrefixOperator node);
         void Visit(RegExpLiteral node);
         void Visit(ReturnNode node);
         void Visit(Switch node);
@@ -61,10 +58,9 @@ namespace Microsoft.Ajax.Utilities
         void Visit(ThisLiteral node);
         void Visit(ThrowNode node);
         void Visit(TryNode node);
-        void Visit(TypeOfNode node);
         void Visit(Var node);
         void Visit(VariableDeclaration node);
-        void Visit(VoidNode node);
+        void Visit(UnaryOperator node);
         void Visit(WhileNode node);
         void Visit(WithNode node);
     }

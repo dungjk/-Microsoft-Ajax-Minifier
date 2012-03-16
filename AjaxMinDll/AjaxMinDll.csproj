@@ -229,9 +229,6 @@
     <Compile Include="..\JavaScript\debugger.cs">
       <Link>JavaScript\debugger.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\delete.cs">
-      <Link>JavaScript\delete.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\directiveprologue.cs">
       <Link>JavaScript\directiveprologue.cs</Link>
     </Compile>
@@ -343,9 +340,6 @@
     <Compile Include="..\JavaScript\NewParensVisitor.cs">
       <Link>JavaScript\NewParensVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\numericunary.cs">
-      <Link>JavaScript\numericunary.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\objectliteral.cs">
       <Link>JavaScript\objectliteral.cs</Link>
     </Compile>
@@ -360,9 +354,6 @@
     </Compile>
     <Compile Include="..\JavaScript\parameterdeclaration.cs">
       <Link>JavaScript\parameterdeclaration.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\postorprefixoperator.cs">
-      <Link>JavaScript\postorprefixoperator.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\regexpliteral.cs">
       <Link>JavaScript\regexpliteral.cs</Link>
@@ -397,9 +388,6 @@
     <Compile Include="..\JavaScript\try.cs">
       <Link>JavaScript\try.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\typeof.cs">
-      <Link>JavaScript\typeof.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\unaryop.cs">
       <Link>JavaScript\unaryop.cs</Link>
     </Compile>
@@ -408,9 +396,6 @@
     </Compile>
     <Compile Include="..\JavaScript\variabledeclaration.cs">
       <Link>JavaScript\variabledeclaration.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\voidop.cs">
-      <Link>JavaScript\voidop.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\while.cs">
       <Link>JavaScript\while.cs</Link>

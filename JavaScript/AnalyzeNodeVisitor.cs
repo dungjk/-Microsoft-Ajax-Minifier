@@ -72,11 +72,11 @@ namespace Microsoft.Ajax.Utilities
                             // okay, so we have "lookup - 0"
                             // this is done frequently to force a value to be numeric. 
                             // There is an easier way: apply the unary + operator to it. 
-                            NumericUnary unary = new NumericUnary(node.Context, m_parser, lookup, JSToken.Plus);
+                            var unary = new UnaryOperator(node.Context, m_parser, lookup, JSToken.Plus, false);
                             node.Parent.ReplaceChild(node, unary);
 
                             // because we recursed at the top of this function, we don't need to Analyze
-                            // the new Unary node. This visitor's method for NumericUnary only does something
+                            // the new Unary node. This visitor's method for UnaryOperator only does something
                             // if the operand is a constant -- and this one is a Lookup. And we already analyzed
                             // the lookup.
                         }
@@ -702,11 +702,13 @@ namespace Microsoft.Ajax.Utilities
                     if (lastReturn != null
                         && (conditional = lastReturn.Operand as Conditional) != null)
                     {
-                        VoidNode voidOperator = conditional.FalseExpression as VoidNode;
-                        if (voidOperator != null && voidOperator.Operand is ConstantWrapper)
+                        var unaryOperator = conditional.FalseExpression as UnaryOperator;
+                        if (unaryOperator != null 
+                            && unaryOperator.OperatorToken == JSToken.Void
+                            && unaryOperator.Operand is ConstantWrapper)
                         {
-                            voidOperator = conditional.TrueExpression as VoidNode;
-                            if (voidOperator != null)
+                            unaryOperator = conditional.TrueExpression as UnaryOperator;
+                            if (unaryOperator != null && unaryOperator.OperatorToken == JSToken.Void)
                             {
                                 if (isFunctionLevel)
                                 {
@@ -737,8 +739,10 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (isFunctionLevel)
                         {
-                            voidOperator = conditional.TrueExpression as VoidNode;
-                            if (voidOperator != null && voidOperator.Operand is ConstantWrapper)
+                            unaryOperator = conditional.TrueExpression as UnaryOperator;
+                            if (unaryOperator != null 
+                                && unaryOperator.OperatorToken == JSToken.Void
+                                && unaryOperator.Operand is ConstantWrapper)
                             {
                                 // transform: ...;return cond?void 0;expr} to ...;if(!cond)return expr}
                                 // (only works at the function level because of the implicit return)
@@ -1310,7 +1314,7 @@ namespace Microsoft.Ajax.Utilities
                             // this is in the pattern: (new Date()).getTime()
                             // we want to replace it with +new Date
                             // use the same date constructor node as the operand
-                            NumericUnary unary = new NumericUnary(node.Context, m_parser, dateConstructor, JSToken.Plus);
+                            var unary = new UnaryOperator(node.Context, m_parser, dateConstructor, JSToken.Plus, false);
 
                             // replace us (the call to the getTime method) with this unary operator
                             node.Parent.ReplaceChild(node, unary);
@@ -1376,7 +1380,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // now check to see if the condition starts with a not-operator. If so, we can get rid of it
             // and swap the true/false children
-            NumericUnary unary = node.Condition as NumericUnary;
+            var unary = node.Condition as UnaryOperator;
             if (unary != null && unary.OperatorToken == JSToken.LogicalNot
                 && !unary.OperatorInConditionalCompilationComment
                 && m_parser.Settings.IsModificationAllowed(TreeModifications.IfNotTrueFalseToIfFalseTrue))
@@ -1513,25 +1517,6 @@ namespace Microsoft.Ajax.Utilities
 
                 // don't need to call the base; this statement has no children to recurse
                 //base.Visit(node);
-            }
-        }
-
-        public override void Visit(Delete node)
-        {
-            if (node != null)
-            {
-                base.Visit(node);
-
-                // strict mode has some restrictions
-                if (ScopeStack.Peek().UseStrict)
-                {
-                    // operand of a delete operator cannot be a variable name, argument name, or function name
-                    // which means it can't be a lookup
-                    if (node.Operand is Lookup)
-                    {
-                        node.Context.HandleError(JSError.StrictModeInvalidDelete, true);
-                    }
-                }
             }
         }
 
@@ -1994,7 +1979,9 @@ namespace Microsoft.Ajax.Utilities
                     // if it isn't generated, then we want to throw an error
                     // we also don't want to report an undefined variable if it is the object
                     // of a typeof operator
-                    if (!node.IsGenerated && !(node.Parent is TypeOfNode))
+                    UnaryOperator unaryOperator;
+                    if (!node.IsGenerated
+                        && ((unaryOperator = node.Parent as UnaryOperator) == null || unaryOperator.OperatorToken != JSToken.TypeOf))
                     {
                         // report this undefined reference
                         node.Context.ReportUndefined(node);
@@ -2151,55 +2138,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override void Visit(NumericUnary node)
-        {
-            if (node != null)
-            {
-                // recurse first, then check to see if the unary is still needed
-                base.Visit(node);
-
-                // if the operand is a numeric literal
-                ConstantWrapper constantWrapper = node.Operand as ConstantWrapper;
-                if (constantWrapper != null
-                    && constantWrapper.IsNumericLiteral)
-                {
-                    // get the value of the constant. We've already screened it for numeric, so
-                    // we don't have to worry about catching any errors
-                    double doubleValue = constantWrapper.ToNumber();
-
-                    // if this is a unary minus...
-                    if (node.OperatorToken == JSToken.Minus
-                        && m_parser.Settings.IsModificationAllowed(TreeModifications.ApplyUnaryMinusToNumericLiteral))
-                    {
-                        // negate the value
-                        constantWrapper.Value = -doubleValue;
-
-                        // replace us with the negated constant
-                        if (node.Parent.ReplaceChild(node, constantWrapper))
-                        {
-                            // the context for the minus will include the number (its operand),
-                            // but the constant will just be the number. Update the context on
-                            // the constant to be a copy of the context on the operator
-                            constantWrapper.Context = node.Context.Clone();
-                        }
-                    }
-                    else if (node.OperatorToken == JSToken.Plus
-                        && m_parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnaryPlusOnNumericLiteral))
-                    {
-                        // +NEG is still negative, +POS is still positive, and +0 is still 0.
-                        // so just get rid of the unary operator altogether
-                        if (node.Parent.ReplaceChild(node, constantWrapper))
-                        {
-                            // the context for the unary will include the number (its operand),
-                            // but the constant will just be the number. Update the context on
-                            // the constant to be a copy of the context on the operator
-                            constantWrapper.Context = node.Context.Clone();
-                        }
-                    }
-                }
-            }
-        }
-
         public override void Visit(ObjectLiteral node)
         {
             if (node != null)
@@ -2300,32 +2238,6 @@ namespace Microsoft.Ajax.Utilities
                 // don't call the base -- we don't want to add the literal to
                 // the combination logic, which is what the ConstantWrapper (base class) does
                 //base.Visit(node);
-            }
-        }
-
-        public override void Visit(PostOrPrefixOperator node)
-        {
-            if (node != null)
-            {
-                base.Visit(node);
-
-                // strict mode has some restrictions we want to check now
-                if (ScopeStack.Peek().UseStrict)
-                {
-                    // the operator cannot be the eval function or arguments object.
-                    // that means the operator is a lookup, and the field for that lookup
-                    // is the arguments object or the predefined "eval" object.
-                    // could probably just check the names, since we can't create local variables
-                    // with those names anyways.
-                    var lookup = node.Operand as Lookup;
-                    if (lookup != null
-                        && (lookup.VariableField is JSArgumentsField
-                        || (lookup.VariableField is JSPredefinedField 
-                        && string.CompareOrdinal(lookup.Name, "eval") == 0)))
-                    {
-                        node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);
-                    }
-                }
             }
         }
 
@@ -2640,6 +2552,90 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override void Visit(UnaryOperator node)
+        {
+            if (node != null)
+            {
+                base.Visit(node);
+
+                // strict mode has some restrictions
+                if (node.OperatorToken == JSToken.Delete)
+                {
+                    if (ScopeStack.Peek().UseStrict)
+                    {
+                        // operand of a delete operator cannot be a variable name, argument name, or function name
+                        // which means it can't be a lookup
+                        if (node.Operand is Lookup)
+                        {
+                            node.Context.HandleError(JSError.StrictModeInvalidDelete, true);
+                        }
+                    }
+                }
+                else if (node.OperatorToken == JSToken.Increment || node.OperatorToken == JSToken.Decrement)
+                {
+                    // strict mode has some restrictions we want to check now
+                    if (ScopeStack.Peek().UseStrict)
+                    {
+                        // the operator cannot be the eval function or arguments object.
+                        // that means the operator is a lookup, and the field for that lookup
+                        // is the arguments object or the predefined "eval" object.
+                        // could probably just check the names, since we can't create local variables
+                        // with those names anyways.
+                        var lookup = node.Operand as Lookup;
+                        if (lookup != null
+                            && (lookup.VariableField is JSArgumentsField
+                            || (lookup.VariableField is JSPredefinedField
+                            && string.CompareOrdinal(lookup.Name, "eval") == 0)))
+                        {
+                            node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);
+                        }
+                    }
+                }
+                else
+                {
+
+                    // if the operand is a numeric literal
+                    ConstantWrapper constantWrapper = node.Operand as ConstantWrapper;
+                    if (constantWrapper != null && constantWrapper.IsNumericLiteral)
+                    {
+                        // get the value of the constant. We've already screened it for numeric, so
+                        // we don't have to worry about catching any errors
+                        double doubleValue = constantWrapper.ToNumber();
+
+                        // if this is a unary minus...
+                        if (node.OperatorToken == JSToken.Minus
+                            && m_parser.Settings.IsModificationAllowed(TreeModifications.ApplyUnaryMinusToNumericLiteral))
+                        {
+                            // negate the value
+                            constantWrapper.Value = -doubleValue;
+
+                            // replace us with the negated constant
+                            if (node.Parent.ReplaceChild(node, constantWrapper))
+                            {
+                                // the context for the minus will include the number (its operand),
+                                // but the constant will just be the number. Update the context on
+                                // the constant to be a copy of the context on the operator
+                                constantWrapper.Context = node.Context.Clone();
+                            }
+                        }
+                        else if (node.OperatorToken == JSToken.Plus
+                            && m_parser.Settings.IsModificationAllowed(TreeModifications.RemoveUnaryPlusOnNumericLiteral))
+                        {
+                            // +NEG is still negative, +POS is still positive, and +0 is still 0.
+                            // so just get rid of the unary operator altogether
+                            if (node.Parent.ReplaceChild(node, constantWrapper))
+                            {
+                                // the context for the unary will include the number (its operand),
+                                // but the constant will just be the number. Update the context on
+                                // the constant to be a copy of the context on the operator
+                                constantWrapper.Context = node.Context.Clone();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         public override void Visit(Var node)
         {
             if (node != null)
@@ -2935,9 +2931,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private VoidNode CreateVoidNode()
+        private UnaryOperator CreateVoidNode()
         {
-            return new VoidNode(null, m_parser, new ConstantWrapper(0.0, PrimitiveType.Number, null, m_parser));
+            return new UnaryOperator(null, m_parser, new ConstantWrapper(0.0, PrimitiveType.Number, null, m_parser), JSToken.Void, false);
         }
     }
 }

@@ -3364,63 +3364,63 @@ namespace Microsoft.Ajax.Utilities
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new VoidNode(exprCtx, this, expr);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Void, false);
                     break;
                 case JSToken.TypeOf:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new TypeOfNode(exprCtx, this, expr);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.TypeOf, false);
                     break;
                 case JSToken.Plus:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new NumericUnary(exprCtx, this, expr, JSToken.Plus);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Plus, false);
                     break;
                 case JSToken.Minus:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, true);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new NumericUnary(exprCtx, this, expr, JSToken.Minus);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Minus, false);
                     break;
                 case JSToken.BitwiseNot:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new NumericUnary(exprCtx, this, expr, JSToken.BitwiseNot);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.BitwiseNot, false);
                     break;
                 case JSToken.LogicalNot:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new NumericUnary(exprCtx, this, expr, JSToken.LogicalNot);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.LogicalNot, false);
                     break;
                 case JSToken.Delete:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new Delete(exprCtx, this, expr);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Delete, false);
                     break;
                 case JSToken.Increment:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new PostOrPrefixOperator(exprCtx, this, expr, m_currentToken.Token, PostOrPrefix.PrefixIncrement);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Increment, false);
                     break;
                 case JSToken.Decrement:
                     exprCtx = m_currentToken.Clone();
                     GetNextToken();
                     expr = ParseUnaryExpression(out dummy, false);
                     exprCtx.UpdateWith(expr.Context);
-                    ast = new PostOrPrefixOperator(exprCtx, this, expr, m_currentToken.Token, PostOrPrefix.PrefixDecrement);
+                    ast = new UnaryOperator(exprCtx, this, expr, JSToken.Decrement, false);
                     break;
 
                 case JSToken.ConditionalCommentStart:
@@ -3466,7 +3466,7 @@ namespace Microsoft.Ajax.Utilities
                                 expr = ParseUnaryExpression(out dummy, false);
                                 exprCtx.UpdateWith(expr.Context);
 
-                                var unary = new NumericUnary(exprCtx, this, expr, JSToken.LogicalNot);
+                                var unary = new UnaryOperator(exprCtx, this, expr, JSToken.LogicalNot, false);
                                 unary.OperatorInConditionalCompilationComment = true;
                                 unary.ConditionalCommentContainsOn = true;
                                 ast = unary;
@@ -3496,7 +3496,7 @@ namespace Microsoft.Ajax.Utilities
                             expr = ParseUnaryExpression(out dummy, false);
                             exprCtx.UpdateWith(expr.Context);
 
-                            var unary = new NumericUnary(exprCtx, this, expr, JSToken.LogicalNot);
+                            var unary = new UnaryOperator(exprCtx, this, expr, JSToken.LogicalNot, false);
                             unary.OperatorInConditionalCompilationComment = true;
                             ast = unary;
                         }
@@ -3603,7 +3603,7 @@ namespace Microsoft.Ajax.Utilities
                         isLeftHandSideExpr = false;
                         exprCtx = ast.Context.Clone();
                         exprCtx.UpdateWith(m_currentToken);
-                        ast = new PostOrPrefixOperator(exprCtx, this, ast, m_currentToken.Token, PostOrPrefix.PostfixIncrement);
+                        ast = new UnaryOperator(exprCtx, this, ast, m_currentToken.Token, true);
                         GetNextToken();
                     }
                     else if (JSToken.Decrement == m_currentToken.Token)
@@ -3611,7 +3611,7 @@ namespace Microsoft.Ajax.Utilities
                         isLeftHandSideExpr = false;
                         exprCtx = ast.Context.Clone();
                         exprCtx.UpdateWith(m_currentToken);
-                        ast = new PostOrPrefixOperator(exprCtx, this, ast, m_currentToken.Token, PostOrPrefix.PostfixDecrement);
+                        ast = new UnaryOperator(exprCtx, this, ast, m_currentToken.Token, true);
                         GetNextToken();
                     }
                 }

@@ -214,17 +214,6 @@ namespace Microsoft.Ajax.Utilities
             // no children
         }
 
-        public virtual void Visit(Delete node)
-        {
-            if (node != null)
-            {
-                if (node.Operand != null)
-                {
-                    node.Operand.Accept(this);
-                }
-            }
-        }
-
         public virtual void Visit(DirectivePrologue node)
         {
             // no children
@@ -362,17 +351,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public virtual void Visit(NumericUnary node)
-        {
-            if (node != null)
-            {
-                if (node.Operand != null)
-                {
-                    node.Operand.Accept(this);
-                }
-            }
-        }
-
         public virtual void Visit(ObjectLiteral node)
         {
             if (node != null)
@@ -387,17 +365,6 @@ namespace Microsoft.Ajax.Utilities
         public virtual void Visit(ObjectLiteralField node)
         {
             // no children
-        }
-
-        public virtual void Visit(PostOrPrefixOperator node)
-        {
-            if (node != null)
-            {
-                if (node.Operand != null)
-                {
-                    node.Operand.Accept(this);
-                }
-            }
         }
 
         public virtual void Visit(RegExpLiteral node)
@@ -485,17 +452,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public virtual void Visit(TypeOfNode node)
-        {
-            if (node != null)
-            {
-                if (node.Operand != null)
-                {
-                    node.Operand.Accept(this);
-                }
-            }
-        }
-
         public virtual void Visit(Var node)
         {
             if (node != null)
@@ -518,7 +474,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public virtual void Visit(VoidNode node)
+        public virtual void Visit(UnaryOperator node)
         {
             if (node != null)
             {

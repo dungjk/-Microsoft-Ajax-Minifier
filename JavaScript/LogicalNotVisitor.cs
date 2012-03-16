@@ -45,11 +45,12 @@ namespace Microsoft.Ajax.Utilities
         {
             operand.Parent.ReplaceChild(
                 operand, 
-                new NumericUnary(
+                new UnaryOperator(
                     null,
                     m_parser,
                     operand,
-                    JSToken.LogicalNot));
+                    JSToken.LogicalNot,
+                    false));
         }
 
         private void TypicalHandler(AstNode node)
@@ -345,12 +346,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override void Visit(Delete node)
-        {
-            // same logic for most nodes
-            TypicalHandler(node);
-        }
-
         public override void Visit(Lookup node)
         {
             // same logic for most nodes
@@ -369,12 +364,6 @@ namespace Microsoft.Ajax.Utilities
             TypicalHandler(node);
         }
 
-        public override void Visit(PostOrPrefixOperator node)
-        {
-            // same logic for most nodes
-            TypicalHandler(node);
-        }
-
         public override void Visit(RegExpLiteral node)
         {
             // same logic for most nodes
@@ -387,19 +376,7 @@ namespace Microsoft.Ajax.Utilities
             TypicalHandler(node);
         }
 
-        public override void Visit(TypeOfNode node)
-        {
-            // same logic for most nodes
-            TypicalHandler(node);
-        }
-
-        public override void Visit(VoidNode node)
-        {
-            // same logic for most nodes
-            TypicalHandler(node);
-        }
-
-        public override void Visit(NumericUnary node)
+        public override void Visit(UnaryOperator node)
         {
             if (node != null && !node.OperatorInConditionalCompilationComment)
             {

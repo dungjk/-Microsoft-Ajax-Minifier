@@ -223,11 +223,6 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
-        public void Visit(Delete node)
-        {
-            // not applicable; terminate
-        }
-
         public void Visit(DirectivePrologue node)
         {
             // not applicable; terminate
@@ -273,22 +268,12 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
-        public void Visit(NumericUnary node)
-        {
-            // not applicable; terminate
-        }
-
         public void Visit(ObjectLiteral node)
         {
             // not applicable; terminate
         }
 
         public void Visit(ObjectLiteralField node)
-        {
-            // not applicable; terminate
-        }
-
-        public void Visit(PostOrPrefixOperator node)
         {
             // not applicable; terminate
         }
@@ -328,7 +313,7 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
-        public void Visit(TypeOfNode node)
+        public void Visit(UnaryOperator node)
         {
             // not applicable; terminate
         }
@@ -339,11 +324,6 @@ namespace Microsoft.Ajax.Utilities
         }
 
         public void Visit(VariableDeclaration node)
-        {
-            // not applicable; terminate
-        }
-
-        public void Visit(VoidNode node)
         {
             // not applicable; terminate
         }

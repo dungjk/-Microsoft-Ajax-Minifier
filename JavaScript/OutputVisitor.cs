@@ -826,24 +826,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Visit(Delete node)
-        {
-            if (node != null)
-            {
-                var isNoIn = m_noIn;
-                m_noIn = false;
-
-                Output("delete");
-                m_startOfStatement = false;
-                if (node.Operand != null)
-                {
-                    AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
-                }
-
-                m_noIn = isNoIn;
-            }
-        }
-
         public void Visit(DirectivePrologue node)
         {
             if (node != null)
@@ -1253,12 +1235,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Visit(NumericUnary node)
-        {
-            // just call the default unary-operator output method
-            OutputUnaryOperator(node);
-        }
-
         public void Visit(ObjectLiteral node)
         {
             if (node != null)
@@ -1351,45 +1327,6 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output(' ');
                 }
-            }
-        }
-
-        public void Visit(PostOrPrefixOperator node)
-        {
-            if (node != null)
-            {
-                var isNoIn = m_noIn;
-                m_noIn = false;
-
-                switch (node.Operator)
-                {
-                    case PostOrPrefix.PostfixDecrement:
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence <= node.Precedence);
-                        Output("--");
-                        break;
-
-                    case PostOrPrefix.PostfixIncrement:
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence <= node.Precedence);
-                        Output("++");
-                        break;
-
-                    case PostOrPrefix.PrefixDecrement:
-                        Output("--");
-                        m_startOfStatement = false;
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
-                        break;
-
-                    case PostOrPrefix.PrefixIncrement:
-                        Output("++");
-                        m_startOfStatement = false;
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
-                        break;
-
-                    default:
-                        throw new UnexpectedTokenException();
-                }
-
-                m_noIn = isNoIn;
             }
         }
 
@@ -1589,12 +1526,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Visit(TypeOfNode node)
-        {
-            // just call the default unary-operator output method
-            OutputUnaryOperator(node);
-        }
-
         public void Visit(Var node)
         {
             if (node != null)
@@ -1689,7 +1620,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Visit(VoidNode node)
+        public void Visit(UnaryOperator node)
         {
             // just call the default unary-operator output method
             OutputUnaryOperator(node);
@@ -2073,35 +2004,48 @@ namespace Microsoft.Ajax.Utilities
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
-                if (node.OperatorInConditionalCompilationComment)
+                if (node.IsPostfix)
                 {
-                    // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
-                    // sources had one. Otherwise, we only only want to output one if we had one and we aren't
-                    // removing unneccesary ones.
-                    if (!m_outputCCOn
-                        || (node.ConditionalCommentContainsOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                    if (node.Operand != null)
                     {
-                        // output it now and set the flag that we have output them
-                        Output("/*@cc_on");
-                        m_outputCCOn = true;
-                    }
-                    else
-                    {
-                        Output("/*@");
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
                     }
 
                     Output(OperatorString(node.OperatorToken));
-                    Output("@*/");
+                    m_startOfStatement = false;
                 }
                 else
                 {
-                    Output(OperatorString(node.OperatorToken));
-                }
-                
-                m_startOfStatement = false;
-                if (node.Operand != null)
-                {
-                    AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                    if (node.OperatorInConditionalCompilationComment)
+                    {
+                        // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
+                        // sources had one. Otherwise, we only only want to output one if we had one and we aren't
+                        // removing unneccesary ones.
+                        if (!m_outputCCOn
+                            || (node.ConditionalCommentContainsOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                        {
+                            // output it now and set the flag that we have output them
+                            Output("/*@cc_on");
+                            m_outputCCOn = true;
+                        }
+                        else
+                        {
+                            Output("/*@");
+                        }
+
+                        Output(OperatorString(node.OperatorToken));
+                        Output("@*/");
+                    }
+                    else
+                    {
+                        Output(OperatorString(node.OperatorToken));
+                    }
+
+                    m_startOfStatement = false;
+                    if (node.Operand != null)
+                    {
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                    }
                 }
 
                 m_noIn = isNoIn;

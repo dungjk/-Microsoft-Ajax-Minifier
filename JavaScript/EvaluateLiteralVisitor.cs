@@ -1857,7 +1857,7 @@ namespace Microsoft.Ajax.Utilities
                                     // okay, so we have "lookup - 0"
                                     // this is done frequently to force a value to be numeric. 
                                     // There is an easier way: apply the unary + operator to it. 
-                                    NumericUnary unary = new NumericUnary(node.Context, m_parser, lookup, JSToken.Plus);
+                                    var unary = new UnaryOperator(node.Context, m_parser, lookup, JSToken.Plus, false);
                                     node.Parent.ReplaceChild(node, unary);
                                 }
                             }
@@ -2085,169 +2085,139 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override void Visit(NumericUnary node)
+        public override void Visit(UnaryOperator node)
         {
             if (node != null)
             {
                 // depth-first
                 base.Visit(node);
 
-                DoNumericUnary(node);
+                DoUnaryNode(node);
             }
         }
 
-        private void DoNumericUnary(NumericUnary node)
+        private void DoUnaryNode(UnaryOperator node)
         {
-            // if this node's operator is in a conditional-compilation comment, then we
-            // don't want to muck with it.
-            if (!node.OperatorInConditionalCompilationComment)
+            if (!node.OperatorInConditionalCompilationComment
+                && m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
             {
-                if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
+                var literalOperand = node.Operand as ConstantWrapper;
+                switch(node.OperatorToken)
                 {
-                    // see if our operand is a ConstantWrapper
-                    ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                    if (literalOperand != null)
-                    {
-                        // must be number, boolean, string, or null
-                        switch (node.OperatorToken)
+                    case JSToken.Void:
+                        // see if our operand is a ConstantWrapper
+                        if (literalOperand != null)
                         {
-                            case JSToken.Plus:
-                                try
-                                {
-                                    // replace with a constant representing operand.ToNumber,
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
-
-                            case JSToken.Minus:
-                                try
-                                {
-                                    // replace with a constant representing the negative of operand.ToNumber
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
-
-                            case JSToken.BitwiseNot:
-                                try
-                                {
-                                    // replace with a constant representing the bitwise-not of operant.ToInt32
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // some kind of casting in ToNumber caused a situation where we don't want
-                                    // to perform the combination on these operands
-                                }
-                                break;
-
-                            case JSToken.LogicalNot:
-                                // replace with a constant representing the opposite of operand.ToBoolean
-                                try
-                                {
-                                    node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    // ignore any invalid cast exceptions
-                                }
-                                break;
+                            // either number, string, boolean, or null.
+                            // the void operator evaluates its operand and returns undefined. Since evaluating a literal
+                            // does nothing, then it doesn't matter what the heck it is. Replace it with a zero -- a one-
+                            // character literal.
+                            node.ReplaceChild(literalOperand, new ConstantWrapper(0, PrimitiveType.Number, node.Context, m_parser));
                         }
-                    }
-                }
-            }
-        }
+                        break;
 
-        public override void Visit(TypeOfNode node)
-        {
-            if (node != null)
-            {
-                // depth-first
-                base.Visit(node);
+                    case JSToken.TypeOf:
+                        if (literalOperand != null)
+                        {
+                            // either number, string, boolean, or null.
+                            // the operand is a literal. Therefore we already know what the typeof
+                            // operator will return. Just short-circuit that behavior now and replace the operator
+                            // with a string literal of the proper value
+                            string typeName = null;
+                            if (literalOperand.IsStringLiteral)
+                            {
+                                // "string"
+                                typeName = "string";
+                            }
+                            else if (literalOperand.IsNumericLiteral)
+                            {
+                                // "number"
+                                typeName = "number";
+                            }
+                            else if (literalOperand.IsBooleanLiteral)
+                            {
+                                // "boolean"
+                                typeName = "boolean";
+                            }
+                            else if (literalOperand.Value == null)
+                            {
+                                // "object"
+                                typeName = "object";
+                            }
 
-                DoTypeOfNode(node);
-            }
-        }
+                            if (!string.IsNullOrEmpty(typeName))
+                            {
+                                node.Parent.ReplaceChild(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
+                            }
+                        }
+                        else if (node.Operand is ObjectLiteral)
+                        {
+                            node.Parent.ReplaceChild(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
+                        }
+                        break;
 
-        private void DoTypeOfNode(TypeOfNode node)
-        {
-            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
-            {
-                // see if our operand is a ConstantWrapper
-                ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                if (literalOperand != null)
-                {
-                    // either number, string, boolean, or null.
-                    // the operand is a literal. Therefore we already know what the typeof
-                    // operator will return. Just short-circuit that behavior now and replace the operator
-                    // with a string literal of the proper value
-                    string typeName = null;
-                    if (literalOperand.IsStringLiteral)
-                    {
-                        // "string"
-                        typeName = "string";
-                    }
-                    else if (literalOperand.IsNumericLiteral)
-                    {
-                        // "number"
-                        typeName = "number";
-                    }
-                    else if (literalOperand.IsBooleanLiteral)
-                    {
-                        // "boolean"
-                        typeName = "boolean";
-                    }
-                    else if (literalOperand.Value == null)
-                    {
-                        // "object"
-                        typeName = "object";
-                    }
+                    case JSToken.Plus:
+                        if (literalOperand != null)
+                        {
+                            try
+                            {
+                                // replace with a constant representing operand.ToNumber,
+                                node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                            }
+                            catch (InvalidCastException)
+                            {
+                                // some kind of casting in ToNumber caused a situation where we don't want
+                                // to perform the combination on these operands
+                            }
+                        }
+                        break;
 
-                    if (!string.IsNullOrEmpty(typeName))
-                    {
-                        node.Parent.ReplaceChild(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
-                    }
-                }
-                else if (node.Operand is ObjectLiteral)
-                {
-                    node.Parent.ReplaceChild(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
-                }
-            }
-        }
+                    case JSToken.Minus:
+                        if (literalOperand != null)
+                        {
+                            try
+                            {
+                                // replace with a constant representing the negative of operand.ToNumber
+                                node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                            }
+                            catch (InvalidCastException)
+                            {
+                                // some kind of casting in ToNumber caused a situation where we don't want
+                                // to perform the combination on these operands
+                            }
+                        }
+                        break;
 
-        public override void Visit(VoidNode node)
-        {
-            if (node != null)
-            {
-                // depth-first
-                base.Visit(node);
+                    case JSToken.BitwiseNot:
+                        if (literalOperand != null)
+                        {
+                            try
+                            {
+                                // replace with a constant representing the bitwise-not of operant.ToInt32
+                                node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
+                            }
+                            catch (InvalidCastException)
+                            {
+                                // some kind of casting in ToNumber caused a situation where we don't want
+                                // to perform the combination on these operands
+                            }
+                        }
+                        break;
 
-                DoVoidNode(node);
-            }
-        }
-
-        private void DoVoidNode(VoidNode node)
-        {
-            if (m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateNumericExpressions))
-            {
-                // see if our operand is a ConstantWrapper
-                ConstantWrapper literalOperand = node.Operand as ConstantWrapper;
-                if (literalOperand != null)
-                {
-                    // either number, string, boolean, or null.
-                    // the void operator evaluates its operand and returns undefined. Since evaluating a literal
-                    // does nothing, then it doesn't matter what the heck it is. Replace it with a zero -- a one-
-                    // character literal.
-                    node.ReplaceChild(literalOperand, new ConstantWrapper(0, PrimitiveType.Number, node.Context, m_parser));
+                    case JSToken.LogicalNot:
+                        if (literalOperand != null)
+                        {
+                            // replace with a constant representing the opposite of operand.ToBoolean
+                            try
+                            {
+                                node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
+                            }
+                            catch (InvalidCastException)
+                            {
+                                // ignore any invalid cast exceptions
+                            }
+                        }
+                        break;
                 }
             }
         }

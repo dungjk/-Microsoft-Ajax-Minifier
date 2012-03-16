@@ -15,22 +15,60 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public abstract class UnaryOperator : Expression
+    public class UnaryOperator : Expression
     {
         public AstNode Operand { get; private set; }
         public JSToken OperatorToken { get; private set; }
+        public bool IsPostfix { get; private set; }
         public bool OperatorInConditionalCompilationComment { get; set; }
         public bool ConditionalCommentContainsOn { get; set; }
 
-        protected UnaryOperator(Context context, JSParser parser, AstNode operand, JSToken operatorToken)
+        public UnaryOperator(Context context, JSParser parser, AstNode operand, JSToken operatorToken, bool isPostfix)
             : base(context, parser)
         {
             Operand = operand;
             OperatorToken = operatorToken;
+            IsPostfix = isPostfix;
+
             if (Operand != null) Operand.Parent = this;
+
+            Debug.Assert(!isPostfix || operatorToken == JSToken.Increment || operatorToken == JSToken.Decrement, "Postfix flag is only for Increment or Decrement");
+        }
+
+        public override void Accept(IVisitor visitor)
+        {
+            if (visitor != null)
+            {
+                visitor.Visit(this);
+            }
+        }
+
+        public override PrimitiveType FindPrimitiveType()
+        {
+            switch (OperatorToken)
+            {
+                case JSToken.TypeOf:
+                    // typeof ALWAYS returns type string
+                    return PrimitiveType.String;
+
+                case JSToken.LogicalNot:
+                    // ! always return boolean
+                    return PrimitiveType.Boolean;
+
+                case JSToken.Void:
+                case JSToken.Delete:
+                    // void returns undefined.
+                    // delete returns number, but just return other
+                    return PrimitiveType.Other;
+
+                default:
+                    // all other unary operators return a number
+                    return PrimitiveType.Number;
+            }
         }
 
         public override OperatorPrecedence Precedence
@@ -74,6 +112,14 @@ namespace Microsoft.Ajax.Utilities
                 // we only need parens if the operand is a binary op or a conditional op
                 return (Operand is BinaryOperator || Operand is Conditional);
             }
+        }
+
+        public override bool IsEquivalentTo(AstNode otherNode)
+        {
+            var otherUnary = otherNode as UnaryOperator;
+            return otherUnary != null
+                && OperatorToken == otherUnary.OperatorToken
+                && Operand.IsEquivalentTo(otherUnary.Operand);
         }
 
         public override string ToString()

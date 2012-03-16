@@ -157,12 +157,6 @@ namespace Microsoft.Ajax.Utilities
             // we're good
         }
 
-        public void Visit(Delete node)
-        {
-            // lesser precedence than the new operator; use parens
-            m_needsParens = true;
-        }
-
         public void Visit(FunctionObject node)
         {
             // we're good
@@ -187,21 +181,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Visit(NumericUnary node)
-        {
-            // lesser precedence than the new operator; use parens
-            m_needsParens = true;
-        }
-
         public void Visit(ObjectLiteral node)
         {
             // we're good
-        }
-
-        public void Visit(PostOrPrefixOperator node)
-        {
-            // lesser precedence than the new operator; use parens
-            m_needsParens = true;
         }
 
         public void Visit(RegExpLiteral node)
@@ -214,13 +196,7 @@ namespace Microsoft.Ajax.Utilities
             // we're good
         }
 
-        public void Visit(TypeOfNode node)
-        {
-            // lesser precedence than the new operator; use parens
-            m_needsParens = true;
-        }
-
-        public void Visit(VoidNode node)
+        public void Visit(UnaryOperator node)
         {
             // lesser precedence than the new operator; use parens
             m_needsParens = true;
