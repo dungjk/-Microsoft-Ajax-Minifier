@@ -111,8 +111,8 @@ namespace Microsoft.Ajax.Utilities
                     var lookup = node.Operand1 as Lookup;
                     if (lookup != null)
                     {
-                        if (lookup.VariableField is JSArgumentsField
-                            || (lookup.VariableField is JSPredefinedField && string.CompareOrdinal(lookup.Name, "eval") == 0))
+                        if (lookup.VariableField.FieldType == FieldType.Arguments
+                            || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0))
                         {
                             node.Operand1.Context.HandleError(JSError.StrictModeInvalidAssign, true);
                         }
@@ -1309,7 +1309,7 @@ namespace Microsoft.Ajax.Utilities
                         // lookup for the predifined (not local) "Date" field
                         Lookup lookup = dateConstructor.Function as Lookup;
                         if (lookup != null && string.CompareOrdinal(lookup.Name, "Date") == 0
-                            && lookup.LocalField == null)
+                            && (lookup.VariableField == null || lookup.VariableField.FieldType == FieldType.Predefined))
                         {
                             // this is in the pattern: (new Date()).getTime()
                             // we want to replace it with +new Date
@@ -1332,7 +1332,7 @@ namespace Microsoft.Ajax.Utilities
                     var lookup = node.Function as Lookup;
                     if (lookup != null
                         && string.CompareOrdinal(lookup.Name, "eval") == 0
-                        && lookup.VariableField is JSPredefinedField)
+                        && lookup.VariableField.FieldType == FieldType.Predefined)
                     {
                         // call to predefined eval function
                         isEval = true;
@@ -1997,11 +1997,11 @@ namespace Microsoft.Ajax.Utilities
                     if (!(scope is GlobalScope))
                     {
                         // add it to the scope so we know this scope references the global
-                        scope.AddField(new JSGlobalField(
-                          node.Name,
-                          Missing.Value,
-                          0
-                          ));
+                        scope.AddField(new JSVariableField(
+                            FieldType.Global,
+                            node.Name,
+                            0,
+                            Missing.Value));
                     }
                 }
                 else
@@ -2049,7 +2049,7 @@ namespace Microsoft.Ajax.Utilities
                     // add the reference
                     node.VariableField.AddReference(scope);
 
-                    if (node.VariableField is JSPredefinedField)
+                    if (node.VariableField.FieldType == FieldType.Predefined)
                     {
                         // this is a predefined field. If it's Nan or Infinity, we should
                         // replace it with the numeric value in case we need to later combine
@@ -2583,8 +2583,8 @@ namespace Microsoft.Ajax.Utilities
                         // with those names anyways.
                         var lookup = node.Operand as Lookup;
                         if (lookup != null
-                            && (lookup.VariableField is JSArgumentsField
-                            || (lookup.VariableField is JSPredefinedField
+                            && (lookup.VariableField.FieldType == FieldType.Arguments
+                            || (lookup.VariableField.FieldType == FieldType.Predefined
                             && string.CompareOrdinal(lookup.Name, "eval") == 0)))
                         {
                             node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);

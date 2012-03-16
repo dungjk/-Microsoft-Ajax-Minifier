@@ -222,12 +222,6 @@
   <data name="MemberInfoScopeGlobalObject" xml:space="preserve">
     <value>built-in Global </value>
   </data>
-  <data name="MemberInfoScopeWindowObject" xml:space="preserve">
-    <value>built-in Window </value>
-  </data>
-  <data name="MemberInfoScopeOtherObject" xml:space="preserve">
-    <value>built-in </value>
-  </data>
   <data name="MemberInfoTypeArgument" xml:space="preserve">
     <value>argument</value>
   </data>

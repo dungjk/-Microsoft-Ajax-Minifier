@@ -31,19 +31,19 @@ namespace Microsoft.Ajax.Utilities
             m_name = Context.Code;
 
             // add it to the catch-scope's name table
-            JSVariableField field = new JSArgumentField(m_name, null);
+            var field = new JSVariableField(FieldType.Argument, m_name, 0, null);
             NameTable[m_name] = field;
             FieldTable.Add(field);
         }
 
         public override JSVariableField CreateField(JSVariableField outerField)
         {
-            return new JSLocalField(outerField);
+            return new JSVariableField(FieldType.Local, outerField);
         }
 
         public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)
         {
-            return new JSLocalField(name, value, attributes);
+            return new JSVariableField(FieldType.Local, name, attributes, value);
         }
 
         internal override void AnalyzeScope()

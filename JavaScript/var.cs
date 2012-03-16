@@ -226,39 +226,5 @@ namespace Microsoft.Ajax.Utilities
                 return false;
             }
         }
-
-        /*
-        public void RemoveUnreferencedGenerated(FunctionScope scope)
-        {
-            // walk backwards -- we're going to delete any generated variables that
-            // aren't actually referenced
-            for (int ndx = m_list.Count - 1; ndx >= 0; --ndx)
-            {
-                VariableDeclaration varDecl = m_list[ndx];
-                // if it's not generated, leave it
-                if (varDecl.IsGenerated)
-                {
-                    // get the local field
-                    JSLocalField localField = varDecl.Field as JSLocalField;
-                    // if it isn't referenced...
-                    if (localField != null && !localField.IsReferenced)
-                    {
-                        // remove it from the var statement
-                        m_list.RemoveAt(ndx);
-                        // and remove the field from the scope
-                        if (scope != null)
-                        {
-                            scope.Remove(localField);
-                        }
-                    }
-                }
-            }
-            // remove the entire statement altogether if there's nothing left
-            if (m_list.Count == 0)
-            {
-                Parent.ReplaceChild(this, null);
-            }
-        }
-        */
     }
 }

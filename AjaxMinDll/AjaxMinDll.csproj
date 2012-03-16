@@ -277,35 +277,17 @@
     <Compile Include="..\JavaScript\IVisitor.cs">
       <Link>JavaScript\IVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\jsargumentfield.cs">
-      <Link>JavaScript\jsargumentfield.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\jsargumentsfield.cs">
-      <Link>JavaScript\jsargumentsfield.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\jscriptexception.cs">
       <Link>JavaScript\jscriptexception.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\jserror.cs">
       <Link>JavaScript\jserror.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\jsglobalfield.cs">
-      <Link>JavaScript\jsglobalfield.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\jskeyword.cs">
       <Link>JavaScript\jskeyword.cs</Link>
     </Compile>
-    <Compile Include="..\JavaScript\jslocalfield.cs">
-      <Link>JavaScript\jslocalfield.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\jsnfefield.cs">
-      <Link>JavaScript\jsnfefield.cs</Link>
-    </Compile>
     <Compile Include="..\JavaScript\jsparser.cs">
       <Link>JavaScript\jsparser.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\jspredefinedfield.cs">
-      <Link>JavaScript\jspredefinedfield.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\jsscanner.cs">
       <Link>JavaScript\jsscanner.cs</Link>
@@ -315,9 +297,6 @@
     </Compile>
     <Compile Include="..\JavaScript\jsvariablefield.cs">
       <Link>JavaScript\jsvariablefield.cs</Link>
-    </Compile>
-    <Compile Include="..\JavaScript\jswithfield.cs">
-      <Link>JavaScript\jswithfield.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\labeledstatement.cs">
       <Link>JavaScript\labeledstatement.cs</Link>

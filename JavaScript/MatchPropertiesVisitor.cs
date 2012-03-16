@@ -118,7 +118,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // see if the name matches; and if there is a field, it should be a global
                 if (string.CompareOrdinal(node.Name, m_parts[0]) == 0
-                    && (node.VariableField == null || node.VariableField is JSGlobalField))
+                    && (node.VariableField == null || node.VariableField.FieldType == FieldType.Global))
                 {
                     // match!
                     m_isMatch = true;

@@ -49,7 +49,7 @@ namespace Microsoft.Ajax.Utilities
                 // So add a global field to our scope and return that instead, and use the
                 // RTSpecialName flag to indicate that we don't really know what this thing could be.
                 JSVariableField globalField = Parser.GlobalScope.AddField(
-                    new JSGlobalField(name, null, FieldAttributes.RTSpecialName)
+                    new JSVariableField(FieldType.Global, name, FieldAttributes.RTSpecialName, null)
                     );
                 variableField = CreateInnerField(globalField);
             }
@@ -68,12 +68,12 @@ namespace Microsoft.Ajax.Utilities
 
         public override JSVariableField CreateField(JSVariableField outerField)
         {
-            return new JSWithField(outerField);
+            return new JSVariableField(FieldType.WithField, outerField);
         }
 
         public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)
         {
-            return new JSWithField(name, attributes);
+            return new JSVariableField(FieldType.WithField, name, attributes, null);
         }
     }
 }

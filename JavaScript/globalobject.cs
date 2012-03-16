@@ -19,40 +19,43 @@ using System.Reflection;
 
 namespace Microsoft.Ajax.Utilities
 {
-  internal sealed class GlobalObject
-  {
-    private Dictionary<string, JSPredefinedField> m_fieldMap;
-
-    public GlobalObject(GlobalObjectInstance globalObject, string[] properties, string[] methods)
+    internal sealed class GlobalObject
     {
-      m_fieldMap = new Dictionary<string,JSPredefinedField>();
+        private Dictionary<string, JSVariableField> m_fieldMap;
 
-      // itemize all the properties
-      if (properties != null)
-      {
-        foreach(string fieldName in properties)
+        public GlobalObject(string[] properties, string[] methods)
         {
-          m_fieldMap.Add(fieldName, new JSPredefinedField(fieldName, MemberTypes.Property, globalObject));
-        }
-      }
+            m_fieldMap = new Dictionary<string, JSVariableField>();
 
-      // itemize all the methods
-      if (methods != null)
-      {
-        foreach(string fieldName in methods)
+            // itemize all the properties
+            if (properties != null)
+            {
+                foreach (string fieldName in properties)
+                {
+                    var newField = new JSVariableField(FieldType.Predefined, fieldName, 0, null);
+                    m_fieldMap.Add(fieldName, newField);
+                }
+            }
+
+            // itemize all the methods
+            if (methods != null)
+            {
+                foreach (string fieldName in methods)
+                {
+                    var newField = new JSVariableField(FieldType.Predefined, fieldName, 0, null);
+                    newField.IsFunction = true;
+                    m_fieldMap.Add(fieldName, newField);
+                }
+            }
+        }
+
+        public JSVariableField GetField(string name)
         {
-          m_fieldMap.Add(fieldName, new JSPredefinedField(fieldName, MemberTypes.Method, globalObject));
+            if (m_fieldMap.ContainsKey(name))
+            {
+                return m_fieldMap[name];
+            }
+            return null;
         }
-      }
     }
-
-    public JSPredefinedField GetField(string name)
-    {
-      if (m_fieldMap.ContainsKey(name))
-      {
-        return m_fieldMap[name];
-      }
-      return null;
-    }
-  }
 }

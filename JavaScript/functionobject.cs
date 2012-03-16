@@ -90,7 +90,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         private JSVariableField m_variableField;
-        public JSLocalField LocalField { get { return m_variableField as JSLocalField; } }
+        public JSVariableField VariableField { get { return m_variableField; } }
         public int RefCount { get { return (m_variableField == null ? 0 : m_variableField.RefCount); } }
 
         private FunctionScope m_functionScope;
@@ -160,7 +160,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // if the containing scope is itself a named function expression, then just
                         // continue on as if everything is fine. It will chain and be good.
-                        if (!(m_variableField is JSNamedFunctionExpressionField))
+                        if (m_variableField.FieldType != FieldType.NamedFunctionExpression)
                         {
                             if (m_variableField.NamedFunctionExpression != null)
                             {
@@ -178,8 +178,8 @@ namespace Microsoft.Ajax.Utilities
 
                                 // create a new NFE pointing to the existing field as the outer so
                                 // the names stay in sync, and with a value of our function object.
-                                JSNamedFunctionExpressionField namedExpressionField = 
-                                    new JSNamedFunctionExpressionField(m_variableField);
+                                var namedExpressionField = 
+                                    new JSVariableField(FieldType.NamedFunctionExpression, m_variableField);
                                 namedExpressionField.FieldValue = this;
                                 m_functionScope.AddField(namedExpressionField);
 
@@ -194,8 +194,8 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 // we're pointing to a field that is already marked as ambiguous.
                                 // just create our own NFE pointing to this one, and hook us up.
-                                JSNamedFunctionExpressionField namedExpressionField = 
-                                    new JSNamedFunctionExpressionField(m_variableField);
+                                var namedExpressionField = 
+                                    new JSVariableField(FieldType.NamedFunctionExpression, m_variableField);
                                 namedExpressionField.FieldValue = this;
                                 m_functionScope.AddField(namedExpressionField);
 
@@ -258,7 +258,7 @@ namespace Microsoft.Ajax.Utilities
                     // this named function expression from WITHIN the function itself.
                     // the inner field points to the outer field since we're going to want to catch ambiguous
                     // references in the future
-                    JSNamedFunctionExpressionField namedExpressionField = new JSNamedFunctionExpressionField(m_variableField);
+                    var namedExpressionField = new JSVariableField(FieldType.NamedFunctionExpression, m_variableField);
                     m_functionScope.AddField(namedExpressionField);
                     m_variableField.NamedFunctionExpression = namedExpressionField;
                 }
@@ -381,14 +381,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        internal bool IsArgumentTrimmable(JSArgumentField targetArgumentField)
+        internal bool IsArgumentTrimmable(JSVariableField targetArgumentField)
         {
             // walk backward until we either find the given argument field or the
             // first parameter that is referenced. 
             // If we find the argument field, then we can trim it because there are no
             // referenced parameters after it.
             // if we find a referenced argument, then the parameter is not trimmable.
-            JSArgumentField argumentField = null;
+            JSVariableField argumentField = null;
             if (m_parameterDeclarations != null)
             {
                 for (int index = m_parameterDeclarations.Length - 1; index >= 0; --index)
@@ -412,7 +412,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // we're going to change the reference from the outer variable to the inner variable
             // save the inner variable field
-            JSNamedFunctionExpressionField nfeField = m_variableField.NamedFunctionExpression;
+            var nfeField = m_variableField.NamedFunctionExpression;
             // break the connection from the outer to the inner
             m_variableField.NamedFunctionExpression = null;
 

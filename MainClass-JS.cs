@@ -440,10 +440,10 @@ namespace Microsoft.Ajax.Utilities
         {
             // get the crunched value (if any)
             string crunched = string.Empty;
-            JSLocalField localField = funcObj.LocalField as JSLocalField;
-            if (localField != null && localField.CrunchedName != null)
+            var functionField = funcObj.VariableField;
+            if (functionField != null && functionField.CrunchedName != null)
             {
-                crunched = StringMgr.GetString("CrunchedTo", localField.CrunchedName, localField.RefCount);
+                crunched = StringMgr.GetString("CrunchedTo", functionField.CrunchedName, functionField.RefCount);
             }
 
             // get the status if the function
@@ -538,8 +538,9 @@ namespace Microsoft.Ajax.Utilities
         private void WriteMemberReport(JSVariableField variableField, ActivationObject immediateScope)
         {
             // skip any *unreferenced* named-function-expression fields
-            JSNamedFunctionExpressionField namedFuncExpr = variableField as JSNamedFunctionExpressionField;
-            if (namedFuncExpr == null || namedFuncExpr.RefCount > 0 || !m_switchParser.JSSettings.RemoveFunctionExpressionNames)
+            if (variableField.FieldType != FieldType.NamedFunctionExpression
+                || variableField.RefCount > 0 
+                || !m_switchParser.JSSettings.RemoveFunctionExpressionNames)
             {
                 string scope = string.Empty;
                 string type = string.Empty;
@@ -551,18 +552,14 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // calculate the crunched label
-                JSLocalField localField = variableField as JSLocalField;
-                if (localField != null)
+                if (variableField.CrunchedName != null)
                 {
-                    if (localField.CrunchedName != null)
-                    {
-                        crunched = StringMgr.GetString("CrunchedTo", localField.CrunchedName, localField.RefCount);
-                    }
+                    crunched = StringMgr.GetString("CrunchedTo", variableField.CrunchedName, variableField.RefCount);
                 }
 
                 // get the field's default scope and type
                 GetFieldScopeType(variableField, immediateScope, out scope, out type);
-                if (variableField is JSWithField)
+                if (variableField.FieldType == FieldType.WithField)
                 {
                     // if the field is a with field, we won't be using the crunched field (since
                     // those fields can't be crunched), so let's overload it with what the field
@@ -586,53 +583,25 @@ namespace Microsoft.Ajax.Utilities
 
         private static void GetFieldScopeType(JSVariableField variableField, ActivationObject immediateScope, out string scope, out string type)
         {
-            JSLocalField localField = variableField as JSLocalField;
-            JSPredefinedField predefinedField = variableField as JSPredefinedField;
-            JSNamedFunctionExpressionField namedFuncExpr = variableField as JSNamedFunctionExpressionField;
-
             // default scope is blank
             scope = string.Empty;
 
-            if (variableField is JSArgumentField)
+            if (variableField.FieldType == FieldType.Argument)
             {
                 type = StringMgr.GetString("MemberInfoTypeArgument");
             }
-            else if (variableField is JSArgumentsField)
+            else if (variableField.FieldType == FieldType.Arguments)
             {
                 type = StringMgr.GetString("MemberInfoTypeArguments");
             }
-            else if (predefinedField != null)
+            else if (variableField.FieldType == FieldType.Predefined)
             {
-                switch (predefinedField.GlobalObject)
-                {
-                    case GlobalObjectInstance.GlobalObject:
-                        scope = StringMgr.GetString("MemberInfoScopeGlobalObject");
-                        break;
-
-                    case GlobalObjectInstance.WindowObject:
-                        scope = StringMgr.GetString("MemberInfoScopeWindowObject");
-                        break;
-
-                    case GlobalObjectInstance.Other:
-                        scope = StringMgr.GetString("MemberInfoScopeOtherObject");
-                        break;
-                }
-                switch (predefinedField.MemberType)
-                {
-                    case MemberTypes.Method:
-                        type = StringMgr.GetString("MemberInfoBuiltInMethod");
-                        break;
-
-                    case MemberTypes.Property:
-                        type = StringMgr.GetString("MemberInfoBuiltInProperty");
-                        break;
-
-                    default:
-                        type = StringMgr.GetString("MemberInfoBuiltInObject");
-                        break;
-                }
+                scope = StringMgr.GetString("MemberInfoScopeGlobalObject");
+                type = variableField.IsFunction 
+                    ? StringMgr.GetString("MemberInfoBuiltInMethod")
+                    : StringMgr.GetString("MemberInfoBuiltInProperty");
             }
-            else if (variableField is JSGlobalField)
+            else if (variableField.FieldType == FieldType.Global)
             {
                 if ((variableField.Attributes & FieldAttributes.RTSpecialName) == FieldAttributes.RTSpecialName)
                 {
@@ -656,20 +625,20 @@ namespace Microsoft.Ajax.Utilities
                     type = StringMgr.GetString("MemberInfoGlobalVar");
                 }
             }
-            else if (variableField is JSWithField)
+            else if (variableField.FieldType == FieldType.WithField)
             {
                 type = StringMgr.GetString("MemberInfoWithField");
             }
-            else if (namedFuncExpr != null)
+            else if (variableField.FieldType == FieldType.NamedFunctionExpression)
             {
                 type = StringMgr.GetString("MemberInfoSelfFuncExpr");
             }
-            else if (localField != null)
+            else if (variableField.FieldType == FieldType.Local)
             {
                 // type string
-                if (localField.FieldValue is FunctionObject)
+                if (variableField.FieldValue is FunctionObject)
                 {
-                    if (localField.NamedFunctionExpression == null)
+                    if (variableField.NamedFunctionExpression == null)
                     {
                         type = StringMgr.GetString("MemberInfoLocalFunction");
                     }
@@ -678,7 +647,7 @@ namespace Microsoft.Ajax.Utilities
                         type = StringMgr.GetString("MemberInfoFunctionExpression");
                     }
                 }
-                else if (localField.IsLiteral)
+                else if (variableField.IsLiteral)
                 {
                     type = StringMgr.GetString("MemberInfoLocalLiteral");
                 }
@@ -866,46 +835,36 @@ namespace Microsoft.Ajax.Utilities
 
             private static FieldOrder GetOrderIndex(JSVariableField obj)
             {
-                if (obj is JSArgumentField)
+                if (obj.FieldType == FieldType.Argument)
                 {
                     return FieldOrder.Argument;
                 }
-                if (obj is JSArgumentsField)
+                if (obj.FieldType == FieldType.Arguments)
                 {
                     return FieldOrder.ArgumentsArray;
                 }
 
-                JSGlobalField globalField = obj as JSGlobalField;
-                if (globalField != null)
+                if (obj.FieldType == FieldType.Global)
                 {
                     return (
-                      globalField.FieldValue is FunctionObject
+                      obj.FieldValue is FunctionObject
                       ? FieldOrder.GlobalFunctionReferenced
                       : FieldOrder.GlobalFieldReferenced
                       );
                 }
 
-                JSLocalField localField = obj as JSLocalField;
-                if (localField != null)
+                if (obj.OuterField != null)
                 {
-                    if (localField.OuterField != null)
-                    {
-                        return (
-                         localField.FieldValue is FunctionObject
-                         ? FieldOrder.OuterFunctionReferenced
-                         : FieldOrder.OuterFieldReferenced
-                         );
-                    }
-                    else
-                    {
-                        return (
-                        localField.FieldValue is FunctionObject
-                        ? FieldOrder.FunctionDefined
-                        : FieldOrder.FieldDefined
-                        );
-                    }
+                    return (obj.FieldValue is FunctionObject
+                        ? FieldOrder.OuterFunctionReferenced
+                        : FieldOrder.OuterFieldReferenced);
                 }
-                return FieldOrder.Other;
+                else
+                {
+                    return (obj.FieldValue is FunctionObject
+                        ? FieldOrder.FunctionDefined
+                        : FieldOrder.FieldDefined);
+                }
             }
 
             private enum FieldOrder : int

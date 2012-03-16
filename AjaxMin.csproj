@@ -150,7 +150,6 @@
     <Compile Include="Css\CssToken.cs" />
     <Compile Include="Css\CssStringMgr.cs" />
     <Compile Include="JavaScript\importantcomment.cs" />
-    <Compile Include="JavaScript\jswithfield.cs" />
     <Compile Include="JSEncoderFallback.cs" />
     <Compile Include="MainClass-Css.cs" />
     <Compile Include="MainClass-JS.cs" />
@@ -233,33 +232,19 @@
     <Compile Include="JavaScript\if.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="JavaScript\jsargumentfield.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="JavaScript\jsargumentsfield.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="JavaScript\jscriptexception.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="JavaScript\jserror.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="JavaScript\jsglobalfield.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="JavaScript\jskeyword.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="JavaScript\jslocalfield.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="JavaScript\jsnfefield.cs" />
     <Compile Include="ResourceStrings.cs" />
     <Compile Include="JavaScript\jsparser.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="JavaScript\jspredefinedfield.cs" />
     <Compile Include="JavaScript\jsscanner.cs">
       <SubType>Code</SubType>
     </Compile>

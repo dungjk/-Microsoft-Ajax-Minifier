@@ -18,17 +18,13 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class ParameterDeclaration
     {
-        public JSArgumentField Field
-        {
-            get { return m_field; }
-        }
-        private JSArgumentField m_field;
+        public JSVariableField Field { get; private set; }
 
         public string Name
         {
             get
             {
-                return (m_field != null ? m_field.ToString() : m_name);
+                return (Field != null ? Field.ToString() : m_name);
             }
         }
 
@@ -51,9 +47,9 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (!functionScope.NameTable.ContainsKey(m_name))
                 {
-                    m_field = functionScope.AddNewArgumentField(m_name);
-                    m_field.OriginalContext = m_context;
-                    m_field.Position = position;
+                    Field = functionScope.AddNewArgumentField(m_name);
+                    Field.OriginalContext = m_context;
+                    Field.Position = position;
                 }
             }
             else

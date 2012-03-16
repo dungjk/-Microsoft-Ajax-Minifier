@@ -126,10 +126,11 @@ namespace Microsoft.Ajax.Utilities
             // check for unused local fields or arguments
             foreach (JSVariableField variableField in m_nameTable.Values)
             {
-                JSLocalField locField = variableField as JSLocalField;
-                if (locField != null && !locField.IsReferenced && locField.OriginalContext != null)
+                if ((variableField.FieldType == FieldType.Local || variableField.FieldType == FieldType.Argument)
+                    && !variableField.IsReferenced 
+                    && variableField.OriginalContext != null)
                 {
-                    var funcObject = locField.FieldValue as FunctionObject;
+                    var funcObject = variableField.FieldValue as FunctionObject;
                     if (funcObject != null)
                     {
                         // unreferenced function declaration.
@@ -142,19 +143,18 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         // and fire an error
-                        Context ctx = ((FunctionObject)locField.FieldValue).IdContext;
-                        if (ctx == null) { ctx = locField.OriginalContext; }
+                        Context ctx = ((FunctionObject)variableField.FieldValue).IdContext;
+                        if (ctx == null) { ctx = variableField.OriginalContext; }
                         ctx.HandleError(JSError.FunctionNotReferenced, false);
                     }
-                    else if (!locField.IsGenerated)
+                    else if (!variableField.IsGenerated)
                     {
-                        JSArgumentField argumentField = locField as JSArgumentField;
-                        if (argumentField != null)
+                        if (variableField.FieldType == FieldType.Argument)
                         {
                             // we only want to throw this error if it's possible to remove it
                             // from the argument list. And that will only happen if there are
                             // no REFERENCED arguments after this one in the formal parameter list.
-                            // Assertion: because this is a JSArgumentField, this should be a function scope,
+                            // Assertion: because this is an argument, this should be a function scope,
                             // let's walk up to the first function scope we find, just in case.
                             FunctionScope functionScope = this as FunctionScope;
                             if (functionScope == null)
@@ -169,17 +169,17 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                 }
                             }
-                            if (functionScope == null || functionScope.IsArgumentTrimmable(argumentField))
+                            if (functionScope == null || functionScope.IsArgumentTrimmable(variableField))
                             {
-                                locField.OriginalContext.HandleError(
+                                variableField.OriginalContext.HandleError(
                                   JSError.ArgumentNotReferenced,
                                   false
                                   );
                             }
                         }
-                        else if (locField.OuterField == null || !locField.OuterField.IsReferenced)
+                        else if (variableField.OuterField == null || !variableField.OuterField.IsReferenced)
                         {
-                            locField.OriginalContext.HandleError(
+                            variableField.OriginalContext.HandleError(
                               JSError.VariableDefinedNotReferenced,
                               false
                               );
@@ -224,7 +224,7 @@ namespace Microsoft.Ajax.Utilities
                         // and we're only concerned with global or local variables --
                         // those which are defined by the script (not predefined, not the arguments object)
                         if (varField.OuterField == null 
-                            && (varField is JSLocalField || varField is JSGlobalField))
+                            && (varField.FieldType != FieldType.Arguments && varField.FieldType != FieldType.Predefined))
                         {
                             // see if the name is in the parser's rename map
                             string newName = Parser.Settings.GetNewName(varField.Name);
@@ -314,46 +314,45 @@ namespace Microsoft.Ajax.Utilities
             // check for unused local fields or arguments
             foreach (JSVariableField variableField in m_nameTable.Values)
             {
-                JSLocalField localField = variableField as JSLocalField;
-                if (localField != null)
+                if (variableField.CanCrunch)
                 {
+                    // this variable is a target for renaming.
                     // if this is a named-function-expression name, then we want to use the name of the 
                     // outer field so we don't collide in IE
-                    JSNamedFunctionExpressionField namedExprField = localField as JSNamedFunctionExpressionField;
-                    if (namedExprField != null)
+                    if (variableField.FieldType == FieldType.NamedFunctionExpression)
                     {
                         // make sure the field is in this scope's verboten list so we don't accidentally reuse
                         // an outer scope variable name
-                        if (!Verboten.ContainsKey(localField))
+                        if (!Verboten.ContainsKey(variableField))
                         {
-                            Verboten.Add(localField, localField);
+                            Verboten.Add(variableField, variableField);
                         }
 
                         // we don't need to reserve up the scope because the named function expression's
                         // "outer" field is always in the very next scope
                     }
-                    else if (localField.OuterField != null)
+                    else if (variableField.OuterField != null)
                     {
                         // if the outer field is not null, then this field (not the name) needs to be 
                         // reserved up the scope chain until the scope where it's defined.
                         // make sure the field is in this scope's verboten list so we don't accidentally reuse
                         // the outer scope's variable name
-                        if (!Verboten.ContainsKey(localField))
+                        if (!Verboten.ContainsKey(variableField))
                         {
-                            Verboten.Add(localField, localField);
+                            Verboten.Add(variableField, variableField);
                         }
 
-                        for (ActivationObject scope = this; scope != null; scope = scope.Parent)
+                        for (var scope = this; scope != null; scope = scope.Parent)
                         {
                             // get the local field by this name (if any)
-                            JSLocalField scopeField = scope.GetLocalField(variableField.Name);
+                            var scopeField = scope.GetLocalField(variableField.Name);
                             if (scopeField == null)
                             {
                                 // it's not referenced in this scope -- if the field isn't in the verboten
                                 // list, add it now
-                                if (!scope.Verboten.ContainsKey(localField))
+                                if (!scope.Verboten.ContainsKey(variableField))
                                 {
-                                    scope.Verboten.Add(localField, localField);
+                                    scope.Verboten.Add(variableField, variableField);
                                 }
                             }
                             else if (scopeField.OuterField == null)
@@ -364,36 +363,62 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                     else if (m_parser.Settings.LocalRenaming == LocalRenaming.KeepLocalizationVars
-                      && localField.Name.StartsWith("L_", StringComparison.Ordinal))
+                      && variableField.Name.StartsWith("L_", StringComparison.Ordinal))
                     {
                         // localization variable. don't crunch it.
                         // add it to this scope's verboten list in the extremely off-hand chance
                         // that a crunched variable might be the same pattern
-                        if (!Verboten.ContainsKey(localField))
+                        if (!Verboten.ContainsKey(variableField))
                         {
-                            Verboten.Add(localField, localField);
+                            Verboten.Add(variableField, variableField);
                         }
                     }
-                    else if (!localField.CanCrunch)
+                }
+                else if (variableField.FieldType == FieldType.Global
+                    || variableField.FieldType == FieldType.Predefined)
+                {
+                    // this variable is NOT a target for renaming, but it's a global object
+                    // reserve the name in this scope and all the way up the chain
+                    for (var scope = this; scope != null; scope = scope.Parent)
                     {
-                        // this local field cannot be crunched for whatever reason
-                        // (we probably already have a name picked out for it that we want to keep).
-                        // add it to the verboten list, too.
-                        if (!Verboten.ContainsKey(localField))
+                        if (!scope.Verboten.ContainsKey(variableField))
                         {
-                            Verboten.Add(localField, localField);
+                            scope.Verboten.Add(variableField, variableField);
                         }
                     }
                 }
                 else
                 {
-                    // must be a global of some sort
-                    // reserve the name in this scope and all the way up the chain
-                    for (ActivationObject scope = this; scope != null; scope = scope.Parent)
+                    // not target for renaming, but not a global. 
+                    // (we may have already have a name picked out for it that we want to keep).
+                    // add it to the verboten list, too.
+                    if (!Verboten.ContainsKey(variableField))
                     {
-                        if (!scope.Verboten.ContainsKey(variableField))
+                        Verboten.Add(variableField, variableField);
+                    }
+
+                    // if this is pointing to an outer field, we still need to reserve it
+                    // all the way up the scope chain
+                    if (variableField.OuterField != null)
+                    {
+                        for (var scope = this; scope != null; scope = scope.Parent)
                         {
-                            scope.Verboten.Add(variableField, variableField);
+                            // get the local field by this name (if any)
+                            var scopeField = scope.GetLocalField(variableField.Name);
+                            if (scopeField == null)
+                            {
+                                // it's not referenced in this scope -- if the field isn't in the verboten
+                                // list, add it now
+                                if (!scope.Verboten.ContainsKey(variableField))
+                                {
+                                    scope.Verboten.Add(variableField, variableField);
+                                }
+                            }
+                            else if (scopeField.OuterField == null)
+                            {
+                                // found the original field -- stop looking
+                                break;
+                            }
                         }
                     }
                 }
@@ -416,7 +441,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    JSLocalField localField = parentScope.GetLocalField(funcScope.FunctionObject.Name);
+                    var localField = parentScope.GetLocalField(funcScope.FunctionObject.Name);
                     if (localField == null || localField.IsReferenced)
                     {
                         parentScope.IsKnownAtCompileTime = false;
@@ -431,9 +456,8 @@ namespace Microsoft.Ajax.Utilities
             // we're looking for uncrunched generated fields.
             foreach (JSVariableField variableField in m_fieldTable)
             {
-                JSLocalField localField = variableField as JSLocalField;
-                if (localField != null && localField.IsGenerated
-                  && localField.CrunchedName == null)
+                if (variableField.IsGenerated
+                    && variableField.CrunchedName == null)
                 {
                     // we need to rename this field.
                     // first we need to walk all the child scopes depth-first
@@ -442,13 +466,13 @@ namespace Microsoft.Ajax.Utilities
                     // scopes and all above them (from here) so we know what names we
                     // can't use.
                     Dictionary<string, string> avoidTable = new Dictionary<string, string>();
-                    GenerateAvoidList(avoidTable, localField.Name);
+                    GenerateAvoidList(avoidTable, variableField.Name);
 
                     // now that we have our avoid list, create a crunch enumerator from it
                     CrunchEnumerator crunchEnum = new CrunchEnumerator(avoidTable);
 
                     // and use it to generate a new name
-                    localField.CrunchedName = crunchEnum.NextName();
+                    variableField.CrunchedName = crunchEnum.NextName();
                 }
             }
 
@@ -631,7 +655,7 @@ namespace Microsoft.Ajax.Utilities
         public virtual JSVariableField CreateInnerField(JSVariableField outerField)
         {
             JSVariableField innerField;
-            if (outerField is JSGlobalField || outerField is JSPredefinedField)
+            if (outerField.FieldType == FieldType.Global || outerField.FieldType == FieldType.Predefined)
             {
                 // if this is a global or predefined field, then just add the field itself
                 // to the local scope. We don't want to create a local reference.
@@ -655,9 +679,10 @@ namespace Microsoft.Ajax.Utilities
             return variableField;
         }
 
-        public virtual JSLocalField GetLocalField(string name)
+        public virtual JSVariableField GetLocalField(string name)
         {
-            return m_nameTable.ContainsKey(name) ? m_nameTable[name] as JSLocalField : null;
+            JSVariableField localField;
+            return (m_nameTable.TryGetValue(name, out localField)) ? localField : null;
         }
 
         #endregion

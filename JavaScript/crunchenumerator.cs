@@ -196,17 +196,15 @@ namespace Microsoft.Ajax.Utilities
             // arguments come first, ordered by position. This is an effort to try and make the
             // argument lists for the functions come out in a more repeatable pattern so gzip will
             // compress the file better.
-            JSArgumentField leftArg = left as JSArgumentField;
-            JSArgumentField rightArg = right as JSArgumentField;
-            if (leftArg != null && rightArg != null)
+            if (left.FieldType == FieldType.Argument && right.FieldType == FieldType.Argument)
             {
-                return leftArg.Position - rightArg.Position;
+                return left.Position - right.Position;
             }
-            if (leftArg != null)
+            if (left.FieldType == FieldType.Argument)
             {
                 return -1;
             }
-            if (rightArg != null)
+            if (right.FieldType == FieldType.Argument)
             {
                 return 1;
             }

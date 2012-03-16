@@ -63,29 +63,21 @@ namespace Microsoft.Ajax.Utilities
             base.AnalyzeScope();
         }
 
-        /*
-        internal void Remove(JSLocalField localField)
+        internal JSVariableField AddNewArgumentField(String name)
         {
-            NameTable.Remove(localField.Name);
-            FieldTable.Remove(localField);
-        }
-        */
-
-        internal JSArgumentField AddNewArgumentField(String name)
-        {
-            JSArgumentField result = new JSArgumentField(name, Missing.Value);
+            var result = new JSVariableField(FieldType.Argument, name, 0, Missing.Value);
             AddField(result);
             return result;
         }
 
-        internal JSArgumentsField AddArgumentsField()
+        internal JSVariableField AddArgumentsField()
         {
-            JSArgumentsField arguments = new JSArgumentsField();
+            var arguments = new JSVariableField(FieldType.Arguments, "arguments", 0, null);
             AddField(arguments);
             return arguments;
         }
 
-        internal bool IsArgumentTrimmable(JSArgumentField argumentField)
+        internal bool IsArgumentTrimmable(JSVariableField argumentField)
         {
             return m_owningFunctionObject.IsArgumentTrimmable(argumentField);
         }
@@ -114,12 +106,12 @@ namespace Microsoft.Ajax.Utilities
 
         public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)
         {
-            return new JSLocalField(name, value, attributes);
+            return new JSVariableField(FieldType.Local, name, attributes, value);
         }
 
         public override JSVariableField CreateField(JSVariableField outerField)
         {
-            return new JSLocalField(outerField);
+            return new JSVariableField(FieldType.Local, outerField);
         }
 
         internal void AddReference(ActivationObject scope)

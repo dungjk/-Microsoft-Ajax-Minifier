@@ -143,7 +143,7 @@ namespace Microsoft.Ajax.Utilities
                 Lookup lookup = this as Lookup;
                 return (lookup != null
                         && string.CompareOrdinal(lookup.Name, "window") == 0
-                        && lookup.LocalField == null);
+                        && (lookup.VariableField == null || lookup.VariableField.FieldType == FieldType.Predefined));
             }
         }
 

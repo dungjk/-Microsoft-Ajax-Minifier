@@ -15,81 +15,116 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// Field type enumeration
+    /// </summary>
+    public enum FieldType
+    {
+        Local,
+        Predefined,
+        Global,
+        Arguments,
+        Argument,
+        WithField,
+        NamedFunctionExpression,
+    }
+
     public class JSVariableField
     {
-        private String m_name;
-        private Object m_value;
-        private FieldAttributes m_attributeFlags;
-        private JSNamedFunctionExpressionField m_namedFuncExpr;
-        private bool m_isAmbiguous; //= false;
-        private bool m_isDeclared; //= false;
-        private bool m_isPlaceholder; //= false;
+        // never update this context object. It is shared
+        internal Context OriginalContext { get; set; }
+
+        public string Name { get; private set; }
+        public FieldType FieldType { get; private set; }
+        public bool IsFunction { get; internal set; }
+
+        public JSVariableField NamedFunctionExpression { get; set; }
+        public bool IsAmbiguous { get; set; }
+        public bool IsPlaceholder { get; set; }
+        public int RefCount { get; private set; }
+        public JSVariableField OuterField { get; set; }
+        public Object FieldValue { get; set; }
+        public FieldAttributes Attributes { get; set; }
+        public int Position { get; set; }
+
+        public bool IsLiteral
+        {
+            get
+            {
+                return ((Attributes & FieldAttributes.Literal) != 0);
+            }
+        }
+
         private bool m_canCrunch;// = false;
-        private string m_crunchedName;// = null;
-
-        private int m_refCount;// = 0;
-        public int RefCount { get { return m_refCount; } }
-
-        private Context m_originalContext; // never update this context object. It is shared
-        internal Context OriginalContext
-        {
-            get { return m_originalContext; }
-            set { m_originalContext = value; }
-        }
-
-        private JSVariableField m_outerField;
-        public JSVariableField OuterField 
-        { 
-            get { return m_outerField; }
-            set { m_outerField = value; }
-        }
-
-        public Object FieldValue
-        {
-            get { return m_value; }
-            set { m_value = value; }
-        }
-
         public bool CanCrunch
         {
             get { return m_canCrunch; }
             set 
             { 
                 m_canCrunch = value;
-                if (m_outerField != null)
+
+                // if there is an outer field, we only want to propagate
+                // our crunch setting if we are setting it to false. We never
+                // want to set an outer field to true because we might have already
+                // determined that we can't crunch it.
+                if (OuterField != null && !value)
                 {
-                    m_outerField.CanCrunch = value;
+                    OuterField.CanCrunch = false;
                 }
             }
         }
 
+        private bool m_isDeclared; //= false;
         public bool IsDeclared
         {
             get { return m_isDeclared; }
             set 
             { 
                 m_isDeclared = value;
-                if (m_outerField != null)
+                if (OuterField != null)
                 {
-                    m_outerField.IsDeclared = value;
+                    OuterField.IsDeclared = value;
+                }
+            }
+        }
+
+        private bool m_isGenerated;
+        public bool IsGenerated
+        {
+            get
+            {
+                // if we are pointing to an outer field, return ITS flag, not ours
+                return OuterField != null ? OuterField.IsGenerated : m_isGenerated;
+            }
+            set
+            {
+                // always set our flag, just in case
+                m_isGenerated = value;
+
+                // if we are pointing to an outer field, set it's flag as well
+                if (OuterField != null)
+                {
+                    OuterField.IsGenerated = value;
                 }
             }
         }
 
         // we'll set this after analyzing all the variables in the
         // script in order to shrink it down even further
+        private string m_crunchedName;// = null;
         public string CrunchedName
         {
             get
             {
                 // return the outer field's crunched name if there is one,
                 // otherwise return ours
-                return (m_outerField != null
-                    ? m_outerField.CrunchedName
+                return (OuterField != null
+                    ? OuterField.CrunchedName
                     : m_crunchedName);
             }
             set
@@ -98,73 +133,15 @@ namespace Microsoft.Ajax.Utilities
                 if (m_canCrunch)
                 {
                     // if this is an outer reference, pass this on to the outer field
-                    if (m_outerField != null)
+                    if (OuterField != null)
                     {
-                        m_outerField.CrunchedName = value;
+                        OuterField.CrunchedName = value;
                     }
                     else
                     {
                         m_crunchedName = value;
                     }
                 }
-            }
-        }
-
-        public JSNamedFunctionExpressionField NamedFunctionExpression
-        {
-            get { return m_namedFuncExpr; }
-            set { m_namedFuncExpr = value; }
-        }
-
-        public bool IsAmbiguous
-        {
-            get { return m_isAmbiguous; }
-            set { m_isAmbiguous = value; }
-        }
-
-        public bool IsPlaceholder
-        {
-            get { return m_isPlaceholder; }
-            set { m_isPlaceholder = value; }
-        }
-
-        public bool IsFunction
-        {
-            get; internal set;
-        }
-
-        public JSVariableField(string name, FieldAttributes fieldAttributes, object value)
-        {
-            m_name = name;
-            m_attributeFlags = fieldAttributes;
-            m_value = value;
-        }
-
-        internal JSVariableField(JSVariableField outerField)
-            : this(outerField.Name, outerField.Attributes, outerField.FieldValue)
-        {
-            m_outerField = outerField;
-        }
-
-        public virtual void AddReference(ActivationObject scope)
-        {
-            // if we have an outer field, add the reference to it
-            if (m_outerField != null)
-            {
-                m_outerField.AddReference(scope);
-            }
-
-            ++m_refCount;
-            if (m_value is FunctionObject)
-            {
-                // add the reference to the scope
-                ((FunctionObject)FieldValue).FunctionScope.AddReference(scope);
-            }
-
-            // no longer a placeholder if we are referenced
-            if (m_isPlaceholder)
-            {
-                m_isPlaceholder = false;
             }
         }
 
@@ -181,49 +158,112 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // ask the function object if it's referenced. 
                     // Pass the field refcount because it would be useful for func declarations
-                    return funcObj.IsReferenced(m_refCount);
+                    return funcObj.IsReferenced(RefCount);
                 }
-                return m_refCount > 0;
+                return RefCount > 0;
             }
+        }
+
+        public JSVariableField(FieldType fieldType, string name, FieldAttributes fieldAttributes, object value)
+        {
+            Name = name;
+            Attributes = fieldAttributes;
+            FieldValue = value;
+            SetFieldsBasedOnType(fieldType);
+        }
+
+        internal JSVariableField(FieldType fieldType, JSVariableField outerField)
+        {
+            // set values based on the outer field
+            Debug.Assert(outerField != null, "Parameter outerField cannot be null");
+            OuterField = outerField;
+            Name = outerField.Name;
+            Attributes = outerField.Attributes;
+            FieldValue = outerField.FieldValue;
+            IsGenerated = outerField.IsGenerated;
+
+            // and set some other fields on our object based on the type we are
+            SetFieldsBasedOnType(fieldType);
+        }
+
+        private void SetFieldsBasedOnType(FieldType fieldType)
+        {
+            FieldType = fieldType;
+            switch (FieldType)
+            {
+                case FieldType.Argument:
+                    IsDeclared = true;
+                    CanCrunch = true;
+                    break;
+
+                case FieldType.Arguments:
+                    CanCrunch = false;
+                    break;
+
+                case FieldType.Global:
+                    CanCrunch = false;
+                    break;
+
+                case FieldType.Local:
+                    CanCrunch = true;
+                    break;
+
+                case FieldType.NamedFunctionExpression:
+                    CanCrunch = true;
+                    IsFunction = true;
+                    break;
+
+                case FieldType.Predefined:
+                    CanCrunch = false;
+                    break;
+
+                case FieldType.WithField:
+                    CanCrunch = false;
+                    break;
+
+                default:
+                    // shouldn't get here
+                    throw new ArgumentException("Invalid field type", "fieldType");
+            }
+        }
+
+        public void AddReference(ActivationObject scope)
+        {
+            // if we have an outer field, add the reference to it
+            if (OuterField != null)
+            {
+                OuterField.AddReference(scope);
+            }
+
+            ++RefCount;
+            if (FieldValue is FunctionObject)
+            {
+                // add the reference to the scope
+                ((FunctionObject)FieldValue).FunctionScope.AddReference(scope);
+            }
+
+            // no longer a placeholder if we are referenced
+            if (IsPlaceholder)
+            {
+                IsPlaceholder = false;
+            }
+        }
+
+        public void Detach()
+        {
+            OuterField = null;
         }
 
         public override string ToString()
         {
             string crunch = CrunchedName;
-            return string.IsNullOrEmpty(crunch) ? m_name : crunch;
+            return string.IsNullOrEmpty(crunch) ? Name : crunch;
         }
 
-        public virtual String Name
-        {
-            get
-            {
-                return m_name;
-            }
-        }
-
-        public FieldAttributes Attributes
-        {
-            get
-            {
-                return m_attributeFlags;
-            }
-            set
-            {
-                m_attributeFlags = value;
-            }
-        }
-
-        public bool IsLiteral
-        {
-            get
-            {
-                return ((m_attributeFlags & FieldAttributes.Literal) != 0);
-            }
-        }
 
         public override int GetHashCode()
         {
-            return m_name.GetHashCode();
+            return Name.GetHashCode();
         }
 
         /// <summary>

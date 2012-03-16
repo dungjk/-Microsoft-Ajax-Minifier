@@ -30,11 +30,6 @@ namespace Microsoft.Ajax.Utilities
     {
         public JSVariableField VariableField { get; internal set; }
 
-        public JSLocalField LocalField
-        {
-            get { return VariableField as JSLocalField; }
-        }
-
         public bool IsGenerated { get; set; }
         public ReferenceType RefType { get; set; }
 
@@ -121,8 +116,9 @@ namespace Microsoft.Ajax.Utilities
                         variableField = parentScope.CreateInnerField(variableField);
                     }
 
-                    // save the local field
-                    VariableField = variableField as JSLocalField;
+                    // save the field
+                    VariableField = variableField;
+
                     // add a reference
                     if (VariableField != null)
                     {

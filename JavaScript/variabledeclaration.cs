@@ -38,10 +38,9 @@ namespace Microsoft.Ajax.Utilities
             set
             {
                 m_isGenerated = value;
-                JSLocalField localField = Field as JSLocalField;
-                if (localField != null)
+                if (Field != null)
                 {
-                    localField.IsGenerated = m_isGenerated;
+                    Field.IsGenerated = m_isGenerated;
                 }
             }
         }
