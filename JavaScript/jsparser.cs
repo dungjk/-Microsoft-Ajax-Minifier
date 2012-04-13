@@ -873,7 +873,7 @@ namespace Microsoft.Ajax.Utilities
             ConditionalCompilationComment conditionalComment = new ConditionalCompilationComment(context, this);
 
             GetNextToken();
-            while(m_currentToken.Token != JSToken.ConditionalCommentEnd)
+            while(m_currentToken.Token != JSToken.ConditionalCommentEnd && m_currentToken.Token != JSToken.EndOfFile)
             {
                 conditionalComment.Append(ParseStatement(fSourceElement));
             }

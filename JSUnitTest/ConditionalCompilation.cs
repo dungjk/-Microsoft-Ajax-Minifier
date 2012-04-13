@@ -115,5 +115,11 @@ namespace JSUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void EndEOF()
+    {
+        TestHelper.Instance.RunTest();
+    }
   }
 }
