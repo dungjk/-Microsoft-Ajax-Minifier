@@ -55,7 +55,7 @@ foo = function global_one_self_ref(count) { if (--count > 0) { global_one_self_r
 // this particular function expression does NOT self-reference, so the function name should be
 // removed when crunched unless we've explicitly said we want to keep them all.
 var ack = function ack() { };
-ack.bar = 12;
+ack.bar = function () { return ack[12]; };
 
 // but this one DOES self-reference. But because we are detaching it from the outer variable,
 // we can crunch the name when hypercrunching.
