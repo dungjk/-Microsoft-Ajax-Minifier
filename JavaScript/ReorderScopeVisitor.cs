@@ -38,6 +38,13 @@ namespace Microsoft.Ajax.Utilities
         // whether we want to combine adjacent var statements
         private bool m_combineAdjacentVars;
 
+        // counter for whether we are inside a conditional-compilation construct.
+        // we need to know this because we do NOT move function declarations that
+        // are inside that construct (between @if and @end or inside a single
+        // conditional comment).
+        // encountering @if or /*@ increments it; *@/ or @end decrements it.
+        private int m_conditionalCommentLevel;
+
         private ReorderScopeVisitor(JSParser parser)
         {
             // save the mods we care about
@@ -100,16 +107,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private static bool InsideConditionalComment(AstNode node)
-        {
-            // walk up the parent chain until we either hit the root or it's a conditional comment
-            while (node != null && !(node is ConditionalCompilationComment))
-            {
-                node = node.Parent;
-            }
-            return node != null;
-        }
-
         private static int RelocateFunction(Block block, int insertAt, FunctionObject funcDecl)
         {
             if (block[insertAt] != funcDecl)
@@ -121,7 +118,7 @@ namespace Microsoft.Ajax.Utilities
                 // they were a direct child of the main block. Others will treat it like a function expression with
                 // an external name, and only assign the function to the name if that line of code is actually
                 // executed. So since there's a difference, just leave them as-is and only move valid funcdecls.
-                if (funcDecl.Parent == block && !InsideConditionalComment(funcDecl))
+                if (funcDecl.Parent == block)
                 {
                     // remove the function from it's parent, which will take it away from where it is right now.
                     funcDecl.Parent.ReplaceChild(funcDecl, null);
@@ -147,7 +144,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // if the var statement is at the next position to insert, then we don't need
             // to do anything.
-            if (block[insertAt] != varStatement && !InsideConditionalComment(varStatement))
+            if (block[insertAt] != varStatement)
             {
                 // check to see if the current position is a var and we are the NEXT statement.
                 // if that's the case, we don't need to break out the initializer, just append all the
@@ -367,6 +364,37 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override void Visit(ConditionalCompilationComment node)
+        {
+            if (node != null && node.Statements != null && node.Statements.Count > 0)
+            {
+                // increment the conditional comment level, recurse (process all the
+                // statements), then decrement the level when we are through.
+                ++m_conditionalCommentLevel;
+                base.Visit(node);
+                --m_conditionalCommentLevel;
+            }
+        }
+
+        public override void Visit(ConditionalCompilationIf node)
+        {
+            if (node != null)
+            {
+                // increment the conditional comment level and then recurse the condition
+                ++m_conditionalCommentLevel;
+                base.Visit(node);
+            }
+        }
+
+        public override void Visit(ConditionalCompilationEnd node)
+        {
+            if (node != null)
+            {
+                // just decrement the level, because there's nothing to recurse
+                --m_conditionalCommentLevel;
+            }
+        }
+
         public override void Visit(FunctionObject node)
         {
             if (node != null)
@@ -381,7 +409,11 @@ namespace Microsoft.Ajax.Utilities
                     // add the node to the appropriate list: either function expression or function declaration.
                     // assume if it's not a function declaration, it must be an expression since the other types
                     // are not declaration (getter, setter) and we want to treat declarations special.
-                    if (node.FunctionType == FunctionType.Declaration)
+                    // if the conditional comment level isn't zero, then something funky is going on with
+                    // the conditional-compilation statements, and we don't want to move the declarations, so
+                    // don't add them to the declaration list. But we still want to recurse them, so add them
+                    // to the expression list (which get recursed but not moved).
+                    if (node.FunctionType == FunctionType.Declaration && m_conditionalCommentLevel == 0)
                     {
                         if (m_functionDeclarations == null)
                         {
@@ -416,8 +448,10 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // don't bother creating a list of var-statements if we're not going to move them
-                if (m_moveVarStatements)
+                // don't bother creating a list of var-statements if we're not going to move them.
+                // and if we are inside a conditional-compilation comment level, then don't move them
+                // either.
+                if (m_moveVarStatements && m_conditionalCommentLevel == 0)
                 {
                     if (m_varStatements == null)
                     {

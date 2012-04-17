@@ -121,5 +121,11 @@ namespace JSUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void FuncDecl()
+    {
+        TestHelper.Instance.RunTest();
+    }
   }
 }
