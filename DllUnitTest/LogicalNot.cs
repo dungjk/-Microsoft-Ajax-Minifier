@@ -14,164 +14,68 @@ namespace DllUnitTest
     [TestClass]
     public class LogicalNot
     {
-        public LogicalNot()
-        {
-        }
-
         /// <summary>
         ///Gets or sets the test context which provides
         ///information about and functionality for the current test run.
         ///</summary>
         public TestContext TestContext { get; set; }
 
-        public static string ExpectedFolder { get; private set; }
-        public static string InputFolder { get; private set; }
-
-        #region Additional test attributes
-        
-        // Use ClassInitialize to run code before running the first test in the class
-        [ClassInitialize()]
-        public static void MyClassInitialize(TestContext testContext) 
+        [TestMethod,
+         DeploymentItem(@"..\..\TestData\Dll\NotExpressions.csv"), 
+         DataSource("Microsoft.VisualStudio.TestTools.DataSource.CSV", @"|DataDirectory|\NotExpressions.csv", "NotExpressions#csv", DataAccessMethod.Sequential)]
+        public void NotExpressions()
         {
-            var dataFolder = Path.Combine(testContext.TestDeploymentDir, @"Dll");
-            var className = testContext.FullyQualifiedTestClassName.Substring(testContext.FullyQualifiedTestClassName.LastIndexOf('.') + 1);
+            var expressionSource = TestContext.DataRow[0].ToString();
+            var expectedResult = TestContext.DataRow[1].ToString();
 
-            ExpectedFolder = Path.Combine(Path.Combine(dataFolder, "Expected"), className);
-            InputFolder = Path.Combine(Path.Combine(dataFolder, "Input"), className);
-        }
-        
-        //
-        // Use ClassCleanup to run code after all tests in a class have run
-        // [ClassCleanup()]
-        // public static void MyClassCleanup() { }
-        //
-        // Use TestInitialize to run code before running each test 
-        // [TestInitialize()]
-        // public void MyTestInitialize() { }
-        //
-        // Use TestCleanup to run code after each test has run
-        // [TestCleanup()]
-        // public void MyTestCleanup() { }
-        //
-        #endregion
+            // parse the source into an AST
+            var parser = new JSParser(expressionSource);
+            var block = parser.ParseExpression(new CodeSettings() { MinifyCode = false });
 
-        private string[] GetSource(string extension)
-        {
-            var lines = new List<string>();
-            var ndxUnderscore = TestContext.TestName.IndexOf('_');
-            var testName = ndxUnderscore < 0 ? TestContext.TestName : TestContext.TestName.Substring(0, ndxUnderscore);
-
-            var path = Path.ChangeExtension(Path.Combine(InputFolder, testName), extension);
-            Trace.WriteLine(string.Format("Source path: {0}", path));
-
-            using (var reader = new StreamReader(path))
+            if (block.Count == 1)
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    lines.Add(line);
-                }
-            }
+                var expression = block[0];
 
-            return lines.ToArray();
-        }
+                // create the logical-not visitor on the expression
+                var logicalNot = new Microsoft.Ajax.Utilities.LogicalNot(expression, parser);
 
-        private string[] GetExpected(string extension)
-        {
-            var lines = new List<string>();
+                // get the original code
+                var original = expression.ToCode();
 
-            var path = Path.ChangeExtension(Path.Combine(ExpectedFolder, TestContext.TestName), extension);
-            Trace.Write("Expected path: ");
-            Trace.WriteLine(path);
+                Trace.Write("ORIGINAL EXPRESSION:    ");
+                Trace.WriteLine(original);
 
-            using (var reader = new StreamReader(path))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    lines.Add(line);
-                }
-            }
+                // get the measured delta
+                var measuredDelta = logicalNot.Measure();
 
-            return lines.ToArray();
-        }
+                // perform the logical-not operation
+                logicalNot.Apply();
 
-        private void RunTest(CodeSettings settings)
-        {
-            var source = GetSource(".js");
-            var expected = GetExpected(".js");
+                // get the resulting code -- should still be only one statement in the block
+                var notted = block[0].ToCode();
 
-            settings = settings ?? new CodeSettings() { MinifyCode = false };
+                Trace.Write("LOGICAL-NOT EXPRESSION: ");
+                Trace.WriteLine(notted);
 
-            if (source.Length == expected.Length)
-            {
-                for (var ndx = 0; ndx < source.Length; ++ndx)
-                {
-                    Trace.WriteLine("");
-                    Trace.WriteLine("----------------------------------------------------------------------------");
-                    Trace.WriteLine("");
+                Trace.Write("EXPECTED EXPRESSION:    ");
+                Trace.WriteLine(expectedResult);
 
-                    // parse the source into an AST
-                    var parser = new JSParser(source[ndx]);
-                    var block = parser.ParseExpression(settings);
+                Trace.Write("DELTA: ");
+                Trace.WriteLine(measuredDelta);
 
-                    // there should only be one statement in the block
-                    if (block.Count == 1)
-                    {
-                        var expression = block[0];
+                // what's the actual difference
+                var actualDelta = notted.Length - original.Length;
+                Assert.AreEqual(actualDelta, measuredDelta,
+                    "Measurement was off; calculated {0} but was actually {1}",
+                    measuredDelta,
+                    actualDelta);
 
-                        // create the logical-not visitor on the expression
-                        var logicalNot = new Microsoft.Ajax.Utilities.LogicalNot(expression, parser);
-
-                        // get the original code
-                        var original = expression.ToCode();
-
-                        Trace.Write("ORIGINAL EXPRESSION:    ");
-                        Trace.WriteLine(original);
-
-                        // get the measured delta
-                        var measuredDelta = logicalNot.Measure();
-
-                        // perform the logical-not operation
-                        logicalNot.Apply();
-
-                        // get the resulting code -- should still be only one statement in the block
-                        var notted = block[0].ToCode();
-
-                        Trace.Write("LOGICAL-NOT EXPRESSION: ");
-                        Trace.WriteLine(notted);
-
-                        Trace.Write("EXPECTED EXPRESSION:    ");
-                        Trace.WriteLine(expected[ndx]);
-
-                        Trace.Write("DELTA: ");
-                        Trace.WriteLine(measuredDelta);
-
-                        // what's the actual difference
-                        var actualDelta = notted.Length - original.Length;
-                        Assert.IsTrue(actualDelta == measuredDelta,
-                            "Measurement was off; calculated {0} but was actually {1}",
-                            measuredDelta,
-                            actualDelta);
-
-                        Assert.IsTrue(string.CompareOrdinal(expected[ndx], notted) == 0, "Expected output is not the same!!!!");
-                    }
-                    else
-                    {
-                        Assert.Fail(string.Format("Source line {0} parsed to more than one statement!", ndx + 1));
-                    }
-                }
+                Assert.AreEqual(expectedResult, notted, "Expected output is not the same!!!!");
             }
             else
             {
-                Assert.Fail("Input and Expected files have different number of lines!");
+                Assert.Fail(string.Format("Source line '{0}' parsed to more than one statement!", expressionSource));
             }
-        }
-
-        [TestMethod]
-        public void Test1()
-        {
-            RunTest(null);
         }
     }
 }

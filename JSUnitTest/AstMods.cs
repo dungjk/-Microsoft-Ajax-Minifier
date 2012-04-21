@@ -189,5 +189,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void NegShortcutIf()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

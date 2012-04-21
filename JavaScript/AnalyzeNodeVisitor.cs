@@ -118,6 +118,25 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                 }
+                else if ((node.Parent is Block || (node.Parent is CommaOperator && node.Parent.Parent is Block))
+                    && (node.OperatorToken == JSToken.LogicalOr || node.OperatorToken == JSToken.LogicalAnd))
+                {
+                    // this is an expression statement where the operator is || or && -- basically
+                    // it's a shortcut for an if-statement:
+                    // expr1&&expr2; ==> if(expr1)expr2;
+                    // expr1||expr2; ==> if(!expr1)expr2;
+                    // let's check to see if the not of expr1 is smaller. If so, we can not the expression
+                    // and change the operator
+                    var logicalNot = new LogicalNot(node.Operand1, node.Parser);
+                    if (logicalNot.Measure() < 0)
+                    {
+                        // it would be smaller! Change it.
+                        // transform: expr1&&expr2 => !expr1||expr2
+                        // transform: expr1||expr2 => !expr1&&expr2
+                        logicalNot.Apply();
+                        node.OperatorToken = node.OperatorToken == JSToken.LogicalAnd ? JSToken.LogicalOr : JSToken.LogicalAnd;
+                    }
+                }
             }
         }
 

@@ -655,7 +655,8 @@ namespace Microsoft.Ajax.Utilities
         public virtual JSVariableField CreateInnerField(JSVariableField outerField)
         {
             JSVariableField innerField;
-            if (outerField.FieldType == FieldType.Global || outerField.FieldType == FieldType.Predefined)
+            if (outerField != null &&
+                (outerField.FieldType == FieldType.Global || outerField.FieldType == FieldType.Predefined))
             {
                 // if this is a global or predefined field, then just add the field itself
                 // to the local scope. We don't want to create a local reference.

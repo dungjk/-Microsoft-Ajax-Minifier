@@ -162,17 +162,33 @@ namespace Microsoft.Ajax.Utilities
 
                         case JSToken.LogicalAnd:
                         case JSToken.LogicalOr:
-                            // the logical-not of a logical-and or logical-or operation is the 
-                            // other operation against the not of each operand. Since the opposite
-                            // operator is the same length as this operator, then we just need
-                            // to recurse both operands to find the true delta.
-                            if (node.Operand1 != null)
+                            if (node.Parent is Block || (node.Parent is CommaOperator && node.Parent.Parent is Block))
                             {
-                                node.Operand1.Accept(this);
+                                // if the parent is a block, then this is a simple expression statement:
+                                // expr1 || expr2; or expr1 && expr2; If so, then the result isn't
+                                // used anywhere and we're just using the || or && operator as a
+                                // shorter if-statement. So we don't need to negate the right-hand
+                                // side, just the left-hand side.
+                                if (node.Operand1 != null)
+                                {
+                                    node.Operand1.Accept(this);
+                                }
                             }
-                            if (node.Operand2 != null)
+                            else
                             {
-                                node.Operand2.Accept(this);
+                                // the logical-not of a logical-and or logical-or operation is the 
+                                // other operation against the not of each operand. Since the opposite
+                                // operator is the same length as this operator, then we just need
+                                // to recurse both operands to find the true delta.
+                                if (node.Operand1 != null)
+                                {
+                                    node.Operand1.Accept(this);
+                                }
+
+                                if (node.Operand2 != null)
+                                {
+                                    node.Operand2.Accept(this);
+                                }
                             }
                             break;
                     }
@@ -252,17 +268,33 @@ namespace Microsoft.Ajax.Utilities
 
                         case JSToken.LogicalAnd:
                         case JSToken.LogicalOr:
-                            // the logical-not of a logical-and or logical-or operation is the 
-                            // other operation against the not of each operand. Since the opposite
-                            // operator is the same length as this operator, then we just need
-                            // to recurse both operands and swap the operator token
-                            if (node.Operand1 != null)
+                            if (node.Parent is Block || (node.Parent is CommaOperator && node.Parent.Parent is Block))
                             {
-                                node.Operand1.Accept(this);
+                                // if the parent is a block, then this is a simple expression statement:
+                                // expr1 || expr2; or expr1 && expr2; If so, then the result isn't
+                                // used anywhere and we're just using the || or && operator as a
+                                // shorter if-statement. So we don't need to negate the right-hand
+                                // side, just the left-hand side.
+                                if (node.Operand1 != null)
+                                {
+                                    node.Operand1.Accept(this);
+                                }
                             }
-                            if (node.Operand2 != null)
+                            else
                             {
-                                node.Operand2.Accept(this);
+                                // the logical-not of a logical-and or logical-or operation is the 
+                                // other operation against the not of each operand. Since the opposite
+                                // operator is the same length as this operator, then we just need
+                                // to recurse both operands and swap the operator token
+                                if (node.Operand1 != null)
+                                {
+                                    node.Operand1.Accept(this);
+                                }
+
+                                if (node.Operand2 != null)
+                                {
+                                    node.Operand2.Accept(this);
+                                }
                             }
                             node.OperatorToken = node.OperatorToken == JSToken.LogicalAnd ? JSToken.LogicalOr : JSToken.LogicalAnd;
                             break;
