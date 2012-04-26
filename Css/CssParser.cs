@@ -2592,25 +2592,38 @@ namespace Microsoft.Ajax.Utilities
         {
             Parsed parsed = Parsed.False;
 
-            // valid hash colors are #rgb, #rrggbb, and #aarrggbb.
-            // we won't do any conversion on the #aarrggbb formats to make them smaller.
-            if (CurrentTokenType == TokenType.Hash
-              && (CurrentTokenText.Length == 4 || CurrentTokenText.Length == 7 || CurrentTokenText.Length == 9))
+            if (CurrentTokenType == TokenType.Hash)
             {
-                parsed = Parsed.True;
+                var colorHash = CurrentTokenText;
+                var appendEscapedTab = false;
 
-                string hexColor = CrunchHexColor(CurrentTokenText, Settings.ColorNames, m_noColorAbbreviation);
-
-                // this is a dumb error message -- this is the sort of the thing the minimizer should
-                // handle automatically. Maybe throw this alert if in analyze mode.
-                /*if (hexColor.Length < CurrentTokenText.Length)
+                // valid hash colors are #rgb, #rrggbb, and #aarrggbb.
+                // but there is a commonly-used IE hack that puts \9 at the end of properties, so
+                // if we have 5, 8, or 10 characters, let's first check to see if the color
+                // ends in a tab.
+                if ((colorHash.Length == 5 || colorHash.Length == 8 || colorHash.Length == 10)
+                    && colorHash.EndsWith("\t", StringComparison.Ordinal))
                 {
-                    // report a warning
-                    ReportError(4, StringEnum.ColorCanBeCollapsed, CurrentTokenText, hexColor);
-                }*/
+                    // it is -- strip that last character and set a flag
+                    colorHash = colorHash.Substring(0, colorHash.Length - 1);
+                    appendEscapedTab = true;
+                }
 
-                Append(hexColor);
-                SkipSpace();
+                if (colorHash.Length == 4 || colorHash.Length == 7 || colorHash.Length == 9)
+                {
+                    parsed = Parsed.True;
+
+                    // we won't do any conversion on the #aarrggbb formats to make them smaller.
+                    string hexColor = CrunchHexColor(colorHash, Settings.ColorNames, m_noColorAbbreviation);
+                    Append(hexColor);
+
+                    if (appendEscapedTab)
+                    {
+                        Append("\\9");
+                    }
+
+                    SkipSpace();
+                }
             }
             return parsed;
         }

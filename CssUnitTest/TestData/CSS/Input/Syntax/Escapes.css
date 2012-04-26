@@ -6,6 +6,9 @@
 	/* the IE-hack of adding the \9 at the end also needs to work for percentages */
 	width: 100%\9;
 	
+	/* and colors */
+	color: #aabbcc\9;
+	
 	/* variation of above -- because the four values need to be separated by a space character, the 
        escaped number needs to have TWO spaces after it because the first one will be considered part
        of the escape sequence */
