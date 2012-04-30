@@ -178,8 +178,9 @@ namespace Microsoft.Ajax.Utilities
             {
                 // null out the link to the named function expression
                 // and make the function object point to the PROPER variable: the local within its own scope
-                // and the inner is not pointing to the outer.
-                functionValue.DetachFromOuterField(false);
+                // but the inner still needs to point to the outer because we need those names to stay in sync
+                // because IE doesn't HAVE separate fields for them.
+                functionValue.DetachFromOuterField(true);
                 Field.IsFunction = false;
             }
         }

@@ -209,7 +209,7 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case FieldType.NamedFunctionExpression:
-                    CanCrunch = true;
+                    CanCrunch = OuterField == null ? true : OuterField.CanCrunch;
                     IsFunction = true;
                     break;
 

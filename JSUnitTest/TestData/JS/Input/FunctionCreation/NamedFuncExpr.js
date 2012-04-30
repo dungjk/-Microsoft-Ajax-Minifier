@@ -34,6 +34,8 @@
     ack.bar = 10;
 
     // But if it is, the name needs to stay (but it can be crunched)
+    // AS LONG AS THE CRUNCHED NAME OF THE FUNCTION EXPRESSION IS THE SAME
+    // AS THE OUTER VARIABLE NAME.
     var trap = function trap() { trap(); };
     trap.bar = 11;
 
@@ -57,8 +59,10 @@ foo = function global_one_self_ref(count) { if (--count > 0) { global_one_self_r
 var ack = function ack() { };
 ack.bar = function () { return ack[12]; };
 
-// but this one DOES self-reference. But because we are detaching it from the outer variable,
-// we can crunch the name when hypercrunching.
+// but this one DOES self-reference. We might think we can rename the inner reference because we
+// are detaching it from the outer, but WE CAN'T. IE browsers will create that function name in the
+// outer scope, which in this case is the global scope -- we don't want to rename globals, so we
+// can't rename the function expression name.
 var trap = function trap() { trap(); };
 trap.bar = 13;
 

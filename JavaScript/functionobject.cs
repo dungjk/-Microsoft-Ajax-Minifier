@@ -187,6 +187,12 @@ namespace Microsoft.Ajax.Utilities
                                 m_variableField = namedExpressionField;
                                 Identifier.VariableField = namedExpressionField;
 
+                                // if we want to preserve the function names, mark this field as not crunchable
+                                if (Parser.Settings.PreserveFunctionNames)
+                                {
+                                    namedExpressionField.CanCrunch = false;
+                                }
+
                                 // we're done; quit.
                                 return;
                             }
@@ -202,6 +208,12 @@ namespace Microsoft.Ajax.Utilities
                                 // hook our function object up to the named field
                                 m_variableField = namedExpressionField;
                                 Identifier.VariableField = namedExpressionField;
+
+                                // if we want to preserve the function names, mark this field as not crunchable
+                                if (Parser.Settings.PreserveFunctionNames)
+                                {
+                                    namedExpressionField.CanCrunch = false;
+                                }
 
                                 // we're done; quit.
                                 return;
@@ -261,6 +273,12 @@ namespace Microsoft.Ajax.Utilities
                     var namedExpressionField = new JSVariableField(FieldType.NamedFunctionExpression, m_variableField);
                     m_functionScope.AddField(namedExpressionField);
                     m_variableField.NamedFunctionExpression = namedExpressionField;
+
+                    // if we want to preserve the function names, mark this field as not crunchable
+                    if (Parser.Settings.PreserveFunctionNames)
+                    {
+                        namedExpressionField.CanCrunch = false;
+                    }
                 }
                 else
                 {
