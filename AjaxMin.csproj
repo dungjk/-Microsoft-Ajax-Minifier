@@ -112,7 +112,9 @@
   <ItemGroup>
     <Compile Include="CommonSettings.cs" />
     <Compile Include="JavaScript\CommaOperator.cs" />
+    <Compile Include="JavaScript\const.cs" />
     <Compile Include="JavaScript\CustomNode.cs" />
+    <Compile Include="JavaScript\declaration.cs" />
     <Compile Include="JavaScript\directiveprologue.cs" />
     <Compile Include="JavaScript\MatchPropertiesVisitor.cs" />
     <Compile Include="JavaScript\OutputVisitor.cs" />

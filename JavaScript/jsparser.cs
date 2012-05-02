@@ -670,7 +670,8 @@ namespace Microsoft.Ajax.Utilities
                     case JSToken.Debugger:
                         return ParseDebuggerStatement();
                     case JSToken.Var:
-                        return ParseVariableStatement((FieldAttributes)0);
+                    case JSToken.Const:
+                        return ParseVariableStatement();
                     case JSToken.If:
                         return ParseIfStatement();
                     case JSToken.For:
@@ -1071,6 +1072,8 @@ namespace Microsoft.Ajax.Utilities
         //
         //  VariableStatement :
         //    'var' VariableDeclarationList
+        //    or
+        //    'const' VariableDeclarationList
         //
         //  VariableDeclarationList :
         //    VariableDeclaration |
@@ -1083,9 +1086,27 @@ namespace Microsoft.Ajax.Utilities
         //    <empty> |
         //    '=' AssignmentExpression
         //---------------------------------------------------------------------------------------
-        private AstNode ParseVariableStatement(FieldAttributes visibility)
+        private AstNode ParseVariableStatement()
         {
-            Var varList = new Var(m_currentToken.Clone(), this);
+            // create the appropriate statement: var- or const-statement
+            Declaration varList;
+            FieldAttributes visibility;
+            if (m_currentToken.Token == JSToken.Var)
+            {
+                varList = new Var(m_currentToken.Clone(), this);
+                visibility = (FieldAttributes)0;
+            }
+            else if (m_currentToken.Token == JSToken.Const)
+            {
+                varList = new ConstStatement(m_currentToken.Clone(), this);
+                visibility = FieldAttributes.InitOnly;
+            }
+            else
+            {
+                Debug.Fail("shouldn't get here");
+                return null; 
+            }
+
             bool single = true;
             AstNode vdecl = null;
             AstNode identInit = null;
@@ -1169,8 +1190,7 @@ namespace Microsoft.Ajax.Utilities
         //  inToken is JSToken.In whenever the potential expression that initialize a variable
         //  cannot contain an 'in', as in the for statement. inToken is JSToken.None otherwise
         //---------------------------------------------------------------------------------------
-        private AstNode ParseIdentifierInitializer(JSToken inToken,
-                                                                FieldAttributes visibility)
+        private AstNode ParseIdentifierInitializer(JSToken inToken, FieldAttributes visibility)
         {
             string variableName = null;
             AstNode assignmentExpr = null;

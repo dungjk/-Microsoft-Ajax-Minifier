@@ -105,16 +105,24 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
                 }
-                else if (node.IsAssign && ScopeStack.Peek().UseStrict)
+                else if (node.IsAssign)
                 {
-                    // strict mode cannot assign to lookup "eval" or "arguments"
                     var lookup = node.Operand1 as Lookup;
                     if (lookup != null)
                     {
-                        if (lookup.VariableField.FieldType == FieldType.Arguments
-                            || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0))
+                        if (lookup.VariableField != null && lookup.VariableField.InitializationOnly)
                         {
-                            node.Operand1.Context.HandleError(JSError.StrictModeInvalidAssign, true);
+                            // the field is an initialization-only field -- we should NOT be assigning to it
+                            lookup.Context.HandleError(JSError.AssignmentToConstant, true);
+                        }
+                        else if (ScopeStack.Peek().UseStrict)
+                        {
+                            // strict mode cannot assign to lookup "eval" or "arguments"
+                            if (lookup.VariableField.FieldType == FieldType.Arguments
+                                || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0))
+                            {
+                                node.Operand1.Context.HandleError(JSError.StrictModeInvalidAssign, true);
+                            }
                         }
                     }
                 }
@@ -356,29 +364,37 @@ namespace Microsoft.Ajax.Utilities
                             // transform: {...;continue;...} to {...;continue}
                             // we've found a return statement, and it's not the last statement in the function.
                             // walk the rest of the statements and delete anything that isn't a function declaration
-                            // or a var statement.
+                            // or a var- or const-statement.
                             for (var ndxRemove = node.Count - 1; ndxRemove > ndx; --ndxRemove)
                             {
                                 var funcObject = node[ndxRemove] as FunctionObject;
                                 if (funcObject == null || funcObject.FunctionType != FunctionType.Declaration)
                                 {
-                                    var varStatement = node[ndxRemove] as Var;
-                                    if (varStatement != null)
+                                    // if it's a const-statement, leave it.
+                                    // we COULD check to see if the constant is referenced anywhere and delete
+                                    // any that aren't. Maybe later.
+                                    // we also don't want to do like the var-statements and remove the initializers.
+                                    // Not sure if any browsers would fail a const WITHOUT an initializer.
+                                    if (!(node[ndxRemove] is ConstStatement))
                                     {
-                                        // var statements can't be removed, but any initializers should
-                                        // be deleted since they won't get executed.
-                                        for (var ndxDecl = 0; ndxDecl < varStatement.Count; ++ndxDecl)
+                                        var varStatement = node[ndxRemove] as Var;
+                                        if (varStatement != null)
                                         {
-                                            if (varStatement[ndxDecl].Initializer != null)
+                                            // var statements can't be removed, but any initializers should
+                                            // be deleted since they won't get executed.
+                                            for (var ndxDecl = 0; ndxDecl < varStatement.Count; ++ndxDecl)
                                             {
-                                                varStatement[ndxDecl].ReplaceChild(varStatement[ndxDecl].Initializer, null);
+                                                if (varStatement[ndxDecl].Initializer != null)
+                                                {
+                                                    varStatement[ndxDecl].ReplaceChild(varStatement[ndxDecl].Initializer, null);
+                                                }
                                             }
                                         }
-                                    }
-                                    else
-                                    {
-                                        // not a function declaration, and not a var statement -- get rid of it
-                                        node.RemoveAt(ndxRemove);
+                                        else
+                                        {
+                                            // not a function declaration, and not a var statement -- get rid of it
+                                            node.RemoveAt(ndxRemove);
+                                        }
                                     }
                                 }
                             }
@@ -547,11 +563,15 @@ namespace Microsoft.Ajax.Utilities
 
                     // just out of curiosity, let's see if we fit a common pattern:
                     //      var name=expr;return name;
+                    // or
+                    //      const name=expr;return name;
                     // if so, we can cut out the var and simply return the expression
                     Lookup lookup;
                     if ((lookup = lastReturn.Operand as Lookup) != null && indexPrevious >= 0)
                     {
-                        var varStatement = node[indexPrevious] as Var;
+                        // use the base class for both the var- and const-statements so we will
+                        // pick them both up at the same time
+                        var varStatement = node[indexPrevious] as Declaration;
                         if (varStatement != null)
                         {
                             // if the last vardecl in the var statement matches the return lookup, and no
@@ -1514,6 +1534,34 @@ namespace Microsoft.Ajax.Utilities
 
                 // this node has no children, so don't bother calling the base
                 //base.Visit(node);
+            }
+        }
+
+        public override void Visit(ConstStatement node)
+        {
+            if (node != null)
+            {
+                // we want to weed out duplicates
+                // var a=1, a=2 is okay, but var a, a=2 and var a=2, a should both be just var a=2, 
+                // and var a, a should just be var a
+                for (int ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    string thisName = node[ndx].Identifier;
+
+                    // we just want to throw an error if there are any duplicates. 
+                    // we don't want to REMOVE anything, because we don't know if the browsers that
+                    // implement this non-standard statement do first-win or last-win.
+                    for (var ndx2 = ndx + 1; ndx2 < node.Count; ++ndx2)
+                    {
+                        if (string.CompareOrdinal(thisName, node[ndx2].Identifier) == 0)
+                        {
+                            node[ndx2].Context.HandleError(JSError.DuplicateConstantDeclaration, true);
+                        }
+                    }
+                }
+
+                // recurse the analyze
+                base.Visit(node);
             }
         }
 

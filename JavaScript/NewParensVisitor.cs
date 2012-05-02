@@ -239,6 +239,11 @@ namespace Microsoft.Ajax.Utilities
             Debug.Fail("shouldn't get here");
         }
 
+        public void Visit(ConstStatement node)
+        {
+            Debug.Fail("shouldn't get here");
+        }
+
         public void Visit(ContinueNode node)
         {
             Debug.Fail("shouldn't get here");

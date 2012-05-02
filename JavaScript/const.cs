@@ -1,6 +1,6 @@
-// var.cs
+﻿// const.cs
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright 2012 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    /// <summary>
-    /// Summary description for variablestatement.
-    /// </summary>
-    public sealed class Var : Declaration
+    public class ConstStatement : Declaration
     {
-        public Var(Context context, JSParser parser)
+        public ConstStatement(Context context, JSParser parser)
             : base(context, parser)
         {
         }

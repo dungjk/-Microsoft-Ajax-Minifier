@@ -208,6 +208,11 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
+        public void Visit(ConstStatement node)
+        {
+            // not applicable; terminate
+        }
+
         public void Visit(ContinueNode node)
         {
             // not applicable; terminate

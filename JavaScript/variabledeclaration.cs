@@ -78,7 +78,24 @@ namespace Microsoft.Ajax.Utilities
                 } while (definingScope is BlockScope);
             }
 
-            JSVariableField field = definingScope[name];
+            // see if this is an init-only field and then check the current scope for
+            // a field with the same name
+            var initOnly = (fieldAttributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly;
+            var field = definingScope[name];
+
+            if (field != null && initOnly)
+            {
+                // this is an init-only field, but the name has already been declared in this scope. Throw an error.
+                if (idContext != null)
+                {
+                    idContext.HandleError(JSError.DuplicateConstantDeclaration, false);
+                }
+                else if (context != null)
+                {
+                    context.HandleError(JSError.DuplicateConstantDeclaration, false);
+                }
+            }
+
             if (field != null
                 && (functionValue == null || functionValue != field.FieldValue))
             {
@@ -156,8 +173,9 @@ namespace Microsoft.Ajax.Utilities
               );
             Field.OriginalContext = idContext;
 
-            // we are now declared by a var statement
+            // we are now declared by a var- or const-statement
             Field.IsDeclared = true;
+            Field.InitializationOnly = initOnly;
 
             // if we are declaring a variable inside a with statement, then we will be declaring
             // a local variable in the enclosing scope if the with object doesn't have a property

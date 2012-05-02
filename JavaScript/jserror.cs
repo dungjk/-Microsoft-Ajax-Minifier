@@ -97,6 +97,8 @@ namespace Microsoft.Ajax.Utilities
         StrictModeInvalidPreOrPost = 1294, // strict mode does not allow prefix or postfix operators on certain references
         StrictModeInvalidDelete = 1295, // strict mode does not allow certain delete operands
         StrictModeArgumentName = 1296, // strict mode does not allow certain argument names
+        DuplicateConstantDeclaration = 1297, // duplicate constant declaration
+        AssignmentToConstant = 1298, // assignment to constant
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

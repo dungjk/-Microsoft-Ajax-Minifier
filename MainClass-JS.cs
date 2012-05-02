@@ -620,6 +620,10 @@ namespace Microsoft.Ajax.Utilities
                         type = StringMgr.GetString("MemberInfoFunctionExpression");
                     }
                 }
+                else if (variableField.InitializationOnly)
+                {
+                    type = StringMgr.GetString("MemberInfoGlobalConst");
+                }
                 else
                 {
                     type = StringMgr.GetString("MemberInfoGlobalVar");
@@ -650,6 +654,10 @@ namespace Microsoft.Ajax.Utilities
                 else if (variableField.IsLiteral)
                 {
                     type = StringMgr.GetString("MemberInfoLocalLiteral");
+                }
+                else if (variableField.InitializationOnly)
+                {
+                    type = StringMgr.GetString("MemberInfoLocalConst");
                 }
                 else
                 {

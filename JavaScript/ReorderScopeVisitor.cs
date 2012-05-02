@@ -356,6 +356,18 @@ namespace Microsoft.Ajax.Utilities
                             // delete this item from the block
                             node.RemoveAt(ndx);
                         }
+                        else
+                        {
+                            // try doing the same for const-statements: combine adjacent ones
+                            var previousConst = node[ndx - 1] as ConstStatement;
+                            if (previousConst != null && node[ndx] is ConstStatement)
+                            {
+                                // they are both ConstStatements, so adding the current one to the 
+                                // previous one will combine them, then delete the latter one.
+                                previousConst.Append(node[ndx]);
+                                node.RemoveAt(ndx);
+                            }
+                        }
                     }
                 }
 
@@ -451,6 +463,7 @@ namespace Microsoft.Ajax.Utilities
                 // don't bother creating a list of var-statements if we're not going to move them.
                 // and if we are inside a conditional-compilation comment level, then don't move them
                 // either.
+                // don't bother moving const-statements.
                 if (m_moveVarStatements && m_conditionalCommentLevel == 0)
                 {
                     if (m_varStatements == null)

@@ -190,6 +190,17 @@ namespace Microsoft.Ajax.Utilities
             // no children
         }
 
+        public virtual void Visit(ConstStatement node)
+        {
+            if (node != null)
+            {
+                foreach (var childNode in node.Children)
+                {
+                    childNode.Accept(this);
+                }
+            }
+        }
+
         public virtual void Visit(ContinueNode node)
         {
             if (node != null)

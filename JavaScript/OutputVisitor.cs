@@ -783,6 +783,32 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public void Visit(ConstStatement node)
+        {
+            if (node != null)
+            {
+                Output("const");
+                m_startOfStatement = false;
+                Indent();
+
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    var decl = node[ndx];
+                    if (decl != null)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                            NewLine();
+                        }
+
+                        decl.Accept(this);
+                    }
+                }
+                Unindent();
+            }
+        }
+
         public void Visit(ContinueNode node)
         {
             if (node != null)

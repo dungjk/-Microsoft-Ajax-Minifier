@@ -208,6 +208,9 @@
     <Compile Include="..\JavaScript\conditional.cs">
       <Link>JavaScript\conditional.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\const.cs">
+      <Link>JavaScript\const.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\constantwrapper.cs">
       <Link>JavaScript\constantwrapper.cs</Link>
     </Compile>
@@ -228,6 +231,9 @@
     </Compile>
     <Compile Include="..\JavaScript\debugger.cs">
       <Link>JavaScript\debugger.cs</Link>
+    </Compile>
+    <Compile Include="..\JavaScript\declaration.cs">
+      <Link>JavaScript\declaration.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\directiveprologue.cs">
       <Link>JavaScript\directiveprologue.cs</Link>

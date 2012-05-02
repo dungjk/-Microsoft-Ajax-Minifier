@@ -544,4 +544,10 @@ Multiple IFILE files will be concatenated to the output.</value>
   <data name="MiniUsageMessage" xml:space="preserve">
     <value>See the '-?' command-line option for usage details.</value>
   </data>
+  <data name="MemberInfoGlobalConst" xml:space="preserve">
+    <value>global const</value>
+  </data>
+  <data name="MemberInfoLocalConst" xml:space="preserve">
+    <value>const</value>
+  </data>
 </root>

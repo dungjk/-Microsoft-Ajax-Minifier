@@ -51,6 +51,7 @@ namespace Microsoft.Ajax.Utilities
         public Object FieldValue { get; set; }
         public FieldAttributes Attributes { get; set; }
         public int Position { get; set; }
+        public bool InitializationOnly { get; set; }
 
         public bool IsLiteral
         {

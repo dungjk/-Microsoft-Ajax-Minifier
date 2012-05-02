@@ -208,6 +208,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\While.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_ForNoVar.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_NoFor.js" />
+    <Content Include="TestData\JS\Expected\Declarations\Const.js" />
     <Content Include="TestData\JS\Expected\Declarations\Function.js" />
     <Content Include="TestData\JS\Expected\Declarations\Identifiers.js" />
     <Content Include="TestData\JS\Expected\Declarations\LocalizationVars.js" />
@@ -426,6 +427,7 @@
     <Content Include="TestData\JS\Input\ControlFlow\Throw.js" />
     <Content Include="TestData\JS\Input\ControlFlow\TryCatch.js" />
     <Content Include="TestData\JS\Input\ControlFlow\While.js" />
+    <Content Include="TestData\JS\Input\Declarations\Const.js" />
     <Content Include="TestData\JS\Input\Declarations\Function.js" />
     <Content Include="TestData\JS\Input\Declarations\Identifiers.js" />
     <Content Include="TestData\JS\Input\Declarations\LocalizationVars.js" />

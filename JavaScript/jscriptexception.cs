@@ -345,6 +345,7 @@ namespace Microsoft.Ajax.Utilities
                         case JSError.StrictComparisonIsAlwaysTrueOrFalse:
                             return 1;
 
+                        case JSError.DuplicateConstantDeclaration:
                         case JSError.KeywordUsedAsIdentifier: 
                         case JSError.MisplacedFunctionDeclaration: 
                             return 2;
