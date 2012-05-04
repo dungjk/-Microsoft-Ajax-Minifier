@@ -340,7 +340,7 @@
     <value>Octal literals are deprecated. Possible cross-browser behavior difference</value>
   </data>
   <data name="1286" xml:space="preserve">
-    <value>Function name must be a simple identifier</value>
+    <value>Function name should be a simple identifier; possible browser-specific implementation</value>
   </data>
   <data name="1287" xml:space="preserve">
     <value>Strict operator always evaluates to true or false</value>

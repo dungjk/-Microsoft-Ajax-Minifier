@@ -366,6 +366,7 @@ namespace Microsoft.Ajax.Utilities
                         case JSError.NumericMaximum:
                         case JSError.NumericMinimum: 
                         case JSError.OctalLiteralsDeprecated:
+                        case JSError.FunctionNameMustBeIdentifier:
                             return 4;
                     }
                 }

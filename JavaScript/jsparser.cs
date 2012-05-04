@@ -2903,7 +2903,7 @@ namespace Microsoft.Ajax.Utilities
                     if (expandedIndentifier)
                     {
                         name.Name = name.Context.Code;
-                        name.Context.HandleError(JSError.FunctionNameMustBeIdentifier, true);
+                        name.Context.HandleError(JSError.FunctionNameMustBeIdentifier, false);
                     }
                     else
                     {

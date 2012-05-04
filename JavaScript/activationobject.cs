@@ -133,19 +133,33 @@ namespace Microsoft.Ajax.Utilities
                     var funcObject = variableField.FieldValue as FunctionObject;
                     if (funcObject != null)
                     {
-                        // unreferenced function declaration.
-                        // hide it from the output if our settings say we can
-                        if (IsKnownAtCompileTime
-                            && funcObject.Parser.Settings.MinifyCode
-                            && funcObject.Parser.Settings.RemoveUnneededCode)
+                        // if there's no function name, do nothing
+                        if (funcObject.Name != null)
                         {
-                            funcObject.HideFromOutput = true;
-                        }
+                            // if the function name isn't a simple identifier, then leave it there and mark it as
+                            // not renamable because it's probably one of those darn IE-extension event handlers or something.
+                            if (JSScanner.IsValidIdentifier(funcObject.Name))
+                            {
+                                // unreferenced function declaration.
+                                // hide it from the output if our settings say we can
+                                if (IsKnownAtCompileTime
+                                    && funcObject.Parser.Settings.MinifyCode
+                                    && funcObject.Parser.Settings.RemoveUnneededCode)
+                                {
+                                    funcObject.HideFromOutput = true;
+                                }
 
-                        // and fire an error
-                        Context ctx = ((FunctionObject)variableField.FieldValue).IdContext;
-                        if (ctx == null) { ctx = variableField.OriginalContext; }
-                        ctx.HandleError(JSError.FunctionNotReferenced, false);
+                                // and fire an error
+                                Context ctx = ((FunctionObject)variableField.FieldValue).IdContext;
+                                if (ctx == null) { ctx = variableField.OriginalContext; }
+                                ctx.HandleError(JSError.FunctionNotReferenced, false);
+                            }
+                            else
+                            {
+                                // not a valid identifier name for this function. Don't rename it.
+                                variableField.CanCrunch = false;
+                            }
+                        }
                     }
                     else if (!variableField.IsGenerated)
                     {

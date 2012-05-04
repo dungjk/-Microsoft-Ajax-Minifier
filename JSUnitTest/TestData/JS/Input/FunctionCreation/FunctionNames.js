@@ -1,6 +1,13 @@
 ﻿// normal function name
 function foo()
 {
+    // old JScript-style extension for hooking event handlers.
+    // function name is OBJECT::EVENT. Don't rename it, don't remove it.
+    function MyButton::OnClick()
+    {
+        alert("CLICK!");
+    }
+
     return 0;
 }
 
@@ -31,4 +38,5 @@ function{return 4;}
 
 // just to make sure recovery worked.
 alert(f1);
+
 
