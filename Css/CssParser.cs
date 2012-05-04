@@ -18,6 +18,7 @@ namespace Microsoft.Ajax.Utilities
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Runtime.Serialization;
@@ -317,8 +318,21 @@ namespace Microsoft.Ajax.Utilities
 
                     try
                     {
-                        // parse a style sheet!
-                        ParseStylesheet();
+                        switch (Settings.CssType)
+                        {
+                            case CssType.FullStyleSheet:
+                                // parse a style sheet!
+                                ParseStylesheet();
+                                break;
+
+                            case CssType.DeclarationList:
+                                ParseDeclarationList(false);
+                                break;
+
+                            default:
+                                Debug.Fail("UNEXPECTED CSS TYPE");
+                                goto case CssType.FullStyleSheet;
+                        }
 
                         if (!m_scanner.EndOfFile)
                         {
@@ -1101,7 +1115,6 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseDeclarationBlock(bool allowMargins)
         {
-            Parsed parsed = Parsed.False;
             // expect current token to be the opening brace when calling
             if (CurrentTokenType != TokenType.Character || CurrentTokenText != "{")
             {
@@ -1118,126 +1131,186 @@ namespace Microsoft.Ajax.Utilities
                 Indent();
                 SkipSpace();
 
-                while (!m_scanner.EndOfFile)
+                ParseDeclarationList(allowMargins);
+                if (CurrentTokenType == TokenType.Character && CurrentTokenText == "}")
                 {
-                    try
+                    // append the closing brace
+                    Unindent();
+                    NewLine();
+                    Append('}');
+                    // skip past it
+                    SkipSpace();
+                }
+                else if (m_scanner.EndOfFile)
+                {
+                    // no closing brace, just the end of the file
+                    ReportError(0, StringEnum.UnexpectedEndOfFile);
+                }
+                else
+                {
+                    // I'm pretty sure ParseDeclarationList will only return on two situations:
+                    //   1. closing brace (}), or
+                    //   2. EOF.
+                    // shouldn't get here, but just in case.
+                    ReportError(0, StringEnum.ExpectedClosingBrace, CurrentTokenText);
+                    Debug.Fail("UNEXPECTED CODE");
+                }
+            }
+
+            return Parsed.True;
+        }
+
+        private Parsed ParseDeclarationList(bool allowMargins)
+        {
+            var parsed = Parsed.Empty;
+            while (!m_scanner.EndOfFile)
+            {
+                try
+                {
+                    // check the line length before each new declaration -- if we're past the threshold, start a new line
+                    if (m_lineLength >= Settings.LineBreakThreshold)
                     {
-                        // check the line length before each new declaration -- if we're past the threshold, start a new line
-                        if (m_lineLength >= Settings.LineBreakThreshold)
+                        AddNewLine();
+                    }
+
+                    Parsed parsedDecl = ParseDeclaration();
+                    if (parsed == Parsed.Empty && parsedDecl != Parsed.Empty)
+                    {
+                        parsed = parsedDecl;
+                    }
+
+                    // if we are allowed to have margin at-keywords in this block, and
+                    // we didn't find a declaration, check to see if it's a margin
+                    var parsedMargin = false;
+                    if (allowMargins && parsedDecl == Parsed.Empty)
+                    {
+                        parsedMargin = ParseMargin() == Parsed.True;
+                    }
+
+                    // if we parsed a margin, we DON'T expect there to be a semi-colon.
+                    // if we didn't parse a margin, then there better be either a semicolon or a closing brace.
+                    if (!parsedMargin)
+                    {
+                        if ((CurrentTokenType != TokenType.Character
+                          || (CurrentTokenText != ";" && CurrentTokenText != "}"))
+                          && !m_scanner.EndOfFile)
                         {
-                            AddNewLine();
+                            ReportError(0, StringEnum.ExpectedSemicolonOrClosingBrace, CurrentTokenText);
+
+                            // we'll get here if we decide to ignore the error and keep trudging along. But we still
+                            // need to skip to the end of the declaration.
+                            SkipToEndOfDeclaration();
+                        }
+                    }
+
+                    // if we're at the end, close it out
+                    if (m_scanner.EndOfFile)
+                    {
+                        // if we want to force a terminating semicolon, add it now
+                        if (Settings.TermSemicolons)
+                        {
+                            Append(';');
+                        }
+                    }
+                    else if (CurrentTokenText == "}")
+                    {
+                        // if we want terminating semicolons but the source
+                        // didn't have one (evidenced by a non-empty declaration)...
+                        if (Settings.TermSemicolons && parsedDecl == Parsed.True)
+                        {
+                            // ...then add one now.
+                            Append(';');
                         }
 
-                        Parsed parsedDecl = ParseDeclaration();
-
-                        // if we are allowed to have margin at-keywords in this block, and
-                        // we didn't find a declaration, check to see if it's a margin
-                        var parsedMargin = false;
-                        if (allowMargins && parsedDecl == Parsed.Empty)
+                        break;
+                    }
+                    else if (CurrentTokenText == ";")
+                    {
+                        // token is a semi-colon
+                        // if we always want to add the semicolons, add it now
+                        if (Settings.TermSemicolons)
                         {
-                            parsedMargin = ParseMargin() == Parsed.True;
-                        }
-                        
-                        // if we parsed a margin, we DON'T expect there to be a semi-colon.
-                        // if we didn't parse a margin, then there better be either a semicolon or a closing brace.
-                        if (!parsedMargin)
-                        {
-                            if (CurrentTokenType != TokenType.Character
-                              || (CurrentTokenText != ";" && CurrentTokenText != "}"))
-                            {
-                                ReportError(0, StringEnum.ExpectedSemicolonOrClosingBrace, CurrentTokenText);
-
-                                // we'll get here if we decide to ignore the error and keep trudging along. But we still
-                                // need to skip to the end of the declaration.
-                                SkipToEndOfDeclaration();
-                            }
-                        }
-
-                        // if we're at the end, close it out
-                        if (CurrentTokenText == "}")
-                        {
-                            // if we want terminating semicolons but the source
-                            // didn't have one (evidenced by a non-empty declaration)...
-                            if (Settings.TermSemicolons && parsedDecl == Parsed.True)
-                            {
-                                // ...then add one now.
-                                Append(';');
-                            }
-                            // append the closing brace
-                            Unindent();
-                            NewLine();
-                            Append('}');
-                            // skip past it
+                            Append(';');
                             SkipSpace();
-                            parsed = Parsed.True;
-                            break;
                         }
-                        else if (CurrentTokenText == ";")
+                        else
                         {
-                            // token is a semi-colon
-                            // if we always want to add the semicolons, add it now
-                            if (Settings.TermSemicolons)
+                            // we have a semicolon, but we don't know if we can
+                            // crunch it out or not. If the NEXT token is a closing brace, then
+                            // we can crunch out the semicolon.
+                            // PROBLEM: if there's a significant comment AFTER the semicolon, then the 
+                            // comment gets output before we output the semicolon, which could
+                            // reverse the intended code.
+
+                            // skip any whitespace to see if we need to add a semicolon
+                            // to the end, or if we can crunch it out, but use a special function
+                            // that doesn't send any comments to the stream yet -- it batches them
+                            // up and returns them (if any)
+                            string comments = NextSignificantToken();
+
+                            if (m_scanner.EndOfFile)
                             {
-                                Append(';');
-                                SkipSpace();
+                                // if we have an EOF after the semicolon and no comments, then we don't want
+                                // to output anything else.
+                                if (comments.Length > 0)
+                                {
+                                    // but if we have comments after the semicolon....
+                                    // if there's a non-empty comment, it might be a significant hack, so add the semi-colon just in case.
+                                    if (comments != "/* */" && comments != "/**/")
+                                    {
+                                        Append(';');
+                                    }
+
+                                    // and comments always end on a new line
+                                    Append(comments);
+                                    m_outputNewLine = true;
+                                    m_lineLength = 0;
+                                }
+                                break;
                             }
-                            else
+                            else if (CurrentTokenType != TokenType.Character
+                              || (CurrentTokenText != "}" && CurrentTokenText != ";")
+                              || (comments.Length > 0 && comments != "/* */" && comments != "/**/"))
                             {
-                                // we have a semicolon, but we don't know if we can
-                                // crunch it out or not. If the NEXT token is a closing brace, then
-                                // we can crunch out the semicolon.
-                                // PROBLEM: if there's a significant comment AFTER the semicolon, then the 
-                                // comment gets output before we output the semicolon, which could
-                                // reverse the intended code.
-
-                                // skip any whitespace to see if we need to add a semicolon
-                                // to the end, or if we can crunch it out, but use a special function
-                                // that doesn't send any comments to the stream yet -- it batches them
-                                // up and returns them (if any)
-                                string comments = NextSignificantToken();
-
                                 // if the significant token after the 
                                 // semicolon is not a cosing brace, then we'll add the semicolon.
                                 // if there are two semi-colons in a row, don't add it because we'll double it.
                                 // if there's a non-empty comment, it might be a significant hack, so add the semi-colon just in case.
-                                if (CurrentTokenType != TokenType.Character
-                                  || (CurrentTokenText != "}" && CurrentTokenText != ";")
-                                  || (comments.Length > 0 && comments != "/* */" && comments != "/**/"))
-                                {
-                                    Append(';');
-                                }
-                                // now that we've possibly added our semi-colon, we're safe
-                                // to add any comments we may have found before the current token
-                                if (comments.Length > 0)
-                                {
-                                    Append(comments);
-
-                                    // and comments always end on a new line
-                                    m_outputNewLine = true;
-                                    m_lineLength = 0;
-                                }
-                            }
-                        }
-                    }
-                    catch (CssException e)
-                    {
-                        // show the error
-                        OnCssError(e);
-                        
-                        // skip to the end of the declaration
-                        SkipToEndOfDeclaration();
-                        if (CurrentTokenType != TokenType.None)
-                        {
-                            if (Settings.TermSemicolons
-                              || CurrentTokenType != TokenType.Character
-                              || (CurrentTokenText != "}" && CurrentTokenText != ";"))
-                            {
                                 Append(';');
+                            }
+
+                            // now that we've possibly added our semi-colon, we're safe
+                            // to add any comments we may have found before the current token
+                            if (comments.Length > 0)
+                            {
+                                Append(comments);
+
+                                // and comments always end on a new line
+                                m_outputNewLine = true;
+                                m_lineLength = 0;
                             }
                         }
                     }
                 }
+                catch (CssException e)
+                {
+                    // show the error
+                    OnCssError(e);
+
+                    // skip to the end of the declaration
+                    SkipToEndOfDeclaration();
+                    if (CurrentTokenType != TokenType.None)
+                    {
+                        if (Settings.TermSemicolons
+                          || CurrentTokenType != TokenType.Character
+                          || (CurrentTokenText != "}" && CurrentTokenText != ";"))
+                        {
+                            Append(';');
+                        }
+                    }
+                }
             }
+
             return parsed;
         }
 

@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="AtRules.cs" />
     <Compile Include="Common\TestHelper.cs" />
+    <Compile Include="Declarations.cs" />
     <Compile Include="EmbeddedAspNetBlock.cs" />
     <Compile Include="Encoding.cs" />
     <Compile Include="Errors.cs" />
@@ -127,6 +128,10 @@
     <Content Include="TestData\CSS\Expected\CommentHacks\OnlyNS4.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\TwoImportantComments.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\TwoImportantComments_pretty.css" />
+    <Content Include="TestData\CSS\Expected\Declarations\NoTrailingSemicolon.css" />
+    <Content Include="TestData\CSS\Expected\Declarations\NoTrailingSemicolon_term.css" />
+    <Content Include="TestData\CSS\Expected\Declarations\TrailingSemicolon.css" />
+    <Content Include="TestData\CSS\Expected\Declarations\TrailingSemicolon_term.css" />
     <Content Include="TestData\CSS\Expected\EmbeddedAspNetBlock\StringWithBlock.css" />
     <Content Include="TestData\CSS\Expected\EmbeddedAspNetBlock\TopLevel.css" />
     <Content Include="TestData\CSS\Expected\Encoding\escaped.css" />
@@ -204,6 +209,8 @@
     <Content Include="TestData\CSS\Input\CommentHacks\ImportantCommentHacks.css" />
     <Content Include="TestData\CSS\Input\CommentHacks\OnlyNS4.css" />
     <Content Include="TestData\CSS\Input\CommentHacks\TwoImportantComments.css" />
+    <Content Include="TestData\CSS\Input\Declarations\NoTrailingSemicolon.css" />
+    <Content Include="TestData\CSS\Input\Declarations\TrailingSemicolon.css" />
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\StringWithBlock.css" />
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\TopLevel.css" />
     <Content Include="TestData\CSS\Input\Encoding\escaped.css" />

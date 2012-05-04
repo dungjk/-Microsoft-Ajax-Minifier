@@ -21,6 +21,22 @@ namespace Microsoft.Ajax.Utilities
     using System.Text;
 
     /// <summary>
+    /// Enumeration for the type of CSS that will be parsed
+    /// </summary>
+    public enum CssType
+    {
+        /// <summary>
+        /// Default setting: expecting a full CSS stylesheet
+        /// </summary>
+        FullStyleSheet = 0,
+
+        /// <summary>
+        /// Expecting just a declaration list, for instance: the value of an HTML style attribute
+        /// </summary>
+        DeclarationList,
+    }
+
+    /// <summary>
     /// Settings Object for CSS Minifier
     /// </summary>
     public class CssSettings : CommonSettings
@@ -34,6 +50,7 @@ namespace Microsoft.Ajax.Utilities
             CommentMode = CssComment.Important;
             MinifyExpressions = true;
 			AllowEmbeddedAspNetBlocks = false;
+            CssType = CssType.FullStyleSheet;
         }
 
         public CssSettings Clone()
@@ -53,6 +70,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputMode = this.OutputMode,
                 PreprocessorDefineList = this.PreprocessorDefineList,
                 TermSemicolons = this.TermSemicolons,
+                CssType = this.CssType,
             };
 
             // add the resource strings (if any)
@@ -96,5 +114,11 @@ namespace Microsoft.Ajax.Utilities
 			get;
 			set;
 		}
+
+        public CssType CssType 
+        { 
+            get; 
+            set; 
+        }
     }
 }

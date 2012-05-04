@@ -381,6 +381,24 @@ namespace Microsoft.Ajax.Utilities
 
                             case "CSS":
                                 OnCssOnlyParameter();
+                                if (paramPartUpper != null)
+                                {
+                                    switch (paramPartUpper)
+                                    {
+                                        case "FULL":
+                                            CssSettings.CssType = CssType.FullStyleSheet;
+                                            break;
+
+                                        case "DECLS":
+                                            CssSettings.CssType = CssType.DeclarationList;
+                                            break;
+
+                                        default:
+                                            // not an expected value
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                            break;
+                                    }
+                                }
                                 break;
 
                             case "DEBUG":

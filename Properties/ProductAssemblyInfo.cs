@@ -26,7 +26,7 @@ using System.Security.Permissions;
 [assembly: AssemblyProduct("Microsoft Ajax Minifier")]
 
 [assembly: AssemblyCompany("Microsoft Corporation")]
-[assembly: AssemblyCopyright("Copyright 2011 Microsoft Corporation")]
+[assembly: AssemblyCopyright("Copyright 2012 Microsoft Corporation")]
 //[assembly: AssemblyTrademark("")]
 
 #if DEBUG
@@ -35,4 +35,4 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 
-[assembly: AssemblyVersion("4.50.*")]
+[assembly: AssemblyVersion("4.51.*")]

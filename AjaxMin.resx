@@ -317,7 +317,7 @@
   </data>
   <data name="Usage" xml:space="preserve">
     <value>Usage;;Usage:
-{0} [-JS [JSOPTS]|-CSS [CSSOPTS]] OPTS* ((IFILE* [-out OFILE])|(-xml XFILE [-out ODIR]))
+{0} [-JS [JSOPTS]|-CSS[:CSSTYP] [CSSOPTS]] OPTS* ((IFILE* [-out OFILE])|(-xml XFILE [-out ODIR]))
 
 Valid OPTS are zero or more of:
   -analyze &gt; provide extra analysis output.
@@ -417,7 +417,9 @@ Valid CSSOPTS are zero or more of:
   -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw), or
         minify them as JavaScript expressions (minify). Default is minify.
 
-BOOL can be true, false, T, F, Yes, No, Y, or N.
+CSSTYP can be full (full stylesheet) or decls (just a declaration list).
+        Default is full.
+BOOL can be 1, 0, true, false, T, F, Yes, No, Y, or N.
 N is a valid non-negative integer.
 IDENT is a valid JavaScript identifier (case-sensitive).
 NAME is a valid JavaScript identifier (case-insensitive).

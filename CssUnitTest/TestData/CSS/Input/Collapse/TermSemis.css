@@ -11,3 +11,8 @@ a
   background-color: #cba;
   color: #abc/* comment before end */;
 }
+foo
+{
+    /* no semicolon at the end */
+    font-style: italic
+}
