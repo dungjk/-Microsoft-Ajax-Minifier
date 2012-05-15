@@ -70,7 +70,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
+        "OwnerKey" = "8:_078EC7FE11AE2A35394EC8E911418097"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -82,7 +82,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_078EC7FE11AE2A35394EC8E911418097"
+        "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -197,11 +197,6 @@
             "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.50.4507.14271, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_078EC7FE11AE2A35394EC8E911418097"
-                    {
-                    "Name" = "8:AjaxMin.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:AjaxMin.dll"
             "TargetName" = "8:"
@@ -401,15 +396,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{823DD540-6B32-47AC-B7F5-E26418DEC112}"
-        "PackageCode" = "8:{6CF273E3-F486-434C-9E91-9CAEE9EC72A9}"
+        "ProductCode" = "8:{0262B9B1-EE80-40E6-B907-4ABE7FF83DC2}"
+        "PackageCode" = "8:{FA494996-3195-4725-83E0-E57971280FC5}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.51"
+        "ProductVersion" = "8:4.52"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
