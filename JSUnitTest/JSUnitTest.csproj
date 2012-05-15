@@ -286,6 +286,7 @@
     <Content Include="TestData\JS\Expected\Preprocessor\Defines.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbar.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbarmeow.js" />
+    <Content Include="TestData\JS\Expected\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_all.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_cmd.js" />
@@ -483,6 +484,7 @@
     <Content Include="TestData\JS\Input\Preprocessor\BadDefines.js" />
     <Content Include="TestData\JS\Input\Preprocessor\BadIfDef.js" />
     <Content Include="TestData\JS\Input\Preprocessor\Defines.js" />
+    <Content Include="TestData\JS\Input\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Input\Renaming\Collide.xml" />
     <Content Include="TestData\JS\Input\Renaming\ManualRename.js" />
     <Content Include="TestData\JS\Input\Renaming\NestedGlobals.js" />

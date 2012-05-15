@@ -84,5 +84,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Nested()
+        {
+            TestHelper.Instance.RunTest("-define:foo");
+        }
     }
 }

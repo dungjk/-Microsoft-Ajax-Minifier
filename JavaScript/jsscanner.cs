@@ -64,7 +64,7 @@ namespace Microsoft.Ajax.Utilities
         // for pre-processor
         private Dictionary<string, string> m_defines;
 
-        private bool m_inIfDefDirective;
+        private int m_inIfDefDirectiveLevel;
 
         public bool UsePreprocessorDefines { get; set; }
 
@@ -588,10 +588,12 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                     else if (UsePreprocessorDefines)
                                     {
-                                        if (CheckCaseInsensitiveSubstring(m_currentPos, "#IFDEF"))
+                                        var testForNot = false;
+                                        if (CheckCaseInsensitiveSubstring(m_currentPos, "#IFDEF")
+                                            || (testForNot = CheckCaseInsensitiveSubstring(m_currentPos, "#IFNDEF")))
                                         {
                                             // skip past the token and any blanks
-                                            m_currentPos += 6;
+                                            m_currentPos += 6 + (testForNot ? 1 : 0);
                                             SkipBlanks();
 
                                             // if we encountered a line-break here, then ignore this directive
@@ -602,17 +604,22 @@ namespace Microsoft.Ajax.Utilities
                                                 if (!string.IsNullOrEmpty(identifier))
                                                 {
                                                     // set a state so that if we hit an #ELSE directive, we skip to #ENDIF
-                                                    m_inIfDefDirective = true;
+                                                    ++m_inIfDefDirectiveLevel;
 
-                                                    // if there is a dictionary AND the identifier is in it...
-                                                    if (m_defines == null || !m_defines.ContainsKey(identifier))
+                                                    // if there is a dictionary AND the identifier is in it, then the identifier IS defined.
+                                                    // if there is not dictionary OR the identifier is NOT in it, then it is NOT defined.
+                                                    var isDefined = (m_defines != null && m_defines.ContainsKey(identifier));
+
+                                                    // see if the condition is true
+                                                    var conditionIsTrue = (!testForNot && isDefined) || (testForNot && !isDefined);
+                                                    if (!conditionIsTrue)
                                                     {
-                                                        // it's NOT defined!
+                                                        // the condition is FALSE!
                                                         // skip to #ELSE or #ENDIF and continue processing normally.
                                                         if (PPSkipToDirective("#ENDIF", "#ELSE") == 0)
                                                         {
                                                             // encountered the #ENDIF directive, so we know to reset the flag
-                                                            m_inIfDefDirective = false;
+                                                            --m_inIfDefDirectiveLevel;
                                                         }
                                                     }
 
@@ -626,10 +633,10 @@ namespace Microsoft.Ajax.Utilities
                                                 }
                                             }
                                         }
-                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ELSE") && m_inIfDefDirective)
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ELSE") && m_inIfDefDirectiveLevel > 0)
                                         {
                                             // reset the state that says we were in an #IFDEF construct
-                                            m_inIfDefDirective = false;
+                                            --m_inIfDefDirectiveLevel;
 
                                             // ...then we now want to skip until the #ENDIF directive
                                             PPSkipToDirective("#ENDIF");
@@ -642,10 +649,10 @@ namespace Microsoft.Ajax.Utilities
                                                 goto nextToken;
                                             }
                                         }
-                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ENDIF") && m_inIfDefDirective)
+                                        else if (CheckCaseInsensitiveSubstring(m_currentPos, "#ENDIF") && m_inIfDefDirectiveLevel > 0)
                                         {
                                             // reset the state that says we were in an #IFDEF construct
-                                            m_inIfDefDirective = false;
+                                            --m_inIfDefDirectiveLevel;
 
                                             // if we are asking for raw tokens, we DON'T want to return this comment.
                                             if (RawTokens)
@@ -2740,16 +2747,27 @@ namespace Microsoft.Ajax.Utilities
                             // skip it
                             m_currentPos += 2;
 
-                            // now check each of the ending strings that were passed to us to see if one of
-                            // them is a match
-                            for (var ndx = 0; ndx < endStrings.Length; ++ndx)
+                            // check to see if this is the start of ANOTHER preprocessor construct. If it
+                            // is, then it's a NESTED statement and we'll need to recursively skip the 
+                            // whole thing so everything stays on track
+                            if (CheckCaseInsensitiveSubstring(m_currentPos, "#IFDEF")
+                                || CheckCaseInsensitiveSubstring(m_currentPos, "#IFNDEF"))
                             {
-                                if (CheckCaseInsensitiveSubstring(m_currentPos, endStrings[ndx]))
+                                PPSkipToDirective("#ENDIF");
+                            }
+                            else
+                            {
+                                // now check each of the ending strings that were passed to us to see if one of
+                                // them is a match
+                                for (var ndx = 0; ndx < endStrings.Length; ++ndx)
                                 {
-                                    // found the ending string
-                                    // skip it and bail
-                                    m_currentPos += endStrings[ndx].Length;
-                                    return ndx;
+                                    if (CheckCaseInsensitiveSubstring(m_currentPos, endStrings[ndx]))
+                                    {
+                                        // found the ending string
+                                        // skip it and bail
+                                        m_currentPos += endStrings[ndx].Length;
+                                        return ndx;
+                                    }
                                 }
                             }
                         }
