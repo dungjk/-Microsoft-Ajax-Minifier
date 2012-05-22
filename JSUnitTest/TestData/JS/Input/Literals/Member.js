@@ -16,3 +16,6 @@ function bar(meth)
     var b = 1.234e3["toString"]();
     return a + b;
 }
+
+var noDec = (9).toFixed();
+var dec = (0.9).toFixed();

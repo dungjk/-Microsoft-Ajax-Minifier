@@ -1206,22 +1206,24 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version
                         string numericText;
-                        if (node.Context == null 
-                            || !node.Context.HasCode
+                        if (constantWrapper.Context == null
+                            || !constantWrapper.Context.HasCode
                             || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
-                            numericText = NormalizeNumber(constantWrapper.ToNumber(), node.Context);
+                            numericText = NormalizeNumber(constantWrapper.ToNumber(), constantWrapper.Context);
                         }
                         else
                         {
                             // context is not null but we don't want to minify numeric literals.
                             // just use the original literal from the context.
-                            numericText = node.Context.Code;
+                            numericText = constantWrapper.Context.Code;
                         }
 
                         // if there is no period in the number, we need to wrap it in parens
-                        if (numericText.IndexOf('.') < 0)
+                        // if it isn't already
+                        if (numericText.IndexOf('.') < 0
+                            && !numericText.StartsWith("(", StringComparison.Ordinal))
                         {
                             // no period - wrap it in parent
                             Output('(');
