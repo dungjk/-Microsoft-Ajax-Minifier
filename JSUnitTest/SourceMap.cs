@@ -1,4 +1,4 @@
-﻿// XmlInput.cs
+﻿// SourceMap.cs
 //
 // Copyright 2010 Microsoft Corporation
 //
@@ -19,34 +19,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace JSUnitTest
 {
     /// <summary>
-    /// unit tests dealing with the XML input fklag (-x) which can specify a series of
-    /// input and output files in an XML file for a single instance of tool execution
+    /// unit tests dealing with the MAP input used to generate node mapping between source and output scripts
     /// </summary>
     [TestClass]
-    public class XmlInput
+    public class SourceMap
     {
         [TestMethod]
-        public void XmlOneOutputFile()
+        public void MapArgNotSpecified()
         {
-            TestHelper.Instance.RunTest("-xml -reorder:0");
+            TestHelper.Instance.RunTest();
         }
 
         [TestMethod]
-        public void XmlTwoOutputFiles()
+        public void ScriptSharpMap_TwoInputs()
         {
-            TestHelper.Instance.RunTest("-xml -reorder:N");
-        }
-
-        [TestMethod]
-        public void XmlWithSymbolMap()
-        {
-            TestHelper.Instance.RunTest("-xml -reorder:N");
-        }
-
-        [TestMethod]
-        public void XmlMixedType()
-        {
-            TestHelper.Instance.RunTest("-xml -reorder:F");
+            TestHelper.Instance.RunTest("-map", "MapArgNotSpecified.js");
         }
     }
 }
+

@@ -243,6 +243,15 @@
   <data name="OutputEmpty" xml:space="preserve">
     <value>Minified output is EMPTY!</value>
   </data>
+  <data name="MultipleMapArg" xml:space="preserve">
+    <value>Symbol map file already specified</value>
+  </data>
+  <data name="MapArgNeedsPath" xml:space="preserve">
+    <value>-O parameter must be followed by symbol map file path</value>
+  </data>
+  <data name="MapAndXmlArgs" xml:space="preserve">
+    <value>-MAP and -XML switches are not compatible</value>
+  </data>
   <data name="SourceFileIsFolder" xml:space="preserve">
     <value>Source file is a folder;;Source file cannot be a folder: {0}</value>
   </data>

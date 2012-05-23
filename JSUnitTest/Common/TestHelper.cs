@@ -18,7 +18,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
 using System.Xml;
 
@@ -35,6 +34,22 @@ namespace JSUnitTest
     /// </summary>
     sealed class TestHelper
     {
+        #region Symbol Map Xml Tags
+
+        /// <summary>The xml tag for the script file element in the Symbol Map.</summary>
+        private const string ScriptFileTag = "scriptFile";
+
+        /// <summary>The xml tag for the source file element in the Symbol Map.</summary>
+        private const string SourceFileTag = "sourceFile";
+
+        /// <summary>The xml attribute name for the file path in the Symbol Map.</summary>
+        private const string FilePathAttribute = "path";
+
+        /// <summary>The xml attribute name for the file id in the Symbol Map.</summary>
+        private const string FileIdAttribute = "id";
+
+        #endregion Symbol Map Xml Tags
+
         /// <summary>
         /// the name of the unit test folder under the main project folder
         /// </summary>
@@ -143,7 +158,9 @@ namespace JSUnitTest
 
             // the output file is just the full test name
             string outputFile = testName;
+            string outputMapFile = null;
             List<string> outputFiles = null;
+            List<string> outputMapFiles = null;
 
             // the input file is the portion of the test name before the underscore (if any)
             string inputFile = testName.Split('_')[0];
@@ -188,7 +205,10 @@ namespace JSUnitTest
                                 );
                             args.AddLast(inputPath);
                             ++inputCount;
-                            outputFiles = ReadXmlForOutputFiles(inputPath, testClass);
+
+                            XmlOutputData outputData = ReadXmlForOutputFiles(inputPath, testClass);
+                            outputFiles = outputData.OutputFiles;
+                            outputMapFiles = outputData.OutputMapFiles;
                         }
                         else if (string.Compare(option, "-rename", StringComparison.OrdinalIgnoreCase) == 0)
                         {
@@ -248,6 +268,22 @@ namespace JSUnitTest
                             && option.IndexOf('=') < 0 && option.IndexOf("prop", StringComparison.OrdinalIgnoreCase) < 0)
                         {
                             specifiesRename = true;
+                        }
+                        else if (option.StartsWith("-map", StringComparison.OrdinalIgnoreCase))
+                        {
+                            outputMapFile = BuildFullPath(
+                                m_outputFolder,
+                                testClass,
+                                inputFile,
+                                ".xml",
+                                false);
+
+                            if (File.Exists(outputMapFile))
+                            {
+                                File.Delete(outputMapFile);
+                            }
+
+                            args.AddLast(outputMapFile);
                         }
                     }
                 }
@@ -436,6 +472,19 @@ namespace JSUnitTest
                         outputPath
                         );
                 }
+
+                if (outputMapFile != null)
+                {
+                    string expectedMapFile = this.BuildFullPath(
+                        m_expectedFolder,
+                        testClass,
+                        Path.GetFileNameWithoutExtension(outputMapFile),
+                        ".xml",
+                        true
+                        );
+
+                    this.CompareSymbolMapFiles(outputMapFile, expectedMapFile);
+                }
             }
             else if (inputCount > 0)
             {
@@ -490,6 +539,24 @@ namespace JSUnitTest
                     // input file(s), but no output file
                     Assert.Fail("No output files");
                 }
+
+                if (outputMapFiles != null)
+                {
+                    for (int ndx = 0; ndx < outputMapFiles.Count; ++ndx)
+                    {
+                        outputMapFile = outputMapFiles[ndx];
+
+                        string expectedMapFile = this.BuildFullPath(
+                            m_expectedFolder,
+                            testClass,
+                            Path.GetFileNameWithoutExtension(outputMapFile),
+                            ".xml",
+                            true
+                            );
+
+                        this.CompareSymbolMapFiles(outputMapFile, expectedMapFile);
+                    }
+                }
             }
             else
             {
@@ -505,9 +572,10 @@ namespace JSUnitTest
 
         #endregion
 
-        private List<string> ReadXmlForOutputFiles(string xmlPath, string subFolder)
+        private XmlOutputData ReadXmlForOutputFiles(string xmlPath, string subFolder)
         {
-            List<string> outputFiles = null;
+            XmlOutputData outputData = new XmlOutputData();
+
             try
             {
                 // load in the xml file
@@ -519,11 +587,12 @@ namespace JSUnitTest
                 if (outputNodes.Count > 0)
                 {
                     // create the list now and use the number of nodes as the initial capacity
-                    outputFiles = new List<string>(outputNodes.Count);
+                    outputData.OutputFiles = new List<string>(outputNodes.Count);
+                    outputData.OutputMapFiles = new List<string>(outputNodes.Count);
 
                     for (int ndx = 0; ndx < outputNodes.Count; ++ndx)
                     {
-                        // get the output path attribute
+                        // get the output path attribute and add it to the output files list
                         XmlAttribute pathAttribute = outputNodes[ndx].Attributes["path"];
 
                         // must exist and be non-empty for the purposes of this unit test because we
@@ -550,8 +619,26 @@ namespace JSUnitTest
                             File.Delete(outputPath);
                         }
 
-                        // add it to the output files list
-                        outputFiles.Add(outputPath);
+                        outputData.OutputFiles.Add(outputPath);
+
+                        XmlAttribute mapPathAttribute = outputNodes[ndx].Attributes["mappath"];
+                        if (mapPathAttribute != null)
+                        {
+                            string mapPath = this.BuildFullPath(
+                                m_outputFolder,
+                                subFolder,
+                                mapPathAttribute.Value,
+                                ".xml",
+                                false
+                                );
+
+                            if (File.Exists(mapPath))
+                            {
+                                File.Delete(mapPath);
+                            }
+
+                            outputData.OutputMapFiles.Add(mapPath);
+                        }
                     }
                 }
                 else
@@ -564,7 +651,8 @@ namespace JSUnitTest
                 Debug.WriteLine(e.ToString());
                 Assert.Fail("XML Exception processing XML input file: {0}", e.Message);
             }
-            return outputFiles;
+
+            return outputData;
         }
 
         public void RunErrorTest(string settingsSwitches, params JSError[] expectedErrorArray)
@@ -827,6 +915,56 @@ namespace JSUnitTest
                     return (string.Compare(left, string.Empty) == 0);
                 }
             }
+        }
+
+        private void CompareSymbolMapFiles(string leftPath, string rightPath)
+        {
+            Assert.IsTrue(File.Exists(leftPath), "File does not exist: {0}", leftPath);
+
+            using (XmlReader leftReader = XmlReader.Create(leftPath))
+            using (XmlReader rightReader = XmlReader.Create(rightPath))
+            {
+                bool leftHasMoreNodes = leftReader.Read();
+                bool rightHasMoreNodes = rightReader.Read();
+
+                while (leftHasMoreNodes && rightHasMoreNodes)
+                {
+                    bool leftIsScriptTag = leftReader.IsStartElement(ScriptFileTag);
+                    bool rightIsScriptTag = rightReader.IsStartElement(ScriptFileTag);
+
+                    if (leftIsScriptTag && rightIsScriptTag)
+                    {
+                        string leftScriptName = Path.GetFileName(leftReader.GetAttribute(FilePathAttribute));
+                        string rightScriptName = Path.GetFileName(rightReader.GetAttribute(FilePathAttribute));
+
+                        Assert.AreEqual(leftScriptName, rightScriptName, "Script names don't match");
+                        Assert.AreEqual(leftReader.ReadInnerXml(), rightReader.ReadInnerXml(), "Script symbols don't match");
+                    }
+                    else if (leftReader.Name == SourceFileTag && rightReader.Name == SourceFileTag)
+                    {
+                        int leftFileId = int.Parse(leftReader.GetAttribute(FileIdAttribute));
+                        int rightFileId = int.Parse(rightReader.GetAttribute(FileIdAttribute));
+                        string leftScriptName = Path.GetFileName(leftReader.GetAttribute(FilePathAttribute));
+                        string rightScriptName = Path.GetFileName(rightReader.GetAttribute(FilePathAttribute));
+
+                        Assert.AreEqual(leftFileId, rightFileId, "Source file ids don't match");
+                        Assert.AreEqual(leftScriptName, rightScriptName, "Source file names don't match");
+                    }
+
+                    Assert.AreEqual(leftReader.Name, rightReader.Name, "Left and Right files have elements in different order");
+
+                    leftHasMoreNodes = leftReader.Read();
+                    rightHasMoreNodes = rightReader.Read();
+                }
+
+                Assert.AreEqual(leftReader.EOF, rightReader.EOF, "Files length don't match");
+            }
+        }
+
+        private class XmlOutputData
+        {
+            public List<string> OutputFiles { get; set; }
+            public List<string> OutputMapFiles { get; set; }
         }
 
         #endregion

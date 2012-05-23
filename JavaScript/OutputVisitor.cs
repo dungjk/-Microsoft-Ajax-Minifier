@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -37,6 +38,10 @@ namespace Microsoft.Ajax.Utilities
 
         private int m_indentLevel;
         private int m_lineLength;
+        private int m_lineCount;
+
+        // needed when generating map files
+        private Stack<string> m_functionStack = new Stack<string>();
 
         // normally false; gets set to true if we are in a no-in scenario
         // (in-operator not directly allowed)
@@ -50,9 +55,8 @@ namespace Microsoft.Ajax.Utilities
             @"^\s*\+?(?<neg>\-)?0*(?<mag>(?<sig>\d*[1-9])(?<zer>0*))?(\.(?<man>\d*[1-9])?0*)?(?<exp>E\+?(?<eng>\-?)0*(?<pow>[1-9]\d*))?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-
         public OutputVisitor(TextWriter writer)
-            :this(writer, null)
+            : this(writer, null)
         {
         }
 
@@ -72,6 +76,8 @@ namespace Microsoft.Ajax.Utilities
 
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 OutputPossibleLineBreak('[');
                 m_startOfStatement = false;
 
@@ -97,6 +103,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 Output(']');
+
+                EndSymbol(symbol);
             }
 
             m_noIn = isNoIn;
@@ -115,6 +123,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null && node.Count > 0)
             {
+                var symbol = StartSymbol(node);
+
                 // output as comma-separated expressions starting with the first one
                 node[0].Accept(this);
 
@@ -147,6 +157,8 @@ namespace Microsoft.Ajax.Utilities
 
                 // unindent our indention
                 Unindent();
+
+                EndSymbol(symbol);
             }
         }
 
@@ -154,6 +166,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 if (node.OperatorToken == JSToken.Comma)
                 {
                     // output the left-hand operand, if we have one
@@ -308,6 +322,8 @@ namespace Microsoft.Ajax.Utilities
                         OutputPossibleLineBreak(')');
                     }
                     m_noIn = isNoIn;
+
+                    EndSymbol(symbol);
                 }
             }
         }
@@ -316,6 +332,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 if (node.Parent != null)
                 {
                     // not the root block.
@@ -391,6 +409,8 @@ namespace Microsoft.Ajax.Utilities
                     // with a terminating semicolon, so don't replace it
                     OutputPossibleLineBreak(';');
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -398,6 +418,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("break");
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
@@ -414,6 +436,8 @@ namespace Microsoft.Ajax.Utilities
                         Output(node.Label);
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -421,6 +445,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
@@ -490,6 +516,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -497,6 +525,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // if we have already output a cc_on and we don't want to keep any dupes, let's
                 // skip over any @cc_on statements at the beginning now
                 var ndx = 0;
@@ -557,6 +587,8 @@ namespace Microsoft.Ajax.Utilities
                     // output the closing comment
                     Output("@*/");
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -564,7 +596,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("@else");
+                EndSymbol(symbol);
             }
         }
 
@@ -572,6 +606,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("@elif(");
                 m_startOfStatement = false;
                 if (node.Condition != null)
@@ -580,6 +615,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(')');
+                EndSymbol(symbol);
             }
         }
 
@@ -587,7 +623,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("@end");
+                EndSymbol(symbol);
             }
         }
 
@@ -595,6 +633,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("@if(");
                 m_startOfStatement = false;
                 if (node.Condition != null)
@@ -603,6 +642,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(')');
+                EndSymbol(symbol);
             }
         }
 
@@ -610,12 +650,15 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 if (!m_outputCCOn
                     || !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements))
                 {
                     m_outputCCOn = true;
                     Output("@cc_on");
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -623,6 +666,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("@set");
                 m_startOfStatement = false;
                 Output(node.VariableName);
@@ -640,6 +685,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     node.Value.Accept(this);
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -647,6 +694,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
 
                 if (node.Condition != null)
@@ -696,6 +745,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -703,6 +754,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
@@ -717,7 +770,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.Number:
-                        if (node.Context == null 
+                        if (node.Context == null
                             || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible
@@ -760,6 +813,8 @@ namespace Microsoft.Ajax.Utilities
 
                 m_startOfStatement = false;
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -767,6 +822,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 if (node.ForceComments)
                 {
                     Output("/*");
@@ -780,6 +837,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output("@*/");
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -787,6 +846,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("const");
                 m_startOfStatement = false;
                 Indent();
@@ -806,6 +866,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
                 Unindent();
+                EndSymbol(symbol);
             }
         }
 
@@ -813,6 +874,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("continue");
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
@@ -829,6 +891,8 @@ namespace Microsoft.Ajax.Utilities
                         Output(node.Label);
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -839,7 +903,9 @@ namespace Microsoft.Ajax.Utilities
                 // custom nodes override the ToCode method to return a blank string.
                 // nodes DERIVED from CustomNode should override ToCode is they want
                 // to introduce anything into the output stream.
+                var symbol = StartSymbol(node);
                 Output(node.ToCode());
+                EndSymbol(symbol);
             }
         }
 
@@ -847,8 +913,10 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("debugger");
                 m_startOfStatement = false;
+                EndSymbol(symbol);
             }
         }
 
@@ -856,6 +924,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // always output directive prologues that aren't strict; only output
                 // the use-strict directive if we need one
                 node.IsRedundant = node.UseStrict && !m_needsStrictDirective;
@@ -868,6 +938,8 @@ namespace Microsoft.Ajax.Utilities
                         m_needsStrictDirective = false;
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -875,6 +947,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("do");
 
                 if (node.Body == null || node.Body.Count == 0)
@@ -924,6 +998,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 Output(')');
+
+                EndSymbol(symbol);
             }
         }
 
@@ -931,6 +1007,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("for(");
                 m_startOfStatement = false;
                 if (node.Variable != null)
@@ -950,6 +1028,8 @@ namespace Microsoft.Ajax.Utilities
 
                 OutputPossibleLineBreak(')');
                 OutputBlock(node.Body);
+
+                EndSymbol(symbol);
             }
         }
 
@@ -957,6 +1037,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("for(");
                 m_startOfStatement = false;
                 if (node.Initializer != null)
@@ -992,6 +1074,8 @@ namespace Microsoft.Ajax.Utilities
 
                 OutputPossibleLineBreak(')');
                 OutputBlock(node.Body);
+
+                EndSymbol(symbol);
             }
         }
 
@@ -999,6 +1083,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
@@ -1010,8 +1096,16 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("function");
                 m_startOfStatement = false;
+                bool isAnonymous = true;
                 if (node.Identifier != null)
                 {
+                    isAnonymous = false;
+
+                    if (Settings.SymbolsMap != null)
+                    {
+                        m_functionStack.Push(node.Identifier.ToString());
+                    }
+
                     // if this is a function expression, check to see if the field
                     // if not referenced, in which case we won't output it (depending on switches)
                     if (!node.IsExpression
@@ -1020,6 +1114,19 @@ namespace Microsoft.Ajax.Utilities
                         || !Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
                     {
                         node.Identifier.Accept(this);
+                    }
+                }
+
+                if (Settings.SymbolsMap != null && isAnonymous)
+                {
+                    BinaryOperator binaryOperator = node.Parent as BinaryOperator;
+                    if (binaryOperator != null && binaryOperator.Operand1 is Lookup)
+                    {
+                        m_functionStack.Push(string.Format("(anonymous) [{0}]", binaryOperator.Operand1));
+                    }
+                    else
+                    {
+                        m_functionStack.Push("(anonymous)");
                     }
                 }
 
@@ -1034,6 +1141,13 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
+
+                if (Settings.SymbolsMap != null)
+                {
+                    m_functionStack.Pop();
+                }
             }
         }
 
@@ -1041,9 +1155,13 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output(node.IsGetter ? "get" : "set");
                 m_startOfStatement = false;
                 Output(node.Value.ToString());
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1051,6 +1169,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("if(");
                 m_startOfStatement = false;
                 if (node.Condition != null)
@@ -1129,6 +1249,8 @@ namespace Microsoft.Ajax.Utilities
                         node.FalseBlock.Accept(this);
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1136,12 +1258,16 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // make sure we force the important comments to start on a new line, regardless
                 // of whether or not we are in multi- or single-line mode, and the statement after
                 // should also be on a new line.
                 BreakLine(true);
                 Output(node.Comment);
                 BreakLine(true);
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1149,6 +1275,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 if (Settings.LocalRenaming != LocalRenaming.KeepAll
                     && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                 {
@@ -1170,6 +1298,8 @@ namespace Microsoft.Ajax.Utilities
                     m_startOfStatement = true;
                     node.Statement.Accept(this);
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1185,10 +1315,14 @@ namespace Microsoft.Ajax.Utilities
                     Output(' ');
                 }
 
+                var symbol = StartSymbol(node);
+
                 Output(node.VariableField != null
                     ? node.VariableField.ToString()
                     : node.Name);
                 m_startOfStatement = false;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1196,6 +1330,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
@@ -1260,6 +1396,8 @@ namespace Microsoft.Ajax.Utilities
                 Output(node.Name);
                 m_startOfStatement = false;
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1267,6 +1405,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 var isNoIn = m_noIn;
                 m_noIn = false;
 
@@ -1320,6 +1460,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_noIn = isNoIn;
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1327,6 +1469,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // call the base to format the value
                 // determine whether we need quotes or not
                 if (node.PrimitiveType == PrimitiveType.String)
@@ -1355,6 +1499,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output(' ');
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1362,6 +1508,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 m_startOfStatement = false;
 
                 // cannot have a line break anywhere in this node
@@ -1372,6 +1520,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output(node.PatternSwitches);
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1379,6 +1529,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("return");
                 m_startOfStatement = false;
                 if (node.Operand != null)
@@ -1387,6 +1539,8 @@ namespace Microsoft.Ajax.Utilities
                     node.Operand.Accept(this);
                     Unindent();
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1394,6 +1548,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("switch(");
                 m_startOfStatement = false;
                 if (node.Expression != null)
@@ -1425,6 +1581,8 @@ namespace Microsoft.Ajax.Utilities
                 Unindent();
                 NewLine();
                 OutputPossibleLineBreak('}');
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1432,6 +1590,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 if (node.CaseValue != null)
                 {
                     Output("case");
@@ -1467,6 +1627,8 @@ namespace Microsoft.Ajax.Utilities
 
                     Unindent();
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1474,8 +1636,10 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("this");
                 m_startOfStatement = false;
+                EndSymbol(symbol);
             }
         }
 
@@ -1483,6 +1647,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("throw");
                 m_startOfStatement = false;
                 if (node.Operand != null)
@@ -1495,6 +1660,8 @@ namespace Microsoft.Ajax.Utilities
                     // force the statement ending with a semicolon
                     OutputPossibleLineBreak(';');
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1502,6 +1669,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("try");
                 if (node.TryBlock == null || node.TryBlock.Count == 0)
                 {
@@ -1551,6 +1720,8 @@ namespace Microsoft.Ajax.Utilities
                         node.FinallyBlock.Accept(this);
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1558,6 +1729,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // save the no-in state -- we'll reset before processing each initializer
                 var isNoIn = m_noIn;
 
@@ -1592,6 +1765,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
                 Unindent();
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1599,6 +1774,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 // output the name (use the field is possible)
                 Output(node.Field != null ? node.Field.ToString() : node.Identifier);
                 m_startOfStatement = false;
@@ -1645,19 +1822,25 @@ namespace Microsoft.Ajax.Utilities
                         Output("@*/");
                     }
                 }
+
+                EndSymbol(symbol);
             }
         }
 
         public void Visit(UnaryOperator node)
         {
+            var symbol = StartSymbol(node);
             // just call the default unary-operator output method
             OutputUnaryOperator(node);
+            EndSymbol(symbol);
         }
 
         public void Visit(WhileNode node)
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
+
                 Output("while(");
                 m_startOfStatement = false;
                 if (node.Condition != null)
@@ -1667,6 +1850,8 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak(')');
 
                 OutputBlock(node.Body);
+
+                EndSymbol(symbol);
             }
         }
 
@@ -1674,6 +1859,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                var symbol = StartSymbol(node);
                 Output("with(");
                 m_startOfStatement = false;
                 if (node.WithObject != null)
@@ -1683,6 +1869,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak(')');
 
                 OutputBlock(node.Body);
+                EndSymbol(symbol);
             }
         }
 
@@ -1903,6 +2090,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // terminate the line and start a new one
                     m_outputStream.Write('\n');
+                    m_lineCount++;
 
                     // set the appropriate newline state
                     m_lineLength = 0;
@@ -1918,6 +2106,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // output the newline character
                 m_outputStream.WriteLine();
+                m_lineCount++;
 
                 // if the indent level is greater than zero, output the indent spaces
                 if (m_indentLevel > 0)
@@ -2661,5 +2850,33 @@ namespace Microsoft.Ajax.Utilities
         }
 
         #endregion
+
+        #region Map file methods
+
+        private object StartSymbol(AstNode node)
+        {
+            if (Settings.SymbolsMap != null)
+            {
+                return Settings.SymbolsMap.StartSymbol(node, m_lineCount + 1, m_lineLength + 1);
+            }
+
+            return null;
+        }
+
+        private void EndSymbol(object symbol)
+        {
+            if (Settings.SymbolsMap != null && symbol != null)
+            {
+                string parentFunction = null;
+                if (m_functionStack.Count > 0)
+                {
+                    parentFunction = m_functionStack.Peek();
+                }
+
+                Settings.SymbolsMap.EndSymbol(symbol, m_lineCount + 1, m_lineLength + 1, parentFunction);
+            }
+        }
+
+        #endregion Map file methods
     }
 }

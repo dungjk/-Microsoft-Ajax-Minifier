@@ -15,11 +15,11 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.IO;
 using System.Resources;
 using System.Security;
 using System.Text.RegularExpressions;
+using System.Xml;
 using Microsoft.Ajax.Utilities;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -61,6 +61,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// AjaxMin command-line switch parser
         /// </summary>
         private SwitchParser m_switchParser;
+
+        /// <summary>
+        /// An optional file mapping the source and destination files.
+        /// </summary>
+        private string m_symbolsMapFile;
 
         #endregion
 
@@ -199,6 +204,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                 m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
                             }
                         }
+                    }
+                    break;
+
+                case "MAP":
+                    if (ea.Index < ea.Arguments.Count - 1)
+                    {
+                        m_symbolsMapFile = ea.Arguments[++ea.Index];
                     }
                     break;
             }
@@ -564,7 +576,32 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     return false;
                 }
 
-                MinifyJavaScript();
+
+                if (m_symbolsMapFile != null)
+                {
+                    if (FileIsWritable(m_symbolsMapFile))
+                    {
+                        XmlWriter writer = XmlWriter.Create(
+                            m_symbolsMapFile,
+                            new XmlWriterSettings { CloseOutput = true, Indent = true });
+                        
+                        using (m_jsCodeSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                        {
+                            MinifyJavaScript();
+                        }
+                    }
+                    else
+                    {
+                        // log a WARNING that the symbol map generation was skipped -- don't break the build
+                        Log.LogWarning(StringManager.GetString(StringEnum.MapDestinationIsReadOnly, m_symbolsMapFile));
+                        MinifyJavaScript();
+                    }
+                }
+                else
+                {
+                    // No symbol map. Just minify it.
+                    MinifyJavaScript();
+                }
             }
 
             // Deal with CSS minification
@@ -597,10 +634,16 @@ namespace Microsoft.Ajax.Minifier.Tasks
             {
                 string path = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
                                             RegexOptions.IgnoreCase);
+
                 if (FileIsWritable(path))
                 {
                     try
                     {
+                        if (m_jsCodeSettings.SymbolsMap != null)
+                        {
+                            m_jsCodeSettings.SymbolsMap.StartPackage(path);
+                        }
+
                         string source = File.ReadAllText(item.ItemSpec);
                         this.m_minifier.FileName = item.ItemSpec;
                         string minifiedJs = this.m_minifier.MinifyJavaScript(source, this.m_jsCodeSettings);
@@ -631,6 +674,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     {
                         LogFileError(item.ItemSpec, StringEnum.DidNotMinify, path, e.Message);
                         throw;
+                    }
+                    finally
+                    {
+                        if (m_jsCodeSettings.SymbolsMap != null)
+                        {
+                            m_jsCodeSettings.SymbolsMap.EndPackage();
+                        }
                     }
                 }
                 else

@@ -104,6 +104,11 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private string m_xmlInputFile;// = null;
 
+        /// <summary>
+        /// An optional file mapping the source and destination files.
+        /// </summary>
+        private string m_symbolsMapFile;
+
         #endregion
 
         #region startup code
@@ -269,6 +274,27 @@ namespace Microsoft.Ajax.Utilities
                         m_outputFile = ea.Arguments[++ea.Index];
                         break;
 
+                    case "MAP":
+                        if (!string.IsNullOrEmpty(m_xmlInputFile))
+                        {
+                            throw new UsageException(m_outputMode, "MapAndXmlArgs");
+                        }
+
+                        // next argument is the output path
+                        // cannot have two map arguments
+                        if (!string.IsNullOrEmpty(m_symbolsMapFile))
+                        {
+                            throw new UsageException(m_outputMode, "MultipleMapArg");
+                        }
+
+                        if (ea.Index >= ea.Arguments.Count - 1)
+                        {
+                            throw new UsageException(m_outputMode, "MapArgNeedsPath");
+                        }
+
+                        m_symbolsMapFile = ea.Arguments[++ea.Index];
+                        break;
+
                     case "PPONLY":
                         // just putting the pponly switch on the command line without any arguments
                         // is the same as putting -pponly:true and perfectly valid.
@@ -371,6 +397,11 @@ namespace Microsoft.Ajax.Utilities
 
                     case "XML":
                     case "X": // <-- old style
+                        if (!string.IsNullOrEmpty(m_symbolsMapFile))
+                        {
+                            throw new UsageException(m_outputMode, "MapAndXmlArgs");
+                        }
+
                         if (!string.IsNullOrEmpty(m_xmlInputFile))
                         {
                             throw new UsageException(m_outputMode, "MultipleXmlArgs");
@@ -553,7 +584,8 @@ namespace Microsoft.Ajax.Utilities
                 // to the processing method (normal operation)
                 crunchGroups = new CrunchGroup[] { new CrunchGroup(
                     m_outputFile, 
-                    m_switchParser.EncodingOutputName, 
+                    m_switchParser.EncodingOutputName,
+                    m_symbolsMapFile,
                     m_inputFiles != null ? m_inputFiles.ToArray() : new string[] {}, 
                     m_switchParser.EncodingInputName, 
                     m_inputType) };
@@ -576,64 +608,111 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // loop through all the crunch groups
-                for (int ndxGroup = 0; ndxGroup < crunchGroups.Length; ++ndxGroup)
-                {
-                    // shortcut
-                    CrunchGroup crunchGroup = crunchGroups[ndxGroup];
-
-                    // process the crunch group
-                    int crunchResult = ProcessCrunchGroup(crunchGroup);
-                    // if the result contained an error...
-                    if (crunchResult != 0)
-                    {
-                        // if we're processing more than one group, we should output an
-                        // error message indicating that this group encountered an error
-                        if (crunchGroups.Length > 1)
-                        {
-                            // non-localized string, so format is not in the resources
-                            string errorCode = string.Format(CultureInfo.InvariantCulture, "AM{0:D4}", crunchResult);
-
-                            // if there is an output file name, use it.
-                            if (!string.IsNullOrEmpty(crunchGroup.Output.Path))
-                            {
-                                WriteError(crunchGroup.Output.Path,
-                                    StringMgr.GetString("OutputFileErrorSubCat"),
-                                    errorCode,
-                                    StringMgr.GetString("OutputFileError", crunchResult)
-                                    );
-                            }
-                            else if (!string.IsNullOrEmpty(m_xmlInputFile))
-                            {
-                                // use the XML file as the location, and the index of the group for more info
-                                // inside the message
-                                WriteError(m_xmlInputFile,
-                                    StringMgr.GetString("OutputGroupErrorSubCat"),
-                                    errorCode,
-                                    StringMgr.GetString("OutputGroupError", ndxGroup, crunchResult)
-                                    );
-                            }
-                            else
-                            {
-                                // no output file name, and not from an XML file. If it's not from an XML
-                                // file, then there really should only be one crunch group.
-                                // but just in case, use "stdout" as the output file and the index of the group 
-                                // in the list (which should probably just be zero)
-                                WriteError("stdout",
-                                    StringMgr.GetString("OutputGroupErrorSubCat"),
-                                    errorCode,
-                                    StringMgr.GetString("OutputGroupError", ndxGroup, crunchResult)
-                                    );
-                            }
-                        }
-                        // return the error. Only the last one will be used
-                        retVal = crunchResult;
-                    }
-                }
+                retVal = this.ProcessCrunchGroups(crunchGroups);
             }
             else
             {
                 // no crunch groups
                 throw new UsageException(ConsoleOutputMode.Console, "NoInput");
+            }
+
+            return retVal;
+        }
+
+        private int ProcessCrunchGroups(CrunchGroup[] crunchGroups)
+        {
+            int retVal = 0;
+
+            for (int ndxGroup = 0; ndxGroup < crunchGroups.Length; ++ndxGroup)
+            {
+                // shortcut
+                CrunchGroup crunchGroup = crunchGroups[ndxGroup];
+               
+                XmlWriter symbolMapWriter = null;
+                if (!string.IsNullOrEmpty(crunchGroup.SymbolMapPath))
+                {
+                    retVal = this.ClobberFileAndExecuteOperation(
+                        crunchGroup.SymbolMapPath,
+                        delegate
+                        {
+                            symbolMapWriter = XmlWriter.Create(
+                                crunchGroup.SymbolMapPath,
+                                new XmlWriterSettings { CloseOutput = true, Indent = true });
+                        });
+
+                    if (retVal != 0)
+                    {
+                        return retVal;
+                    }
+                }                
+
+                int crunchResult;                
+                try
+                {
+                    if (symbolMapWriter != null)
+                    {
+                        m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(symbolMapWriter);
+                        m_switchParser.JSSettings.SymbolsMap.StartPackage(crunchGroup.Output.Path);
+                    }
+
+                    // process the crunch group
+                    crunchResult = this.ProcessCrunchGroup(crunchGroup);
+                }
+                finally
+                {
+                    if (m_switchParser.JSSettings.SymbolsMap != null)
+                    {
+                        m_switchParser.JSSettings.SymbolsMap.EndPackage();
+                        m_switchParser.JSSettings.SymbolsMap.Dispose();
+                        m_switchParser.JSSettings.SymbolsMap = null;
+                    }
+                }
+
+                // if the result contained an error...
+                if (crunchResult != 0)
+                {
+                    // if we're processing more than one group, we should output an
+                    // error message indicating that this group encountered an error
+                    if (crunchGroups.Length > 1)
+                    {
+                        // non-localized string, so format is not in the resources
+                        string errorCode = string.Format(CultureInfo.InvariantCulture, "AM{0:D4}", crunchResult);
+
+                        // if there is an output file name, use it.
+                        if (!string.IsNullOrEmpty(crunchGroup.Output.Path))
+                        {
+                            this.WriteError(
+                                crunchGroup.Output.Path,
+                                StringMgr.GetString("OutputFileErrorSubCat"),
+                                errorCode,
+                                StringMgr.GetString("OutputFileError", crunchResult));
+                        }
+                        else if (!string.IsNullOrEmpty(this.m_xmlInputFile))
+                        {
+                            // use the XML file as the location, and the index of the group for more info
+                            // inside the message
+                            this.WriteError(
+                                this.m_xmlInputFile,
+                                StringMgr.GetString("OutputGroupErrorSubCat"),
+                                errorCode,
+                                StringMgr.GetString("OutputGroupError", ndxGroup, crunchResult));
+                        }
+                        else
+                        {
+                            // no output file name, and not from an XML file. If it's not from an XML
+                            // file, then there really should only be one crunch group.
+                            // but just in case, use "stdout" as the output file and the index of the group 
+                            // in the list (which should probably just be zero)
+                            this.WriteError(
+                                "stdout",
+                                StringMgr.GetString("OutputGroupErrorSubCat"),
+                                errorCode,
+                                StringMgr.GetString("OutputGroupError", ndxGroup, crunchResult));
+                        }
+                    }
+                    // return the error. Only the last one will be used
+                    retVal = crunchResult;
+                }
             }
 
             return retVal;
@@ -784,6 +863,7 @@ namespace Microsoft.Ajax.Utilities
 
             // create a string builder we'll dump our output into
             StringBuilder outputBuilder = new StringBuilder();
+
             try
             {
                 switch (crunchGroup.InputType)
@@ -810,9 +890,9 @@ namespace Microsoft.Ajax.Utilities
                             for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                             {
                                 retVal = ProcessCssFile(
-                                    crunchGroup[ndx].Path, 
-                                    crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName, 
-                                    outputBuilder, 
+                                    crunchGroup[ndx].Path,
+                                    crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                    outputBuilder,
                                     ref sourceLength);
                             }
                         }
@@ -900,7 +980,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                                 {
-                                    var outputVisitor = new OutputVisitor(writer);
+                                    var outputVisitor = new OutputVisitor(writer, m_switchParser.JSSettings);
 
                                     // see how many input files there are
                                     if (crunchGroup.Count == 0)
@@ -998,7 +1078,7 @@ namespace Microsoft.Ajax.Utilities
                             if (!m_echoInput)
                             {
                                 // calculate the percentage saved
-                                percentage = Math.Round((1 - ((double) encodedBytes.Length)/sourceLength)*100, 1);
+                                percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
                                 WriteProgress(StringMgr.GetString(
                                                   "SavingsMessage",
                                                   sourceLength,
@@ -1008,7 +1088,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                             else
                             {
-                            
+
                                 WriteProgress(StringMgr.GetString(
                                     "SavingsOutputMessage",
                                     encodedBytes.Length
@@ -1033,31 +1113,10 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    // send output to file
-                    try
-                    {
-                        // make sure the destination folder exists
-                        FileInfo fileInfo = new FileInfo(crunchGroup.Output.Path);
-                        DirectoryInfo destFolder = new DirectoryInfo(fileInfo.DirectoryName);
-                        if (!destFolder.Exists)
+                    retVal = this.ClobberFileAndExecuteOperation(
+                        crunchGroup.Output.Path,
+                        delegate
                         {
-                            destFolder.Create();
-                        }
-
-                        if (!File.Exists(crunchGroup.Output.Path) || m_clobber)
-                        {
-                            if (m_clobber
-                                && File.Exists(crunchGroup.Output.Path) 
-                                && (File.GetAttributes(crunchGroup.Output.Path) & FileAttributes.ReadOnly) != 0)
-                            {
-                                // the file exists, we said we want to clobber it, but it's marked as
-                                // read-only. Reset that flag.
-                                File.SetAttributes(
-                                    crunchGroup.Output.Path, 
-                                    (File.GetAttributes(crunchGroup.Output.Path) & ~FileAttributes.ReadOnly)
-                                    );
-                            }
-
                             // create the output file using the given encoding
                             using (StreamWriter outputStream = new StreamWriter(
                                crunchGroup.Output.Path,
@@ -1085,7 +1144,7 @@ namespace Microsoft.Ajax.Utilities
                                     if (!m_echoInput)
                                     {
                                         // calculate the percentage saved by minification
-                                        percentage = Math.Round((1 - ((double) crunchedLength)/sourceLength)*100, 1);
+                                        percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
                                         WriteProgress(StringMgr.GetString(
                                                           "SavingsMessage",
                                                           sourceLength,
@@ -1106,51 +1165,14 @@ namespace Microsoft.Ajax.Utilities
                                     long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output.Path));
 
                                     // calculate the percentage of compression and display the results
-                                    percentage = Math.Round((1 - ((double) gzipLength)/crunchedLength)*100, 1);
+                                    percentage = Math.Round((1 - ((double)gzipLength) / crunchedLength) * 100, 1);
                                     WriteProgress(StringMgr.GetString("SavingsGzipMessage", gzipLength, percentage));
 
                                     // blank line after
                                     WriteProgress();
                                 }
                             }
-                        }
-                        else
-                        {
-                            retVal = 1;
-                            WriteError("AM-IO", StringMgr.GetString("NoClobberError", crunchGroup.Output.Path));
-                        }
-
-                    }
-                    catch (ArgumentException e)
-                    {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("AM-PATH", e.Message);
-                    }
-                    catch (UnauthorizedAccessException e)
-                    {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("AM-AUTH", e.Message);
-                    }
-                    catch (PathTooLongException e)
-                    {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("AM-PATH", e.Message);
-                    }
-                    catch (SecurityException e)
-                    {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("AM-SEC", e.Message);
-                    }
-                    catch (IOException e)
-                    {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("AM-IO", e.Message);
-                    }
+                        });
                 }
             }
             catch (Exception e)
@@ -1165,6 +1187,77 @@ namespace Microsoft.Ajax.Utilities
                 // make sure we report an error
                 retVal = 1;
             }
+            return retVal;
+        }
+
+        private int ClobberFileAndExecuteOperation(string filePath, Action<string> operation)
+        {
+            int retVal = 0;
+
+            // send output to file
+            try
+            {
+                // make sure the destination folder exists
+                FileInfo fileInfo = new FileInfo(filePath);
+                DirectoryInfo destFolder = new DirectoryInfo(fileInfo.DirectoryName);
+                if (!destFolder.Exists)
+                {
+                    destFolder.Create();
+                }
+
+                if (!File.Exists(filePath) || m_clobber)
+                {
+                    if (m_clobber
+                        && File.Exists(filePath)
+                        && (File.GetAttributes(filePath) & FileAttributes.ReadOnly) != 0)
+                    {
+                        // the file exists, we said we want to clobber it, but it's marked as
+                        // read-only. Reset that flag.
+                        File.SetAttributes(
+                            filePath,
+                            (File.GetAttributes(filePath) & ~FileAttributes.ReadOnly)
+                            );
+                    }
+
+                    operation(filePath);
+                }
+                else
+                {
+                    retVal = 1;
+                    WriteError("AM-IO", StringMgr.GetString("NoClobberError", filePath));
+                }
+            }
+            catch (ArgumentException e)
+            {
+                retVal = 1;
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+                WriteError("AM-PATH", e.Message);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                retVal = 1;
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+                WriteError("AM-AUTH", e.Message);
+            }
+            catch (PathTooLongException e)
+            {
+                retVal = 1;
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+                WriteError("AM-PATH", e.Message);
+            }
+            catch (SecurityException e)
+            {
+                retVal = 1;
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+                WriteError("AM-SEC", e.Message);
+            }
+            catch (IOException e)
+            {
+                retVal = 1;
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+                WriteError("AM-IO", e.Message);
+            }
+
             return retVal;
         }
 
@@ -1206,14 +1299,17 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            public CrunchGroup(string outputPath, string encodingOutputName)
+            public string SymbolMapPath { get; private set; }
+
+            public CrunchGroup(string outputPath, string encodingOutputName, string symbolMapPath)
             {
                 Output = new FileInformation() { Path = outputPath, EncodingName = encodingOutputName };
+                SymbolMapPath = symbolMapPath;
                 m_sourcePaths = new List<FileInformation>();
             }
 
-            public CrunchGroup(string outputPath, string encodingOutputName, string[] inputFiles, string encodingInputName, InputType inputType)
-                : this(outputPath, encodingOutputName)
+            public CrunchGroup(string outputPath, string encodingOutputName, string symbolMapPath, string[] inputFiles, string encodingInputName, InputType inputType)
+                : this(outputPath, encodingOutputName, symbolMapPath)
             {
                 // save the input type
                 InputType = inputType;
@@ -1264,21 +1360,8 @@ namespace Microsoft.Ajax.Utilities
                         // it's okay for ther eto be no output file; if that's the case,
                         // the output is sent to the STDOUT stream
                         XmlAttribute pathAttribute = outputNode.Attributes["path"];
-                        string outputPath = (pathAttribute == null ? string.Empty : pathAttribute.Value);
-                        // if we have a value and it's a relative path...
-                        if (outputPath.Length > 0 && !Path.IsPathRooted(outputPath))
-                        {
-                            if (string.IsNullOrEmpty(outputFolder))
-                            {
-                                // make it relative to the XML file
-                                outputPath = Path.Combine(rootPath, outputPath);
-                            }
-                            else
-                            {
-                                // make it relative to the output folder
-                                outputPath = Path.Combine(outputFolder, outputPath);
-                            }
-                        }
+                        var outputPath = NormalizePath(outputFolder, rootPath, pathAttribute);
+                        var symbolMapPath = NormalizePath(outputFolder, rootPath, outputNode.Attributes["mappath"]);
 
                         // see if an encoding override has been specified
                         var encodingAttribute = outputNode.Attributes["encoding"];
@@ -1287,7 +1370,7 @@ namespace Microsoft.Ajax.Utilities
                             : null;
 
                         // create the crunch group
-                        CrunchGroup crunchGroup = new CrunchGroup(outputPath, encodingOutputName);
+                        CrunchGroup crunchGroup = new CrunchGroup(outputPath, encodingOutputName, symbolMapPath);
 
                         // see if there's an explicit input type, and if so, set the crunch group type
                         var typeAttribute = outputNode.Attributes["type"];
@@ -1313,7 +1396,7 @@ namespace Microsoft.Ajax.Utilities
                         var resourceNodes = outputNode.SelectNodes("./resource");
                         if (resourceNodes != null && resourceNodes.Count > 0)
                         {
-                            for (var ndx = 0; ndx < resourceNodes.Count; ++ndx )
+                            for (var ndx = 0; ndx < resourceNodes.Count; ++ndx)
                             {
                                 var resourceNode = resourceNodes[ndx];
 
@@ -1458,6 +1541,26 @@ namespace Microsoft.Ajax.Utilities
             }
             // return an array of CrunchGroup objects
             return crunchGroups.ToArray();
+        }
+
+        private static string NormalizePath(string outputFolder, string rootPath, XmlAttribute pathAttribute)
+        {
+            string outputPath = (pathAttribute == null ? string.Empty : pathAttribute.Value);
+            // if we have a value and it's a relative path...
+            if (outputPath.Length > 0 && !Path.IsPathRooted(outputPath))
+            {
+                if (string.IsNullOrEmpty(outputFolder))
+                {
+                    // make it relative to the XML file
+                    outputPath = Path.Combine(rootPath, outputPath);
+                }
+                else
+                {
+                    // make it relative to the output folder
+                    outputPath = Path.Combine(outputFolder, outputPath);
+                }
+            }
+            return outputPath;
         }
 
         #endregion

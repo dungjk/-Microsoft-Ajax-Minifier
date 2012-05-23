@@ -139,6 +139,9 @@
     <Compile Include="..\Css\CssToken.cs">
       <Link>Css\CssToken.cs</Link>
     </Compile>
+    <Compile Include="..\ISourceMap.cs">
+      <Link>JavaScript\ISourceMap.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\activationobject.cs">
       <Link>JavaScript\activationobject.cs</Link>
     </Compile>
@@ -283,6 +286,9 @@
     <Compile Include="..\JavaScript\IVisitor.cs">
       <Link>JavaScript\IVisitor.cs</Link>
     </Compile>
+    <Compile Include="..\JavaScript\JavaScriptSymbol.cs">
+      <Link>JavaScript\JavaScriptSymbol.cs</Link>
+    </Compile>
     <Compile Include="..\JavaScript\jscriptexception.cs">
       <Link>JavaScript\jscriptexception.cs</Link>
     </Compile>
@@ -351,6 +357,9 @@
     </Compile>
     <Compile Include="..\JavaScript\scannerexception.cs">
       <Link>JavaScript\scannerexception.cs</Link>
+    </Compile>
+    <Compile Include="..\JavaScript\ScriptSharpSourceMap.cs">
+      <Link>JavaScript\ScriptSharpSourceMap.cs</Link>
     </Compile>
     <Compile Include="..\JavaScript\stringmgr.cs">
       <Link>JavaScript\stringmgr.cs</Link>

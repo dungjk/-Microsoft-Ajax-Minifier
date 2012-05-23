@@ -706,6 +706,15 @@ namespace Microsoft.Ajax.Utilities
             get; set;
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="ISourceMap"/> instance.
+        /// </summary>
+        public ISourceMap SymbolsMap
+        {
+            get;
+            set;
+        }
+
         [Obsolete("This property is obsolete and no longer used")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool W3Strict

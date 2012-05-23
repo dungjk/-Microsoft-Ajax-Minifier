@@ -86,6 +86,7 @@
     <Compile Include="Renaming.cs" />
     <Compile Include="ResourceMerge.cs" />
     <Compile Include="ScannerErrors.cs" />
+    <Compile Include="SourceMap.cs" />
     <Compile Include="StdIn.cs" />
     <Compile Include="Strict.cs" />
     <Compile Include="Switch.cs" />
@@ -304,6 +305,9 @@
     <Content Include="TestData\JS\Expected\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Expected\SourceMap\MapArgNotSpecified.js" />
+    <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap.xml" />
+    <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap_TwoInputs.js" />
     <Content Include="TestData\JS\Expected\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Expected\Strict\DupArg.js" />
     <Content Include="TestData\JS\Expected\Strict\DupProperty.js" />
@@ -344,6 +348,7 @@
     <Content Include="TestData\JS\Expected\XmlInput\FirstOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\OneOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.js" />
+    <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.xml" />
     <Content Include="TestData\JS\Input\ArrayHandling\Array.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Join.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Length.js" />
@@ -499,6 +504,8 @@
     <Content Include="TestData\JS\Input\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Input\SourceMap\ScriptSharpMap.js" />
+    <Content Include="TestData\JS\Input\SourceMap\MapArgNotSpecified.js" />
     <Content Include="TestData\JS\Input\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Input\Strict\DupArg.js" />
     <Content Include="TestData\JS\Input\Strict\DupProperty.js" />
@@ -525,6 +532,7 @@
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Input\XmlInput\XmlWithSymbolMap.xml" />
     <Content Include="TestData\JS\Input\XmlInput\Input1.css" />
     <Content Include="TestData\JS\Input\XmlInput\Input1.js" />
     <Content Include="TestData\JS\Input\XmlInput\Input2.css" />
