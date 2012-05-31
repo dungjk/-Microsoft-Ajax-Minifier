@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text;
 
 namespace Microsoft.Ajax.Utilities
@@ -103,7 +104,11 @@ namespace Microsoft.Ajax.Utilities
 
         internal void Unindent()
         {
-            --m_indentLevel;
+            Debug.Assert(m_indentLevel > 0);
+            if (m_indentLevel > 0)
+            {
+                --m_indentLevel;
+            }
         }
 
         internal string TabSpaces
