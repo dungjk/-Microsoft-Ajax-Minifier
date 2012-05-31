@@ -841,7 +841,9 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
                     {
+                        NewLine();
                         AppendCurrent();
+                        Indent();
                         SkipSpace();
 
                         // the main guts of stuff
