@@ -1481,10 +1481,35 @@ namespace Microsoft.Ajax.Utilities
             m_encounteredCCOn = true;
         }
 
+        private bool StringSourceIsNotInlineSafe(string source)
+        {
+            var isNotSafe = false;
+            if (!string.IsNullOrEmpty(source))
+            {
+                // most browsers won't close the <script> tag unless they see </script, but the
+                // user has explicitly set the flag to throw an error if the string isn't safe, so
+                // let's err on the side of caution. Also check for the closing of a CDATA element.
+                isNotSafe = source.IndexOf("</", StringComparison.Ordinal) >= 0
+                    || source.IndexOf("]]>", StringComparison.Ordinal) >= 0;
+            }
+
+            return isNotSafe;
+        }
+
         public override void Visit(ConstantWrapper node)
         {
             if (node != null)
             {
+                // if we want to throw an error when the string's source isn't inline safe...
+                if (node.PrimitiveType == PrimitiveType.String
+                    && node.Parser.Settings.ErrorIfNotInlineSafe
+                    && node.Context != null
+                    && StringSourceIsNotInlineSafe(node.Context.Code))
+                {
+                    // ...throw an error
+                    node.Context.HandleError(JSError.StringNotInlineSafe, true);
+                }
+
                 // check to see if this node is an argument to a RegExp constructor.
                 // if it is, we'll want to not use certain string escapes
                 AstNode previousNode = null;

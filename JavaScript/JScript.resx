@@ -396,4 +396,7 @@
   <data name="1298" xml:space="preserve">
     <value>Assignment to constant</value>
   </data>
+  <data name="1299" xml:space="preserve">
+    <value>String literal is not safe for inline;;String literal is not safe for inline: '{0}'</value>
+  </data>
 </root>

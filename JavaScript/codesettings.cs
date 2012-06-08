@@ -548,6 +548,16 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// Throw an error if a source string is not safe for inclusion 
+        /// in an HTML inline script block
+        /// </summary>
+        public bool ErrorIfNotInlineSafe
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether EvalsAreSafe.
         /// Deprecated in favor of EvalTreatment, which is an enumeration
         /// allowing for more options than just true or false.

@@ -700,16 +700,45 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "INLINE":
-                                // set safe for inline to the same boolean.
-                                // if no param part, will return false (indicating the default)
-                                // if invalid param part, will throw error
-                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                if (string.IsNullOrEmpty(paramPart))
                                 {
-                                    JSSettings.InlineSafeStrings = parameterFlag;
+                                    // no param parts. This defaults to inline-safe
+                                    JSSettings.InlineSafeStrings = true;
                                 }
                                 else
                                 {
-                                    OnInvalidSwitch(switchPart, paramPart);
+                                    // for each comma-separated part...
+                                    foreach(var inlinePart in paramPartUpper.Split(','))
+                                    {
+                                        if (string.CompareOrdinal(inlinePart, "FORCE") == 0)
+                                        {
+                                            // this is the force flag -- throw an error if any string literal
+                                            // sources are not properly escaped AND make sure the output is 
+                                            // safe
+                                            JSSettings.ErrorIfNotInlineSafe = true;
+                                            JSSettings.InlineSafeStrings = true;
+                                        }
+                                        else if (string.CompareOrdinal(inlinePart, "NOFORCE") == 0)
+                                        {
+                                            // this is the noforce flag; don't throw an error is the source isn't inline safe.
+                                            // don't change whatever the output-inline-safe flag may happen to be, though
+                                            JSSettings.ErrorIfNotInlineSafe = false;
+                                        }
+                                        else
+                                        {
+                                            // assume it must be the boolean flag.
+                                            // if no param part, will return true (indicating the default)
+                                            // if invalid param part, will throw error
+                                            if (BooleanSwitch(inlinePart, true, out parameterFlag))
+                                            {
+                                                JSSettings.InlineSafeStrings = parameterFlag;
+                                            }
+                                            else
+                                            {
+                                                OnInvalidSwitch(switchPart, paramPart);
+                                            }
+                                        }
+                                    }
                                 }
 
                                 // this is a JS-only switch
@@ -906,7 +935,7 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "LITERALS":
-                                // two options: keep or combine
+                                // two areas with two options each: keep or combine and eval or noeval
                                 if (paramPartUpper == "KEEP")
                                 {
                                     JSSettings.CombineDuplicateLiterals = false;

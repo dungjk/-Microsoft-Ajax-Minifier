@@ -2378,11 +2378,14 @@ namespace Microsoft.Ajax.Utilities
         {
             if (Settings.InlineSafeStrings)
             {
-                // if there are ANY closing script tags...
-                if (text.IndexOf("</script>", StringComparison.OrdinalIgnoreCase) >= 0)
+                // if there are ANY potential XML closing tags, which might confuse the browser
+                // as to where the end of the inline script really is. Go conservative; the specs
+                // say </ should be escaped, even though most browsers are smart enough to look for
+                // </script. Also escape any XML CDATA closing tags.
+                if (text.IndexOf("</", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     // replace all of them with an escaped version so a text-compare won't match
-                    text = text.Replace("</script>", @"<\/script>");
+                    text = text.Replace("</", @"<\/");
                 }
 
                 // if there are ANY closing CDATA strings...

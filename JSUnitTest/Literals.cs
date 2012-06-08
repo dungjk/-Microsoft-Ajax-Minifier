@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Ajax.Utilities;
 
 namespace JSUnitTest
 {
@@ -130,6 +131,20 @@ namespace JSUnitTest
     public void AspNetString()
     {
         TestHelper.Instance.RunTest("-aspnet");
+    }
+
+    [TestMethod]
+    public void InlineSafeErrors()
+    {
+        // default test - should have no errors
+        TestHelper.Instance.RunErrorTest("");
+    }
+
+    [TestMethod]
+    public void InlineSafeErrors_on()
+    {
+        // turn on the error checking -- should be two errors
+        TestHelper.Instance.RunErrorTest("-inline:force", JSError.StringNotInlineSafe, JSError.StringNotInlineSafe);
     }
   }
 }

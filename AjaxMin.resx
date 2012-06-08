@@ -382,8 +382,11 @@ Valid JSOPTS are zero or more of:
         allows all function names to be renamed. Default is onlyref.
   -global:IDENT(,IDENT)* &gt; specify one or more external global variables the
         code references. May be repeated as needed.
-  -inline[:BOOL] &gt; whether to make sure strings are safe for HTML inline 
-        script. Default is True.
+  -inline[:(BOOL|force|noforce)[,(BOOL|force|noforce)]*] &gt; whether to make 
+        sure strings are safe for HTML inline script, and whether to force 
+        inline-safety in the source by throwing an error (FORCE) when 
+        potentially unsafe literals are encountered. Default is True and 
+        noforce.
   -literals:(keep|combine, eval|noeval) &gt; two literal treatment options:
         whether to combine duplicate literals or keep them. Default is keep;
         whether to evaluate literal expressions or keep them. Default is eval.
