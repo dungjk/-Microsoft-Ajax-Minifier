@@ -44,6 +44,17 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the opening curly brace for blocks is
+        /// on its own line (false, default) or on the same line as the preceding code (true)
+        /// when output is multi-line mode.
+        /// </summary>
+        public bool BlocksStartOnSameLine
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Number of spaces per indent level when in MultipleLines output mode
         /// </summary>
         public int IndentSize

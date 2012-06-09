@@ -332,6 +332,9 @@ Valid OPTS are zero or more of:
   -analyze &gt; provide extra analysis output.
   -aspnet[:BOOL] &gt; whether to allow for inline ASP.NET-style substitutions,
         &lt;% ... %&gt; Default is False. 
+  -braces:(new|same) &gt; when output is set to multiple lines, determines
+        whether opening braces are written at the end of the previous line,
+        or on their own new line. Default is new.
   -clobber[:BOOL] &gt; when false, will not overwrite existing output file.
         True always writes output file. Default is false.
   -define:NAME[,NAME]* &gt; add defined case-insensitive names to the list used 

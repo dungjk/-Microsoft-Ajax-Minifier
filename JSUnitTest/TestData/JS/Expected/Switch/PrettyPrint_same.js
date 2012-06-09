@@ -1,16 +1,12 @@
-function foo()
-{
+﻿function foo() {
     var a = 1,
         b = 2,
         c = "three",
         d;
-    try
-    {
+    try {
         d = a * b;
-        while(d > 0)
-        {
-            switch(c)
-            {
+        while(d > 0) {
+            switch(c) {
                 case"three":
                     c = 10;
                     break;
@@ -21,25 +17,21 @@ function foo()
                     c = c * 2;
                     break
             }
-            if(!c)
-            {
+            if(!c) {
                 debugger;
                 c = 1
             }
-            else
-            {
+            else {
                 d = d * c;
                 a *= d
             }
         }
     }
-    catch(e)
-    {
+    catch(e) {
         for(var f = 0; f < b; ++f)
             a = a * d
     }
-    finally
-    {
+    finally {
         if(!a)
             b = -1;
         else

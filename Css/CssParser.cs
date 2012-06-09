@@ -667,7 +667,15 @@ namespace Microsoft.Ajax.Utilities
                 // followed by keyframe blocks surrounded with curly-braces
                 if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
                 {
-                    NewLine();
+                    if (!Settings.BlocksStartOnSameLine)
+                    {
+                        NewLine();
+                    }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        Append(' ');
+                    }
+
                     AppendCurrent();
                     Indent();
                     NewLine();
@@ -841,7 +849,15 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
                     {
-                        NewLine();
+                        if (!Settings.BlocksStartOnSameLine)
+                        {
+                            NewLine();
+                        }
+                        else if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            Append(' ');
+                        }
+
                         AppendCurrent();
                         Indent();
                         SkipSpace();
@@ -1127,35 +1143,53 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                NewLine();
+                if (!Settings.BlocksStartOnSameLine)
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    Append(' ');
+                }
+
                 Append('{');
 
                 Indent();
                 SkipSpace();
 
-                ParseDeclarationList(allowMargins);
                 if (CurrentTokenType == TokenType.Character && CurrentTokenText == "}")
                 {
-                    // append the closing brace
+                    // shortcut nothing in the block to have the close on the same line
                     Unindent();
-                    NewLine();
-                    Append('}');
-                    // skip past it
+                    AppendCurrent();
                     SkipSpace();
-                }
-                else if (m_scanner.EndOfFile)
-                {
-                    // no closing brace, just the end of the file
-                    ReportError(0, StringEnum.UnexpectedEndOfFile);
                 }
                 else
                 {
-                    // I'm pretty sure ParseDeclarationList will only return on two situations:
-                    //   1. closing brace (}), or
-                    //   2. EOF.
-                    // shouldn't get here, but just in case.
-                    ReportError(0, StringEnum.ExpectedClosingBrace, CurrentTokenText);
-                    Debug.Fail("UNEXPECTED CODE");
+                    ParseDeclarationList(allowMargins);
+                    if (CurrentTokenType == TokenType.Character && CurrentTokenText == "}")
+                    {
+                        // append the closing brace
+                        Unindent();
+                        NewLine();
+                        Append('}');
+                        // skip past it
+                        SkipSpace();
+                    }
+                    else if (m_scanner.EndOfFile)
+                    {
+                        // no closing brace, just the end of the file
+                        ReportError(0, StringEnum.UnexpectedEndOfFile);
+                    }
+                    else
+                    {
+                        // I'm pretty sure ParseDeclarationList will only return on two situations:
+                        //   1. closing brace (}), or
+                        //   2. EOF.
+                        // shouldn't get here, but just in case.
+                        ReportError(0, StringEnum.ExpectedClosingBrace, CurrentTokenText);
+                        Debug.Fail("UNEXPECTED CODE");
+                    }
                 }
             }
 

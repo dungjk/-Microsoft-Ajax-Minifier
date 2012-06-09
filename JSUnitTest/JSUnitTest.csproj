@@ -334,6 +334,7 @@
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases_h.js" />
     <Content Include="TestData\JS\Expected\Switch\PrettyPrint.js" />
     <Content Include="TestData\JS\Expected\Switch\PrettyPrint_P.js" />
+    <Content Include="TestData\JS\Expected\Switch\PrettyPrint_same.js" />
     <Content Include="TestData\JS\Expected\Switch\PromoteBreak.js" />
     <Content Include="TestData\JS\Expected\Switch\PromoteBreak_h.js" />
     <Content Include="TestData\JS\Expected\Switch\SwitchLabels.js" />

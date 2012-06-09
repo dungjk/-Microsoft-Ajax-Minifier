@@ -313,6 +313,23 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 break;
 
+                            case "BRACES":
+                                if (paramPartUpper == "NEW")
+                                {
+                                    JSSettings.BlocksStartOnSameLine = 
+                                        CssSettings.BlocksStartOnSameLine = false;
+                                }
+                                else if (paramPartUpper == "SAME")
+                                {
+                                    JSSettings.BlocksStartOnSameLine =
+                                        CssSettings.BlocksStartOnSameLine = true;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                break;
+
                             case "CC":
                                 if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
                                 {

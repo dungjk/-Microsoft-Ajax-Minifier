@@ -980,7 +980,15 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    NewLine();
+                    if (!Settings.BlocksStartOnSameLine)
+                    {
+                        NewLine();
+                    }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+                    
                     node.Body.Accept(this);
 
                     if (Settings.OutputMode == OutputMode.MultipleLines)
@@ -1217,7 +1225,15 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    NewLine();
+                    if (!Settings.BlocksStartOnSameLine)
+                    {
+                        NewLine();
+                    }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
                     node.TrueBlock.Accept(this);
                 }
 
@@ -1245,7 +1261,15 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        NewLine();
+                        if (!Settings.BlocksStartOnSameLine)
+                        {
+                            NewLine();
+                        }
+                        else if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            OutputPossibleLineBreak(' ');
+                        }
+
                         node.FalseBlock.Accept(this);
                     }
                 }
@@ -1557,7 +1581,15 @@ namespace Microsoft.Ajax.Utilities
                     node.Expression.Accept(this);
                 }
                 OutputPossibleLineBreak(')');
-                NewLine();
+                if (!Settings.BlocksStartOnSameLine)
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
                 OutputPossibleLineBreak('{');
                 Indent();
 
@@ -1679,7 +1711,15 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    NewLine();
+                    if (!Settings.BlocksStartOnSameLine)
+                    {
+                        NewLine();
+                    }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
                     node.TryBlock.Accept(this);
                 }
 
@@ -1700,7 +1740,15 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        NewLine();
+                        if (!Settings.BlocksStartOnSameLine)
+                        {
+                            NewLine();
+                        }
+                        else if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            OutputPossibleLineBreak(' ');
+                        }
+
                         node.CatchBlock.Accept(this);
                     }
                 }
@@ -1716,7 +1764,15 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        NewLine();
+                        if (!Settings.BlocksStartOnSameLine)
+                        {
+                            NewLine();
+                        }
+                        else if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            OutputPossibleLineBreak(' ');
+                        }
+
                         node.FinallyBlock.Accept(this);
                     }
                 }
@@ -2338,7 +2394,15 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    NewLine();
+                    if (!Settings.BlocksStartOnSameLine)
+                    {
+                        NewLine();
+                    }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
                     node.Body.Accept(this);
                 }
             }
@@ -2369,7 +2433,15 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                NewLine();
+                if (!Settings.BlocksStartOnSameLine)
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
                 block.Accept(this);
             }
         }

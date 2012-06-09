@@ -95,5 +95,11 @@ namespace CssUnitTest
     {
         TestHelper.Instance.RunTest("-pretty");
     }
+
+    [TestMethod]
+    public void KeyFrames_same()
+    {
+        TestHelper.Instance.RunTest("-pretty -braces:same");
+    }
   }
 }

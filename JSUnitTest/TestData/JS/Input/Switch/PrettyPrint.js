@@ -13,6 +13,7 @@ function foo() {
       }
       if ( !c )
       {
+        debugger;
         c = 1;
       }
       else

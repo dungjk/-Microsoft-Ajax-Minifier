@@ -85,6 +85,12 @@ namespace JSUnitTest
         }
 
         [TestMethod]
+        public void PrettyPrint_same()
+        {
+            TestHelper.Instance.RunTest("-pretty -braces:same");
+        }
+
+        [TestMethod]
         public void MacQuirks()
         {
             TestHelper.Instance.RunTest("-mac:No");
