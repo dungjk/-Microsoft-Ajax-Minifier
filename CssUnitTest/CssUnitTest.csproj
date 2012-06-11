@@ -95,6 +95,7 @@
     <Content Include="TestData\CSS\Expected\AtRules\KeyFrames.css" />
     <Content Include="TestData\CSS\Expected\AtRules\KeyFrames_p.css" />
     <Content Include="TestData\CSS\Expected\AtRules\KeyFrames_same.css" />
+    <Content Include="TestData\CSS\Expected\AtRules\Keyframes_source.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Media.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Namespace.css" />
     <Content Include="TestData\CSS\Expected\AtRules\Other.css" />

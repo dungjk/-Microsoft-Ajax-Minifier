@@ -44,6 +44,7 @@ namespace Microsoft.Ajax.Utilities
         private bool m_skippedSpace;
         private int m_lineLength;
         private bool m_noColorAbbreviation;
+        private bool m_encounteredNewLine;
 
         // this is used to make sure we don't output two newlines in a row.
         // start it as true so we don't start off with a blank line
@@ -667,7 +668,8 @@ namespace Microsoft.Ajax.Utilities
                 // followed by keyframe blocks surrounded with curly-braces
                 if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
                 {
-                    if (!Settings.BlocksStartOnSameLine)
+                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                        || Settings.BlocksStartOnSameLine == BlockStart.UseSource && m_encounteredNewLine)
                     {
                         NewLine();
                     }
@@ -849,7 +851,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (CurrentTokenType == TokenType.Character && CurrentTokenText == "{")
                     {
-                        if (!Settings.BlocksStartOnSameLine)
+                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                            || Settings.BlocksStartOnSameLine == BlockStart.UseSource && m_encounteredNewLine)
                         {
                             NewLine();
                         }
@@ -1143,7 +1146,8 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                if (!Settings.BlocksStartOnSameLine)
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || Settings.BlocksStartOnSameLine == BlockStart.UseSource && m_encounteredNewLine)
                 {
                     NewLine();
                 }
@@ -2986,6 +2990,7 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextToken()
         {
             m_currentToken = m_scanner.NextToken();
+            m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Comment)
             {
                 // the append statement might not actually append anything.
@@ -2995,6 +3000,7 @@ namespace Microsoft.Ajax.Utilities
                     NewLine();
                 }
                 m_currentToken = m_scanner.NextToken();
+                m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
             return CurrentTokenType;
         }
@@ -3003,6 +3009,7 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextRawToken()
         {
             m_currentToken = m_scanner.NextToken();
+            m_encounteredNewLine = m_scanner.GotEndOfLine;
             return CurrentTokenType;
         }
 
@@ -3014,6 +3021,7 @@ namespace Microsoft.Ajax.Utilities
 
             // get the next token
             m_currentToken = m_scanner.NextToken();
+            m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Space || CurrentTokenType == TokenType.Comment)
             {
                 // if this token is a comment, add it to the builder
@@ -3088,6 +3096,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // next token
                 m_currentToken = m_scanner.NextToken();
+                m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
 
             // return any comments we found in the mean time
@@ -3109,12 +3118,19 @@ namespace Microsoft.Ajax.Utilities
 
             // move to the next token
             NextToken();
+
+            // we need to collate this flag for this method call
+            var encounteredNewLine = m_encounteredNewLine;
+
             // while space, keep stepping
             while (CurrentTokenType == TokenType.Space)
             {
                 m_skippedSpace = true;
                 NextToken();
+                encounteredNewLine = encounteredNewLine || m_encounteredNewLine;
             }
+
+            m_encounteredNewLine = encounteredNewLine;
         }
 
         private void SkipSpaceComment()
@@ -3128,9 +3144,11 @@ namespace Microsoft.Ajax.Utilities
                 // starts with whitespace! If the next token is a comment, we want to make sure that
                 // whitespace is preserved. Keep going until we find something that isn't a space
                 m_skippedSpace = true;
+                var encounteredNewLine = m_encounteredNewLine;
                 while (NextRawToken() == TokenType.Space)
                 {
                     // iteration is in the condition
+                    encounteredNewLine = encounteredNewLine || m_encounteredNewLine;
                 }
 
                 // now, if the first thing after space is a comment....
@@ -3153,14 +3171,19 @@ namespace Microsoft.Ajax.Utilities
 
                     // and do normal skip-space logic
                     SkipSpace();
+                    encounteredNewLine = encounteredNewLine || m_encounteredNewLine;
                 }
+
+                m_encounteredNewLine = encounteredNewLine;
             }
             else if (CurrentTokenType == TokenType.Comment)
             {
                 // doesn't start with whitespace.
                 // append the comment and then do the normal skip-space logic
+                var encounteredNewLine = m_encounteredNewLine;
                 AppendCurrent();
                 SkipSpace();
+                m_encounteredNewLine = m_encounteredNewLine || encounteredNewLine;
             }
         }
 
@@ -3174,12 +3197,16 @@ namespace Microsoft.Ajax.Utilities
             m_skippedSpace = false;
 
             bool tokenIsSpace = CurrentTokenType == TokenType.Space;
+            var encounteredNewLine = m_encounteredNewLine;
             // while space, keep stepping
             while (CurrentTokenType == TokenType.Space)
             {
                 m_skippedSpace = true;
                 NextToken();
+                encounteredNewLine = encounteredNewLine || m_encounteredNewLine;
             }
+
+            m_encounteredNewLine = encounteredNewLine;
             return tokenIsSpace;
         }
 

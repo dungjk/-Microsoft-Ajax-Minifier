@@ -983,6 +983,7 @@ namespace Microsoft.Ajax.Utilities
             closingBraceContext = null;
             m_blockType.Add(BlockType.Block);
             Block codeBlock = new Block(m_currentToken.Clone(), this);
+            codeBlock.BraceOnNewLine = m_scanner.GotEndOfLine;
             GetNextToken();
 
             m_noSkipTokenSet.Add(NoSkipTokenSet.s_StartStatementNoSkipTokenSet);
@@ -2327,6 +2328,7 @@ namespace Microsoft.Ajax.Utilities
             Context switchCtx = m_currentToken.Clone();
             AstNode expr = null;
             AstNodeList cases = null;
+            var braceOnNewLine = false;
             m_blockType.Add(BlockType.Switch);
             try
             {
@@ -2351,6 +2353,8 @@ namespace Microsoft.Ajax.Utilities
                     {
                         ReportError(JSError.NoLeftCurly);
                     }
+
+                    braceOnNewLine = m_scanner.GotEndOfLine;
                     GetNextToken();
 
                 }
@@ -2379,6 +2383,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 ReportError(JSError.NoLeftCurly);
                             }
+                            braceOnNewLine = m_scanner.GotEndOfLine;
                             GetNextToken();
                         }
 
@@ -2541,7 +2546,7 @@ namespace Microsoft.Ajax.Utilities
                 m_blockType.RemoveAt(m_blockType.Count - 1);
             }
 
-            return new Switch(switchCtx, this, expr, cases);
+            return new Switch(switchCtx, this, expr, cases, braceOnNewLine);
         }
 
         //---------------------------------------------------------------------------------------
@@ -3014,6 +3019,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // parse the block locally to get the exact end of function
                     body = new Block(m_currentToken.Clone(), this);
+                    body.BraceOnNewLine = m_scanner.GotEndOfLine;
                     GetNextToken();
 
                     var possibleDirectivePrologue = true;

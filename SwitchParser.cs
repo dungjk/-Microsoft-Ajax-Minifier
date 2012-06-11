@@ -317,12 +317,17 @@ namespace Microsoft.Ajax.Utilities
                                 if (paramPartUpper == "NEW")
                                 {
                                     JSSettings.BlocksStartOnSameLine = 
-                                        CssSettings.BlocksStartOnSameLine = false;
+                                        CssSettings.BlocksStartOnSameLine = BlockStart.NewLine;
                                 }
                                 else if (paramPartUpper == "SAME")
                                 {
                                     JSSettings.BlocksStartOnSameLine =
-                                        CssSettings.BlocksStartOnSameLine = true;
+                                        CssSettings.BlocksStartOnSameLine = BlockStart.SameLine;
+                                }
+                                else if (paramPartUpper == "SOURCE")
+                                {
+                                    JSSettings.BlocksStartOnSameLine =
+                                        CssSettings.BlocksStartOnSameLine = BlockStart.UseSource;
                                 }
                                 else
                                 {

@@ -321,6 +321,10 @@
     <Content Include="TestData\JS\Expected\Strict\InvalidVarName.js" />
     <Content Include="TestData\JS\Expected\Strict\StrictSwitchOn.js" />
     <Content Include="TestData\JS\Expected\Strict\With.js" />
+    <Content Include="TestData\JS\Expected\Switch\Braces.js" />
+    <Content Include="TestData\JS\Expected\Switch\Braces_new.js" />
+    <Content Include="TestData\JS\Expected\Switch\Braces_same.js" />
+    <Content Include="TestData\JS\Expected\Switch\Braces_source.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault_h.js" />
     <Content Include="TestData\JS\Expected\Switch\LineBreak.js" />
@@ -523,6 +527,7 @@
     <Content Include="TestData\JS\Input\Strict\StrictSwitch2.js" />
     <Content Include="TestData\JS\Input\Strict\StrictSwitchOn.xml" />
     <Content Include="TestData\JS\Input\Strict\With.js" />
+    <Content Include="TestData\JS\Input\Switch\Braces.js" />
     <Content Include="TestData\JS\Input\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Input\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />

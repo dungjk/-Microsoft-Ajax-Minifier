@@ -137,5 +137,29 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-line:10,m,2");
         }
+
+        [TestMethod]
+        public void Braces()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void Braces_new()
+        {
+            TestHelper.Instance.RunTest("-line:m -braces:new");
+        }
+
+        [TestMethod]
+        public void Braces_same()
+        {
+            TestHelper.Instance.RunTest("-line:m -braces:same");
+        }
+
+        [TestMethod]
+        public void Braces_source()
+        {
+            TestHelper.Instance.RunTest("-line:m -braces:source");
+        }
     }
 }

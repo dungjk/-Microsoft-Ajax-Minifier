@@ -28,6 +28,13 @@ namespace Microsoft.Ajax.Utilities
         MultipleLines
     }
 
+    public enum BlockStart
+    {
+        NewLine = 0,
+        SameLine,
+        UseSource
+    }
+
     /// <summary>
     /// Common settings shared between CSS and JS settings objects
     /// </summary>
@@ -48,7 +55,7 @@ namespace Microsoft.Ajax.Utilities
         /// on its own line (false, default) or on the same line as the preceding code (true)
         /// when output is multi-line mode.
         /// </summary>
-        public bool BlocksStartOnSameLine
+        public BlockStart BlocksStartOnSameLine
         {
             get;
             set;

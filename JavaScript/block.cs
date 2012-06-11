@@ -53,6 +53,8 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public bool BraceOnNewLine { get; set; }
+
         public Block(Context context, JSParser parser)
             : base(context, parser)
         {

@@ -980,7 +980,8 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    if (!Settings.BlocksStartOnSameLine)
+                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                        || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.Body.BraceOnNewLine))
                     {
                         NewLine();
                     }
@@ -1225,7 +1226,8 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    if (!Settings.BlocksStartOnSameLine)
+                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                        || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.TrueBlock.BraceOnNewLine))
                     {
                         NewLine();
                     }
@@ -1261,7 +1263,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        if (!Settings.BlocksStartOnSameLine)
+                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                            || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.FalseBlock.BraceOnNewLine))
                         {
                             NewLine();
                         }
@@ -1581,7 +1584,8 @@ namespace Microsoft.Ajax.Utilities
                     node.Expression.Accept(this);
                 }
                 OutputPossibleLineBreak(')');
-                if (!Settings.BlocksStartOnSameLine)
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.BraceOnNewLine))
                 {
                     NewLine();
                 }
@@ -1711,7 +1715,8 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    if (!Settings.BlocksStartOnSameLine)
+                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                        || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.TryBlock.BraceOnNewLine))
                     {
                         NewLine();
                     }
@@ -1740,7 +1745,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        if (!Settings.BlocksStartOnSameLine)
+                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                            || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.CatchBlock.BraceOnNewLine))
                         {
                             NewLine();
                         }
@@ -1764,7 +1770,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        if (!Settings.BlocksStartOnSameLine)
+                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                            || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.FinallyBlock.BraceOnNewLine))
                         {
                             NewLine();
                         }
@@ -2394,7 +2401,8 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    if (!Settings.BlocksStartOnSameLine)
+                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                        || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.Body.BraceOnNewLine))
                     {
                         NewLine();
                     }
@@ -2433,7 +2441,8 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                if (!Settings.BlocksStartOnSameLine)
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && block.BraceOnNewLine))
                 {
                     NewLine();
                 }

@@ -66,6 +66,8 @@ namespace Microsoft.Ajax.Utilities
 		
 		public bool AllowEmbeddedAspNetBlocks { get; set; }
 
+        public bool GotEndOfLine { get; set; }
+
         private bool m_isAtEOF;// = false;
         public bool EndOfFile
         {
@@ -85,6 +87,8 @@ namespace Microsoft.Ajax.Utilities
 
         public CssToken NextToken()
         {
+            GotEndOfLine = false;
+
             // advance the context
             m_context.Advance();
             m_rawNumber = null;
@@ -97,16 +101,25 @@ namespace Microsoft.Ajax.Utilities
                     m_isAtEOF = true;
                     break;
 
-                case ' ':
-                case '\t':
                 case '\r':
                 case '\n':
                 case '\f':
+                    // we hit an end-of-line character, but treat it like any other whitespace
+                    GotEndOfLine = true;
+                    goto case ' ';
+
+                case ' ':
+                case '\t':
                     // no matter how much whitespace is actually in
                     // the stream, we're just going to encode a single
                     // space in the token itself
                     while (IsSpace(m_currentChar))
                     {
+                        if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
+                        {
+                            GotEndOfLine = true;
+                        }
+
                         NextChar();
                     }
                     token = new CssToken(TokenType.Space, ' ', m_context);
@@ -1361,6 +1374,7 @@ namespace Microsoft.Ajax.Utilities
                         || m_currentChar == '\r')
                     {
                         // unterminated string
+                        GotEndOfLine = true;
                         ReportError(
                           0,
                           StringEnum.UnterminatedString, sb.ToString()

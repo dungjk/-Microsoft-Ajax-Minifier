@@ -1,11 +1,11 @@
-﻿@keyframes  bounce 
-{
+﻿@keyframes  bounce{
     from {
       top: 100px;
       animation-timing-function: ease-out;
     }
 
-    25% {
+    25% 
+    {
       top: 50px;
       animation-timing-function: ease-in;
     }
@@ -15,7 +15,8 @@
       animation-timing-function: ease-out;
     }
 
-    75% {
+    75%
+    {
       top: 75px;
       animation-timing-function: ease-in;
     }
@@ -35,8 +36,7 @@ div {
 
 @keyframes 'diagonal-slide' 
 {
-    from 
-    {
+    from {
         left: 0;
         top: 0;
     }
@@ -46,4 +46,9 @@ div {
         left: 100px;
         top: 100px;
     }
+}
+
+strong
+{
+    color: #f00;
 }
