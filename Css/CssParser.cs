@@ -1951,6 +1951,17 @@ namespace Microsoft.Ajax.Utilities
                         // parse the function argument expression
                         ParseExpression();
 
+                        // IE extends CSS3 grammar to provide for multiple arguments to pseudo-class
+                        // functions. So as long as the current token is a comma, keep on parsing
+                        // expressions.
+                        while (CurrentTokenType == TokenType.Character
+                            && CurrentTokenText == ",")
+                        {
+                            AppendCurrent();
+                            NextToken();
+                            ParseExpression();
+                        }
+
                         if (CurrentTokenType != TokenType.Character
                           || CurrentTokenText != ")")
                         {
