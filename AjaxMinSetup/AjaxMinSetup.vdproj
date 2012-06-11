@@ -70,13 +70,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
+        "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
+        "OwnerKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -364,15 +364,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{99C1520F-1D27-4E62-AA74-14AE8C288EEC}"
-        "PackageCode" = "8:{ECE65406-0E65-419C-8B9C-A789962CD195}"
+        "ProductCode" = "8:{9E3A3F77-BFBE-41DD-BD2F-93FD4BB3099E}"
+        "PackageCode" = "8:{F403EF1D-5BBF-4096-9AD0-55926C924D35}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.54"
+        "ProductVersion" = "8:4.55"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
