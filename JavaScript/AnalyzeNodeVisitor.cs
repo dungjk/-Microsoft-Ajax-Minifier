@@ -1481,7 +1481,7 @@ namespace Microsoft.Ajax.Utilities
             m_encounteredCCOn = true;
         }
 
-        private bool StringSourceIsNotInlineSafe(string source)
+        private static bool StringSourceIsNotInlineSafe(string source)
         {
             var isNotSafe = false;
             if (!string.IsNullOrEmpty(source))

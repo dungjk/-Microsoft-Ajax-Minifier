@@ -2501,13 +2501,15 @@ namespace Microsoft.Ajax.Utilities
         public static bool IsValidIdentifierPart(char letter)
         {
             // look for valid ranges
+            // 0x200c = ZWNJ - zero-width non-joiner
+            // 0x200d = ZWJ - zero-width joiner
             if (('a' <= letter && letter <= 'z')
                 || ('A' <= letter && letter <= 'Z')
                 || ('0' <= letter && letter <= '9')
                 || letter == '_'
                 || letter == '$'
-                || letter == 0x200c     // ZWNJ - zero-width non-joiner
-                || letter == 0x200d)    // ZWJ - zero-width joiner
+                || letter == 0x200c    
+                || letter == 0x200d)   
             {
                 return true;
             }

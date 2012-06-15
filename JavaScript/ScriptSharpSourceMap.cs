@@ -16,18 +16,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public class ScriptSharpSourceMap : ISourceMap
+    public sealed class ScriptSharpSourceMap : ISourceMap
     {
         private readonly XmlWriter m_writer;
         private string m_currentPackage;
-        private Dictionary<string, uint> m_sourceFileIndexMap = new Dictionary<string, uint>();
-        private uint currentIndex;
+        private Dictionary<string, int> m_sourceFileIndexMap = new Dictionary<string, int>();
+        private int currentIndex;
 
         public ScriptSharpSourceMap(XmlWriter writer)
         {
@@ -43,16 +44,16 @@ namespace Microsoft.Ajax.Utilities
             m_writer.WriteStartElement("scriptFiles");
         }
 
-        public void StartPackage(string path)
+        public void StartPackage(string sourcePath)
         {
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(sourcePath))
             {
-                throw new ArgumentException("path cannot be null or empty", "path");
+                throw new ArgumentException("path cannot be null or empty", "sourcePath");
             }
 
-            m_currentPackage = path;
+            m_currentPackage = sourcePath;
             m_writer.WriteStartElement("scriptFile");
-            m_writer.WriteAttributeString("path", path);
+            m_writer.WriteAttributeString("path", sourcePath);
         }
 
         public void EndPackage()
@@ -67,29 +68,31 @@ namespace Microsoft.Ajax.Utilities
             // or if the script has been tempered with
             using (FileStream stream = new FileStream(m_currentPackage, FileMode.Open))
             {
-                MD5 md5 = MD5.Create();
-                byte[] checksum = md5.ComputeHash(stream);
+                using (MD5 md5 = MD5.Create())
+                {
+                    byte[] checksum = md5.ComputeHash(stream);
 
-                m_writer.WriteStartElement("checksum");
-                m_writer.WriteAttributeString("value", BitConverter.ToString(checksum));
-                m_writer.WriteEndElement(); //checksum
-                m_writer.WriteEndElement(); //scriptFile
+                    m_writer.WriteStartElement("checksum");
+                    m_writer.WriteAttributeString("value", BitConverter.ToString(checksum));
+                    m_writer.WriteEndElement(); //checksum
+                    m_writer.WriteEndElement(); //scriptFile
+                }
             }
 
             m_currentPackage = null;
         }
 
-        public object StartSymbol(AstNode node, int startLine, int startColumn)
+        public object StartSymbol(AstNode astNode, int startLine, int startColumn)
         {
-            if (!node.Context.Document.IsGenerated)
+            if (!astNode.Context.Document.IsGenerated)
             {
-                return JavaScriptSymbol.StartNew(node, startLine, startColumn, GetSourceFileIndex(node.Context.Document.FileContext));
+                return JavaScriptSymbol.StartNew(astNode, startLine, startColumn, GetSourceFileIndex(astNode.Context.Document.FileContext));
             }
 
             return null;
         }
 
-        public void EndSymbol(object symbol, int endLine, int endColumn, string parentFunction)
+        public void EndSymbol(object symbol, int endLine, int endColumn, string parentContext)
         {
             if (symbol == null)
             {
@@ -97,7 +100,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             var javaScriptSymbol = (JavaScriptSymbol)symbol;
-            javaScriptSymbol.End(endLine, endColumn, parentFunction);
+            javaScriptSymbol.End(endLine, endColumn, parentContext);
             javaScriptSymbol.WriteTo(m_writer);
         }
 
@@ -108,10 +111,10 @@ namespace Microsoft.Ajax.Utilities
             m_writer.WriteEndElement(); //scriptFiles
             m_writer.WriteStartElement("sourceFiles");
 
-            foreach (KeyValuePair<string, uint> kvp in m_sourceFileIndexMap)
+            foreach (KeyValuePair<string, int> kvp in m_sourceFileIndexMap)
             {
                 m_writer.WriteStartElement("sourceFile");
-                m_writer.WriteAttributeString("id", kvp.Value.ToString());
+                m_writer.WriteAttributeString("id", kvp.Value.ToString(CultureInfo.InvariantCulture));
                 m_writer.WriteAttributeString("path", kvp.Key);
                 m_writer.WriteEndElement(); //file
             }
@@ -122,9 +125,9 @@ namespace Microsoft.Ajax.Utilities
             m_writer.Close();
         }
 
-        private uint GetSourceFileIndex(string fileName)
+        private int GetSourceFileIndex(string fileName)
         {
-            uint index;
+            int index;
             if (!m_sourceFileIndexMap.TryGetValue(fileName, out index))
             {
                 index = ++currentIndex;

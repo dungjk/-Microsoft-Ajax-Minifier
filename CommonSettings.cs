@@ -52,8 +52,9 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Gets or sets a value indicating whether the opening curly brace for blocks is
-        /// on its own line (false, default) or on the same line as the preceding code (true)
-        /// when output is multi-line mode.
+        /// on its own line (NewLine, default) or on the same line as the preceding code (SameLine)
+        /// or taking a hint from the source code position (UseSource) when output is 
+        /// multi-line mode.
         /// </summary>
         public BlockStart BlocksStartOnSameLine
         {

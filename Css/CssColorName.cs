@@ -240,6 +240,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
     }
+
     /// <summary>
     /// Query: All strict items that have Name longer than Hex, 
     /// PLUS all non-strict items (key:Name, value:Hex)

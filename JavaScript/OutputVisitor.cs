@@ -1131,7 +1131,7 @@ namespace Microsoft.Ajax.Utilities
                     BinaryOperator binaryOperator = node.Parent as BinaryOperator;
                     if (binaryOperator != null && binaryOperator.Operand1 is Lookup)
                     {
-                        m_functionStack.Push(string.Format("(anonymous) [{0}]", binaryOperator.Operand1));
+                        m_functionStack.Push(string.Format(CultureInfo.InvariantCulture, "(anonymous) [{0}]", binaryOperator.Operand1));
                     }
                     else
                     {

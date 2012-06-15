@@ -17,8 +17,8 @@
 namespace Microsoft.Ajax.Utilities
 {
     using System.Globalization;
-    using System.Resources;
     using System.Reflection;
+    using System.Resources;
 
     internal enum StringEnum
     {

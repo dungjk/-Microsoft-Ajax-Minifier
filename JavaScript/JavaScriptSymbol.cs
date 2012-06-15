@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
@@ -26,7 +27,7 @@ namespace Microsoft.Ajax.Utilities
         private int m_startColumn;
         private int m_endColumn;
         private Context m_sourceContext;
-        private uint m_sourceFileId;
+        private int m_sourceFileId;
         private string m_symbolType;
         private string m_parentFunction;
 
@@ -34,7 +35,7 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
-        public static JavaScriptSymbol StartNew(AstNode node, int startLine, int startColumn, uint sourceFileId)
+        public static JavaScriptSymbol StartNew(AstNode node, int startLine, int startColumn, int sourceFileId)
         {            
             return new JavaScriptSymbol
             {
@@ -57,6 +58,7 @@ namespace Microsoft.Ajax.Utilities
         {
             writer.WriteStartElement("headers");
             writer.WriteString(string.Format(
+                CultureInfo.InvariantCulture,
                 SymbolDataFormat,
                 "DstStartLine",
                 "DstStartColumn",
@@ -79,6 +81,7 @@ namespace Microsoft.Ajax.Utilities
         {
             writer.WriteStartElement("s");
             writer.WriteString(string.Format(
+                CultureInfo.InvariantCulture,
                 SymbolDataFormat,
                 m_startLine,
                 m_startColumn,
