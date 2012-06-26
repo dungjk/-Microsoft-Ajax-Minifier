@@ -49,7 +49,6 @@ namespace Microsoft.Ajax.Utilities
             ColorNames = CssColor.Strict;
             CommentMode = CssComment.Important;
             MinifyExpressions = true;
-			AllowEmbeddedAspNetBlocks = false;
             CssType = CssType.FullStyleSheet;
         }
 
@@ -83,7 +82,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets ColorNames setting.
+        /// Gets or sets ColorNames setting. Default is Strict.
         /// </summary>
         public CssColor ColorNames
         {
@@ -91,7 +90,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets CommentMode setting.
+        /// Gets or sets CommentMode setting. Default is Important.
         /// </summary>
         public CssComment CommentMode
         {
@@ -99,22 +98,16 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to minify the javascript within expression functions
+        /// Gets or sets a value indicating whether to minify the javascript within expression functions. Deault is true.
         /// </summary>
         public bool MinifyExpressions
         {
             get; set;
         }
 
-		/// <summary>
-		/// Gets or sets whether embedded asp.net blocks (&lt;% %>) should be recognized and output as is.
-		/// </summary>
-		public bool AllowEmbeddedAspNetBlocks
-		{
-			get;
-			set;
-		}
-
+        /// <summary>
+        /// Gets or sets a value indicating how to treat the input source. Default is FullStyleSheet.
+        /// </summary>
         public CssType CssType 
         { 
             get; 
