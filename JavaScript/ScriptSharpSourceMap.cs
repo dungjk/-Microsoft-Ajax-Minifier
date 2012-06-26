@@ -84,7 +84,8 @@ namespace Microsoft.Ajax.Utilities
 
         public object StartSymbol(AstNode astNode, int startLine, int startColumn)
         {
-            if (!astNode.Context.Document.IsGenerated)
+            if (astNode != null 
+                && !astNode.Context.Document.IsGenerated)
             {
                 return JavaScriptSymbol.StartNew(astNode, startLine, startColumn, GetSourceFileIndex(astNode.Context.Document.FileContext));
             }

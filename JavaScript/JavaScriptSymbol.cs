@@ -36,13 +36,13 @@ namespace Microsoft.Ajax.Utilities
         }
 
         public static JavaScriptSymbol StartNew(AstNode node, int startLine, int startColumn, int sourceFileId)
-        {            
+        {
             return new JavaScriptSymbol
             {
                 m_startLine = startLine,
                 m_startColumn = startColumn,
-                m_sourceContext = node.Context,
-                m_symbolType = node.GetType().Name,
+                m_sourceContext = node != null ? node.Context : null,
+                m_symbolType = node != null ? node.GetType().Name : "[UNKNOWN]",
                 m_sourceFileId = sourceFileId,
             };
         }
@@ -56,48 +56,54 @@ namespace Microsoft.Ajax.Utilities
 
         public static void WriteHeadersTo(XmlWriter writer)
         {
-            writer.WriteStartElement("headers");
-            writer.WriteString(string.Format(
-                CultureInfo.InvariantCulture,
-                SymbolDataFormat,
-                "DstStartLine",
-                "DstStartColumn",
-                "DstEndLine",
-                "DstEndColumn",
-                "SrcStartPosition",
-                "SrcEndPosition",
-                "SrcStartLine",
-                "SrcStartColumn",
-                "SrcEndLine",
-                "SrcEndColumn",
-                "SrcFileId",
-                "SymbolType",
-                "ParentFunction"));
+            if (writer != null)
+            {
+                writer.WriteStartElement("headers");
+                writer.WriteString(string.Format(
+                    CultureInfo.InvariantCulture,
+                    SymbolDataFormat,
+                    "DstStartLine",
+                    "DstStartColumn",
+                    "DstEndLine",
+                    "DstEndColumn",
+                    "SrcStartPosition",
+                    "SrcEndPosition",
+                    "SrcStartLine",
+                    "SrcStartColumn",
+                    "SrcEndLine",
+                    "SrcEndColumn",
+                    "SrcFileId",
+                    "SymbolType",
+                    "ParentFunction"));
 
-            writer.WriteEndElement(); //headers
+                writer.WriteEndElement(); //headers
+            }
         }
 
         public void WriteTo(XmlWriter writer)
         {
-            writer.WriteStartElement("s");
-            writer.WriteString(string.Format(
-                CultureInfo.InvariantCulture,
-                SymbolDataFormat,
-                m_startLine,
-                m_startColumn,
-                m_endLine,
-                m_endColumn,
-                m_sourceContext.StartPosition,
-                m_sourceContext.EndPosition,
-                m_sourceContext.StartLineNumber,
-                m_sourceContext.StartColumn,
-                m_sourceContext.EndLineNumber,
-                m_sourceContext.EndColumn,
-                m_sourceFileId,
-                m_symbolType,
-                m_parentFunction));
+            if (writer != null)
+            {
+                writer.WriteStartElement("s");
+                writer.WriteString(string.Format(
+                    CultureInfo.InvariantCulture,
+                    SymbolDataFormat,
+                    m_startLine,
+                    m_startColumn,
+                    m_endLine,
+                    m_endColumn,
+                    m_sourceContext.StartPosition,
+                    m_sourceContext.EndPosition,
+                    m_sourceContext.StartLineNumber,
+                    m_sourceContext.StartColumn,
+                    m_sourceContext.EndLineNumber,
+                    m_sourceContext.EndColumn,
+                    m_sourceFileId,
+                    m_symbolType,
+                    m_parentFunction));
 
-            writer.WriteEndElement(); //s
+                writer.WriteEndElement(); //s
+            }
         }
     }
 }

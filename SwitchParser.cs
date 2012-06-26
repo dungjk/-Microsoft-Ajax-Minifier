@@ -46,15 +46,39 @@ namespace Microsoft.Ajax.Utilities
     {
         #region properties
 
-        // settings objects that get set up by parsing a command line
+        /// <summary>
+        /// Gets the parsed JavaScript code settings object
+        /// </summary>
         public CodeSettings JSSettings { get; private set; }
+
+        /// <summary>
+        /// Gets the parsed CSS settings object
+        /// </summary>
         public CssSettings CssSettings { get; private set; }
 
-        // other parameters we will parse off the command line
+        /// <summary>
+        /// Gets a boolean value indicating whether or not Analyze mode is specified (default is false)
+        /// </summary>
         public bool AnalyzeMode { get; private set; }
+
+        /// <summary>
+        /// Gets a boolean value indicating whether or not Pretty-Print mode is specified (default is false)
+        /// </summary>
         public bool PrettyPrint { get; private set; }
+
+        /// <summary>
+        /// Gets an integer value indicating the warning severity threshold for reporting. Default is zero (syntax errors only).
+        /// </summary>
         public int WarningLevel { get; private set; }
+
+        /// <summary>
+        /// Gets the string output encoding name. Default is null, indicating the default output encoding should be used.
+        /// </summary>
         public string EncodingOutputName { get; private set; }
+
+        /// <summary>
+        /// Gets the string input encoding name. Default is null, indicating the default output encoding should be used.
+        /// </summary>
         public string EncodingInputName { get; private set; }
 
         #endregion

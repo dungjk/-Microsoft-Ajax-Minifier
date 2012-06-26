@@ -28,3 +28,7 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "expr", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Scope = "member", Target = "Microsoft.Ajax.Utilities.CssParser.#ParseFunction()")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Scope = "member", Target = "Microsoft.Ajax.Utilities.CssParser.#ParseMinMax()")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1701:ResourceStringCompoundWordsShouldBeCasedCorrectly", MessageId = "stylesheet", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "decls", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "noforce", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times", Scope = "member", Target = "Microsoft.Ajax.Utilities.MainClass.#CalculateGzipSize(System.Byte[])")]

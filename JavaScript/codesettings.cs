@@ -21,22 +21,61 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// Settings for how local variables and functions can be renamed
+    /// </summary>
     public enum LocalRenaming
     {
+        /// <summary>
+        /// Keep all names; don't rename anything
+        /// </summary>
         KeepAll,
+
+        /// <summary>
+        /// Rename all local variables and functions that do not begin with "L_"
+        /// </summary>
         KeepLocalizationVars,
+
+        /// <summary>
+        /// Rename all local variables and functions. (default)
+        /// </summary>
         CrunchAll
     }
 
+    /// <summary>
+    /// Settings for how to treat eval statements
+    /// </summary>
     public enum EvalTreatment
     {
+        /// <summary>
+        /// Ignore all eval statements (default). This assumes that code that is eval'd will not attempt
+        /// to access any local variables or functions, as those variables and function may be renamed.
+        /// </summary>
         Ignore = 0,
+
+        /// <summary>
+        /// Assume any code that is eval'd will attempt to access local variables and functions declared
+        /// in the same scope as the eval statement. This will turn off local variable and function renaming
+        /// in any scope that contains an eval statement.
+        /// </summary>
         MakeImmediateSafe,
+
+        /// <summary>
+        /// Assume that any local variable or function in any accessible scope chain may be referenced by 
+        /// code that is eval'd. This will turn off local variable and function renaming for all scopes that
+        /// contain an eval statement, and all their parent scopes up the chain to the global scope.
+        /// </summary>
         MakeAllSafe
     }
 
+    /// <summary>
+    /// Object used to store code settings for JavaScript parsing, minification, and output
+    /// </summary>
     public class CodeSettings : CommonSettings
     {
+        /// <summary>
+        /// Instantiate a CodeSettings object with the default settings
+        /// </summary>
         public CodeSettings()
         {
             this.CollapseToLiteral = true;
@@ -53,7 +92,6 @@ namespace Microsoft.Ajax.Utilities
             this.RemoveUnneededCode = true;
             this.StrictMode = false;
             this.StripDebugStatements = true;
-            this.AllowEmbeddedAspNetBlocks = false;
             this.EvalLiteralExpressions = true;
             this.ManualRenamesProperties = true;
 
@@ -66,6 +104,10 @@ namespace Microsoft.Ajax.Utilities
             this.NoAutoRenameIdentifiers = new ReadOnlyCollection<string>(new string[] { "$super" });
         }
 
+        /// <summary>
+        /// Instantiate a new CodeSettings object with the same settings as the current object.
+        /// </summary>
+        /// <returns>a copy CodeSettings object</returns>
         public CodeSettings Clone()
         {
             // create a new settings object and set all the properties using this settings object
@@ -511,16 +553,7 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         /// <summary>
-        /// Whether to allow embedded asp.net blocks.
-        /// </summary>
-        public bool AllowEmbeddedAspNetBlocks
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// deprecated setting
+        /// deprecated setting; do not use
         /// </summary>
         [Obsolete("This property is obsolete and no longer used")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -531,7 +564,7 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// collapse new Array() to [] and new Object() to {} [true]
-        /// or leave ais [false]
+        /// or leave ais [false]. Default is true.
         /// </summary>
         public bool CollapseToLiteral
         {
@@ -540,8 +573,9 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Combine duplicate literals within function scopes to local variables [true]
-        /// or leave them as-is [false]
+        /// or leave them as-is [false]. Default is false.
         /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool CombineDuplicateLiterals
         {
             get; set;
@@ -549,7 +583,7 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Throw an error if a source string is not safe for inclusion 
-        /// in an HTML inline script block
+        /// in an HTML inline script block. Default is false.
         /// </summary>
         public bool ErrorIfNotInlineSafe
         {
@@ -558,7 +592,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether EvalsAreSafe.
+        /// Gets or sets a value indicating whether eval-statements are "safe."
         /// Deprecated in favor of EvalTreatment, which is an enumeration
         /// allowing for more options than just true or false.
         /// True for this property is the equivalent of EvalTreament.Ignore;
@@ -580,7 +614,7 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Evaluate expressions containing only literal bool, string, numeric, or null values [true]
-        /// Leave literal expressions alone and do not evaluate them [false]
+        /// Leave literal expressions alone and do not evaluate them [false]. Default is true.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Eval")]
         public bool EvalLiteralExpressions
@@ -590,8 +624,11 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Eval statements are safe and do not access local variables or functions [true]
-        /// Code run by Eval statements may attempt to access local variables and functions [false]
+        /// Gets or sets a settings value indicating how "safe" eval-statements are to be assumed.
+        /// Ignore (default) means we can assume eval-statements will not reference any local variables and functions.
+        /// MakeImmediateSafe assumes eval-statements will reference local variables and function within the same scope.
+        /// MakeAllSafe assumes eval-statements will reference any accessible local variable or function.
+        /// Local variables that we assume may be referenced by eval-statements cannot be automatically renamed.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Eval")]
         public EvalTreatment EvalTreatment
@@ -600,14 +637,14 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// whether or not to ignore conditional-compilation comment syntax (true) or
+        /// Gets or sets a boolean value indicating whether or not to ignore conditional-compilation comment syntax (true) or
         /// to try to retain the comments in the output (false; default)
         /// </summary>
         public bool IgnoreConditionalCompilation { get; set; }
 
         /// <summary>
-        /// Break up string literals containing &lt;/script&gt; so inline code won't break [true]
-        /// Leave string literals as-is [false]
+        /// Gets or sets a boolean value indicating whether to break up string literals containing &lt;/script&gt; so inline code won't break [true, default]
+        /// or to leave string literals as-is [false]
         /// </summary>
         public bool InlineSafeStrings
         {
@@ -615,9 +652,9 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// How to rename local variables and functions:
-        /// KeepAll - do not rename local variables and functions
-        /// CrunchAll - rename all local variables and functions to shorter names
+        /// Gets or sets a boolean value indicating whether/how local variables and functions should be automatically renamed:
+        /// KeepAll - do not rename local variables and functions; 
+        /// CrunchAll - rename all local variables and functions to shorter names; 
         /// KeepLocalizationVars - rename all local variables and functions that do NOT start with L_
         /// </summary>
         public LocalRenaming LocalRenaming
@@ -626,8 +663,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Add characters to the output to make sure Mac Safari bugs are not generated [true]
-        /// Disregard potential Mac Safari bugs [false]
+        /// Gets or sets a boolean value indicating whether to add characters to the output to make sure Mac Safari bugs are not generated [true, default], or to
+        /// disregard potential known Mac Safari bugs in older versions [false]
         /// </summary>
         public bool MacSafariQuirks
         {
@@ -635,8 +672,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Modify the source code's syntax tree to provide the smallest equivalent output [true]
-        /// Do not modify the syntax tree [false]
+        /// Gets or sets a boolean value indicating whether to modify the source code's syntax tree to provide the smallest equivalent output [true, default],
+        /// or to not modify the syntax tree [false]
         /// </summary>
         public bool MinifyCode
         {
@@ -644,9 +681,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// When using the manual-rename feature, properties with the "from" name will
-        /// get renamed to the "to" name if this property is true (default), and left alone
-        /// if this property is false.
+        /// Gets or sets a boolean value indicating whether object property names with the specified "from" names will
+        /// get renamed to the corresponding "to" names (true, default) when using the manual-rename feature, or left alone (false)
         /// </summary>
         public bool ManualRenamesProperties
         {
@@ -654,8 +690,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether all function names must be preserved
-        /// and remain as-named.
+        /// Gets or sets a value indicating whether all function names must be preserved and remain as-named (true),
+        /// or can be automatically renamed (false, default).
         /// </summary>
         public bool PreserveFunctionNames
         {
@@ -664,7 +700,8 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Gets or sets a value indicating whether to preserve important comments in the output.
-        /// Default is true.
+        /// Default is true, preserving important comments. Important comments have an exclamation
+        /// mark as the very first in-comment character (//! or /*!).
         /// </summary>
         public bool PreserveImportantComments
         {
@@ -673,7 +710,8 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Gets or sets a value indicating whether or not to reorder function and variable
-        /// declarations within scopes
+        /// declarations within scopes (true, default), or to leave the order as specified in 
+        /// the original source.
         /// </summary>
         public bool ReorderScopeDeclarations
         {
@@ -681,7 +719,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether or not to remove unreferenced function expression names
+        /// Gets or sets a value indicating whether or not to remove unreferenced function expression names (true, default)
+        /// or to leave the names of function expressions, even if they are unreferenced (false).
         /// </summary>
         public bool RemoveFunctionExpressionNames
         {
@@ -689,8 +728,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Remove unneeded code, like uncalled local functions [true]
-        /// Keep all code [false]
+        /// Gets or sets a boolean value indicating whether to remove unneeded code, such as uncalled local functions or unreachable code [true, default], 
+        /// or to keep such code in the output [false].
         /// </summary>
         public bool RemoveUnneededCode
         {
@@ -698,8 +737,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a boolean value indicating whether or not to force the input code into strict mode
-        /// (can still specify strict-mode in the sources if this value is false) 
+        /// Gets or sets a boolean value indicating whether or not to force the input code into strict mode (true)
+        /// or rely on the sources to turn on strict mode via the "use strict" prologue directive (false, default).
         /// </summary>
         public bool StrictMode
         {
@@ -708,8 +747,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Strip debug statements [true]
-        /// Leave debug statements [false]
+        /// Gets or sets a boolean value indicating whether to strip debug statements [true, default],
+        /// or leave debug statements in the output [false]
         /// </summary>
         public bool StripDebugStatements
         {
@@ -717,7 +756,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="ISourceMap"/> instance.
+        /// Gets or sets the <see cref="ISourceMap"/> instance. Default is null, which won't output a symbol map.
         /// </summary>
         public ISourceMap SymbolsMap
         {

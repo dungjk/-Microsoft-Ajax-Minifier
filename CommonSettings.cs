@@ -22,16 +22,52 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// Output mode setting
+    /// </summary>
     public enum OutputMode
     {
+        /// <summary>
+        /// Output the minified code on a single line for maximum minification.
+        /// LineBreakThreshold may still break the single line into multiple lines
+        /// at a syntactically correct point after the given line length is reached.
+        /// Not easily human-readable.
+        /// </summary>
         SingleLine,
+
+        /// <summary>
+        /// Output the minified code on multiple lines to increase readability
+        /// </summary>
         MultipleLines
     }
 
+    /// <summary>
+    /// Describes how to output the opening curly-brace for blocks when the OutputMode
+    /// is set to MultipleLines. 
+    /// </summary>
     public enum BlockStart
     {
+        /// <summary>
+        /// Output the opening curly-brace block-start character on its own new line. Ex:
+        /// if (condition)
+        /// {
+        ///     ...
+        /// }
+        /// </summary>
         NewLine = 0,
+
+        /// <summary>
+        /// Output the opening curly-brace block-start character at the end of the previous line. Ex:
+        /// if (condition) {
+        ///     ...
+        /// }
+        /// </summary>
         SameLine,
+
+        /// <summary>
+        /// Output the opening curly-brace block-start character on the same line or a new line
+        /// depending on how it was specified in the sources. 
+        /// </summary>
         UseSource
     }
 
@@ -48,13 +84,23 @@ namespace Microsoft.Ajax.Utilities
             TermSemicolons = false;
             KillSwitch = 0;
             LineBreakThreshold = int.MaxValue - 1000;
+            AllowEmbeddedAspNetBlocks = false;
+        }
+
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether embedded asp.net blocks (&lt;% %>) should be recognized and output as is. Default is false.
+        /// </summary>
+        public bool AllowEmbeddedAspNetBlocks
+        {
+            get;
+            set;
         }
 
         /// <summary>
         /// Gets or sets a value indicating whether the opening curly brace for blocks is
         /// on its own line (NewLine, default) or on the same line as the preceding code (SameLine)
-        /// or taking a hint from the source code position (UseSource) when output is 
-        /// multi-line mode.
+        /// or taking a hint from the source code position (UseSource). Only relevant when OutputMode is 
+        /// set to MultipleLines.
         /// </summary>
         public BlockStart BlocksStartOnSameLine
         {
@@ -63,7 +109,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Number of spaces per indent level when in MultipleLines output mode
+        /// Gets or sets an integer value specifying the number of spaces per indent level when in MultipleLines output mode. (Default = 4)
         /// </summary>
         public int IndentSize
         {
@@ -82,9 +128,10 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Output mode:
-        /// SingleLine - output all code on a single line
-        /// MultipleLines - break the output into multiple lines to be more human-readable
+        /// Gets or sets a value indicating the output mode:
+        /// SingleLine (default) - output all code on a single line;
+        /// MultipleLines - break the output into multiple lines to be more human-readable;
+        /// SingleLine mode may still result in multiple lines if the LineBreakThreshold is set to a small enough value.
         /// </summary>
         public OutputMode OutputMode
         {
@@ -93,7 +140,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a flag for whether to add a semicolon at the end of the parsed code
+        /// Gets or sets a boolean value indicting whether to add a semicolon at the end of the parsed code (true) or not (false, default)
         /// </summary>
         public bool TermSemicolons
         {
@@ -102,8 +149,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Kill switch flags for each individual mod to the parsed code tree. Allows for
-        /// callers to turn off specific modifications if desired.
+        /// Gets or sets a long integer value containing kill switch flags for each individual mod to the parsed code tree. Allows for
+        /// callers to turn off specific modifications if desired. Default is 0, meaning no kill switches are set.
         /// </summary>
         public long KillSwitch
         {

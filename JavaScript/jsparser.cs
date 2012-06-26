@@ -2530,7 +2530,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         //save what you can a rethrow
                         switchCtx.UpdateWith(CurrentPositionContext());
-                        exc._partiallyComputedNode = new Switch(switchCtx, this, expr, cases);
+                        exc._partiallyComputedNode = new Switch(switchCtx, this, expr, cases, braceOnNewLine);
                         throw;
                     }
                 }
