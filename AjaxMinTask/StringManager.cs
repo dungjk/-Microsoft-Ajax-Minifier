@@ -29,6 +29,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         InvalidInputParameter,
         DestinationIsReadOnly,
         MapDestinationIsReadOnly,
+        CannotUseCombinedAndIndividual,
     };
 
     internal static class StringManager

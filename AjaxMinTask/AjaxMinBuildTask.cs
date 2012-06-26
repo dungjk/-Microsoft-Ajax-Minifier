@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Resources;
 using System.Security;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.Ajax.Utilities;
@@ -265,14 +266,22 @@ namespace Microsoft.Ajax.Minifier.Tasks
         public ITaskItem[] JsSourceFiles { get; set; }
 
         /// <summary>
-        /// Target extension for minified JS files
+        /// Target extension for individually-minified JS files.
+        /// Must use wih JsSourceExtensionPattern; cannot be used with JsCombinedFileName.
         /// </summary>
         public string JsTargetExtension { get; set; }
 
         /// <summary>
-        /// Source extension pattern for JS files.
+        /// Source extension pattern for individually-minified JS files.
+        /// Must use wih JsTargetExtension; cannot be used with JsCombinedFileName.
         /// </summary>
         public string JsSourceExtensionPattern { get; set; }
+
+        /// <summary>
+        /// Combine and minify all source files to this name.
+        /// Cannot be used with JsTargetExtension/JsSourceExtensionPattern.
+        /// </summary>
+        public string JsCombinedFileName { get; set; }
 
         /// <summary>
         /// Ensures the final semicolon in minified JS file.
@@ -469,14 +478,22 @@ namespace Microsoft.Ajax.Minifier.Tasks
         public ITaskItem[] CssSourceFiles { get; set; }
 
         /// <summary>
-        /// Target extension for minified CSS files
+        /// Target extension for minified CSS files.
+        /// Cannot use with CssCombinedFileName.
         /// </summary>
         public string CssTargetExtension { get; set; }
 
         /// <summary>
         /// Source extension pattern for CSS files.
+        /// Cannot use with CssCombinedFileName.
         /// </summary>
         public string CssSourceExtensionPattern { get; set; }
+
+        /// <summary>
+        /// Combine all source files and minify to this the given file name.
+        /// Cannot use with CssTargetExtension/CssSourceExtensionPattern.
+        /// </summary>
+        public string CssCombinedFileName { get; set; }
 
         /// <summary>
         /// <see cref="CssSettings.ColorNames"/> for more information.
@@ -564,30 +581,49 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // Deal with JS minification
             if (this.JsSourceFiles != null && this.JsSourceFiles.Length > 0)
             {
-                if (this.JsSourceExtensionPattern.IsNullOrWhiteSpace())
+                if (this.JsCombinedFileName.IsNullOrWhiteSpace())
                 {
-                    LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsSourceExtensionPattern");
-                    return false;
-                }
+                    // no combined name; the source extension and target extension properties must be set.
+                    if (this.JsSourceExtensionPattern.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsSourceExtensionPattern");
+                        return false;
+                    }
 
-                if (this.JsTargetExtension.IsNullOrWhiteSpace())
+                    if (this.JsTargetExtension.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsTargetExtension");
+                        return false;
+                    }
+                }
+                else
                 {
-                    LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsTargetExtension");
-                    return false;
-                }
+                    // a combined name was specified - must NOT use source/target extension properties
+                    if (!this.JsSourceExtensionPattern.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "JsSourceExtensionPattern");
+                        return false;
+                    }
 
+                    if (!this.JsTargetExtension.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "JsTargetExtension");
+                        return false;
+                    }
+                }
 
                 if (m_symbolsMapFile != null)
                 {
                     if (FileIsWritable(m_symbolsMapFile))
                     {
-                        XmlWriter writer = XmlWriter.Create(
+                        using (XmlWriter writer = XmlWriter.Create(
                             m_symbolsMapFile,
-                            new XmlWriterSettings { CloseOutput = true, Indent = true });
-                        
-                        using (m_jsCodeSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                            new XmlWriterSettings { CloseOutput = true, Indent = true }))
                         {
-                            MinifyJavaScript();
+                            using (m_jsCodeSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                            {
+                                MinifyJavaScript();
+                            }
                         }
                     }
                     else
@@ -607,16 +643,33 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // Deal with CSS minification
             if (this.CssSourceFiles != null && this.CssSourceFiles.Length > 0)
             {
-                if (this.CssSourceExtensionPattern.IsNullOrWhiteSpace())
+                if (this.CssCombinedFileName.IsNullOrWhiteSpace())
                 {
-                    LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssSourceExtensionPattern");
-                    return false;
-                }
+                    if (this.CssSourceExtensionPattern.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssSourceExtensionPattern");
+                        return false;
+                    }
 
-                if (this.CssTargetExtension.IsNullOrWhiteSpace())
+                    if (this.CssTargetExtension.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssTargetExtension");
+                        return false;
+                    }
+                }
+                else
                 {
-                    LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssTargetExtension");
-                    return false;
+                    if (!this.CssSourceExtensionPattern.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "CssSourceExtensionPattern");
+                        return false;
+                    }
+
+                    if (!this.CssTargetExtension.IsNullOrWhiteSpace())
+                    {
+                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "CssTargetExtension");
+                        return false;
+                    }
                 }
 
                 MinifyStyleSheets();
@@ -630,63 +683,60 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         private void MinifyJavaScript()
         {
-            foreach (ITaskItem item in this.JsSourceFiles)
+            if (this.JsCombinedFileName.IsNullOrWhiteSpace())
             {
-                string path = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
-                                            RegexOptions.IgnoreCase);
-
-                if (FileIsWritable(path))
+                // individually-minified files
+                foreach (ITaskItem item in this.JsSourceFiles)
                 {
-                    try
-                    {
-                        if (m_jsCodeSettings.SymbolsMap != null)
-                        {
-                            m_jsCodeSettings.SymbolsMap.StartPackage(path);
-                        }
+                    string path = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
+                                                RegexOptions.IgnoreCase);
 
+                    if (FileIsWritable(path))
+                    {
                         string source = File.ReadAllText(item.ItemSpec);
-                        this.m_minifier.FileName = item.ItemSpec;
-                        string minifiedJs = this.m_minifier.MinifyJavaScript(source, this.m_jsCodeSettings);
-                        if (this.m_minifier.ErrorList.Count > 0)
-                        {
-                            foreach (var error in this.m_minifier.ErrorList)
-                            {
-                                LogContextError(error);
-                            }
-                        }
-                        else
-                        {
-                            if (this.JsEnsureFinalSemicolon && !string.IsNullOrEmpty(minifiedJs))
-                            {
-                                minifiedJs = minifiedJs + ";";
-                            }
-                            try
-                            {
-                                File.WriteAllText(path, minifiedJs);
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                LogFileError(item.ItemSpec, StringEnum.NoWritePermission, path);
-                            }
-                        }
+                        MinifyJavaScript(source, item.ItemSpec, path);
                     }
-                    catch (Exception e)
+                    else
                     {
-                        LogFileError(item.ItemSpec, StringEnum.DidNotMinify, path, e.Message);
-                        throw;
+                        // log a WARNING that the minification was skipped -- don't break the build
+                        Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                     }
-                    finally
+                }
+            }
+            else
+            {
+                // combine the sources into a single file and minify the results
+                if (FileIsWritable(this.JsCombinedFileName))
+                {
+                    // read all the input files into a single source string
+                    var combinedSource = new StringBuilder();
+                    foreach (var item in this.JsSourceFiles)
                     {
-                        if (m_jsCodeSettings.SymbolsMap != null)
+                        try
                         {
-                            m_jsCodeSettings.SymbolsMap.EndPackage();
+                            // add the source file to the combines source builder
+                            combinedSource.Append(File.ReadAllText(item.ItemSpec));
+
+                            // always stuff a semicolon after the source file; if the file doesn't end with a properly-terminated
+                            // statement, then this will terminate it properly so the next file (if any) doesn't get confused.
+                            // If it does already end properly, this just sticks an empty statement after it, which will get
+                            // minified out of the results anyway.
+                            combinedSource.Append(';');
+                        }
+                        catch (Exception e)
+                        {
+                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.JsCombinedFileName, e.Message);
+                            throw;
                         }
                     }
+
+                    // now minify the entire combined source to the single output file
+                    MinifyJavaScript(combinedSource.ToString(), Path.GetFileName(this.JsCombinedFileName), this.JsCombinedFileName);
                 }
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(this.JsCombinedFileName), this.JsCombinedFileName));
                 }
             }
         }
@@ -696,48 +746,159 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         private void MinifyStyleSheets()
         {
-            foreach (ITaskItem item in this.CssSourceFiles)
+            if (this.CssCombinedFileName.IsNullOrWhiteSpace())
             {
-                string path = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
-                if (FileIsWritable(path))
+                // individually-minified files
+                foreach (ITaskItem item in this.CssSourceFiles)
                 {
-                    try
+                    string path = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
+                    if (FileIsWritable(path))
                     {
-                        string source = File.ReadAllText(item.ItemSpec);
-                        this.m_minifier.FileName = item.ItemSpec;
-                        string contents = this.m_minifier.MinifyStyleSheet(source, this.m_cssCodeSettings);
-                        if (this.m_minifier.ErrorList.Count > 0)
+                        try
                         {
-                            foreach (var error in this.m_minifier.ErrorList)
-                            {
-                                LogContextError(error);
-                            }
+                            string source = File.ReadAllText(item.ItemSpec);
+                            MinifyStyleSheet(source, item.ItemSpec, path);
                         }
-                        else
+                        catch (Exception e)
                         {
-                            try
-                            {
-                                File.WriteAllText(path, contents);
-                            }
-                            catch (UnauthorizedAccessException)
-                            {
-                                LogFileError(item.ItemSpec, StringEnum.NoWritePermission, path);
-                            }
+                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, path, e.Message);
+                            throw;
                         }
                     }
-                    catch (Exception e)
+                    else
                     {
-                        LogFileError(item.ItemSpec, StringEnum.DidNotMinify, path, e.Message);
-                        throw;
+                        // log a WARNING that the minification was skipped -- don't break the build
+                        Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
                     }
+                }
+            }
+            else
+            {
+                // combine the source files and minify the results to a single file
+                if (FileIsWritable(this.CssCombinedFileName))
+                {
+                    // read all the input files into a single source string
+                    var combinedSource = new StringBuilder();
+                    foreach (var item in this.CssSourceFiles)
+                    {
+                        try
+                        {
+                            combinedSource.Append(File.ReadAllText(item.ItemSpec));
+                        }
+                        catch (Exception e)
+                        {
+                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.CssCombinedFileName, e.Message);
+                            throw;
+                        }
+                    }
+
+                    // now minify the entire combined source to the single output file
+                    MinifyStyleSheet(combinedSource.ToString(), Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName);
                 }
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName));
                 }
             }
         }
+
+        #region methods to minify source code
+
+        /// <summary>
+        /// Minify the given source code from the given named source, to the given output path
+        /// </summary>
+        /// <param name="sourceCode">source code to minify</param>
+        /// <param name="sourceName">name of the source</param>
+        /// <param name="outputPath">destination path for resulting minified code</param>
+        private void MinifyJavaScript(string sourceCode, string sourceName, string outputPath)
+        {
+            try
+            {
+                if (m_jsCodeSettings.SymbolsMap != null)
+                {
+                    m_jsCodeSettings.SymbolsMap.StartPackage(outputPath);
+                }
+
+                this.m_minifier.FileName = sourceName;
+                string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_jsCodeSettings);
+                if (this.m_minifier.ErrorList.Count > 0)
+                {
+                    foreach (var error in this.m_minifier.ErrorList)
+                    {
+                        LogContextError(error);
+                    }
+                }
+                else
+                {
+                    if (this.JsEnsureFinalSemicolon && !string.IsNullOrEmpty(minifiedJs))
+                    {
+                        minifiedJs += ';';
+                    }
+
+                    try
+                    {
+                        File.WriteAllText(outputPath, minifiedJs);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(sourceName, StringEnum.NoWritePermission, outputPath);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogFileError(sourceName, StringEnum.DidNotMinify, outputPath, e.Message);
+                throw;
+            }
+            finally
+            {
+                if (m_jsCodeSettings.SymbolsMap != null)
+                {
+                    m_jsCodeSettings.SymbolsMap.EndPackage();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Minify the given CSS source with the given name, to the given output path
+        /// </summary>
+        /// <param name="sourceCode">CSS source to minify</param>
+        /// <param name="sourceName">name of hte source entity</param>
+        /// <param name="outputPath">output path for the minified results</param>
+        private void MinifyStyleSheet(string sourceCode, string sourceName, string outputPath)
+        {
+            try
+            {
+                this.m_minifier.FileName = sourceName;
+                string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_cssCodeSettings);
+                if (this.m_minifier.ErrorList.Count > 0)
+                {
+                    foreach (var error in this.m_minifier.ErrorList)
+                    {
+                        LogContextError(error);
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        File.WriteAllText(outputPath, results);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(outputPath, StringEnum.NoWritePermission, outputPath);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogFileError(sourceName, StringEnum.DidNotMinify, outputPath, e.Message);
+                throw;
+            }
+        }
+
+        #endregion
 
         #region Logging methods
 
