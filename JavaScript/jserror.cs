@@ -100,6 +100,7 @@ namespace Microsoft.Ajax.Utilities
         DuplicateConstantDeclaration = 1297, // duplicate constant declaration
         AssignmentToConstant = 1298, // assignment to constant
         StringNotInlineSafe = 1299, // string literal is not inline safe
+        StrictModeUndefinedVariable = 1300, // undefined variable in strict mode
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

@@ -399,4 +399,7 @@
   <data name="1299" xml:space="preserve">
     <value>String literal is not safe for inline;;String literal is not safe for inline: '{0}'</value>
   </data>
+  <data name="1300" xml:space="preserve">
+    <value>Strict-mode does not allow assignment to undefined variables;;Strict-mode does not allow assignment to undefined variables: '{0}'</value>
+  </data>
 </root>

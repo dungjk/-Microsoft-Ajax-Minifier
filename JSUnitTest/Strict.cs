@@ -115,5 +115,11 @@ namespace JSUnitTest
             // error because it's in strict mode
             TestHelper.Instance.RunTest("-strict -xml");
         }
+
+        [TestMethod]
+        public void UnknownGlobal()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:all", JSError.UndeclaredVariable, JSError.StrictModeUndefinedVariable, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.StrictModeInvalidPreOrPost);
+        }
     }
 }

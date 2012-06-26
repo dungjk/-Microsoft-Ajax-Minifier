@@ -117,10 +117,15 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (ScopeStack.Peek().UseStrict)
                         {
-                            // strict mode cannot assign to lookup "eval" or "arguments"
-                            if (lookup.VariableField.FieldType == FieldType.Arguments
+                            if (lookup.VariableField == null)
+                            {
+                                // strict mode cannot assign to undefined fields
+                                node.Operand1.Context.HandleError(JSError.StrictModeUndefinedVariable, true);
+                            }
+                            else if(lookup.VariableField.FieldType == FieldType.Arguments
                                 || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0))
                             {
+                                // strict mode cannot assign to lookup "eval" or "arguments"
                                 node.Operand1.Context.HandleError(JSError.StrictModeInvalidAssign, true);
                             }
                         }
@@ -2079,11 +2084,10 @@ namespace Microsoft.Ajax.Utilities
                         node.Context.ReportUndefined(node);
 
                         // possibly undefined global (but definitely not local)
+                        var isFunction = node.Parent is CallNode && ((CallNode)(node.Parent)).Function == node;
                         node.Context.HandleError(
-                          (node.Parent is CallNode && ((CallNode)(node.Parent)).Function == node ? JSError.UndeclaredFunction : JSError.UndeclaredVariable),
-                          null,
-                          false
-                          );
+                          (isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable),
+                          false);
                     }
 
                     if (!(scope is GlobalScope))
@@ -2675,9 +2679,9 @@ namespace Microsoft.Ajax.Utilities
                         // with those names anyways.
                         var lookup = node.Operand as Lookup;
                         if (lookup != null
-                            && (lookup.VariableField.FieldType == FieldType.Arguments
-                            || (lookup.VariableField.FieldType == FieldType.Predefined
-                            && string.CompareOrdinal(lookup.Name, "eval") == 0)))
+                            && (lookup.VariableField == null
+                            || lookup.VariableField.FieldType == FieldType.Arguments
+                            || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0)))
                         {
                             node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);
                         }
