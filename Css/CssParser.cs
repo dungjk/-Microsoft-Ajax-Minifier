@@ -3503,6 +3503,79 @@ namespace Microsoft.Ajax.Utilities
                         text = escapedBuilder.ToString();
                     }
                 }
+                else if (tokenType == TokenType.String)
+                {
+                    // we need to make sure that control codes are properly escaped
+                    StringBuilder sb = null;
+                    var startRaw = 0;
+                    for (var ndx = 0; ndx < text.Length; ++ndx)
+                    {
+                        // if it's a control code...
+                        var ch = text[ndx];
+                        if (ch < ' ')
+                        {
+                            // if we haven't created our string builder yet, do it now
+                            if (sb == null)
+                            {
+                                sb = new StringBuilder();
+                            }
+
+                            // add the raw text up to but not including the current character.
+                            // but only if start raw is BEFORE the current index
+                            if (startRaw < ndx)
+                            {
+                                sb.Append(text.Substring(startRaw, ndx - startRaw));
+                            }
+
+                            // add the escaped control character
+                            switch (ch)
+                            {
+                                case '\n':
+                                    sb.Append(@"\n");
+                                    break;
+
+                                case '\f':
+                                    sb.Append(@"\f");
+                                    break;
+
+                                case '\r':
+                                    sb.Append(@"\r");
+                                    break;
+
+                                case '\\':
+                                    sb.Append(@"\\");
+                                    break;
+
+                                default:
+                                    // regular unicode escape
+                                    sb.Append(string.Format(CultureInfo.InvariantCulture, "\\{0:x}", char.ConvertToUtf32(text, ndx)));
+
+                                    // if the NEXT character (if there is one) is a hex digit, 
+                                    // we will need to append a space to signify the end of the escape sequence, since this
+                                    // will never have more than two digits (0 - 1f).
+                                    if (ndx + 1 < text.Length
+                                        && CssScanner.IsH(text[ndx + 1]))
+                                    {
+                                        sb.Append(' ');
+                                    }
+
+                                    break;
+                            }
+
+                            // and update the raw pointer to the next character
+                            startRaw = ndx + 1;
+                        }
+                    }
+
+                    // if we have something left over, add the rest now
+                    if (sb != null && startRaw < text.Length)
+                    {
+                        sb.Append(text.Substring(startRaw));
+                    }
+
+                    // if we built up a string, use it. Otherwise just use what we have.
+                    text = sb == null ? text : sb.ToString();
+                }
 
                 // if it's not a comment, we're going to output it.
                 // if it is a comment, we're not going to SAY we've output anything,
