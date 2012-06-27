@@ -370,7 +370,7 @@ namespace Microsoft.Ajax.Utilities
                 else if (node.OperatorToken == JSToken.Minus)
                 {
                     // minus-minus. Both operations are numeric.
-                    // a-n1-n2 => a-(n1+n2), so we can add the two constants and subtract from 
+                    // (a-n1)-n2 => a-(n1+n2), so we can add the two constants and subtract from 
                     // the left-hand non-constant. 
                     ConstantWrapper newLiteral = NumericAddition(otherConstant, thisConstant);
                     if (newLiteral != null && NoOverflow(newLiteral))
@@ -752,7 +752,8 @@ namespace Microsoft.Ajax.Utilities
                     {
                         if (thisOverOtherLength <= thisConstant.ToCode().Length + otherConstant.ToCode().Length + 1)
                         {
-                            // keep the order, but opposite operator
+                            // swap the operands and opposite operator
+                            rightOperator.SwapOperands();
                             rightOperator.OperatorToken = JSToken.Multiply;
                             RotateFromRight(node, rightOperator, thisOverOther);
                         }

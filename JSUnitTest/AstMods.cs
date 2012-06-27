@@ -195,5 +195,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void ConstantIf()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

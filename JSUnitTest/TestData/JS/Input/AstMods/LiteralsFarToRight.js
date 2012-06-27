@@ -1,5 +1,7 @@
 ﻿var a, b, c;
 
+var test = 6 * (x/2);
+
 // this should work around the string literal
 var d = 5 + (26 - "+0x6") + 0x0f; // 46-"+0x6"
 
@@ -34,3 +36,16 @@ d = 5 / (a / 20);           // 100/a (swap operands)
 d = "5" / (a / 20);         // 100/a (swap operands)
 d = 5 / (a / "20");         // 100/a (swap operands)
 d = "5" / (a / "20");       // 100/a (swap operands)
+
+e = 20 / (a * 5);           // 4/a (swap operands)
+e = "20" / (a * 5);         // 4/a (swap operands)
+e = 20 / (a * "5");         // 4/a (swap operands)
+e = "20" / (a * "5");       // 4/a (swap operands)
+f = 20 * (a / 5);           // 4*a (swap operands)
+f = "20" * (a / 5);         // 4*a (swap operands)
+f = 20 * (a / "5");         // 4*a (swap operands)
+f = "20" * (a / "5");       // 4*a (swap operands)
+g = 20 / (a / 5);           // 100/a (swap operands)
+g = "20" / (a / 5);         // 100/a (swap operands)
+g = 20 / (a / "5");         // 100/a (swap operands)
+g = "20" / (a / "5");       // 100/a (swap operands)

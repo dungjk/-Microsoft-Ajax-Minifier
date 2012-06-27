@@ -116,6 +116,7 @@
     <Content Include="TestData\JS\Expected\Assignments\MultiVars.js" />
     <Content Include="TestData\JS\Expected\AstMods\AspNet.js" />
     <Content Include="TestData\JS\Expected\AstMods\CallToMember.js" />
+    <Content Include="TestData\JS\Expected\AstMods\ConstantIf.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus_H.js" />
     <Content Include="TestData\JS\Expected\AstMods\ExpressionIf.js" />
@@ -371,6 +372,7 @@
     <Content Include="TestData\JS\Input\Assignments\MultiVars.js" />
     <Content Include="TestData\JS\Input\AstMods\AspNet.js" />
     <Content Include="TestData\JS\Input\AstMods\CallToMember.js" />
+    <Content Include="TestData\JS\Input\AstMods\ConstantIf.js" />
     <Content Include="TestData\JS\Input\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Input\AstMods\ExpressionIf.js" />
     <Content Include="TestData\JS\Input\AstMods\IfContinue.js" />

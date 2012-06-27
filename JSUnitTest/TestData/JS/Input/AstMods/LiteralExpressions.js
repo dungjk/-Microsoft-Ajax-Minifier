@@ -343,3 +343,17 @@ var t2 = typeof 1234;           // number
 var t3 = typeof true;           // boolean
 var t4 = typeof null;           // object
 var t5 = typeof {};             // object
+
+// bitwise not
+var bn1 = ~1;                   // -2
+var bn2 = ~0xff;                // -256
+var bn3 = ~-10;                 // 9
+
+// unary plus converts to number
+var up1 = +"-1";                // -1
+var up2 = +"foobar";            // NaN -- so don't evaluate
+var up3 = +true;                // 1
+var up4 = +false;               // 0
+var up5 = +null;                // 0
+var up6 = +"1234";              // 1234
+var up7 = +"0xff";              // 255

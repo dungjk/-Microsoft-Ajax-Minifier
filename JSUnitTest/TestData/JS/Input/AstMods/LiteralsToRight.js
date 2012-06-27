@@ -48,3 +48,6 @@ b = 5 / ("20" / a);         // a/4 (swap the operands)
 b = "5" / ("20" / a);       // a/4 (swap the operands)
 
 
+c = 20 / (5 * a);           // 4/a
+d = 20 * (5 / a);           // 100/a
+a = 20 / (5 / a);           // 4*a
