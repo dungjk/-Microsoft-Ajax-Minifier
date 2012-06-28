@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -213,7 +214,37 @@ namespace Microsoft.Ajax.Utilities
             // (the number of times it's referenced in the code) in DECREASING
             // order. So the variables used most often get named first (presumably
             // with smaller names)
-            return right.RefCount - left.RefCount;
+            var delta = right.RefCount - left.RefCount;
+            if (delta == 0)
+            {
+                // same number of refcounts. Check the line number where they were declared
+                if (left.OriginalContext != null && right.OriginalContext != null)
+                {
+                    delta = left.OriginalContext.StartLineNumber - right.OriginalContext.StartLineNumber;
+                    if (delta == 0)
+                    {
+                        // same line? check the column -- those SHOULD be different
+                        delta = left.OriginalContext.StartColumn - right.OriginalContext.StartColumn;
+                    }
+                }
+                else if (left.OriginalContext != null)
+                {
+                    // right must not have an original context -- put it on the end
+                    return -1;
+                }
+                else if (right.OriginalContext != null)
+                {
+                    // left must not have an original context -- put it on the end
+                    return 1;
+                }
+                else
+                {
+                    // NEITHER have an original context. Order by name; those MUST be different.
+                    delta = string.Compare(left.Name, right.Name, StringComparison.Ordinal);
+                }
+            }
+
+            return delta;
         }
 
         #endregion
