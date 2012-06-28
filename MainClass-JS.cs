@@ -402,8 +402,9 @@ namespace Microsoft.Ajax.Utilities
             // iterate over all the fields
             foreach (JSVariableField variableField in scopeFields)
             {
-                // don't report placeholder fields
-                if (!variableField.IsPlaceholder)
+                // don't report placeholder fields or fields with the SpecialName attribute that aren't referenced
+                if (!variableField.IsPlaceholder
+                    && (variableField.Attributes != FieldAttributes.SpecialName || variableField.IsReferenced))
                 {
                     WriteMemberReport(variableField, scope);
                 }

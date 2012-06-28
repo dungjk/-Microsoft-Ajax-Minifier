@@ -82,6 +82,8 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public event EventHandler<GlobalDefineEventArgs> GlobalDefine;
+
         /// <summary>
         /// List of important comment contexts we encountered before we found the 
         /// current token
@@ -236,6 +238,14 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we have no defined names
                 m_defines = null;
+            }
+        }
+
+        private void OnGlobalDefine(string name)
+        {
+            if (GlobalDefine != null)
+            {
+                GlobalDefine(this, new GlobalDefineEventArgs() { Name = name });
             }
         }
 
@@ -586,6 +596,29 @@ namespace Microsoft.Ajax.Utilities
                                             }
                                         }
                                     }
+                                    else if (CheckCaseInsensitiveSubstring(m_currentPos, "#GLOBALS"))
+                                    {
+                                        // found ///#GLOBALS comment
+                                        m_currentPos += 8;
+                                        SkipBlanks();
+
+                                        // should be one or more space-separated identifiers
+                                        while (!IsLineTerminator(GetChar(m_currentPos), 1))
+                                        {
+                                            var identifier = PPScanIdentifier(false);
+                                            if (identifier != null)
+                                            {
+                                                OnGlobalDefine(identifier);
+                                                SkipBlanks();
+                                            }
+                                            else
+                                            {
+                                                // not an identifier -- ignore the rest of the line
+                                                SkipSingleLineComment();
+                                                goto nextToken;
+                                            }
+                                        }
+                                    }
                                     else if (UsePreprocessorDefines)
                                     {
                                         var testForNot = false;
@@ -600,7 +633,7 @@ namespace Microsoft.Ajax.Utilities
                                             if (!GotEndOfLine)
                                             {
                                                 // get an identifier from the input
-                                                var identifier = PPScanIdentifier();
+                                                var identifier = PPScanIdentifier(true);
                                                 if (!string.IsNullOrEmpty(identifier))
                                                 {
                                                     // set a state so that if we hit an #ELSE directive, we skip to #ENDIF
@@ -671,7 +704,7 @@ namespace Microsoft.Ajax.Utilities
                                             if (!GotEndOfLine)
                                             {
                                                 // get an identifier from the input
-                                                var identifier = PPScanIdentifier();
+                                                var identifier = PPScanIdentifier(true);
                                                 if (!string.IsNullOrEmpty(identifier))
                                                 {
                                                     // if there is no dictionary of defines yet, create one now
@@ -705,7 +738,7 @@ namespace Microsoft.Ajax.Utilities
                                             if (!GotEndOfLine)
                                             {
                                                 // get an identifier from the input
-                                                var identifier = PPScanIdentifier();
+                                                var identifier = PPScanIdentifier(true);
 
                                                 // if there was an identifier and we have a dictionary of "defines" and the
                                                 // identifier is in that dictionary...
@@ -2676,8 +2709,10 @@ namespace Microsoft.Ajax.Utilities
             return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
         }
 
-        private string PPScanIdentifier()
+        private string PPScanIdentifier(bool forceUpper)
         {
+            string identifier = null;
+
             // start at the current position
             var startPos = m_currentPos;
 
@@ -2695,7 +2730,16 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // if we advanced at all, return the code we scanned. Otherwise return null
-            return m_currentPos > startPos ? m_strSourceCode.Substring(startPos, m_currentPos - startPos).ToUpperInvariant() : null;
+            if (m_currentPos > startPos)
+            {
+                identifier = m_strSourceCode.Substring(startPos, m_currentPos - startPos);
+                if (forceUpper)
+                {
+                    identifier = identifier.ToUpperInvariant();
+                }
+            }
+
+            return identifier;
         }
 
         private int PPSkipToDirective(params string[] endStrings)
@@ -2864,5 +2908,10 @@ namespace Microsoft.Ajax.Utilities
 
             return operatorsPrec;
         }
+    }
+
+    public class GlobalDefineEventArgs : EventArgs
+    {
+        public string Name { get; set; }
     }
 }

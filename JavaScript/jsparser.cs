@@ -212,6 +212,18 @@ namespace Microsoft.Ajax.Utilities
             m_blockType = new List<BlockType>(16);
             m_labelTable = new Dictionary<string, LabelInfo>();
             m_severity = 5;
+
+            // if the scanner encounters a special "globals" comment, it'll fire this event
+            // at which point we will define a field with that name in the global scope. 
+            m_scanner.GlobalDefine += (sender, ea) =>
+                {
+                    var globalScope = GlobalScope;
+                    if (globalScope[ea.Name] == null)
+                    {
+                        var field = globalScope.CreateField(ea.Name, null, FieldAttributes.SpecialName);
+                        globalScope.AddField(field);
+                    }
+                };
         }
 
         /// <summary>
