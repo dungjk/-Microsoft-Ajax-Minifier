@@ -2974,7 +2974,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     id = m_scanner.GetIdentifier();
                                 }
-                                
+
                                 Context paramCtx = m_currentToken.Clone();
                                 GetNextToken();
 
@@ -3081,6 +3081,11 @@ namespace Microsoft.Ajax.Utilities
 
                     body.Context.UpdateWith(m_currentToken);
                     fncCtx.UpdateWith(m_currentToken);
+                }
+                catch (EndOfFileException)
+                {
+                    // if we get an EOF here, we never had a chance to find the closing curly-brace
+                    fncCtx.HandleError(JSError.UnclosedFunction, true);
                 }
                 catch (RecoveryTokenException exc)
                 {

@@ -101,6 +101,7 @@ namespace Microsoft.Ajax.Utilities
         AssignmentToConstant = 1298, // assignment to constant
         StringNotInlineSafe = 1299, // string literal is not inline safe
         StrictModeUndefinedVariable = 1300, // undefined variable in strict mode
+        UnclosedFunction = 1301, // end of file encountered before function is properly closed
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"
