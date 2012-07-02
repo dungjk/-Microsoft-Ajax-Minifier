@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -160,6 +161,24 @@ namespace JSUnitTest
         public void Braces_source()
         {
             TestHelper.Instance.RunTest("-line:m -braces:source");
+        }
+
+        [TestMethod]
+        public void IgnoreErrors()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.VariableDefinedNotReferenced, JSError.NoRightParenthesis);
+        }
+
+        [TestMethod]
+        public void IgnoreErrors_some()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:none -ignore:js1138,JS1135,Js1268", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.NoRightParenthesis);
+        }
+
+        [TestMethod]
+        public void IgnoreErrors_all()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:none -ignore:All");
         }
     }
 }

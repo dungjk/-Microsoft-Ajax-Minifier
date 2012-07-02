@@ -742,9 +742,15 @@ namespace JSUnitTest
 
             bool testPassed = true;
             List<JSError> expectedErrorList = new List<JSError>(expectedErrorArray);
-            ErrorTrap errorTrap = new ErrorTrap();
-            string crunchedCode = errorTrap.RunTest(switchParser.JSSettings, jsSource);
-            JScriptException[] errors = errorTrap.Errors;
+
+            List<JScriptExceptionEventArgs> errorList = new List<JScriptExceptionEventArgs>();
+            var parser = new JSParser(jsSource);
+            parser.CompilerError += (source, e) =>
+                {
+                    errorList.Add(e);
+                };
+            var block = parser.Parse(switchParser.JSSettings);
+            var crunchedCode = block.ToCode();
 
             // output the crunched code using the proper output encoding
             using (var outputStream = new StreamWriter(outputPath, false, MainClass.GetJSEncoding(switchParser.EncodingOutputName)))
@@ -754,9 +760,17 @@ namespace JSUnitTest
 
             Trace.WriteLine(string.Empty);
             Trace.WriteLine("---ERRORS---");
-            Trace.Indent();
-            foreach (JScriptException ex in errors)
+            foreach (var err in errorList)
             {
+                Trace.WriteLine(err.Error.ToString());
+            }
+
+            Trace.WriteLine(string.Empty);
+            Trace.Indent();
+            foreach (var ea in errorList)
+            {
+                var ex = ea.Exception;
+
                 // log the error
                 Trace.WriteLine(string.Empty);
                 Trace.WriteLine(string.Format("Error 0x{0:X} at Line {1}, Column {2}: {3}", ex.Error, ex.Line, ex.Column, ex.ErrorSegment));
@@ -818,38 +832,6 @@ namespace JSUnitTest
 
             Assert.IsTrue(CompareTextFiles(outputPath, expectedPath), "The expected output ({1}) and actual output ({0}) do not match!", outputPath, expectedPath);
             Assert.IsTrue(testPassed, "Test failed");
-        }
-
-        private class ErrorTrap
-        {
-            private List<JScriptException> m_errorList;
-            public JScriptException[] Errors
-            {
-                get { return m_errorList.ToArray(); }
-            }
-
-            public ErrorTrap()
-            {
-                m_errorList = new List<JScriptException>();
-            }
-
-            public string RunTest(CodeSettings codeSettings, string sourceCode)
-            {
-                JSParser jsParser = new JSParser(sourceCode);
-                jsParser.CompilerError += OnCompilerError;
-
-                // kick off the parsing
-                Block programBlock = jsParser.Parse(codeSettings);
-
-                // return the crunched code
-                return programBlock.ToCode();
-            }
-
-            void OnCompilerError(object sender, JScriptExceptionEventArgs ex)
-            {
-                // add it to the list and keep on truckin'
-                m_errorList.Add(ex.Exception);
-            }
         }
 
         #region helper methods

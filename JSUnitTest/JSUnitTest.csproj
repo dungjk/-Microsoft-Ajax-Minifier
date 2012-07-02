@@ -330,6 +330,9 @@
     <Content Include="TestData\JS\Expected\Switch\Braces_source.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault_h.js" />
+    <Content Include="TestData\JS\Expected\Switch\IgnoreErrors.js" />
+    <Content Include="TestData\JS\Expected\Switch\IgnoreErrors_all.js" />
+    <Content Include="TestData\JS\Expected\Switch\IgnoreErrors_some.js" />
     <Content Include="TestData\JS\Expected\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Expected\Switch\LineBreak_BreakMultiIndent.js" />
     <Content Include="TestData\JS\Expected\Switch\LineBreak_BreakSingle.js" />
@@ -535,6 +538,7 @@
     <Content Include="TestData\JS\Input\Strict\With.js" />
     <Content Include="TestData\JS\Input\Switch\Braces.js" />
     <Content Include="TestData\JS\Input\Switch\EmptyDefault.js" />
+    <Content Include="TestData\JS\Input\Switch\IgnoreErrors.js" />
     <Content Include="TestData\JS\Input\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Input\Switch\NoDefaultEmptyCases.js" />
