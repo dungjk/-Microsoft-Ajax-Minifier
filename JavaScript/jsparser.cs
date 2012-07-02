@@ -118,7 +118,7 @@ namespace Microsoft.Ajax.Utilities
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.ContextError.#ctor(System.Boolean,System.Int32,System.String,System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Int32,System.String)")]
         internal bool OnCompilerError(JScriptException se)
         {
-            if (CompilerError != null)
+            if (CompilerError != null && !m_settings.IgnoreAllErrors)
             {
                 // format the error code
                 string errorCode = string.Format(CultureInfo.InvariantCulture, "JS{0}", (se.Error & (0xffff)));

@@ -190,6 +190,12 @@ namespace Microsoft.Ajax.Utilities
         #region IgnoreErrors list
 
         /// <summary>
+        /// Gets or sets a flag for whether to ignore ALL errors found in the input code.
+        /// Default is false.
+        /// </summary>
+        public bool IgnoreAllErrors { get; set; }
+
+        /// <summary>
         /// Collection of errors to ignore
         /// </summary>
         public ReadOnlyCollection<string> IgnoreErrors { get; private set; }

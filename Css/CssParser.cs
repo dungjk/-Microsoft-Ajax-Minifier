@@ -3998,7 +3998,7 @@ namespace Microsoft.Ajax.Utilities
 
         protected void OnCssError(CssException exception)
         {
-            if (CssError != null && exception != null)
+            if (CssError != null && exception != null && !Settings.IgnoreAllErrors)
             {
                 // format our CSS error code
                 string errorCode = string.Format(CultureInfo.InvariantCulture, "CSS{0}", (exception.Error & (0xffff)));

@@ -120,6 +120,7 @@ namespace Microsoft.Ajax.Utilities
                 EvalLiteralExpressions = this.EvalLiteralExpressions,
                 EvalTreatment = this.EvalTreatment,
                 IgnoreConditionalCompilation = this.IgnoreConditionalCompilation,
+                IgnoreAllErrors = this.IgnoreAllErrors,
                 IgnoreErrorList = this.IgnoreErrorList,
                 IndentSize = this.IndentSize,
                 InlineSafeStrings = this.InlineSafeStrings,

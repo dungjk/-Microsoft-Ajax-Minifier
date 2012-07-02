@@ -728,18 +728,27 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string errorCode in paramPart.Split(','))
+                                    foreach (string errorCode in paramPartUpper.Split(','))
                                     {
-                                        // if we haven't created the list yet, do it now
-                                        if (ignoreErrors == null)
+                                        if (string.CompareOrdinal(errorCode, "ALL") == 0)
                                         {
-                                            ignoreErrors = new List<string>();
+                                            // we want to ignore ALL errors. So set the appropriate flag
+                                            JSSettings.IgnoreAllErrors =
+                                                CssSettings.IgnoreAllErrors = true;
                                         }
-
-                                        // don't add duplicates
-                                        if (!ignoreErrors.Contains(errorCode))
+                                        else
                                         {
-                                            ignoreErrors.Add(errorCode);
+                                            // if we haven't created the list yet, do it now
+                                            if (ignoreErrors == null)
+                                            {
+                                                ignoreErrors = new List<string>();
+                                            }
+
+                                            // don't add duplicates
+                                            if (!ignoreErrors.Contains(errorCode))
+                                            {
+                                                ignoreErrors.Add(errorCode);
+                                            }
                                         }
                                     }
                                 }

@@ -61,6 +61,7 @@ namespace Microsoft.Ajax.Utilities
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 ColorNames = this.ColorNames,
                 CommentMode = this.CommentMode,
+                IgnoreAllErrors = this.IgnoreAllErrors,
                 IgnoreErrorList = this.IgnoreErrorList,
                 IndentSize = this.IndentSize,
                 KillSwitch = this.KillSwitch,
