@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -115,6 +116,12 @@ namespace JSUnitTest
         public void OuterIsGlobal()
         {
             TestHelper.Instance.RunTest("-rename:all");
+        }
+
+        [TestMethod]
+        public void Collision()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:all", JSError.AmbiguousVariable);
         }
     }
 }

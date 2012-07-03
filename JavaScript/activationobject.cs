@@ -371,8 +371,35 @@ namespace Microsoft.Ajax.Utilities
                             }
                             else if (scopeField.OuterField == null)
                             {
-                                // found the original field -- stop looking
-                                break;
+                                // found AN original field -- see if it matches our field's outer field
+                                // OR our outer field's outer field, etc
+                                if (IsOuterParent(variableField, scopeField))
+                                {
+                                    // this is the outer field -- we're done
+                                    break;
+                                }
+                                else
+                                {
+                                    // NOT A MATCH! we have an ambiguous situation here. When we resolved
+                                    // the original variable, it resolved to something farther up the chain.
+                                    // let's add our variable to the verboten list so we don't get a naming
+                                    // collision and keep moving up the chain
+                                    if (!scope.Verboten.ContainsKey(variableField))
+                                    {
+                                        scope.Verboten.Add(variableField, variableField);
+                                    }
+
+                                    // one scenario this happens in is if a catch variable is named the same
+                                    // name as a variable in a child scope that references an outer variable.
+                                    // the catch variable adds a placeholder variable in the parent scope AFTER
+                                    // the child reference is resolved to the outer scope.
+                                    // throw a warning
+                                    var context = variableField.OriginalContext ?? scopeField.OriginalContext;
+                                    if (context != null)
+                                    {
+                                        context.HandleError(JSError.AmbiguousVariable, false);
+                                    }
+                                }
                             }
                         }
                     }
@@ -462,6 +489,25 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
+        }
+
+        private bool IsOuterParent(JSVariableField thisField, JSVariableField targetOuterField)
+        {
+            var isOuterParent = false;
+            var outerField = thisField.OuterField;
+            while (outerField != null)
+            {
+                // see if the outer reference matches the target
+                if (outerField == targetOuterField)
+                {
+                    isOuterParent = true;
+                    break;
+                }
+
+                // go up next level of outer references
+                outerField = outerField.OuterField;
+            }
+            return isOuterParent;
         }
 
         internal virtual void ValidateGeneratedNames()

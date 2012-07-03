@@ -405,4 +405,7 @@
   <data name="1301" xml:space="preserve">
     <value>End of file encountered before function is properly closed</value>
   </data>
+  <data name="1302" xml:space="preserve">
+    <value>Ambiguous variable name;;Ambiguous variable name '{0}'. Cross-browser behavior difference.</value>
+  </data>
 </root>

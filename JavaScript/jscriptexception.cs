@@ -339,7 +339,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     switch ((JSError)(ec & 0xFFFF))
                     {
-                        case JSError.AmbiguousCatchVar: 
+                        case JSError.AmbiguousVariable:
+                        case JSError.AmbiguousCatchVar:
                         case JSError.AmbiguousNamedFunctionExpression:
                         case JSError.NumericOverflow:
                         case JSError.StrictComparisonIsAlwaysTrueOrFalse:

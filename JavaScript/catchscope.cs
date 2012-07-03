@@ -32,6 +32,7 @@ namespace Microsoft.Ajax.Utilities
 
             // add it to the catch-scope's name table
             var field = new JSVariableField(FieldType.Argument, m_name, 0, null);
+            field.OriginalContext = argContext;
             NameTable[m_name] = field;
             FieldTable.Add(field);
         }
@@ -80,6 +81,7 @@ namespace Microsoft.Ajax.Utilities
                     // other fields in that scope if we are renaming fields
                     outerField = definingScope.CreateField(m_name, null, 0);
                     outerField.IsPlaceholder = true;
+                    outerField.OriginalContext = this.Context;
                     definingScope.AddField(outerField);
                 }
 

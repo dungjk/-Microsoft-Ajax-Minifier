@@ -428,7 +428,7 @@ namespace Microsoft.Ajax.Utilities
               "BlockScopeHeader",
               blockType,
               blockScope.Context.StartLineNumber,
-              blockScope.Context.StartColumn,
+              blockScope.Context.StartColumn + 1,
               knownMarker
               ));
         }
@@ -526,7 +526,7 @@ namespace Microsoft.Ajax.Utilities
               StringMgr.GetString(functionType),
               funcObj.Name,
               funcObj.Context.StartLineNumber,
-              funcObj.Context.StartColumn,
+              funcObj.Context.StartColumn + 1,
               status,
               crunched
               ));
@@ -571,13 +571,21 @@ namespace Microsoft.Ajax.Utilities
                     crunched = StringMgr.GetString("MemberInfoWithPossibly", outerScope, outerType);
                 }
 
+                var definedLocation = string.Empty;
+                var definedContext = (variableField.OuterField ?? variableField).OriginalContext;
+                if (definedContext != null)
+                {
+                    definedLocation = StringMgr.GetString("MemberInfoDefinedLocation", definedContext.StartLineNumber, definedContext.StartColumn + 1);
+                }
+
                 // format the entire string
                 WriteProgress(StringMgr.GetString(
                  "MemberInfoFormat",
                  name,
                  scope,
                  type,
-                 crunched
+                 crunched,
+                 definedLocation
                  ));
             }
         }

@@ -139,7 +139,7 @@
     <value>With</value>
   </data>
   <data name="CrunchedTo" xml:space="preserve">
-    <value>Renamed;;[{1} references renamed to {0}]</value>
+    <value>Renamed;; [{1} references renamed to {0}]</value>
   </data>
   <data name="CrunchingFile" xml:space="preserve">
     <value>Minifying file...;;Minifying file '{0}'...</value>
@@ -184,7 +184,7 @@
     <value>-GLOBAL parameter expects format: -GLOBAL:g[,g]*</value>
   </data>
   <data name="MemberInfoFormat" xml:space="preserve">
-    <value>Member Info;;  {0} [{1}{2}] {3}</value>
+    <value>Member Info;;  {0} [{1}{2}]{3}{4}</value>
   </data>
   <data name="MemberInfoGlobalFunction" xml:space="preserve">
     <value>global function</value>
@@ -581,5 +581,8 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   </data>
   <data name="MemberInfoLocalConst" xml:space="preserve">
     <value>const</value>
+  </data>
+  <data name="MemberInfoDefinedLocation" xml:space="preserve">
+    <value>DefinedAt;; [defined ({0},{1})]</value>
   </data>
 </root>

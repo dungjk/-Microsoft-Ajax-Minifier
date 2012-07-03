@@ -148,6 +148,7 @@
     <Content Include="TestData\JS\Expected\Booleans\Boolean.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\Ambiguous.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\Ambiguous_h.js" />
+    <Content Include="TestData\JS\Expected\CatchVariable\Collision.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\NoOuter.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\NoOuter_h.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterIsGlobal.js" />
@@ -404,6 +405,7 @@
     <Content Include="TestData\JS\Input\BlockOpts\VarReturn.js" />
     <Content Include="TestData\JS\Input\Booleans\Boolean.js" />
     <Content Include="TestData\JS\Input\CatchVariable\Ambiguous.js" />
+    <Content Include="TestData\JS\Input\CatchVariable\Collision.js" />
     <Content Include="TestData\JS\Input\CatchVariable\NoOuter.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterIsGlobal.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterNotRef.js" />
