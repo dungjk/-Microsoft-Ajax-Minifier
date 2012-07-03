@@ -125,13 +125,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                // output as comma-separated expressions starting with the first one
-                node[0].Accept(this);
-
-                // this should never be the first element of the line, but
-                // just in case, reset the flag after the first expression.
-                m_startOfStatement = false;
-
                 // see if this parent is a comma operator whose parent in turn is a block.
                 // if so, then these expressions were expression statements that we've combined.
                 // if that's the case, we're going to put newlines in so it's a little easier
@@ -140,8 +133,20 @@ namespace Microsoft.Ajax.Utilities
                     && node.Parent.Parent is Block
                     && Settings.OutputMode == OutputMode.MultipleLines;
 
-                // in case we need to go to a new line, let's indent so it looks nice.
-                Indent();
+                // output as comma-separated expressions starting with the first one
+                node[0].Accept(this);
+
+                // this should never be the first element of the line, but
+                // just in case, reset the flag after the first expression.
+                m_startOfStatement = false;
+
+                // if we aren't breaking them up by newlines, indent now in case
+                // one of the items causes a newline to be inserted.
+                if (!addNewLines)
+                {
+                    Indent();
+                }
+
                 for (var ndx = 1; ndx < node.Count; ++ndx)
                 {
                     // output a comma
@@ -155,8 +160,11 @@ namespace Microsoft.Ajax.Utilities
                     node[ndx].Accept(this);
                 }
 
-                // unindent our indention
-                Unindent();
+                // if we aren't breaking by newlines, unindent our previous indent
+                if (!addNewLines)
+                {
+                    Unindent();
+                }
 
                 EndSymbol(symbol);
             }
@@ -180,6 +188,13 @@ namespace Microsoft.Ajax.Utilities
                         {
                             Output(',');
                             m_startOfStatement = false;
+
+                            // if the parent is a block, then the comma operator is separating
+                            // expression statements -- so break it on the line
+                            if (node.Parent is Block)
+                            {
+                                NewLine();
+                            }
                         }
                     }
 
@@ -795,11 +810,15 @@ namespace Microsoft.Ajax.Utilities
                             // to show anyways
                             Output(InlineSafeString(EscapeString(node.Value.ToString())));
                         }
-                        else if (!Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals)
-                            || node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0
+                        else if (!Settings.IsModificationAllowed(TreeModifications.MinifyStringLiterals))
+                        {
+                            // we don't want to modify the strings at all!
+                            Output(node.Context.Code);
+                        }
+                        else if (node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0
                             || (Settings.AllowEmbeddedAspNetBlocks && node.StringContainsAspNetReplacement))
                         {
-                            // we'd rather show the raw string
+                            // we'd rather show the raw string, but make sure it's safe for inlining
                             Output(InlineSafeString(node.Context.Code));
                         }
                         else
