@@ -787,7 +787,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // just get the JS encoding; we're not going to be outputting anything with this encoding
             // object, so it doesn't matter which output encoding fallback object we have on it.
-            var encoding = GetJSEncoding(encodingName);
+            var encoding = GetJSEncoding(encodingName ?? "UTF-8");
             if (encoding == null)
             {
                 throw new UsageException(m_outputMode, "InvalidInputEncoding", encodingName);
