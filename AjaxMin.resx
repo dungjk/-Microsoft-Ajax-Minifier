@@ -338,12 +338,12 @@ Valid OPTS are zero or more of:
         code. Default is new.
   -clobber[:BOOL] &gt; when false, will not overwrite existing output file.
         True always writes output file. Default is false.
-  -define:NAME[,NAME]* &gt; add defined case-insensitive names to the list used 
+  -define:NAME(,NAME)* &gt; add defined case-insensitive names to the list used 
         by the preprocessor.
   -echo &gt; output is an echo of the original input.
   -enc:(in|out) ENC &gt; input or output file text encoding.
   -help &gt; display this usage message.
-  -ignore:ERRCODE[,ERRCODE]* &gt; ignore one or more possible errors
+  -ignore:ERRCODE(,ERRCODE)* &gt; ignore one or more possible errors
   -line[:[N][,[multiple|single][,[N]]]] &gt; set the line-break treatments. 
         The first integer value is the line-break threshold: after reaching 
         that many characters in a single line, the line will break at the next
@@ -370,7 +370,7 @@ Valid JSOPTS are zero or more of:
         Default is true.
   -comments:(none|important) &gt; whether to remove all comments (none), 
         or preserve important comments. Default is important.
-  -debug[:BOOL[,IDENT[.IDENT]*]*] &gt; debug mode does not remove debug 
+  -debug[:BOOL(,IDENT(.IDENT)*)*] &gt; debug mode does not remove debug 
         statements or function expression names. Default is False (remove).
         Default debug lookups: Debug, $Debug, WAssert, Web.Debug and Msn.Debug.
         To specify debug lookups to remove, add them comma-separated after the
@@ -386,7 +386,7 @@ Valid JSOPTS are zero or more of:
         allows all function names to be renamed. Default is onlyref.
   -global:IDENT(,IDENT)* &gt; specify one or more external global variables the
         code references. May be repeated as needed.
-  -inline[:(BOOL|force|noforce)[,(BOOL|force|noforce)]*] &gt; whether to make 
+  -inline[:(BOOL|force|noforce)(,(BOOL|force|noforce))*] &gt; whether to make 
         sure strings are safe for HTML inline script, and whether to force 
         inline-safety in the source by throwing an error (FORCE) when 
         potentially unsafe literals are encountered. Default is True and 
@@ -440,7 +440,7 @@ N is a valid non-negative integer.
 IDENT is a valid JavaScript identifier (case-sensitive).
 NAME is a valid JavaScript identifier (case-insensitive).
 ENC is a valid .NET text encoding scheme name (e.g.: UTF-8).
-ERRCODE is a case-insensitive error code, e.g.: JS1028 or CSS1059.
+ERRCODE is a case-insensitive error code (e.g.: JS1028 or CSS1059) or "all".
 IFILE is a valid path to an existing source file.
 OFILE is a valid path to the output file. Existing files will be clobbered
         if the -CLOBBER option is specified.
@@ -476,7 +476,9 @@ Everything is case-insensitive unless otherwise noted.
 If no OFILE specified, output sent to STDOUT.
 If no IFILE and no XFILE, input comes from STDIN.
 If input comes from STDIN, -JS or -CSS option must be specified.
-Multiple IFILE files will be concatenated to the output.</value>
+Multiple IFILE files will be concatenated to the output.
+
+Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   </data>
   <data name="ResourceArgNeedsPath" xml:space="preserve">
     <value>-RES parameter must be followed by path to existing resource file</value>
