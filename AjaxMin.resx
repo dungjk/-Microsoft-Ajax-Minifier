@@ -326,7 +326,7 @@
   </data>
   <data name="Usage" xml:space="preserve">
     <value>Usage;;Usage:
-{0} [-JS [JSOPTS]|-CSS[:CSSTYP] [CSSOPTS]] OPTS* ((IFILE* [-out OFILE])|(-xml XFILE [-out ODIR]))
+{0} [([-JS] [JSOPTS])|([-CSS[:CSSTYP]] [CSSOPTS])] OPTS* ((IFILE* [-out OFILE] [-map MFILE])|(-xml XFILE [-out ODIR]))
 
 Valid OPTS are zero or more of:
   -analyze &gt; provide extra analysis output.
@@ -342,7 +342,7 @@ Valid OPTS are zero or more of:
         by the preprocessor.
   -echo &gt; output is an echo of the original input.
   -enc:(in|out) ENC &gt; input or output file text encoding.
-  -help &gt; display this usage message.
+  -help or -? &gt; display this usage message.
   -ignore:ERRCODE(,ERRCODE)* &gt; ignore one or more possible errors
   -line[:[N][,[multiple|single][,[N]]]] &gt; set the line-break treatments. 
         The first integer value is the line-break threshold: after reaching 
@@ -354,6 +354,7 @@ Valid OPTS are zero or more of:
         how many spaces to use for each indent level if multi-line output is 
         used; default is 4. Any or all of the three value may be omitted to
         indicate the default value.
+  -out OFILE &gt; output file to create from concatenating all input files.
   -pretty[:N] &gt; causes output to be on multiple lines, with N spaces per tab
         stop (default N is 4). Also turns off all local renaming and other 
         code-optimizations, unless otherwise explicitly turned on via other
@@ -363,14 +364,16 @@ Valid OPTS are zero or more of:
   -silent &gt; silent mode; no error, warning, or message output.
   -term &gt; ensure output ends in semicolon or other valid terminator.
   -warn[:N] &gt; warning level for error messages sent to stderr.
-  -? &gt; same as -help.
+  -xml XFILE &gt; optional XML input file.
+  -out ODIR &gt; used in conjunction with -xml switch to specify output
+        directory.
   
 Valid JSOPTS are zero or more of:
   -cc[:BOOL] &gt; turn on or off support for conditional-compilation comments.
         Default is true.
   -comments:(none|important) &gt; whether to remove all comments (none), 
         or preserve important comments. Default is important.
-  -debug[:BOOL(,IDENT(.IDENT)*)*] &gt; debug mode does not remove debug 
+  -debug[:BOOL(,NS)*] &gt; debug mode does not remove debug 
         statements or function expression names. Default is False (remove).
         Default debug lookups: Debug, $Debug, WAssert, Web.Debug and Msn.Debug.
         To specify debug lookups to remove, add them comma-separated after the
@@ -391,11 +394,13 @@ Valid JSOPTS are zero or more of:
         inline-safety in the source by throwing an error (FORCE) when 
         potentially unsafe literals are encountered. Default is True and 
         noforce.
-  -literals:(keep|combine, eval|noeval) &gt; two literal treatment options:
-        whether to combine duplicate literals or keep them. Default is keep;
-        whether to evaluate literal expressions or keep them. Default is eval.
+  -kill:DEC or -kill:0xHEX &gt; specify one more more kill switches.
+        Default is 0.
+  -literals:(eval|noeval) &gt; whether to evaluate literal expressions or 
+        keep them. Default is eval.
   -mac[:BOOL] &gt; whether to add code to ensure output works in Mac Safari
         browsers. Default is True.
+  -map MFILE &gt; name of the output map file.
   -minify[:BOOL] &gt; whether to run any minification optimizations beyond
         simple white-space and comment-removal on the parsed JavaScript code. 
         Default is True.
@@ -430,24 +435,31 @@ Valid CSSOPTS are zero or more of:
   -colors:(hex|strict|major) &gt; how to treat color names: always convert to
         hexadecimal values, use strict color names if shorter, or use major-
         browser color names if shorter. Default is strict.
-  -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw), or
-        minify them as JavaScript expressions (minify). Default is minify.
+  -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw),
+        or minify them as JavaScript expressions (minify). Default is minify.
 
 CSSTYP can be full (full stylesheet) or decls (just a declaration list).
         Default is full.
-BOOL can be 1, 0, true, false, T, F, Yes, No, Y, or N.
-N is a valid non-negative integer.
+BOOL can be (true|false|t|f|yes|no|y|n|1|0); case-insensitive.
+N is a valid non-negative integer: (0|1|2|3|4|5|6|7|8|9)+. 
+DEC is a valid decimal integer: [+|-]DEC. 
+HEX is a valid case-insensitive hexadecimal integer: (DEC|a|b|c|d|e|f)+. 
+ERRCODE is a case-insensitive error code (e.g.: JS1028 or CSS1059) 
+        or the word “ALL”. 
 IDENT is a valid JavaScript identifier (case-sensitive).
 NAME is a valid JavaScript identifier (case-insensitive).
+NS is a valid case-sensitive JavaScript namespace: IDENT[.IDENT]*.
 ENC is a valid .NET text encoding scheme name (e.g.: UTF-8).
-ERRCODE is a case-insensitive error code (e.g.: JS1028 or CSS1059) or "all".
 IFILE is a valid path to an existing source file.
 OFILE is a valid path to the output file. Existing files will be clobbered
         if the -CLOBBER option is specified.
 XFILE is a valid path to an existing XML input file.
-ODIR is a valid path to an output folder.
+ODIR is a valid path to an output folder. 
 RFILE is a valid path to an existing .RESX or .RESOURCES file.
 NFILE is a valid path to an existing XML input file.
+MFILE is a valid path to a writable output source map file. 
+CSSTYP can be full (default; expects full stylesheet), or decls (only list
+        of declarations, as in the style attribute of an HTML element). 
 
 XFILE XML format (XML element names and attributes are case-sensitive):
     &lt;root&gt;
