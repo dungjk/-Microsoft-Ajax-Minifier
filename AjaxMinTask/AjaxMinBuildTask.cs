@@ -286,7 +286,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// Ensures the final semicolon in minified JS file.
         /// </summary>
-        public bool JsEnsureFinalSemicolon { get; set;}
+        public bool JsEnsureFinalSemicolon 
+        {
+            get { return this.m_jsCodeSettings.TermSemicolons; }
+            set { this.m_jsCodeSettings.TermSemicolons = value; }
+        }
 
         /// <summary>
         /// <see cref="CodeSettings.CollapseToLiteral"/> for more information.
@@ -708,30 +712,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // combine the sources into a single file and minify the results
                 if (FileIsWritable(this.JsCombinedFileName))
                 {
-                    // read all the input files into a single source string
-                    var combinedSource = new StringBuilder();
-                    foreach (var item in this.JsSourceFiles)
+                    var minifiedJs = MinifyAndConcatenateJavaScript();
+                    try
                     {
-                        try
-                        {
-                            // add the source file to the combines source builder
-                            combinedSource.Append(File.ReadAllText(item.ItemSpec));
-
-                            // always stuff a semicolon after the source file; if the file doesn't end with a properly-terminated
-                            // statement, then this will terminate it properly so the next file (if any) doesn't get confused.
-                            // If it does already end properly, this just sticks an empty statement after it, which will get
-                            // minified out of the results anyway.
-                            combinedSource.Append(';');
-                        }
-                        catch (Exception e)
-                        {
-                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.JsCombinedFileName, e.Message);
-                            throw;
-                        }
+                        File.WriteAllText(this.JsCombinedFileName, minifiedJs);
                     }
-
-                    // now minify the entire combined source to the single output file
-                    MinifyJavaScript(combinedSource.ToString(), Path.GetFileName(this.JsCombinedFileName), this.JsCombinedFileName);
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(this.JsCombinedFileName, StringEnum.NoWritePermission, this.JsCombinedFileName);
+                    }
                 }
                 else
                 {
@@ -777,23 +766,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // combine the source files and minify the results to a single file
                 if (FileIsWritable(this.CssCombinedFileName))
                 {
-                    // read all the input files into a single source string
-                    var combinedSource = new StringBuilder();
-                    foreach (var item in this.CssSourceFiles)
+                    var minifiedResults = MinifyAndConcatenateStyleSheet();
+                    try
                     {
-                        try
-                        {
-                            combinedSource.Append(File.ReadAllText(item.ItemSpec));
-                        }
-                        catch (Exception e)
-                        {
-                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.CssCombinedFileName, e.Message);
-                            throw;
-                        }
+                        File.WriteAllText(this.CssCombinedFileName, minifiedResults);
                     }
-
-                    // now minify the entire combined source to the single output file
-                    MinifyStyleSheet(combinedSource.ToString(), Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName);
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(this.CssCombinedFileName, StringEnum.NoWritePermission, this.CssCombinedFileName);
+                    }
                 }
                 else
                 {
@@ -831,11 +812,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
                 else
                 {
-                    if (this.JsEnsureFinalSemicolon && !string.IsNullOrEmpty(minifiedJs))
-                    {
-                        minifiedJs += ';';
-                    }
-
                     try
                     {
                         File.WriteAllText(outputPath, minifiedJs);
@@ -858,6 +834,76 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     m_jsCodeSettings.SymbolsMap.EndPackage();
                 }
             }
+        }
+
+        private string MinifyAndConcatenateJavaScript()
+        {
+            var outputBuilder = new StringBuilder();
+
+            // we need to make sure that files 0 through length-1 use the setting
+            // value that ensures proper termination of the code so it concatenates
+            // properly. So save the setting value, set the value to true, then
+            // make sure to restore it for the last file
+            var savedSetting = this.m_jsCodeSettings.TermSemicolons;
+            this.m_jsCodeSettings.TermSemicolons = true;
+
+            try
+            {
+                if (m_jsCodeSettings.SymbolsMap != null)
+                {
+                    m_jsCodeSettings.SymbolsMap.StartPackage(this.JsCombinedFileName);
+                }
+
+                for(var ndx = 0; ndx < this.JsSourceFiles.Length; ++ndx)
+                {
+                    var item = this.JsSourceFiles[ndx];
+                    try
+                    {
+                        var sourceCode = File.ReadAllText(item.ItemSpec);
+
+                        this.m_minifier.FileName = item.ItemSpec;
+
+                        // if this is the last file, restore the setting to its original value
+                        if (ndx == this.JsSourceFiles.Length - 1)
+                        {
+                            this.m_jsCodeSettings.TermSemicolons = savedSetting;
+                        }
+
+                        string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_jsCodeSettings);
+                        if (this.m_minifier.ErrorList.Count > 0)
+                        {
+                            foreach (var error in this.m_minifier.ErrorList)
+                            {
+                                LogContextError(error);
+                            }
+                        }
+
+                        outputBuilder.Append(minifiedJs);
+                        if (this.m_jsCodeSettings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            outputBuilder.AppendLine();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.JsCombinedFileName, e.Message);
+                        throw;
+                    }
+                }
+            }
+            finally
+            {
+                // make SURE we restore that setting
+                this.m_jsCodeSettings.TermSemicolons = savedSetting;
+
+                // close the symbol map if we are creating one
+                if (m_jsCodeSettings.SymbolsMap != null)
+                {
+                    m_jsCodeSettings.SymbolsMap.EndPackage();
+                }
+            }
+
+            return outputBuilder.ToString();
         }
 
         /// <summary>
@@ -896,6 +942,43 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 LogFileError(sourceName, StringEnum.DidNotMinify, outputPath, e.Message);
                 throw;
             }
+        }
+
+        private string MinifyAndConcatenateStyleSheet()
+        {
+            var outputBuilder = new StringBuilder();
+
+            // minify each input files and send the results to the string builder
+            foreach (var item in this.CssSourceFiles)
+            {
+                try
+                {
+                    var sourceCode = File.ReadAllText(item.ItemSpec);
+
+                    this.m_minifier.FileName = item.ItemSpec;
+                    string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_cssCodeSettings);
+                    if (this.m_minifier.ErrorList.Count > 0)
+                    {
+                        foreach (var error in this.m_minifier.ErrorList)
+                        {
+                            LogContextError(error);
+                        }
+                    }
+
+                    outputBuilder.Append(results);
+                    if (this.m_cssCodeSettings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        outputBuilder.AppendLine();
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.CssCombinedFileName, e.Message);
+                    throw;
+                }
+            }
+
+            return outputBuilder.ToString();
         }
 
         #endregion
