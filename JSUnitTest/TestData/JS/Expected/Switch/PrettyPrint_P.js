@@ -7,9 +7,9 @@ function foo()
     try
     {
         d = a * b;
-        while(d > 0)
+        while (d > 0)
         {
-            switch(c)
+            switch (c)
             {
                 case"three":
                     c = 10;
@@ -21,7 +21,7 @@ function foo()
                     c = c * 2;
                     break
             }
-            if(!c)
+            if (!c)
             {
                 debugger;
                 c = 1
@@ -35,12 +35,12 @@ function foo()
     }
     catch(e)
     {
-        for(var f = 0; f < b; ++f)
+        for (var f = 0; f < b; ++f)
             a = a * d
     }
     finally
     {
-        if(!a)
+        if (!a)
             b = -1;
         else
             b = a

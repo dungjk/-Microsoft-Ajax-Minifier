@@ -3,11 +3,11 @@
     var ext,
         ndx,
         suffix;
-    if(bar)
+    if (bar)
     {
-        for(ext = bar,ndx = 0; ndx < 10; ++ndx)
+        for (ext = bar, ndx = 0; ndx < 10; ++ndx)
         {
-            switch(ndx)
+            switch (ndx)
             {
                 case 2:
                     suffix = "x";

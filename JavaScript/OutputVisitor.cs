@@ -90,6 +90,10 @@ namespace Microsoft.Ajax.Utilities
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
+                            if (Settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                OutputPossibleLineBreak(' ');
+                            }
                         }
 
                         var element = node.Elements[ndx];
@@ -150,11 +154,16 @@ namespace Microsoft.Ajax.Utilities
                 for (var ndx = 1; ndx < node.Count; ++ndx)
                 {
                     // output a comma
-                    Output(',');
+                    OutputPossibleLineBreak(',');
                     if (addNewLines)
                     {
                         NewLine();
                     }
+                    else if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
 
                     // output the next node
                     node[ndx].Accept(this);
@@ -186,7 +195,7 @@ namespace Microsoft.Ajax.Utilities
                         // if we don't have a right-hand operator, don't bother with the comma
                         if (node.Operand2 != null)
                         {
-                            Output(',');
+                            OutputPossibleLineBreak(',');
                             m_startOfStatement = false;
 
                             // if the parent is a block, then the comma operator is separating
@@ -194,6 +203,10 @@ namespace Microsoft.Ajax.Utilities
                             if (node.Parent is Block)
                             {
                                 NewLine();
+                            }
+                            else if (Settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                OutputPossibleLineBreak(' ');
                             }
                         }
                     }
@@ -238,14 +251,14 @@ namespace Microsoft.Ajax.Utilities
                         if (node.OperatorToken != JSToken.Comma)
                         {
                             // anything other than a comma operator has a space before it, too
-                            Output(' ');
+                            OutputPossibleLineBreak(' ');
                         }
 
                         Output(OperatorString(node.OperatorToken));
                         BreakLine(false);
                         if (!m_onNewLine)
                         {
-                            Output(' ');
+                            OutputPossibleLineBreak(' ');
                         }
                     }
                     else
@@ -416,7 +429,7 @@ namespace Microsoft.Ajax.Utilities
                         NewLine();
                     }
 
-                    Output('}');
+                    OutputPossibleLineBreak('}');
                 }
                 else if (mightNeedSemicolon && Settings.TermSemicolons)
                 {
@@ -518,6 +531,10 @@ namespace Microsoft.Ajax.Utilities
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
+                            if (Settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                OutputPossibleLineBreak(' ');
+                            }
                         }
 
                         var argument = node.Arguments[ndx];
@@ -720,11 +737,12 @@ namespace Microsoft.Ajax.Utilities
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(" ?");
+                    OutputPossibleLineBreak(' ');
+                    OutputPossibleLineBreak('?');
                     BreakLine(false);
                     if (!m_onNewLine)
                     {
-                        Output(' ');
+                        OutputPossibleLineBreak(' ');
                     }
                 }
                 else
@@ -741,11 +759,12 @@ namespace Microsoft.Ajax.Utilities
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(" :");
+                    OutputPossibleLineBreak(' ');
+                    OutputPossibleLineBreak(':');
                     BreakLine(false);
                     if (!m_onNewLine)
                     {
-                        Output(' ');
+                        OutputPossibleLineBreak(' ');
                     }
                 }
                 else
@@ -1013,12 +1032,17 @@ namespace Microsoft.Ajax.Utilities
 
                     if (Settings.OutputMode == OutputMode.MultipleLines)
                     {
-                        Output(' ');
+                        OutputPossibleLineBreak(' ');
                     }
                 }
 
-                Output("while(");
-                BreakLine(false);
+                Output("while");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Condition != null)
                 {
@@ -1037,7 +1061,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                Output("for(");
+                Output("for");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Variable != null)
                 {
@@ -1067,7 +1097,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                Output("for(");
+                Output("for");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Initializer != null)
                 {
@@ -1081,7 +1117,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak(';');
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(' ');
+                    OutputPossibleLineBreak(' ');
                 }
 
                 if (node.Condition != null)
@@ -1092,7 +1128,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak(';');
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(' ');
+                    OutputPossibleLineBreak(' ');
                 }
 
                 if (node.Incrementer != null)
@@ -1199,7 +1235,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                Output("if(");
+                Output("if");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Condition != null)
                 {
@@ -1353,9 +1395,10 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // if the last character is an identifier part, then we will
-                // want to insert a space character so our identifier doesn't
-                // merge with the previous character
+                // all identifier should be treated as if they start with a valid
+                // identifier character. That might not always be the case, like when
+                // we consider an ASP.NET block to output the start of an identifier.
+                // so let's FORCE the insert-space logic here.
                 if (JSScanner.IsValidIdentifierPart(m_lastCharacter))
                 {
                     Output(' ');
@@ -1408,7 +1451,7 @@ namespace Microsoft.Ajax.Utilities
                             && !numericText.StartsWith("(", StringComparison.Ordinal))
                         {
                             // no period - wrap it in parent
-                            Output('(');
+                            OutputPossibleLineBreak('(');
                             Output(numericText);
                             Output(')');
                         }
@@ -1543,7 +1586,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputPossibleLineBreak(':');
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    Output(' ');
+                    OutputPossibleLineBreak(' ');
                 }
 
                 EndSymbol(symbol);
@@ -1581,6 +1624,11 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
                     Indent();
                     node.Operand.Accept(this);
                     Unindent();
@@ -1596,7 +1644,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                Output("switch(");
+                Output("switch");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Expression != null)
                 {
@@ -1729,6 +1783,11 @@ namespace Microsoft.Ajax.Utilities
                 Output("try");
                 if (node.TryBlock == null || node.TryBlock.Count == 0)
                 {
+                    if (Settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        OutputPossibleLineBreak(' ');
+                    }
+
                     Output("{}");
                     BreakLine(false);
                 }
@@ -1759,6 +1818,11 @@ namespace Microsoft.Ajax.Utilities
 
                     if (node.CatchBlock == null || node.CatchBlock.Count == 0)
                     {
+                        if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            OutputPossibleLineBreak(' ');
+                        }
+
                         Output("{}");
                         BreakLine(false);
                     }
@@ -1784,6 +1848,11 @@ namespace Microsoft.Ajax.Utilities
                     Output("finally");
                     if (node.FinallyBlock == null || node.FinallyBlock.Count == 0)
                     {
+                        if (Settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            OutputPossibleLineBreak(' ');
+                        }
+
                         Output("{}");
                         BreakLine(false);
                     }
@@ -1835,7 +1904,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                             else if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
-                                Output(' ');
+                                OutputPossibleLineBreak(' ');
                             }
                         }
 
@@ -1884,11 +1953,12 @@ namespace Microsoft.Ajax.Utilities
 
                         if (Settings.OutputMode == OutputMode.MultipleLines && Settings.IndentSize > 0)
                         {
-                            Output(" =");
+                            OutputPossibleLineBreak(' ');
+                            OutputPossibleLineBreak('=');
                             BreakLine(false);
                             if (!m_onNewLine)
                             {
-                                Output(' ');
+                                OutputPossibleLineBreak(' ');
                             }
                         }
                         else
@@ -1923,7 +1993,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                Output("while(");
+                Output("while");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.Condition != null)
                 {
@@ -1942,7 +2018,13 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 var symbol = StartSymbol(node);
-                Output("with(");
+                Output("with");
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                OutputPossibleLineBreak('(');
                 m_startOfStatement = false;
                 if (node.WithObject != null)
                 {
@@ -2132,15 +2214,32 @@ namespace Microsoft.Ajax.Utilities
 
         private void OutputPossibleLineBreak(char ch)
         {
-            // always output the character, although we can line-break
-            // after it if needed
-            m_outputStream.Write(ch);
-            m_onNewLine = false;
-            m_lastCharacter = ch;
-            ++m_lineLength;
+            if (ch == ' ')
+            {
+                // break the line if it's already too long, but don't force it
+                BreakLine(false);
 
-            // break the line if it's too long, but don't force it
-            BreakLine(false);
+                // if we aren't on a new line, then output our space character
+                if (!m_onNewLine)
+                {
+                    m_outputStream.Write(ch);
+                    m_lastCharacter = ch;
+                    ++m_lineLength;
+                }
+            }
+            else
+            {
+                // always output the character, although we can line-break
+                // after it if needed
+                InsertSpaceIfNeeded(ch);
+                m_outputStream.Write(ch);
+                m_onNewLine = false;
+                m_lastCharacter = ch;
+                ++m_lineLength;
+
+                // break the line if it's too long, but don't force it
+                BreakLine(false);
+            }
         }
 
         private void ReplaceableSemicolon()
@@ -2399,7 +2498,7 @@ namespace Microsoft.Ajax.Utilities
                             OutputPossibleLineBreak(',');
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
-                                Output(' ');
+                                OutputPossibleLineBreak(' ');
                             }
                         }
 
