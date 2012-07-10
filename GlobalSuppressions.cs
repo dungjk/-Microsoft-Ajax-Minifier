@@ -32,3 +32,5 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "decls", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "noforce", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times", Scope = "member", Target = "Microsoft.Ajax.Utilities.MainClass.#CalculateGzipSize(System.Byte[])")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "ajaxmin", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1703:ResourceStringsShouldBeSpelledCorrectly", MessageId = "codeplex", Scope = "resource", Target = "Microsoft.Ajax.Utilities.AjaxMin.resources")]

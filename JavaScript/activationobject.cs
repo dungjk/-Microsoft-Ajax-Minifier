@@ -491,7 +491,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool IsOuterParent(JSVariableField thisField, JSVariableField targetOuterField)
+        private static bool IsOuterParent(JSVariableField thisField, JSVariableField targetOuterField)
         {
             var isOuterParent = false;
             var outerField = thisField.OuterField;
