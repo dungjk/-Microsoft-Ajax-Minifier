@@ -1034,7 +1034,9 @@ namespace Microsoft.Ajax.Utilities
 
                 string crunchedCode = outputBuilder.ToString();
 
-                Encoding encodingOutput = GetOutputEncoding(crunchGroup.InputType, crunchGroup.Output.EncodingName);
+                Encoding encodingOutput = GetOutputEncoding(
+                    crunchGroup.InputType, 
+                    crunchGroup.Output.EncodingName ?? m_switchParser.EncodingOutputName);
 
                 // now write the final output file
                 if (string.IsNullOrEmpty(crunchGroup.Output.Path))

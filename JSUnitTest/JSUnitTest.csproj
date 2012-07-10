@@ -363,6 +363,7 @@
     <Content Include="TestData\JS\Expected\XmlInput\EncOutputNone_koi8r.js" />
     <Content Include="TestData\JS\Expected\XmlInput\EncOutputRussian.js" />
     <Content Include="TestData\JS\Expected\XmlInput\EncOutputRussian_big5.js" />
+    <Content Include="TestData\JS\Expected\XmlInput\EncOutputRussian_big5out.js" />
     <Content Include="TestData\JS\Expected\XmlInput\FirstOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\OneOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.js" />

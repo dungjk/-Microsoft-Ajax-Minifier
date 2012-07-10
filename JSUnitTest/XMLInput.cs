@@ -67,7 +67,8 @@ namespace JSUnitTest
         public void EncInputRussian()
         {
             // Russian has encoding inline; will be decoded properly, but not the Chinese
-            TestHelper.Instance.RunTest("-xml");
+            // output should be utf-8
+            TestHelper.Instance.RunTest("-xml -enc:out utf-8");
         }
 
         [TestMethod]
@@ -75,7 +76,17 @@ namespace JSUnitTest
         {
             // Russian has encoding inline; will be decoded properly.
             // Chinese big5 encoding specified as default, so both will be decoded properly
-            TestHelper.Instance.RunTest("-xml -enc:in big5");
+            TestHelper.Instance.RunTest("-xml -enc:in big5 -enc:out utf-8");
+        }
+
+        [TestMethod]
+        public void EncInputRussian_big5out()
+        {
+            // Russian has encoding inline; will be decoded properly.
+            // Chinese big5 encoding specified as default, so both will be decoded properly.
+            // but we're output-encoding to koi8-r, so the russian should be good-to-go, but the
+            // Chinese should be JS-encoded.
+            TestHelper.Instance.RunTest("-xml -enc:in big5 -enc:out koi8-r");
         }
     }
 }
