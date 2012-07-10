@@ -209,6 +209,8 @@ namespace JSUnitTest
                             XmlOutputData outputData = ReadXmlForOutputFiles(inputPath, testClass);
                             outputFiles = outputData.OutputFiles;
                             outputMapFiles = outputData.OutputMapFiles;
+
+                            // generate the expected file names from the output file names, plus any test qualifiers
                         }
                         else if (string.Compare(option, "-rename", StringComparison.OrdinalIgnoreCase) == 0)
                         {
@@ -490,16 +492,26 @@ namespace JSUnitTest
             {
                 if (outputFiles != null && outputFiles.Count > 0)
                 {
+                    // get the test suffix, if any
+                    var testSuffix = string.Empty;
+                    var ndxUnderscore = testName.IndexOf('_');
+                    if (ndxUnderscore > 0)
+                    {
+                        // we have one. Use it as a suffix for the expected file
+                        testSuffix = testName.Substring(ndxUnderscore);
+                    }
+
                     // for each one...
                     for (int ndx = 0; ndx < outputFiles.Count; ++ndx)
                     {
                         outputPath = outputFiles[ndx];
 
-                        // compute the expected file path from the filename of the output path.
+                        // compute the expected file path from the filename of the output path
+                        // with any test extension added
                         string expectedPath = GetJsPath(
                             m_expectedFolder,
                             testClass,
-                            Path.GetFileName(outputPath),
+                            Path.GetFileNameWithoutExtension(outputPath) + testSuffix + Path.GetExtension(outputPath),
                             false
                             );
 

@@ -48,5 +48,34 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-xml -reorder:F");
         }
+
+        [TestMethod]
+        public void EncInputNone()
+        {
+            // neither Russian nor Chinese should be decoded properly
+            TestHelper.Instance.RunTest("-xml");
+        }
+
+        [TestMethod]
+        public void EncInputNone_koi8r()
+        {
+            // Russian will be decoded properly, but not the Chinese
+            TestHelper.Instance.RunTest("-xml -enc:in koi8-r");
+        }
+
+        [TestMethod]
+        public void EncInputRussian()
+        {
+            // Russian has encoding inline; will be decoded properly, but not the Chinese
+            TestHelper.Instance.RunTest("-xml");
+        }
+
+        [TestMethod]
+        public void EncInputRussian_big5()
+        {
+            // Russian has encoding inline; will be decoded properly.
+            // Chinese big5 encoding specified as default, so both will be decoded properly
+            TestHelper.Instance.RunTest("-xml -enc:in big5");
+        }
     }
 }

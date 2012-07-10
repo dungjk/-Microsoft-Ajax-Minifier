@@ -359,6 +359,10 @@
     <Content Include="TestData\JS\Expected\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\With.js" />
     <Content Include="TestData\JS\Expected\XmlInput\Combined.css" />
+    <Content Include="TestData\JS\Expected\XmlInput\EncOutputNone.js" />
+    <Content Include="TestData\JS\Expected\XmlInput\EncOutputNone_koi8r.js" />
+    <Content Include="TestData\JS\Expected\XmlInput\EncOutputRussian.js" />
+    <Content Include="TestData\JS\Expected\XmlInput\EncOutputRussian_big5.js" />
     <Content Include="TestData\JS\Expected\XmlInput\FirstOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\OneOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.js" />
@@ -553,6 +557,10 @@
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Input\XmlInput\EncInputRussian.xml" />
+    <Content Include="TestData\JS\Input\XmlInput\EncInput1.js" />
+    <Content Include="TestData\JS\Input\XmlInput\EncInput2.js" />
+    <Content Include="TestData\JS\Input\XmlInput\EncInputNone.xml" />
     <Content Include="TestData\JS\Input\XmlInput\XmlWithSymbolMap.xml" />
     <Content Include="TestData\JS\Input\XmlInput\Input1.css" />
     <Content Include="TestData\JS\Input\XmlInput\Input1.js" />
