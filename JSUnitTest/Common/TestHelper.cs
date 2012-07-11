@@ -915,6 +915,11 @@ namespace JSUnitTest
         {
             Assert.IsTrue(File.Exists(leftPath), "File does not exist: {0}", leftPath);
 
+            Trace.WriteLine(string.Empty);
+            Trace.WriteLine("MAP COMPARISON");
+            Trace.WriteLine(string.Format("odd \"{0}\" \"{1}\"", rightPath, leftPath));
+            Trace.WriteLine(string.Empty);
+
             using (XmlReader leftReader = XmlReader.Create(leftPath))
             using (XmlReader rightReader = XmlReader.Create(rightPath))
             {

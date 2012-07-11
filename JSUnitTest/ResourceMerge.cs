@@ -33,7 +33,7 @@ namespace JSUnitTest
         [TestMethod]
         public void ResourceResx_I()
         {
-            TestHelper.Instance.RunTest("-res:Strings -echo");
+            TestHelper.Instance.RunTest("-res:Strings -echo -enc:out ascii");
         }
 
         [TestMethod]

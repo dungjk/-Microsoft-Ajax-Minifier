@@ -18,22 +18,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CssUnitTest
 {
-  /// <summary>
-  /// Summary description for Encoding
-  /// </summary>
-  [TestClass]
-  public class Encoding
-  {
-    [TestMethod]
-    public void Escaped()
+    /// <summary>
+    /// Summary description for Encoding
+    /// </summary>
+    [TestClass]
+    public class Encoding
     {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod]
+        public void Escaped()
+        {
+            TestHelper.Instance.RunTest("-enc:out ascii");
+        }
 
-    [TestMethod]
-    public void Escaped_utf8()
-    {
-      TestHelper.Instance.RunTest("-enc:out utf-8");
+        [TestMethod]
+        public void Escaped_utf8()
+        {
+            TestHelper.Instance.RunTest("-enc:out utf-8");
+        }
     }
-  }
 }

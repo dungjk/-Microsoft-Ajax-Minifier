@@ -18,31 +18,31 @@ namespace JSUnitTest
         [TestMethod]
         public void ManualRename()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-enc:out ascii");
         }
 
         [TestMethod]
         public void ManualRename_cmd()
         {
-            TestHelper.Instance.RunTest("-rename:globalFunction=_g,oneGlobal=g1,oneLocal=l1 -rename:oneParam=p1,twoParam=p2,nameOne=n1,你好=中文,while=for");
+            TestHelper.Instance.RunTest("-rename:globalFunction=_g,oneGlobal=g1,oneLocal=l1 -rename:oneParam=p1,twoParam=p2,nameOne=n1,你好=中文,while=for -enc:out ascii");
         }
 
         [TestMethod]
         public void ManualRename_rename()
         {
-            TestHelper.Instance.RunTest("-rename Rename.xml");
+            TestHelper.Instance.RunTest("-rename Rename.xml -enc:out ascii");
         }
 
         [TestMethod]
         public void ManualRename_noprops()
         {
-            TestHelper.Instance.RunTest("-rename Rename.xml -rename:noprops");
+            TestHelper.Instance.RunTest("-rename Rename.xml -rename:noprops -enc:out ascii");
         }
 
         [TestMethod]
         public void ManualRename_all()
         {
-            TestHelper.Instance.RunTest("-rename:all");
+            TestHelper.Instance.RunTest("-rename:all -enc:out ascii");
         }
 
         [TestMethod]
@@ -54,7 +54,7 @@ namespace JSUnitTest
         [TestMethod]
         public void ManualRename_norename()
         {
-            TestHelper.Instance.RunTest("-rename:all -rename NoRename.xml");
+            TestHelper.Instance.RunTest("-rename:all -rename NoRename.xml -enc:out ascii");
         }
 
         [TestMethod]

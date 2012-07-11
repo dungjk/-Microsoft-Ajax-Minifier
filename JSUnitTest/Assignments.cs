@@ -29,7 +29,7 @@ namespace JSUnitTest
     [TestMethod()]
     public void Assign()
     {
-      TestHelper.Instance.RunTest();
+      TestHelper.Instance.RunTest("-enc:out ascii");
     }
 
     [DeploymentItem("AjaxMin.exe")]

@@ -121,7 +121,7 @@ namespace JSUnitTest
     public void Strings()
     {
       // outputs ascii-escaped characters
-      TestHelper.Instance.RunTest();
+      TestHelper.Instance.RunTest("-enc:out ascii");
     }
 
     [DeploymentItem("AjaxMin.exe")]

@@ -45,7 +45,7 @@ namespace CssUnitTest
     [TestMethod]
     public void PseudoClass()
     {
-        TestHelper.Instance.RunTest();
+        TestHelper.Instance.RunTest("-enc:out ascii");
     }
 
     [TestMethod]

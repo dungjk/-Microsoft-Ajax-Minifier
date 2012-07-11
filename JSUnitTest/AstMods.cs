@@ -78,7 +78,7 @@ namespace JSUnitTest
         [TestMethod]
         public void CallToMember()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-enc:out ascii");
         }
 
         [TestMethod]

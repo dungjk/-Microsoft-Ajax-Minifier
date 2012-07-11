@@ -737,8 +737,9 @@ namespace Microsoft.Ajax.Utilities
             Encoding encoding = null;
             if (string.IsNullOrEmpty(encodingName))
             {
-                // clone the ascii encoder so we can change the fallback handler
-                encoding = (Encoding)Encoding.ASCII.Clone();
+                // nothing specified -- use our default encoding of UTF-8.
+                // clone the utf-8 encoder so we can change the fallback handler
+                encoding = (Encoding)Encoding.UTF8.Clone();
                 encoding.EncoderFallback = fallback;
             }
             else
