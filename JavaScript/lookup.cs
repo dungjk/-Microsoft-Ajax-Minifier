@@ -165,11 +165,11 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                // we want to look through the settings object and see if we match any of the
-                // debug lookups specified therein.
-                if (Parser.Settings.DebugLookups != null)
+                // we want to look through the parser's debug lookup list (if there is one)
+                // and see if we match any of the debug lookups specified therein.
+                if (Parser.DebugLookups != null)
                 {
-                    foreach (var lookup in Parser.Settings.DebugLookups)
+                    foreach (var lookup in Parser.DebugLookups)
                     {
                         // see if there's a period in this lookup
                         var firstPeriod = lookup.IndexOf('.');

@@ -48,6 +48,18 @@ namespace Microsoft.Ajax.Utilities
 
         private Block m_program;
 
+        // we're going to copy the debug lookups from the settings passed to us,
+        // then use this collection, because we might programmatically add more
+        // as we process the code, and we don't want to change the settings object.
+        private List<string> m_debugLookups;
+        public IList<string> DebugLookups
+        {
+            get
+            {
+                return m_debugLookups;
+            }
+        }
+
         // label related info
         private List<BlockType> m_blockType;
         private Dictionary<string, LabelInfo> m_labelTable;
@@ -256,6 +268,30 @@ namespace Microsoft.Ajax.Utilities
             // if we are passed null, just create a default settings object
             m_settings = settings ?? new CodeSettings();
 
+            // copy the debug lookups from the settings to our own object
+            // that we can modify without having to worry about modifying the
+            // settings. Pass the list on to the scanner object, too, since it
+            // might be adding debug lookups as it scans the code.
+            if (settings.StripDebugStatements)
+            {
+                // if the settings list is not null, use it to initialize a new list
+                // with the same settings. If it is null, initialize an empty list 
+                // because we already determined that we want to strip debug statements,
+                // and the scanner might add items to the list as it scans the source.
+                m_debugLookups = m_settings.DebugLookups != null
+                    ? new List<string>(settings.DebugLookups)
+                    : new List<string>();
+            }
+            else
+            {
+                // not stripping debug statements, so set the list to null
+                // so we don't waste time parsing comments or trying to iterate
+                // over the list.
+                m_debugLookups = null;
+            }
+
+            m_scanner.DebugLookups = m_debugLookups;
+
             m_scanner.AllowEmbeddedAspNetBlocks = m_settings.AllowEmbeddedAspNetBlocks;
             m_scanner.IgnoreConditionalCompilation = m_settings.IgnoreConditionalCompilation;
 
@@ -344,6 +380,14 @@ namespace Microsoft.Ajax.Utilities
 
             if (scriptBlock != null && Settings.MinifyCode)
             {
+                // if we have a debug lookup list but there are no debug lookups, 
+                // set our internal debug lookup list to null so we don't bother 
+                // trying to iterate over it later and waste a bunch of time
+                if (m_debugLookups != null && m_debugLookups.Count == 0)
+                {
+                    m_debugLookups = null;
+                }
+
                 // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
                 // unnests blocks, identifies prologue directives, and sets the strict mode on scopes. 
                 ReorderScopeVisitor.Apply(scriptBlock, this);
@@ -443,6 +487,14 @@ namespace Microsoft.Ajax.Utilities
             
             if (block != null && Settings.MinifyCode)
             {
+                // if we have a debug lookup list but there are no debug lookups, 
+                // set our internal debug lookup list to null so we don't bother 
+                // trying to iterate over it later and waste a bunch of time
+                if (m_debugLookups != null && m_debugLookups.Count == 0)
+                {
+                    m_debugLookups = null;
+                }
+
                 // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
                 // and unnests blocks. 
                 ReorderScopeVisitor.Apply(block, this);

@@ -289,6 +289,9 @@
     <Content Include="TestData\JS\Expected\Operators\Void.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\BadDefines.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\BadIfDef.js" />
+    <Content Include="TestData\JS\Expected\Preprocessor\DebugClear.js" />
+    <Content Include="TestData\JS\Expected\Preprocessor\DebugSet.js" />
+    <Content Include="TestData\JS\Expected\Preprocessor\DebugSet_debug.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Defines.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbar.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbarmeow.js" />
@@ -511,6 +514,8 @@
     <Content Include="TestData\JS\Input\Operators\Void.js" />
     <Content Include="TestData\JS\Input\Preprocessor\BadDefines.js" />
     <Content Include="TestData\JS\Input\Preprocessor\BadIfDef.js" />
+    <Content Include="TestData\JS\Input\Preprocessor\DebugClear.js" />
+    <Content Include="TestData\JS\Input\Preprocessor\DebugSet.js" />
     <Content Include="TestData\JS\Input\Preprocessor\Defines.js" />
     <Content Include="TestData\JS\Input\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Input\Renaming\Collide.xml" />

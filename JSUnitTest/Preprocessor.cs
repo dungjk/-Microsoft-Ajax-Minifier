@@ -90,5 +90,23 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-define:foo");
         }
+
+        [TestMethod]
+        public void DebugSet()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void DebugSet_debug()
+        {
+            TestHelper.Instance.RunTest("-debug");
+        }
+
+        [TestMethod]
+        public void DebugClear()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

@@ -82,6 +82,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        // a list of strings that we can add new ones to or clear
+        // depending on comments we may find in the source
+        public IList<string> DebugLookups
+        {
+            get;
+            set;
+        }
+
         public event EventHandler<GlobalDefineEventArgs> GlobalDefine;
 
         /// <summary>
@@ -582,6 +590,59 @@ namespace Microsoft.Ajax.Utilities
                                     // check for some AjaxMin preprocessor comments
                                     if (CheckCaseInsensitiveSubstring(m_currentPos, "#DEBUG"))
                                     {
+                                        // advance to the next character. If it's an equal sign, then this
+                                        // debug comment is setting a debug namespace, not marking debug code.
+                                        if (GetChar(m_currentPos += 6) == '=')
+                                        {
+                                            // we have ///#DEBUG=
+                                            // if the debug lookup list is null, 
+                                            // then we don't care about trying to add new ones or clear 
+                                            // existing list, so just skip over the comment.
+                                            if (DebugLookups != null)
+                                            {
+                                                // get the namespace after the equal sign
+                                                ++m_currentPos;
+                                                var identifier = PPScanIdentifier(false);
+                                                if (identifier == null)
+                                                {
+                                                    // nothing. clear the debug namespaces
+                                                    DebugLookups.Clear();
+                                                }
+                                                else
+                                                {
+                                                    // see if we have a period and keep looping to get IDENT(.IDENT)*
+                                                    while (GetChar(m_currentPos) == '.')
+                                                    {
+                                                        ++m_currentPos;
+                                                        var nextIdentifier = PPScanIdentifier(false);
+                                                        if (nextIdentifier != null)
+                                                        {
+                                                            identifier += '.' + nextIdentifier;
+                                                        }
+                                                        else
+                                                        {
+                                                            // problem with the formatting -- ignore this comment
+                                                            identifier = null;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if (identifier != null)
+                                                    {
+                                                        // add the identifier to the debug list
+                                                        DebugLookups.Add(identifier);
+                                                    }
+                                                }
+                                            }
+
+                                            // make sure we skip the rest of the line (if any)
+                                            // and loop back up for a new token
+                                            SkipSingleLineComment();
+                                            goto nextToken;
+                                        }
+                                        
+                                        // NOT a debug namespace assignment comment, so this is the start
+                                        // of a debug block. If we are skipping debug blocks, start skipping now.
                                         if (SkipDebugBlocks)
                                         {
                                             // skip until we hit ///#ENDDEBUG, but only if we are stripping debug statements
