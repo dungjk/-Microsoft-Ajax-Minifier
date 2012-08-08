@@ -82,14 +82,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        // a list of strings that we can add new ones to or clear
-        // depending on comments we may find in the source
-        public IList<string> DebugLookups
-        {
-            get;
-            set;
-        }
-
         public event EventHandler<GlobalDefineEventArgs> GlobalDefine;
 
         /// <summary>
@@ -104,6 +96,15 @@ namespace Microsoft.Ajax.Utilities
         public bool HasImportantComments
         {
             get { return m_importantComments != null && m_importantComments.Count > 0; }
+        }
+
+        // a list of strings that we can add new ones to or clear
+        // depending on comments we may find in the source
+        private IList<string> m_debugLookups;
+
+        public void SetDebugLookupList(IList<string> debugLookups)
+        {
+            m_debugLookups = debugLookups;
         }
 
         /// <summary>
@@ -598,7 +599,7 @@ namespace Microsoft.Ajax.Utilities
                                             // if the debug lookup list is null, 
                                             // then we don't care about trying to add new ones or clear 
                                             // existing list, so just skip over the comment.
-                                            if (DebugLookups != null)
+                                            if (m_debugLookups != null)
                                             {
                                                 // get the namespace after the equal sign
                                                 ++m_currentPos;
@@ -606,7 +607,7 @@ namespace Microsoft.Ajax.Utilities
                                                 if (identifier == null)
                                                 {
                                                     // nothing. clear the debug namespaces
-                                                    DebugLookups.Clear();
+                                                    m_debugLookups.Clear();
                                                 }
                                                 else
                                                 {
@@ -630,7 +631,7 @@ namespace Microsoft.Ajax.Utilities
                                                     if (identifier != null)
                                                     {
                                                         // add the identifier to the debug list
-                                                        DebugLookups.Add(identifier);
+                                                        m_debugLookups.Add(identifier);
                                                     }
                                                 }
                                             }

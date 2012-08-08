@@ -1779,100 +1779,113 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 var symbol = StartSymbol(node);
-
-                Output("try");
-                if (node.TryBlock == null || node.TryBlock.Count == 0)
-                {
-                    if (Settings.OutputMode == OutputMode.MultipleLines)
-                    {
-                        OutputPossibleLineBreak(' ');
-                    }
-
-                    Output("{}");
-                    BreakLine(false);
-                }
-                else
-                {
-                    if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
-                        || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.TryBlock.BraceOnNewLine))
-                    {
-                        NewLine();
-                    }
-                    else if (Settings.OutputMode == OutputMode.MultipleLines)
-                    {
-                        OutputPossibleLineBreak(' ');
-                    }
-
-                    node.TryBlock.Accept(this);
-                }
+                OutputTryBranch(node);
 
                 var hasCatchBlock = false;
                 if (!string.IsNullOrEmpty(node.CatchVarName))
                 {
                     hasCatchBlock = true;
-
-                    NewLine();
-                    Output("catch(");
-                    Output(node.CatchVariable != null ? node.CatchVariable.ToString() : node.CatchVarName);
-                    OutputPossibleLineBreak(')');
-
-                    if (node.CatchBlock == null || node.CatchBlock.Count == 0)
-                    {
-                        if (Settings.OutputMode == OutputMode.MultipleLines)
-                        {
-                            OutputPossibleLineBreak(' ');
-                        }
-
-                        Output("{}");
-                        BreakLine(false);
-                    }
-                    else
-                    {
-                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
-                            || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.CatchBlock.BraceOnNewLine))
-                        {
-                            NewLine();
-                        }
-                        else if (Settings.OutputMode == OutputMode.MultipleLines)
-                        {
-                            OutputPossibleLineBreak(' ');
-                        }
-
-                        node.CatchBlock.Accept(this);
-                    }
+                    OutputCatchBranch(node);
                 }
 
                 if (!hasCatchBlock || (node.FinallyBlock != null && node.FinallyBlock.Count > 0))
                 {
-                    NewLine();
-                    Output("finally");
-                    if (node.FinallyBlock == null || node.FinallyBlock.Count == 0)
-                    {
-                        if (Settings.OutputMode == OutputMode.MultipleLines)
-                        {
-                            OutputPossibleLineBreak(' ');
-                        }
-
-                        Output("{}");
-                        BreakLine(false);
-                    }
-                    else
-                    {
-                        if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
-                            || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.FinallyBlock.BraceOnNewLine))
-                        {
-                            NewLine();
-                        }
-                        else if (Settings.OutputMode == OutputMode.MultipleLines)
-                        {
-                            OutputPossibleLineBreak(' ');
-                        }
-
-                        node.FinallyBlock.Accept(this);
-                    }
+                    OutputFinallyBranch(node);
                 }
 
                 EndSymbol(symbol);
+            }
+        }
+
+        private void OutputTryBranch(TryNode node)
+        {
+            Output("try");
+            if (node.TryBlock == null || node.TryBlock.Count == 0)
+            {
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                Output("{}");
+                BreakLine(false);
+            }
+            else
+            {
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.TryBlock.BraceOnNewLine))
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                node.TryBlock.Accept(this);
+            }
+        }
+
+        private void OutputCatchBranch(TryNode node)
+        {
+            NewLine();
+            Output("catch(");
+            Output(node.CatchVariable != null ? node.CatchVariable.ToString() : node.CatchVarName);
+            OutputPossibleLineBreak(')');
+
+            if (node.CatchBlock == null || node.CatchBlock.Count == 0)
+            {
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                Output("{}");
+                BreakLine(false);
+            }
+            else
+            {
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.CatchBlock.BraceOnNewLine))
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                node.CatchBlock.Accept(this);
+            }
+        }
+
+        private void OutputFinallyBranch(TryNode node)
+        {
+            NewLine();
+            Output("finally");
+            if (node.FinallyBlock == null || node.FinallyBlock.Count == 0)
+            {
+                if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                Output("{}");
+                BreakLine(false);
+            }
+            else
+            {
+                if (Settings.BlocksStartOnSameLine == BlockStart.NewLine
+                    || (Settings.BlocksStartOnSameLine == BlockStart.UseSource && node.FinallyBlock.BraceOnNewLine))
+                {
+                    NewLine();
+                }
+                else if (Settings.OutputMode == OutputMode.MultipleLines)
+                {
+                    OutputPossibleLineBreak(' ');
+                }
+
+                node.FinallyBlock.Accept(this);
             }
         }
 

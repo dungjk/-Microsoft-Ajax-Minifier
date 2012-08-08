@@ -290,7 +290,8 @@ namespace Microsoft.Ajax.Utilities
                 m_debugLookups = null;
             }
 
-            m_scanner.DebugLookups = m_debugLookups;
+            // pass our list to the scanner -- it might add more as we encounter special comments
+            m_scanner.SetDebugLookupList(m_debugLookups);
 
             m_scanner.AllowEmbeddedAspNetBlocks = m_settings.AllowEmbeddedAspNetBlocks;
             m_scanner.IgnoreConditionalCompilation = m_settings.IgnoreConditionalCompilation;
