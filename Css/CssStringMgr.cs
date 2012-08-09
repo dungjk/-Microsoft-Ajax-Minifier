@@ -97,6 +97,7 @@ namespace Microsoft.Ajax.Utilities
         ExpectedSum,
         ExpectedMinMax,
         UnexpectedEndOfFile,
+        ExpectedNumber,
     };
 
     internal class CssStringMgr

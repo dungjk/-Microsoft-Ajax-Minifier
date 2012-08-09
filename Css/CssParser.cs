@@ -2342,6 +2342,87 @@ namespace Microsoft.Ajax.Utilities
                     parsed = Parsed.True;
                     break;
 
+                case TokenType.Character:
+                    if (CurrentTokenText == "(")
+                    {
+                        // the term starts with an opening paren.
+                        // parse an expression followed by the close paren.
+                        if (wasEmpty)
+                        {
+                            if (m_skippedSpace)
+                            {
+                                Append(' ');
+                            }
+
+                            wasEmpty = false;
+                        }
+
+                        AppendCurrent();
+                        SkipSpace();
+
+                        if (ParseExpr() == Parsed.False)
+                        {
+                            ReportError(0, StringEnum.ExpectedExpression, CurrentTokenText);
+                        }
+
+                        if (CurrentTokenType == TokenType.Character
+                            && CurrentTokenText == ")")
+                        {
+                            AppendCurrent();
+                            parsed = Parsed.True;
+
+                            // the closing paren can only be followed IMMEDIATELY by the opening brace
+                            // without any space if it's a repeat syntax.
+                            m_skippedSpace = false;
+                            NextRawToken();
+                            if (CurrentTokenType == TokenType.Space)
+                            {
+                                m_skippedSpace = true;
+                            }
+
+                            // if the next token is an opening brace, then this might be
+                            // a repeat operator
+                            if (CurrentTokenType == TokenType.Character
+                                && CurrentTokenText == "[")
+                            {
+                                AppendCurrent();
+                                SkipSpace();
+
+                                if (CurrentTokenType == TokenType.Number)
+                                {
+                                    AppendCurrent();
+                                    SkipSpace();
+
+                                    if (CurrentTokenType == TokenType.Character
+                                        && CurrentTokenText == "]")
+                                    {
+                                        AppendCurrent();
+                                        SkipSpace();
+                                    }
+                                    else
+                                    {
+                                        ReportError(0, StringEnum.ExpectedClosingBracket, CurrentTokenText);
+                                        parsed = Parsed.False;
+                                    }
+                                }
+                                else
+                                {
+                                    ReportError(0, StringEnum.ExpectedNumber, CurrentTokenText);
+                                    parsed = Parsed.False;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ReportError(0, StringEnum.ExpectedClosingParen, CurrentTokenText);
+                        }
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+                    break;
+
                 default:
                     if (hasUnary)
                     {
@@ -3259,15 +3340,21 @@ namespace Microsoft.Ajax.Utilities
             // BUT honor opening/closing pairs of (), [], and {}
             while (!m_scanner.EndOfFile
                 && (CurrentTokenType != TokenType.Character
-              || (CurrentTokenText != ";" && CurrentTokenText != "}")))
+                  || (CurrentTokenText != ";" && CurrentTokenText != "}")))
             {
                 // if the token is one of the characters we need to match closing characters...
                 if (CurrentTokenType == TokenType.Character
                     && (CurrentTokenText == "(" || CurrentTokenText == "[" || CurrentTokenText == "{"))
                 {
+                    if (possibleSpace)
+                    {
+                        Append(' ');
+                    }
+
                     SkipToClose();
                     possibleSpace = false;
                 }
+
                 if (CurrentTokenType == TokenType.Space)
                 {
                     possibleSpace = true;
@@ -3279,10 +3366,17 @@ namespace Microsoft.Ajax.Utilities
                     {
                         Append(' ');
                     }
+
                     AppendCurrent();
                     possibleSpace = false;
                 }
+
+                m_skippedSpace = false;
                 NextToken();
+                if (CurrentTokenType == TokenType.Space)
+                {
+                    m_skippedSpace = true;
+                }
             }
         }
 
@@ -3307,12 +3401,20 @@ namespace Microsoft.Ajax.Utilities
                 default:
                     throw new ArgumentException("invalid closing match");
             }
+
             if (m_skippedSpace && CurrentTokenText != "{")
             {
                 Append(' ');
             }
+
             AppendCurrent();
+
+            m_skippedSpace = false;
             NextToken();
+            if (CurrentTokenType == TokenType.Space)
+            {
+                m_skippedSpace = true;
+            }
 
             while (!m_scanner.EndOfFile
                 && (CurrentTokenType != TokenType.Character || CurrentTokenText != closingText))
@@ -3324,6 +3426,7 @@ namespace Microsoft.Ajax.Utilities
                     SkipToClose();
                     possibleSpace = false;
                 }
+
                 if (CurrentTokenType == TokenType.Space)
                 {
                     possibleSpace = true;
@@ -3335,10 +3438,17 @@ namespace Microsoft.Ajax.Utilities
                     {
                         Append(' ');
                     }
+
                     AppendCurrent();
                     possibleSpace = false;
                 }
+
+                m_skippedSpace = false;
                 NextToken();
+                if (CurrentTokenType == TokenType.Space)
+                {
+                    m_skippedSpace = true;
+                }
             }
         }
 

@@ -29,5 +29,12 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Grids()
+        {
+            var retValue = TestHelper.Instance.RunTest();
+            Assert.IsTrue(retValue == 0, "shouldn't have any errors");
+        }
     }
 }

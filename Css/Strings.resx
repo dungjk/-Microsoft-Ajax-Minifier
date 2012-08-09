@@ -339,4 +339,7 @@
   <data name="UnexpectedEndOfFile" xml:space="preserve">
     <value>Unexpected end of file encountered</value>
   </data>
+  <data name="ExpectedNumber" xml:space="preserve">
+    <value>Expected number, found '{0}'</value>
+  </data>
 </root>

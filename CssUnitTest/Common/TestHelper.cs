@@ -83,12 +83,12 @@ namespace CssUnitTest
             Trace.WriteLineIf(!Directory.Exists(m_expectedFolder), "Expected folder does not exist!");
         }
 
-        public void RunTest()
+        public int RunTest()
         {
-            RunTest(null);
+            return RunTest(null);
         }
 
-        public void RunTest(string extraArguments, params string[] extraInputs)
+        public int RunTest(string extraArguments, params string[] extraInputs)
         {
             // open the stack trace for this call
             StackTrace stackTrace = new StackTrace();
@@ -318,6 +318,8 @@ namespace CssUnitTest
                 // no output file....
                 Assert.Fail("Output file ({0}) does not exist.", outputPath);
             }
+
+            return retValue;
         }
 
         // start with root folder, add subfolder, then add the file name + ".css" extension.
