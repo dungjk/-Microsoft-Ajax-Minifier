@@ -329,7 +329,6 @@
 {0} [([-JS] [JSOPTS])|([-CSS[:CSSTYP]] [CSSOPTS])] OPTS* ((IFILE* [-out OFILE] [-map MFILE])|(-xml XFILE [-out ODIR]))
 
 Valid OPTS are zero or more of:
-  -analyze &gt; provide extra analysis output.
   -aspnet[:BOOL] &gt; whether to allow for inline ASP.NET-style substitutions,
         &lt;% ... %&gt; Default is False. 
   -braces:(new|same|source) &gt; when output is set to multiple lines, 
@@ -369,6 +368,7 @@ Valid OPTS are zero or more of:
         directory.
   
 Valid JSOPTS are zero or more of:
+  -analyze[:AOPTS [APATH]] &gt; provide extra code analysis output.
   -cc[:BOOL] &gt; turn on or off support for conditional-compilation comments.
         Default is true.
   -comments:(none|important) &gt; whether to remove all comments (none), 
@@ -460,6 +460,14 @@ NFILE is a valid path to an existing XML input file.
 MFILE is a valid path to a writable output source map file. 
 CSSTYP can be full (default; expects full stylesheet), or decls (only list
         of declarations, as in the style attribute of an HTML element). 
+AOPTS is a comma-separated list of analyze options. Currently the only
+        two tokens supported are XML and OUT. By default, analyze output is
+        in text format; specifying the XML token provides the output in XML
+        format for easier programmatic processing. By default, the output
+        is sent to the output stream; specifying the OUT token sends the 
+        output to the AFILE path specified as the next argument.
+AFILE is a valid path to an analyze output file, but is only present if the
+        OUT token is specified in the -analyze switch AOPTS.
 
 XFILE XML format (XML element names and attributes are case-sensitive):
     &lt;root&gt;
