@@ -62,6 +62,16 @@ namespace Microsoft.Ajax.Utilities
         public bool AnalyzeMode { get; private set; }
 
         /// <summary>
+        /// Gets a string value indication the report format specified for analyze more (default is null)
+        /// </summary>
+        public string ReportFormat { get; private set; }
+
+        /// <summary>
+        /// Gets the path for the analyze scope report file (default is null, output to console)
+        /// </summary>
+        public string ReportPath { get; private set; }
+
+        /// <summary>
         /// Gets a boolean value indicating whether or not Pretty-Print mode is specified (default is false)
         /// </summary>
         public bool PrettyPrint { get; private set; }
@@ -301,9 +311,9 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // general switch syntax is -switch:param
                         var parts = thisArg.Substring(1).Split(':');
-                        var switchPart = parts[0].ToUpper(CultureInfo.InvariantCulture);
+                        var switchPart = parts[0].ToUpperInvariant();
                         var paramPart = parts.Length == 1 ? null : parts[1];
-                        var paramPartUpper = paramPart == null ? null : paramPart.ToUpper(CultureInfo.InvariantCulture);
+                        var paramPartUpper = paramPart == null ? null : paramPart.ToUpperInvariant();
 
                         // switch off the switch part
                         switch (switchPart)
@@ -312,6 +322,36 @@ namespace Microsoft.Ajax.Utilities
                             case "A": // <-- old-style
                                 // ignore any arguments
                                 AnalyzeMode = true;
+
+                                // by default, we have no report format
+                                ReportFormat = null;
+                                if (paramPartUpper != null)
+                                {
+                                    var items = paramPartUpper.Split(',');
+                                    foreach (var item in items)
+                                    {
+                                        if (string.CompareOrdinal(item, "OUT") == 0)
+                                        {
+                                            // if the analyze part is "out," then the NEXT arg string
+                                            // is the output path the analyze scope report should be written to.
+                                            if (ndx >= args.Length - 1)
+                                            {
+                                                // must be followed by a path
+                                                OnInvalidSwitch(switchPart, paramPart);
+                                            }
+                                            else
+                                            {
+                                                ReportPath = args[++ndx];
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // must be a report format. There can be only one, so clobber whatever
+                                            // is there from before -- last one listed wins.
+                                            ReportFormat = item;
+                                        }
+                                    }
+                                }
 
                                 // if analyze was specified but no warning level, jack up the warning level
                                 // so everything is shown

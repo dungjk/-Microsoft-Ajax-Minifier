@@ -24,6 +24,8 @@ namespace Microsoft.Ajax.Utilities
     {
         private string m_name;
 
+        public JSVariableField CatchField { get; private set; }
+
         internal CatchScope(ActivationObject parent, Context argContext, JSParser parser)
             : base(parent, argContext, parser)
         {
@@ -31,10 +33,10 @@ namespace Microsoft.Ajax.Utilities
             m_name = Context.Code;
 
             // add it to the catch-scope's name table
-            var field = new JSVariableField(FieldType.Argument, m_name, 0, null);
-            field.OriginalContext = argContext;
-            NameTable[m_name] = field;
-            FieldTable.Add(field);
+            CatchField = new JSVariableField(FieldType.Argument, m_name, 0, null);
+            CatchField.OriginalContext = argContext;
+            NameTable[m_name] = CatchField;
+            FieldTable.Add(CatchField);
         }
 
         public override JSVariableField CreateField(JSVariableField outerField)

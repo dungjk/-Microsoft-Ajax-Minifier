@@ -26,6 +26,9 @@ namespace Microsoft.Ajax.Utilities
         private GlobalObject m_globalObject;
         private GlobalObject m_windowObject;
         private ReadOnlyCollection<string> m_assumedGlobals;
+        private List<UndefinedReferenceException> m_undefined;
+
+        public IList<UndefinedReferenceException> UndefinedReferences { get { return m_undefined; } }
 
         internal GlobalScope(JSParser parser)
             : base(null, parser)
@@ -41,6 +44,16 @@ namespace Microsoft.Ajax.Utilities
               new string[] { "applicationCache", "clientInformation", "clipboardData", "closed", "document", "event", "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", "opener", "parent", "screen", "self", "sessionStorage", "status", "top" },
               new string[] { "addEventListener", "alert", "attachEvent", "blur", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", "detachEvent", "dispatchEvent", "execScript", "focus", "getComputedStyle", "getSelection", "moveBy", "moveTo", "navigate", "open", "postMessage", "prompt", "removeEventListener", "resizeBy", "resizeTo", "scroll", "scrollBy", "scrollTo", "setActive", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog" }
               );
+        }
+
+        public void AddUndefinedReference(UndefinedReferenceException exception)
+        {
+            if (m_undefined == null)
+            {
+                m_undefined = new List<UndefinedReferenceException>();
+            }
+
+            m_undefined.Add(exception);
         }
 
         internal void SetAssumedGlobals(ReadOnlyCollection<string> globals)
