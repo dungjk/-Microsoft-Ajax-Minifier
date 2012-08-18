@@ -167,10 +167,6 @@
     <None Include="Migrated rules for AjaxMin.ruleset" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Css\" />
-    <Folder Include="JavaScript\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\AjaxMinDll\AjaxMinDll.csproj">
       <Project>{DFDB930E-1162-4514-A91D-C8595A807F13}</Project>
       <Name>AjaxMinDll</Name>
