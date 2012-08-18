@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Target Name="CleanNugetFiles" AfterTargets="Clean" Condition="'$(Configuration)'=='Release'">
+        <Message Text="Delete old nuget packages" Importance="normal"/>
+        <CreateItem Include="$(TargetDir)*.nupkg">
+            <Output TaskParameter="Include" ItemName="OldNugetPackages"/>
+        </CreateItem>
+        <Message Text="Delete old nuget specs" Importance="normal"/>
+        <CreateItem Include="$(TargetDir)*.nuspec">
+            <Output TaskParameter="Include" ItemName="OldNugetSpecs"/>
+        </CreateItem>
+        <Delete Files="@(OldNugetPackages);@(OldNugetSpecs)" />
+    </Target>
+    <Target Name="CleanDropShare" AfterTargets="Clean" Condition="'$(Configuration)'=='Release'">
+        <Message Text="Delete old drop share" Importance="normal"/>
+        <CreateItem Include="$(TargetDir)Drop/**/*">
+            <Output TaskParameter="Include" ItemName="DropFiles"/>
+        </CreateItem>
+
+        <Delete Files="@(DropFiles)" />
+        <RemoveDir Directories="$(TargetDir)Drop" Condition="Exists('$(TargetDir)Drop')" ContinueOnError="true"/>
+    </Target>
+
+    <Target Name="BuildNugetPackage" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
+        <Message Text="Creating Nuget spec" Importance="high" />
+        <CreateItem Include="@(None)" Condition="'%(Extension)'=='.nuspec'">
+            <Output TaskParameter="Include" ItemName="NugetSpecFiles"/>
+        </CreateItem>
+        <!-- run the application this project builds; it will generate the appropriate nuget spec with the right version number in it -->
+        <Exec Command="$(TargetPath) $(TargetDir) @(NugetSpecFiles, ' ')" 
+              LogStandardErrorAsError="true" />
+        
+        <Message Text="Creating Nuget packags" Importance="high" />
+        <MakeDir Directories="$(TargetDir)Drop" Condition="!Exists('$(TargetDir)Drop')" />
+        <MakeDir Directories="$(TargetDir)Drop\packages" Condition="!Exists('$(TargetDir)Drop\packages')" />
+        <Exec Command="&quot;$(SolutionDir)nuget.exe&quot; pack &quot;$(TargetDir)AjaxMin.nuspec&quot; -prop Configuration=$(Configuration) -BasePath $(SolutionDir) -out &quot;$(TargetDir)\Drop\packages&quot; -sym -verbose" 
+              LogStandardErrorAsError="true" />
+    </Target>
+    <Target Name="DontBuildNugetPackage" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
+        <Message Text="Nuget package not created for debug builds." Importance="high" />
+    </Target>
+
+    <Target Name="BuildDropShare" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
+        <Message Text="Creating drop share..." Importance="high" />
+        
+        <MakeDir Directories="$(TargetDir)Drop" Condition="!Exists('$(TargetDir)Drop')" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.exe" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.dll" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinSetup\Release\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop" />
+        
+        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.pdb" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.pdb" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop" />
+
+        <MakeDir Directories="$(TargetDir)Drop\packages" Condition="!Exists('$(TargetDir)Drop\packages')" />
+        <!-- get the list of all references that are marked as "copy local" -->
+        <CreateItem Include="$(SolutionDir)Deployment\bin\Release\*.nupkg">
+            <Output TaskParameter="Include" ItemName="NugetPackages"/>
+        </CreateItem>
+        <Copy SourceFiles="@(NugetPackages)" DestinationFolder="$(TargetDir)Drop\packages" />
+    </Target>
+    <Target Name="DontBuildDropShare" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
+        <Message Text="Drop share not created for debug builds." Importance="high" />
+    </Target>
+</Project>

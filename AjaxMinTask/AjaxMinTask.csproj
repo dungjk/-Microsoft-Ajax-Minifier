@@ -55,7 +55,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Properties\ProductAssemblyInfo.cs">
+    <Compile Include="..\AjaxMin\Properties\ProductAssemblyInfo.cs">
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AjaxMinBuildTask.cs" />

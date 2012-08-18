@@ -31,7 +31,7 @@
           <Configuration>
             <CodeCoverage keyFile="AjaxMin.snk" xmlns="">
               <Regular>
-                <CodeCoverageItem binaryFile="bin\Debug\AjaxMin.exe" pdbFile="bin\Debug\AjaxMin.pdb" instrumentInPlace="true" />
+                <CodeCoverageItem binaryFile="AjaxMin\bin\Debug\AjaxMin.exe" pdbFile="AjaxMin\bin\Debug\AjaxMin.pdb" instrumentInPlace="true" />
               </Regular>
             </CodeCoverage>
           </Configuration>

@@ -100,7 +100,7 @@ namespace JSUnitTest
             // get the path to the AjaxMin assembly.
             // we are linking to the EXE in this project, so this gives us the path
             // we need to spawn a new process for which we can redirect the stdin stream.
-            var ajaxMin = Assembly.GetAssembly(typeof(JSParser));
+            var ajaxMin = Assembly.GetAssembly(typeof(IScopeReport));
 
             // create the process to the EXE with a redirected stdin
             var ajaxMinProcess = new Process();

@@ -256,12 +256,6 @@
     <Content Include="TestData\CSS\Input\Values\Grids.css" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AjaxMin.csproj">
-      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
-      <Name>AjaxMin</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="TestData\CSS\Input\Replacements\ValueReplacement.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ValueReplacement.Designer.cs</LastGenOutput>
@@ -294,6 +288,11 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\AjaxMin\AjaxMin.csproj">
+      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
+      <Name>AjaxMin</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

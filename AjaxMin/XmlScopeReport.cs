@@ -1,0 +1,422 @@
+﻿// DefaultScopeReport.cs
+//
+// Copyright 2010 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+
+namespace Microsoft.Ajax.Utilities
+{
+    public sealed class XmlScopeReport : IScopeReport
+    {
+        private XmlWriter m_writer;
+        private bool m_useReferenceCounts;
+
+        #region IScopeReport Members
+
+        public string Name
+        {
+            get { return "Xml"; }
+        }
+
+        public void CreateReport(TextWriter writer, GlobalScope globalScope, bool useReferenceCounts)
+        {
+            if (globalScope != null)
+            {
+                m_useReferenceCounts = useReferenceCounts;
+
+                // start the global scope
+                m_writer = XmlWriter.Create(writer, new XmlWriterSettings() { Indent = true, OmitXmlDeclaration = true });
+                m_writer.WriteStartElement("global");
+
+                // recursively process each child scope
+                foreach (var childScope in globalScope.ChildScopes)
+                {
+                    ProcessScope(childScope);
+                }
+
+                // process any undefined references
+                if (globalScope.UndefinedReferences != null && globalScope.UndefinedReferences.Count > 0)
+                {
+                    m_writer.WriteStartElement("undefined");
+
+                    foreach (var undefined in globalScope.UndefinedReferences)
+                    {
+                        m_writer.WriteStartElement("reference");
+                        m_writer.WriteAttributeString("name", undefined.Name);
+                        m_writer.WriteAttributeString("type", undefined.ReferenceType.ToString().ToLowerInvariant());
+                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(undefined.Line));
+                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(undefined.Column + 1));
+                        m_writer.WriteEndElement();
+                    }
+
+                    m_writer.WriteEndElement();
+                }
+
+                m_writer.WriteEndElement();
+                m_writer.Flush();
+                m_writer = null;
+            }
+        }
+
+        #endregion
+
+        #region IDisposable Members
+
+        public void Dispose()
+        {
+            if (m_writer != null)
+            {
+                m_writer.Flush();
+                m_writer = null;
+            }
+        }
+
+        #endregion
+
+        #region private methods
+
+        private void ProcessScope(ActivationObject scope)
+        {
+            var functionScope = scope as FunctionScope;
+            if (functionScope != null)
+            {
+                m_writer.WriteStartElement("function");
+
+                var functionObject = functionScope.FunctionObject;
+                if (functionObject != null)
+                {
+                    m_writer.WriteAttributeString("type", functionObject.FunctionType.ToString().ToLowerInvariant());
+
+                    if (functionObject.Identifier == null)
+                    {
+                        if (functionObject.Name.StartsWith("\"", StringComparison.Ordinal))
+                        {
+                            // strip enclosing quotes
+                            m_writer.WriteAttributeString("guess", functionObject.Name.Substring(1, functionObject.Name.Length - 2));
+                        }
+                        else
+                        {
+                            m_writer.WriteAttributeString("guess", functionObject.Name);
+                        }
+                    }
+                    else
+                    {
+                        m_writer.WriteAttributeString("src", functionObject.Name);
+                        if (functionObject.Identifier.VariableField != null
+                            && functionObject.Identifier.VariableField.CrunchedName != null)
+                        {
+                            m_writer.WriteAttributeString("min", functionObject.Identifier.VariableField.CrunchedName);
+                        }
+                    }
+
+                    if (functionObject.Context != null)
+                    {
+                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(functionObject.Context.StartLineNumber));
+                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(functionObject.Context.StartColumn + 1));
+                    }
+
+                    if (m_useReferenceCounts && functionObject.VariableField != null)
+                    {
+                        var refCount = functionObject.VariableField.RefCount;
+                        m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(refCount));
+
+                        if (refCount == 0
+                            && functionObject.FunctionType == FunctionType.Declaration
+                            && functionObject.VariableField.FieldType == FieldType.Local)
+                        {
+                            // local function declaration with zero references? unreachable code!
+                            m_writer.WriteAttributeString("unreachable", "true");
+                        }
+                    }
+
+                    // add the arguments
+                    m_writer.WriteStartElement("arguments");
+                    if (functionObject.ParameterDeclarations != null)
+                    {
+                        foreach (var parameter in functionObject.ParameterDeclarations)
+                        {
+                            m_writer.WriteStartElement("argument");
+                            m_writer.WriteAttributeString("src", parameter.OriginalName);
+                            if (parameter.Field.CrunchedName != null)
+                            {
+                                m_writer.WriteAttributeString("min", parameter.Name);
+                            }
+
+                            if (parameter.Context != null)
+                            {
+                                m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(parameter.Context.StartLineNumber));
+                                m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(parameter.Context.StartColumn + 1));
+                            }
+
+                            if (m_useReferenceCounts && parameter.Field != null)
+                            {
+                                m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(parameter.Field.RefCount));
+                            }
+
+                            m_writer.WriteEndElement();
+                        }
+                    }
+
+                    m_writer.WriteEndElement();
+                }
+            }
+            else if (scope is WithScope)
+            {
+                m_writer.WriteStartElement("with");
+            }
+            else if (scope is GlobalScope)
+            {
+                Debug.Fail("shouldn't get here!");
+                m_writer.WriteStartElement("global");
+            }
+            else
+            {
+                var catchScope = scope as CatchScope;
+                if (catchScope != null)
+                {
+                    m_writer.WriteStartElement("catch");
+
+                    var catchVariable = catchScope.CatchField;
+                    m_writer.WriteStartElement("catchvar");
+                    m_writer.WriteAttributeString("src", catchVariable.Name);
+                    if (catchVariable.CrunchedName != null)
+                    {
+                        m_writer.WriteAttributeString("min", catchVariable.CrunchedName);
+                    }
+
+                    if (catchVariable.OriginalContext != null)
+                    {
+                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(catchVariable.OriginalContext.StartLineNumber));
+                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(catchVariable.OriginalContext.StartColumn + 1));
+                    }
+
+                    if (m_useReferenceCounts)
+                    {
+                        m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(catchVariable.RefCount));
+                    }
+
+                    m_writer.WriteEndElement();
+                }
+                else
+                {
+                    // must be generic block scope
+                    Debug.Assert(scope is BlockScope);
+                    m_writer.WriteStartElement("block");
+                }
+            }
+
+            // process the defined and referenced fields
+            ProcessFields(scope);
+
+            // recursively process each child scope
+            foreach (var childScope in scope.ChildScopes)
+            {
+                ProcessScope(childScope);
+            }
+
+            // close the element
+            m_writer.WriteEndElement();
+        }
+
+        private void ProcessFields(ActivationObject scope)
+        {
+            // split fields into defined and referenced lists
+            var definedFields = new List<JSVariableField>();
+            var referencedFields = new List<JSVariableField>();
+            foreach (var field in scope.FieldTable)
+            {
+                // if the field has no outer field reference, it is defined in this scope.
+                // otherwise we're just referencing a field defined elsewhere
+                if (field.OuterField == null)
+                {
+                    switch (field.FieldType)
+                    {
+                        case FieldType.Global:
+                            if (scope is GlobalScope)
+                            {
+                                definedFields.Add(field);
+                            }
+                            else
+                            {
+                                referencedFields.Add(field);
+                            }
+                            break;
+
+                        case FieldType.Local:
+                        case FieldType.NamedFunctionExpression:
+                            // defined within this scope
+                            definedFields.Add(field);
+                            break;
+
+                        case FieldType.Argument:
+                            // ignore the scope's arguments because we handle them separately
+                            break;
+
+                        case FieldType.Predefined:
+                        case FieldType.Arguments:
+                        case FieldType.WithField:
+                            referencedFields.Add(field);
+                            break;
+                    }
+                }
+                else
+                {
+                    // if the outer field is a placeholder, then we actually define it, not the outer scope
+                    if (field.OuterField.IsPlaceholder)
+                    {
+                        if (field.FieldType != FieldType.Argument)
+                        {
+                            definedFields.Add(field);
+                        }
+                    }
+                    else
+                    {
+                        referencedFields.Add(field);
+                    }
+                }
+            }
+
+            if (definedFields.Count > 0)
+            {
+                m_writer.WriteStartElement("defines");
+                foreach (var field in definedFields)
+                {
+                    ProcessField(field, true);
+                }
+
+                m_writer.WriteEndElement();
+            }
+
+            if (referencedFields.Count > 0)
+            {
+                m_writer.WriteStartElement("references");
+                foreach (var field in referencedFields)
+                {
+                    ProcessField(field, false);
+                }
+
+                m_writer.WriteEndElement();
+            }
+        }
+
+        private void ProcessField(JSVariableField field, bool isDefined)
+        {
+            // save THIS field's refcount value because we will
+            // be adjusting hte field pointer to be the outermost field
+            // and we want to report THIS field's refcount, not the overall.
+            var refCount = field.RefCount;
+            var isGhost = false;
+
+            // make sure we're at the outer-most field
+            var isOuter = false;
+            if (!isDefined)
+            {
+                while (field.OuterField != null)
+                {
+                    isOuter = true;
+                    field = field.OuterField;
+                }
+            }
+
+            m_writer.WriteStartElement("field");
+
+            var typeValue = field.FieldType.ToString();
+            switch (field.FieldType)
+            {
+                case FieldType.Argument:
+                case FieldType.NamedFunctionExpression:
+                case FieldType.WithField:
+                    if (isOuter)
+                    {
+                        typeValue = "Outer " + typeValue;
+                    }
+                    break;
+
+                case FieldType.Local:
+                    if (isOuter)
+                    {
+                        typeValue = "Outer ";
+                    }
+                    else
+                    {
+                        typeValue = string.Empty;
+                        if (field.IsPlaceholder || !field.IsDeclared)
+                        {
+                            isGhost = true;
+                        }
+                    }
+
+                    if (field.IsFunction)
+                    {
+                        typeValue += "Function";
+                    }
+                    else
+                    {
+                        typeValue += "Variable";
+                    }
+                    break;
+
+                case FieldType.Arguments:
+                case FieldType.Global:
+                case FieldType.Predefined:
+                    break;
+            }
+
+            m_writer.WriteAttributeString("type", typeValue.ToLowerInvariant());
+            m_writer.WriteAttributeString("src", field.Name);
+            if (field.CrunchedName != null)
+            {
+                m_writer.WriteAttributeString("min", field.CrunchedName);
+            }
+
+            if (field.OriginalContext != null)
+            {
+                m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(field.OriginalContext.StartLineNumber));
+                m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(field.OriginalContext.StartColumn + 1));
+            }
+
+            if (m_useReferenceCounts)
+            {
+                m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(refCount));
+            }
+
+            if (field.IsAmbiguous)
+            {
+                m_writer.WriteAttributeString("ambiguous", "true");
+            }
+
+            if (field.IsGenerated)
+            {
+                m_writer.WriteAttributeString("generated", "true");
+            }
+
+            if (isGhost)
+            {
+                m_writer.WriteAttributeString("ghost", "true");
+            }
+
+            m_writer.WriteEndElement();
+        }
+
+        #endregion
+    }
+}

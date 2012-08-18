@@ -56,9 +56,9 @@
     <Compile Include="LogicalNot.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AjaxMin.csproj">
-      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
-      <Name>AjaxMin</Name>
+    <ProjectReference Include="..\AjaxMinDll\AjaxMinDll.csproj">
+      <Project>{DFDB930E-1162-4514-A91D-C8595A807F13}</Project>
+      <Name>AjaxMinDll</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

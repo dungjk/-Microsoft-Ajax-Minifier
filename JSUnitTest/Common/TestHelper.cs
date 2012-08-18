@@ -785,12 +785,11 @@ namespace JSUnitTest
 
                 // log the error
                 Trace.WriteLine(string.Empty);
-                Trace.WriteLine(string.Format("Error 0x{0:X} at Line {1}, Column {2}: {3}", ex.Error, ex.Line, ex.Column, ex.ErrorSegment));
+                Trace.WriteLine(string.Format("Error JS{0} at Line {1}, Column {2}: {3}", (int)ex.ErrorCode, ex.Line, ex.Column, ex.ErrorSegment));
                 Trace.Indent();
                 Trace.WriteLine(ex.Message);
 
-                JSError errorCode = (JSError)(ex.Error & 0xffff);
-                int index = expectedErrorList.IndexOf(errorCode);
+                int index = expectedErrorList.IndexOf(ex.ErrorCode);
                 if (index >= 0)
                 {
                     // expected error -- remove it from the list so we can tell what we're missing later

@@ -15,7 +15,7 @@
     {
         "Entry"
         {
-        "MsmKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
+        "MsmKey" = "8:_027A4196C0F74BEDA2C819C315877273"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -27,8 +27,14 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_25FCE34BE2AC785C0BB4F3B1673DCE9B"
-        "OwnerKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
+        "MsmKey" = "8:_2E4169AB6A5FF555BF4309E80428F97F"
+        "OwnerKey" = "8:_027A4196C0F74BEDA2C819C315877273"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_2E4169AB6A5FF555BF4309E80428F97F"
+        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -45,44 +51,44 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_82BA36C944624A6382306070522903CA"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_A01D213D07B04CF3B77C25D046545E69"
+        "MsmKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F975B8B4271040B79EDDC8AD558321E8"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_A01D213D07B04CF3B77C25D046545E69"
+        "OwnerKey" = "8:_F975B8B4271040B79EDDC8AD558321E8"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_80F8791BDBE447E0B1CD272E4CBCEB61"
+        "OwnerKey" = "8:_2E4169AB6A5FF555BF4309E80428F97F"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_0376E6797A624CEB9D82C9ABE2B1F081"
+        "OwnerKey" = "8:_027A4196C0F74BEDA2C819C315877273"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_25FCE34BE2AC785C0BB4F3B1673DCE9B"
+        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -134,7 +140,7 @@
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
-        "Compression" = "3:2"
+        "Compression" = "3:3"
         "SignOutput" = "11:FALSE"
         "CertificateFile" = "8:"
         "PrivateKeyFile" = "8:"
@@ -210,18 +216,23 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_25FCE34BE2AC785C0BB4F3B1673DCE9B"
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_2E4169AB6A5FF555BF4309E80428F97F"
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.58.4566.24060, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMinLibrary, Version=4.61.4611.40981, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_2E4169AB6A5FF555BF4309E80428F97F"
+                    {
+                    "Name" = "8:AjaxMinLibrary.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
-            "SourcePath" = "8:AjaxMin.dll"
+            "SourcePath" = "8:AjaxMinLibrary.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
-            "Folder" = "8:_F313446C4A45462887A26858EE7CAF84"
+            "Folder" = "8:_3C2DF8B0D1C044B8B9725F722F629969"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -232,7 +243,7 @@
             "SharedLegacy" = "11:FALSE"
             "PackageAs" = "3:1"
             "Register" = "3:1"
-            "Exclude" = "11:FALSE"
+            "Exclude" = "11:TRUE"
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
@@ -397,7 +408,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
         "ProductCode" = "8:{A11DC302-9877-4D08-8B8B-901114EAA3D5}"
-        "PackageCode" = "8:{F4FB5608-E984-484E-B0DA-2EFC879B0007}"
+        "PackageCode" = "8:{400E0994-BCFB-497B-A090-2B182443D449}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -414,7 +425,7 @@
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:JavaScript/CSS Minifier"
         "ARPURLINFOABOUT" = "8:http://ajaxmin.codeplex.com"
-        "ARPPRODUCTICON" = "8:_A01D213D07B04CF3B77C25D046545E69"
+        "ARPPRODUCTICON" = "8:"
         "ARPIconIndex" = "3:32512"
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
@@ -930,7 +941,35 @@
         }
         "ProjectOutput"
         {
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_0376E6797A624CEB9D82C9ABE2B1F081"
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_027A4196C0F74BEDA2C819C315877273"
+            {
+            "SourcePath" = "8:..\\AjaxMin\\obj\\Release\\AjaxMin.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3C2DF8B0D1C044B8B9725F722F629969"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_E663BF78D764444DBD6E2D8CE09CCFEA"
             {
             "SourcePath" = "8:..\\AjaxMinTask\\obj\\Release\\AjaxMinTask.dll"
             "TargetName" = "8:"
@@ -958,12 +997,12 @@
                 {
                 }
             }
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_80F8791BDBE447E0B1CD272E4CBCEB61"
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_F975B8B4271040B79EDDC8AD558321E8"
             {
-            "SourcePath" = "8:..\\AjaxMinDll\\obj\\Release\\AjaxMin.dll"
+            "SourcePath" = "8:..\\AjaxMinDll\\obj\\Release\\AjaxMinLibrary.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
-            "Folder" = "8:_3C2DF8B0D1C044B8B9725F722F629969"
+            "Folder" = "8:_F313446C4A45462887A26858EE7CAF84"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -981,34 +1020,6 @@
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
             "OutputProjectGuid" = "8:{DFDB930E-1162-4514-A91D-C8595A807F13}"
-            "ShowKeyOutput" = "11:TRUE"
-                "ExcludeFilters"
-                {
-                }
-            }
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_A01D213D07B04CF3B77C25D046545E69"
-            {
-            "SourcePath" = "8:..\\obj\\Release\\AjaxMin.exe"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3C2DF8B0D1C044B8B9725F722F629969"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            "ProjectOutputGroupRegister" = "3:1"
-            "OutputConfiguration" = "8:"
-            "OutputGroupCanonicalName" = "8:Built"
-            "OutputProjectGuid" = "8:{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {

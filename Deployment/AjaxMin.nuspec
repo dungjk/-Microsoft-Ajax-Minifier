@@ -1,0 +1,25 @@
+﻿<?xml version="1.0"?>
+<package>
+    <metadata>
+        <id>AjaxMin</id>
+        <version>$version$</version>
+        <title>Microsoft Ajax Minifier</title>
+        <authors>Microsoft Corporation,Ron Logan</authors>
+        <owners>Microsoft Corporation</owners>
+        <licenseUrl>http://ajaxmin.codeplex.com/license</licenseUrl>
+        <projectUrl>http://ajaxmin.codeplex.com/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>JavaScript and CSS minification Library</description>
+        <copyright>Copyright 2012 by Microsoft Corp. All rights reserved.</copyright>
+        <tags>JavaScript CSS minification crunch parser ast ajaxmin</tags>
+    </metadata>
+    <files>
+        <file src="AjaxMinDll\bin\$Configuration$\AjaxMinLibrary.dll" target="lib/net20"/>
+        <file src="AjaxMinDll\bin\$Configuration$\AjaxMinLibrary.pdb" target="lib/net20"/>
+        <!--<file src="AjaxMin\bin\$Configuration$\AjaxMin.exe" target="tools/net20"/>
+        <file src="AjaxMin\bin\$Configuration$\AjaxMin.pdb" target="tools/net20"/>-->
+        <!--<file src="AjaxMinTask\bin\$Configuration$\AjaxMin.tasks" target="tools/net20"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="tools/net20"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net20"/>-->
+    </files>
+</package>
