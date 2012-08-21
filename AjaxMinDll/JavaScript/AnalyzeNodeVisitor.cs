@@ -2909,11 +2909,11 @@ namespace Microsoft.Ajax.Utilities
                         return guess;
                     }
                     // wrap the guessed name in quotes
-                    return string.Format(CultureInfo.InvariantCulture, "\"{0}\"", guess);
+                    return "\"{0}\"".FormatInvariant(guess);
                 }
                 else
                 {
-                    return string.Format(CultureInfo.InvariantCulture, "anonymous_{0}", UniqueNumber);
+                    return "anonymous_{0}".FormatInvariant(UniqueNumber);
                 }
             }
             return string.Empty;

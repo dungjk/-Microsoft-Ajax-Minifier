@@ -76,7 +76,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_2E4169AB6A5FF555BF4309E80428F97F"
+        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -88,7 +88,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
+        "OwnerKey" = "8:_2E4169AB6A5FF555BF4309E80428F97F"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -118,10 +118,10 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Net.Framework.3.5.SP1"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.0"
                     {
-                    "Name" = "8:.NET Framework 3.5 SP1"
-                    "ProductCode" = "8:Microsoft.Net.Framework.3.5.SP1"
+                    "Name" = "8:Microsoft .NET Framework 4 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.0"
                     }
                     "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.3.1"
                     {
@@ -155,10 +155,10 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Net.Framework.3.5.SP1"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.0"
                     {
-                    "Name" = "8:.NET Framework 3.5 SP1"
-                    "ProductCode" = "8:Microsoft.Net.Framework.3.5.SP1"
+                    "Name" = "8:Microsoft .NET Framework 4 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.0"
                     }
                     "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.3.1"
                     {
@@ -188,7 +188,7 @@
                 {
                 "Name" = "8:.NET Framework"
                 "Message" = "8:[VSDNETMSG]"
-                "FrameworkVersion" = "8:.NETFramework,Version=v3.5"
+                "FrameworkVersion" = "8:.NETFramework,Version=v4.0"
                 "AllowLaterVersions" = "11:FALSE"
                 "InstallUrl" = "8:http://go.microsoft.com/fwlink/?LinkId=131000"
                 }
@@ -220,7 +220,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMinLibrary, Version=4.61.4611.40981, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMinLibrary, Version=4.61.4613.35996, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                     "_2E4169AB6A5FF555BF4309E80428F97F"
@@ -408,7 +408,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
         "ProductCode" = "8:{A11DC302-9877-4D08-8B8B-901114EAA3D5}"
-        "PackageCode" = "8:{400E0994-BCFB-497B-A090-2B182443D449}"
+        "PackageCode" = "8:{8A02ADF1-ED73-47CD-B94B-3B5EC18F2FEB}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"

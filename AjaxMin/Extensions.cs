@@ -1,6 +1,6 @@
 ﻿// Extensions.cs
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright 2012 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ namespace Microsoft.Ajax.Utilities
 
     internal static class Extensions
     {
-        public static string FormatInvariant(/*this*/ string format, params object[] args)
+        public static string FormatInvariant(this string format, params object[] args)
         {
             try
             {
@@ -35,7 +35,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public static string ToStringInvariant(/*this*/ int number)
+        public static string ToStringInvariant(this int number)
         {
             return number.ToString(CultureInfo.InvariantCulture);
         }

@@ -164,7 +164,6 @@ namespace Microsoft.Ajax.Utilities
                         OutputPossibleLineBreak(' ');
                     }
 
-
                     // output the next node
                     node[ndx].Accept(this);
                 }
@@ -1186,7 +1185,7 @@ namespace Microsoft.Ajax.Utilities
                     BinaryOperator binaryOperator = node.Parent as BinaryOperator;
                     if (binaryOperator != null && binaryOperator.Operand1 is Lookup)
                     {
-                        m_functionStack.Push(string.Format(CultureInfo.InvariantCulture, "(anonymous) [{0}]", binaryOperator.Operand1));
+                        m_functionStack.Push("(anonymous) [{0}]".FormatInvariant(binaryOperator.Operand1));
                     }
                     else
                     {
@@ -2696,7 +2695,7 @@ namespace Microsoft.Ajax.Utilities
             else
             {
                 // normal string representations
-                string normal = GetSmallestRep(numericValue.ToString("R", CultureInfo.InvariantCulture));
+                string normal = GetSmallestRep(numericValue.ToStringInvariant("R"));
 
                 // if this is an integer (no decimal portion)....
                 if (Math.Floor(numericValue) == numericValue)
@@ -2737,7 +2736,7 @@ namespace Microsoft.Ajax.Utilities
                             if (numZeros > 2)
                             {
                                 number = match.Result("${neg}") + match.Result("${sig}")
-                                    + 'e' + numZeros.ToString(CultureInfo.InvariantCulture);
+                                    + 'e' + numZeros.ToStringInvariant();
                             }
                         }
                     }
@@ -2762,13 +2761,13 @@ namespace Microsoft.Ajax.Utilities
 
                     // get the integer value of the exponent
                     int exponent;
-                    if (int.TryParse(match.Result("${eng}") + match.Result("${pow}"), NumberStyles.Integer, CultureInfo.InvariantCulture, out exponent))
+                    if ((match.Result("${eng}") + match.Result("${pow}")).TryParseIntInvariant(NumberStyles.Integer, out exponent))
                     {
                         // slap the mantissa directly to the magnitude without a decimal point.
                         // we'll subtract the number of characters we just added to the magnitude from
                         // the exponent
                         number = match.Result("${neg}") + match.Result("${mag}") + mantissa
-                            + 'e' + (exponent - mantissa.Length).ToString(CultureInfo.InvariantCulture);
+                            + 'e' + (exponent - mantissa.Length).ToStringInvariant();
                     }
                     else
                     {
@@ -2956,7 +2955,7 @@ namespace Microsoft.Ajax.Utilities
 
                             // output the escape character, a "u", then the four-digit escaped character
                             sb.Append(@"\u");
-                            sb.AppendFormat(CultureInfo.InvariantCulture, ((int)ch).ToString("x4", CultureInfo.InvariantCulture));
+                            sb.Append(((int)ch).ToStringInvariant("x4"));
                             break;
 
                         default:
@@ -2989,7 +2988,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // output the hex escape sequence
                                     sb.Append(@"\x");
-                                    sb.Append(intValue.ToString("x2", CultureInfo.InvariantCulture));
+                                    sb.Append(intValue.ToStringInvariant("x2"));
                                 }
                                 //else
                                 //{
@@ -2998,13 +2997,13 @@ namespace Microsoft.Ajax.Utilities
                                 //    if (intValue < 8)
                                 //    {
                                 //        // single octal digit
-                                //        sb.Append(intValue.ToString(CultureInfo.InvariantCulture));
+                                //        sb.Append(intValue.ToStringInvariant());
                                 //    }
                                 //    else
                                 //    {
                                 //        // two octal digits
-                                //        sb.Append((intValue / 8).ToString(CultureInfo.InvariantCulture));
-                                //        sb.Append((intValue % 8).ToString(CultureInfo.InvariantCulture));
+                                //        sb.Append((intValue / 8).ToStringInvariant());
+                                //        sb.Append((intValue % 8).ToStringInvariant());
                                 //    }
                                 //}
                             }

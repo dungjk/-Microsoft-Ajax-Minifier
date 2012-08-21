@@ -115,7 +115,7 @@ namespace Microsoft.Ajax.Utilities
             foreach (KeyValuePair<string, int> kvp in m_sourceFileIndexMap)
             {
                 m_writer.WriteStartElement("sourceFile");
-                m_writer.WriteAttributeString("id", kvp.Value.ToString(CultureInfo.InvariantCulture));
+                m_writer.WriteAttributeString("id", kvp.Value.ToStringInvariant());
                 m_writer.WriteAttributeString("path", kvp.Key);
                 m_writer.WriteEndElement(); //file
             }

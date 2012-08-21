@@ -59,9 +59,7 @@ namespace Microsoft.Ajax.Utilities
             if (writer != null)
             {
                 writer.WriteStartElement("headers");
-                writer.WriteString(string.Format(
-                    CultureInfo.InvariantCulture,
-                    SymbolDataFormat,
+                writer.WriteString(SymbolDataFormat.FormatInvariant(
                     "DstStartLine",
                     "DstStartColumn",
                     "DstEndLine",
@@ -85,9 +83,7 @@ namespace Microsoft.Ajax.Utilities
             if (writer != null)
             {
                 writer.WriteStartElement("s");
-                writer.WriteString(string.Format(
-                    CultureInfo.InvariantCulture,
-                    SymbolDataFormat,
+                writer.WriteString(SymbolDataFormat.FormatInvariant(
                     m_startLine,
                     m_startColumn,
                     m_endLine,

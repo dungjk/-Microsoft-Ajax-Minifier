@@ -63,8 +63,8 @@ namespace Microsoft.Ajax.Utilities
                         m_writer.WriteStartElement("reference");
                         m_writer.WriteAttributeString("name", undefined.Name);
                         m_writer.WriteAttributeString("type", undefined.ReferenceType.ToString().ToLowerInvariant());
-                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(undefined.Line));
-                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(undefined.Column + 1));
+                        m_writer.WriteAttributeString("srcLine", undefined.Line.ToStringInvariant());
+                        m_writer.WriteAttributeString("srcCol", (undefined.Column + 1).ToStringInvariant());
                         m_writer.WriteEndElement();
                     }
 
@@ -130,14 +130,14 @@ namespace Microsoft.Ajax.Utilities
 
                     if (functionObject.Context != null)
                     {
-                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(functionObject.Context.StartLineNumber));
-                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(functionObject.Context.StartColumn + 1));
+                        m_writer.WriteAttributeString("srcLine", functionObject.Context.StartLineNumber.ToStringInvariant());
+                        m_writer.WriteAttributeString("srcCol", (functionObject.Context.StartColumn + 1).ToStringInvariant());
                     }
 
                     if (m_useReferenceCounts && functionObject.VariableField != null)
                     {
                         var refCount = functionObject.VariableField.RefCount;
-                        m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(refCount));
+                        m_writer.WriteAttributeString("refcount", refCount.ToStringInvariant());
 
                         if (refCount == 0
                             && functionObject.FunctionType == FunctionType.Declaration
@@ -163,13 +163,13 @@ namespace Microsoft.Ajax.Utilities
 
                             if (parameter.Context != null)
                             {
-                                m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(parameter.Context.StartLineNumber));
-                                m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(parameter.Context.StartColumn + 1));
+                                m_writer.WriteAttributeString("srcLine", parameter.Context.StartLineNumber.ToStringInvariant());
+                                m_writer.WriteAttributeString("srcCol", (parameter.Context.StartColumn + 1).ToStringInvariant());
                             }
 
                             if (m_useReferenceCounts && parameter.Field != null)
                             {
-                                m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(parameter.Field.RefCount));
+                                m_writer.WriteAttributeString("refcount", parameter.Field.RefCount.ToStringInvariant());
                             }
 
                             m_writer.WriteEndElement();
@@ -205,13 +205,13 @@ namespace Microsoft.Ajax.Utilities
 
                     if (catchVariable.OriginalContext != null)
                     {
-                        m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(catchVariable.OriginalContext.StartLineNumber));
-                        m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(catchVariable.OriginalContext.StartColumn + 1));
+                        m_writer.WriteAttributeString("srcLine", catchVariable.OriginalContext.StartLineNumber.ToStringInvariant());
+                        m_writer.WriteAttributeString("srcCol", (catchVariable.OriginalContext.StartColumn + 1).ToStringInvariant());
                     }
 
                     if (m_useReferenceCounts)
                     {
-                        m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(catchVariable.RefCount));
+                        m_writer.WriteAttributeString("refcount", catchVariable.RefCount.ToStringInvariant());
                     }
 
                     m_writer.WriteEndElement();
@@ -390,13 +390,13 @@ namespace Microsoft.Ajax.Utilities
 
             if (field.OriginalContext != null)
             {
-                m_writer.WriteAttributeString("srcLine", Extensions.ToStringInvariant(field.OriginalContext.StartLineNumber));
-                m_writer.WriteAttributeString("srcCol", Extensions.ToStringInvariant(field.OriginalContext.StartColumn + 1));
+                m_writer.WriteAttributeString("srcLine", field.OriginalContext.StartLineNumber.ToStringInvariant());
+                m_writer.WriteAttributeString("srcCol", (field.OriginalContext.StartColumn + 1).ToStringInvariant());
             }
 
             if (m_useReferenceCounts)
             {
-                m_writer.WriteAttributeString("refcount", Extensions.ToStringInvariant(refCount));
+                m_writer.WriteAttributeString("refcount", refCount.ToStringInvariant());
             }
 
             if (field.IsAmbiguous)

@@ -102,7 +102,7 @@ namespace Microsoft.Ajax.Utilities
         private static string GetEncoding(int charValue)
         {
             // first see how many characters the numeric value turns out to be
-            string hexValue = string.Format(CultureInfo.InvariantCulture, "{0:x}", charValue);
+            string hexValue = "{0:x}".FormatInvariant(charValue);
 
             // if we're more than six characters, then something is wrong!
             if (hexValue.Length > 6)
@@ -116,7 +116,7 @@ namespace Microsoft.Ajax.Utilities
             // Otherwise we might, so we should always add it. We have no way of knowing what
             // the next character will be, so we can't tell if it's 0-9, a-f, or A-F, unfortunately.
             // (and add the leading escape backslash)
-            return string.Format(CultureInfo.InvariantCulture, "\\{0}{1}", hexValue, (hexValue.Length < 6 ? " " : string.Empty));
+            return "\\{0}{1}".FormatInvariant(hexValue, (hexValue.Length < 6 ? " " : string.Empty));
         }
 
         /// <summary>

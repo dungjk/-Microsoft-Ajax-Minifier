@@ -237,7 +237,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_clobber))
                         {
-                            throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidSwitchArg, ea.SwitchPart, ea.ParameterPart));
+                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
                         }
                         break;
 
@@ -304,7 +304,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_preprocessOnly))
                         {
-                            throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidSwitchArg, ea.SwitchPart, ea.ParameterPart));
+                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
                         }
 
                         // this is a JS-only switch
@@ -320,7 +320,7 @@ namespace Microsoft.Ajax.Utilities
                             if (ea.Index >= ea.Arguments.Count - 1)
                             {
                                 // must be followed by an encoding
-                                throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.RenameArgMissingParameterOrFilePath, ea.SwitchPart));
+                                throw new UsageException(m_outputMode, AjaxMin.RenameArgMissingParameterOrFilePath.FormatInvariant(ea.SwitchPart));
                             }
 
                             // the renaming file is specified as the NEXT argument
@@ -361,7 +361,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 if (!JSScanner.IsValidIdentifier(part))
                                 {
-                                    throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.ResourceArgInvalidName, part));
+                                    throw new UsageException(m_outputMode, AjaxMin.ResourceArgInvalidName.FormatInvariant(part));
                                 }
                             }
 
@@ -433,7 +433,7 @@ namespace Microsoft.Ajax.Utilities
 
                     default:
                         // truly an unknown parameter -- throw a usage error
-                        throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidArgument, ea.Arguments[ea.Index]));
+                        throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
                 }
             }
             else
@@ -471,12 +471,12 @@ namespace Microsoft.Ajax.Utilities
             if (ea.ParameterPart == null)
             {
                 // if there's no parameter, then the switch required an arg
-                throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.SwitchRequiresArg, ea.SwitchPart));
+                throw new UsageException(m_outputMode, AjaxMin.SwitchRequiresArg.FormatInvariant(ea.SwitchPart));
             }
             else
             {
                 // otherwise the arg was invalid
-                throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidSwitchArg, ea.ParameterPart, ea.SwitchPart));
+                throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.ParameterPart, ea.SwitchPart));
             }
         }
 
@@ -507,12 +507,12 @@ namespace Microsoft.Ajax.Utilities
                 if (Directory.Exists(fileName))
                 {
                     // cannot be a folder
-                    throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.SourceFileIsFolder, fileName));
+                    throw new UsageException(m_outputMode, AjaxMin.SourceFileIsFolder.FormatInvariant(fileName));
                 }
                 else
                 {
                     // just plain doesn't exist
-                    throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.SourceFileNotExist, fileName));
+                    throw new UsageException(m_outputMode, AjaxMin.SourceFileNotExist.FormatInvariant(fileName));
                 }
             }
         }
@@ -559,7 +559,7 @@ namespace Microsoft.Ajax.Utilities
             }
             else if (e.OutputMode != ConsoleOutputMode.Silent)
             {
-                Console.Error.WriteLine(Extensions.FormatInvariant(AjaxMin.Usage, fileName));
+                Console.Error.WriteLine(AjaxMin.Usage.FormatInvariant(fileName));
             }
         }
 
@@ -676,7 +676,7 @@ namespace Microsoft.Ajax.Utilities
                     if (crunchGroups.Length > 1)
                     {
                         // non-localized string, so format is not in the resources
-                        string errorCode = string.Format(CultureInfo.InvariantCulture, "AM{0:D4}", crunchResult);
+                        string errorCode = "AM{0:D4}".FormatInvariant(crunchResult);
 
                         // if there is an output file name, use it.
                         if (!string.IsNullOrEmpty(crunchGroup.Output.Path))
@@ -685,7 +685,7 @@ namespace Microsoft.Ajax.Utilities
                                 crunchGroup.Output.Path,
                                 AjaxMin.OutputFileErrorSubCat,
                                 errorCode,
-                                Extensions.FormatInvariant(AjaxMin.OutputFileError, crunchResult));
+                                AjaxMin.OutputFileError.FormatInvariant(crunchResult));
                         }
                         else if (!string.IsNullOrEmpty(this.m_xmlInputFile))
                         {
@@ -695,7 +695,7 @@ namespace Microsoft.Ajax.Utilities
                                 this.m_xmlInputFile,
                                 AjaxMin.OutputGroupErrorSubCat,
                                 errorCode,
-                                Extensions.FormatInvariant(AjaxMin.OutputGroupError, ndxGroup, crunchResult));
+                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, crunchResult));
                         }
                         else
                         {
@@ -707,7 +707,7 @@ namespace Microsoft.Ajax.Utilities
                                 "stdout",
                                 AjaxMin.OutputGroupErrorSubCat,
                                 errorCode,
-                                Extensions.FormatInvariant(AjaxMin.OutputGroupError, ndxGroup, crunchResult));
+                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, crunchResult));
                         }
                     }
                     // return the error. Only the last one will be used
@@ -778,7 +778,7 @@ namespace Microsoft.Ajax.Utilities
 
             if (encoding == null)
             {
-                throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidOutputEncoding, encodingName));
+                throw new UsageException(m_outputMode, AjaxMin.InvalidOutputEncoding.FormatInvariant(encodingName));
             }
 
             return encoding;
@@ -791,7 +791,7 @@ namespace Microsoft.Ajax.Utilities
             var encoding = GetJSEncoding(encodingName ?? "UTF-8");
             if (encoding == null)
             {
-                throw new UsageException(m_outputMode, Extensions.FormatInvariant(AjaxMin.InvalidInputEncoding, encodingName));
+                throw new UsageException(m_outputMode, AjaxMin.InvalidInputEncoding.FormatInvariant(encodingName));
             }
 
             return encoding;
@@ -808,7 +808,7 @@ namespace Microsoft.Ajax.Utilities
                 using (StreamReader reader = new StreamReader(sourcePath, encodingInput))
                 {
                     WriteProgress(
-                      Extensions.FormatInvariant(AjaxMin.CrunchingFile, Path.GetFileName(sourcePath))
+                      AjaxMin.CrunchingFile.FormatInvariant(Path.GetFileName(sourcePath))
                       );
                     source = reader.ReadToEnd();
                 }
@@ -865,320 +865,311 @@ namespace Microsoft.Ajax.Utilities
             // create a string builder we'll dump our output into
             StringBuilder outputBuilder = new StringBuilder();
 
-            try
+            switch (crunchGroup.InputType)
             {
-                switch (crunchGroup.InputType)
-                {
-                    case InputType.Css:
-                        if (hasCrunchSpecificResources)
+                case InputType.Css:
+                    if (hasCrunchSpecificResources)
+                    {
+                        // add to the CSS list
+                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
                         {
-                            // add to the CSS list
-                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                            m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
+                        }
+                    }
+
+                    // see how many input files there are
+                    if (crunchGroup.Count == 0)
+                    {
+                        // no input files -- take from stdin
+                        retVal = ProcessCssFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
+                    }
+                    else
+                    {
+                        // process each input file
+                        for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                        {
+                            retVal = ProcessCssFile(
+                                crunchGroup[ndx].Path,
+                                crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                outputBuilder,
+                                ref sourceLength);
+                        }
+                    }
+
+                    if (hasCrunchSpecificResources)
+                    {
+                        // remove from the CSS list
+                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                        {
+                            m_switchParser.CssSettings.RemoveResourceStrings(resourceStrings);
+                        }
+                    }
+                    break;
+
+                case InputType.JavaScript:
+                    if (hasCrunchSpecificResources)
+                    {
+                        // add to the JS list
+                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                        {
+                            m_switchParser.JSSettings.AddResourceStrings(resourceStrings);
+                        }
+                    }
+
+                    if (m_echoInput && m_switchParser.JSSettings.ResourceStrings != null)
+                    {
+                        // we're just echoing the output -- so output a JS version of the dictionary
+                        // create JS from the dictionary and output it to the stream
+                        // leave the object null
+                        foreach (var resourceStrings in m_switchParser.JSSettings.ResourceStrings)
+                        {
+                            string resourceObject = CreateJSFromResourceStrings(resourceStrings);
+                            outputBuilder.Append(resourceObject);
+                        }
+                    }
+
+                    try
+                    {
+                        if (m_preprocessOnly)
+                        {
+                            // see how many input files there are
+                            if (crunchGroup.Count == 0)
                             {
-                                m_switchParser.CssSettings.AddResourceStrings(resourceStrings);
+                                // take input from stdin.
+                                // since that's the ONLY input file, pass TRUE for isLastFile
+                                retVal = PreprocessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, true, ref sourceLength);
+                            }
+                            else
+                            {
+                                // process each input file in turn. 
+                                for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                {
+                                    retVal = PreprocessJSFile(
+                                        crunchGroup[ndx].Path,
+                                        crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                        outputBuilder,
+                                        ndx == crunchGroup.Count - 1,
+                                        ref sourceLength);
+                                }
                             }
                         }
-
-                        // see how many input files there are
-                        if (crunchGroup.Count == 0)
+                        else if (m_echoInput)
                         {
-                            // no input files -- take from stdin
-                            retVal = ProcessCssFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
+                            // see how many input files there are
+                            if (crunchGroup.Count == 0)
+                            {
+                                // take input from stdin.
+                                // since that's the ONLY input file, pass TRUE for isLastFile
+                                retVal = ProcessJSFileEcho(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
+                            }
+                            else
+                            {
+                                // process each input file in turn. 
+                                for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                                {
+                                    retVal = ProcessJSFileEcho(
+                                        crunchGroup[ndx].Path,
+                                        crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
+                                        outputBuilder,
+                                        ref sourceLength);
+                                }
+                            }
                         }
                         else
                         {
-                            // process each input file
-                            for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
+                            using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                             {
-                                retVal = ProcessCssFile(
-                                    crunchGroup[ndx].Path,
-                                    crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
-                                    outputBuilder,
-                                    ref sourceLength);
-                            }
-                        }
+                                var outputVisitor = new OutputVisitor(writer, m_switchParser.JSSettings);
 
-                        if (hasCrunchSpecificResources)
-                        {
-                            // remove from the CSS list
-                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
-                            {
-                                m_switchParser.CssSettings.RemoveResourceStrings(resourceStrings);
-                            }
-                        }
-                        break;
-
-                    case InputType.JavaScript:
-                        if (hasCrunchSpecificResources)
-                        {
-                            // add to the JS list
-                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
-                            {
-                                m_switchParser.JSSettings.AddResourceStrings(resourceStrings);
-                            }
-                        }
-
-                        if (m_echoInput && m_switchParser.JSSettings.ResourceStrings != null)
-                        {
-                            // we're just echoing the output -- so output a JS version of the dictionary
-                            // create JS from the dictionary and output it to the stream
-                            // leave the object null
-                            foreach (var resourceStrings in m_switchParser.JSSettings.ResourceStrings)
-                            {
-                                string resourceObject = CreateJSFromResourceStrings(resourceStrings);
-                                outputBuilder.Append(resourceObject);
-                            }
-                        }
-
-                        try
-                        {
-                            if (m_preprocessOnly)
-                            {
                                 // see how many input files there are
                                 if (crunchGroup.Count == 0)
                                 {
                                     // take input from stdin.
                                     // since that's the ONLY input file, pass TRUE for isLastFile
-                                    retVal = PreprocessJSFile(string.Empty, m_switchParser.EncodingInputName, outputBuilder, true, ref sourceLength);
+                                    retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputVisitor, true, ref sourceLength);
                                 }
                                 else
                                 {
                                     // process each input file in turn. 
                                     for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
                                     {
-                                        retVal = PreprocessJSFile(
+                                        retVal = ProcessJSFile(
                                             crunchGroup[ndx].Path,
                                             crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
-                                            outputBuilder,
+                                            outputVisitor,
                                             ndx == crunchGroup.Count - 1,
                                             ref sourceLength);
                                     }
                                 }
                             }
-                            else if (m_echoInput)
+                        }
+                    }
+                    catch (JScriptException e)
+                    {
+                        retVal = 1;
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                        WriteError("JS{0}".FormatInvariant((int)e.ErrorCode), e.Message);
+                    }
+
+                    if (hasCrunchSpecificResources)
+                    {
+                        // remove from the JS list
+                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
+                        {
+                            m_switchParser.JSSettings.RemoveResourceStrings(resourceStrings);
+                        }
+                    }
+                    break;
+
+                default:
+                    throw new UsageException(m_outputMode, "UnknownInputType");
+            }
+
+            // if we are pretty-printing, add a newline
+            if (m_switchParser.PrettyPrint)
+            {
+                outputBuilder.AppendLine();
+            }
+
+            string crunchedCode = outputBuilder.ToString();
+
+            Encoding encodingOutput = GetOutputEncoding(
+                crunchGroup.InputType,
+                crunchGroup.Output.EncodingName ?? m_switchParser.EncodingOutputName);
+
+            // now write the final output file
+            if (string.IsNullOrEmpty(crunchGroup.Output.Path))
+            {
+                // no output file specified - send to STDOUT
+                // if the code is empty, don't bother outputting it to the console
+                if (!string.IsNullOrEmpty(crunchedCode))
+                {
+                    // set the console encoding
+                    try
+                    {
+                        // try setting the appropriate output encoding
+                        Console.OutputEncoding = encodingOutput;
+                    }
+                    catch (IOException e)
+                    {
+                        // sometimes they will error, in which case we'll just set it to ascii
+                        Debug.WriteLine(e.ToString());
+                        Console.OutputEncoding = Encoding.ASCII;
+                    }
+
+                    // however, for some reason when I set the output encoding it
+                    // STILL doesn't call the EncoderFallback to Unicode-escape characters
+                    // not supported by the encoding scheme. So instead we need to run the
+                    // translation outselves. Still need to set the output encoding, though,
+                    // so the translated bytes get displayed properly in the console.
+                    byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
+
+                    // only output the size analysis if we are in analyze mode
+                    // change: no, output the size analysis all the time.
+                    // (unless in silent mode, but WriteProgess will take care of that)
+                    ////if (m_analyze)
+                    {
+                        // output blank line before
+                        WriteProgress();
+
+                        // if we are echoing the input, don't bother reporting the
+                        // minify savings because we don't have the minified output --
+                        // we have the original output
+                        double percentage;
+                        if (!m_echoInput)
+                        {
+                            // calculate the percentage saved
+                            percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
+                            WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
+                                              sourceLength,
+                                              encodedBytes.Length,
+                                              percentage
+                                              ));
+                        }
+                        else
+                        {
+
+                            WriteProgress(AjaxMin.SavingsOutputMessage.FormatInvariant(
+                                encodedBytes.Length
+                                ));
+                        }
+
+                        // calculate how much a simple gzip compression would compress the output
+                        long gzipLength = CalculateGzipSize(encodedBytes);
+
+                        // calculate the savings and display the result
+                        percentage = Math.Round((1 - ((double)gzipLength) / encodedBytes.Length) * 100, 1);
+                        WriteProgress(AjaxMin.SavingsGzipMessage.FormatInvariant(gzipLength, percentage));
+
+                        // blank line after
+                        WriteProgress();
+                    }
+
+                    // send to console out
+                    Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
+                    //Console.Out.Write(crunchedCode);
+                }
+            }
+            else
+            {
+                retVal = this.ClobberFileAndExecuteOperation(
+                    crunchGroup.Output.Path,
+                    delegate
+                    {
+                        // create the output file using the given encoding
+                        using (StreamWriter outputStream = new StreamWriter(
+                           crunchGroup.Output.Path,
+                           false,
+                           encodingOutput
+                           ))
+                        {
+                            outputStream.Write(crunchedCode);
+                        }
+
+                        // only output the size analysis if there is actually some output to measure
+                        if (File.Exists(crunchGroup.Output.Path))
+                        {
+                            // get the size of the resulting file
+                            FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output.Path);
+                            long crunchedLength = crunchedFileInfo.Length;
+                            if (crunchedLength > 0)
                             {
-                                // see how many input files there are
-                                if (crunchGroup.Count == 0)
+                                // blank line before
+                                WriteProgress();
+
+                                // if we are just echoing the input, don't bother calculating
+                                // the minify savings because there aren't any
+                                double percentage;
+                                if (!m_echoInput)
                                 {
-                                    // take input from stdin.
-                                    // since that's the ONLY input file, pass TRUE for isLastFile
-                                    retVal = ProcessJSFileEcho(string.Empty, m_switchParser.EncodingInputName, outputBuilder, ref sourceLength);
+                                    // calculate the percentage saved by minification
+                                    percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
+                                    WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
+                                                      sourceLength,
+                                                      crunchedLength,
+                                                      percentage
+                                                      ));
                                 }
                                 else
                                 {
-                                    // process each input file in turn. 
-                                    for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                                    {
-                                        retVal = ProcessJSFileEcho(
-                                            crunchGroup[ndx].Path,
-                                            crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
-                                            outputBuilder,
-                                            ref sourceLength);
-                                    }
+
+                                    WriteProgress(AjaxMin.SavingsOutputMessage.FormatInvariant(
+                                        crunchedLength
+                                        ));
                                 }
-                            }
-                            else
-                            {
-                                using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
-                                {
-                                    var outputVisitor = new OutputVisitor(writer, m_switchParser.JSSettings);
 
-                                    // see how many input files there are
-                                    if (crunchGroup.Count == 0)
-                                    {
-                                        // take input from stdin.
-                                        // since that's the ONLY input file, pass TRUE for isLastFile
-                                        retVal = ProcessJSFile(string.Empty, m_switchParser.EncodingInputName, outputVisitor, true, ref sourceLength);
-                                    }
-                                    else
-                                    {
-                                        // process each input file in turn. 
-                                        for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                                        {
-                                            retVal = ProcessJSFile(
-                                                crunchGroup[ndx].Path,
-                                                crunchGroup[ndx].EncodingName ?? m_switchParser.EncodingInputName,
-                                                outputVisitor,
-                                                ndx == crunchGroup.Count - 1,
-                                                ref sourceLength);
-                                        }
-                                    }
-                                }
+                                // compute how long a simple gzip might compress the resulting file
+                                long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output.Path));
+
+                                // calculate the percentage of compression and display the results
+                                percentage = Math.Round((1 - ((double)gzipLength) / crunchedLength) * 100, 1);
+                                WriteProgress(AjaxMin.SavingsGzipMessage.FormatInvariant(gzipLength, percentage));
+
+                                // blank line after
+                                WriteProgress();
                             }
                         }
-                        catch (JScriptException e)
-                        {
-                            retVal = 1;
-                            System.Diagnostics.Debug.WriteLine(e.ToString());
-                            WriteError(string.Format(CultureInfo.InvariantCulture, "JS{0}", (int)e.ErrorCode), e.Message);
-                        }
-
-                        if (hasCrunchSpecificResources)
-                        {
-                            // remove from the JS list
-                            foreach (var resourceStrings in crunchGroup.ResourceStrings)
-                            {
-                                m_switchParser.JSSettings.RemoveResourceStrings(resourceStrings);
-                            }
-                        }
-                        break;
-
-                    default:
-                        throw new UsageException(m_outputMode, "UnknownInputType");
-                }
-
-                // if we are pretty-printing, add a newline
-                if (m_switchParser.PrettyPrint)
-                {
-                    outputBuilder.AppendLine();
-                }
-
-                string crunchedCode = outputBuilder.ToString();
-
-                Encoding encodingOutput = GetOutputEncoding(
-                    crunchGroup.InputType, 
-                    crunchGroup.Output.EncodingName ?? m_switchParser.EncodingOutputName);
-
-                // now write the final output file
-                if (string.IsNullOrEmpty(crunchGroup.Output.Path))
-                {
-                    // no output file specified - send to STDOUT
-                    // if the code is empty, don't bother outputting it to the console
-                    if (!string.IsNullOrEmpty(crunchedCode))
-                    {
-                        // set the console encoding
-                        try
-                        {
-                            // try setting the appropriate output encoding
-                            Console.OutputEncoding = encodingOutput;
-                        }
-                        catch (IOException e)
-                        {
-                            // sometimes they will error, in which case we'll just set it to ascii
-                            Debug.WriteLine(e.ToString());
-                            Console.OutputEncoding = Encoding.ASCII;
-                        }
-
-                        // however, for some reason when I set the output encoding it
-                        // STILL doesn't call the EncoderFallback to Unicode-escape characters
-                        // not supported by the encoding scheme. So instead we need to run the
-                        // translation outselves. Still need to set the output encoding, though,
-                        // so the translated bytes get displayed properly in the console.
-                        byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
-
-                        // only output the size analysis if we are in analyze mode
-                        // change: no, output the size analysis all the time.
-                        // (unless in silent mode, but WriteProgess will take care of that)
-                        ////if (m_analyze)
-                        {
-                            // output blank line before
-                            WriteProgress();
-
-                            // if we are echoing the input, don't bother reporting the
-                            // minify savings because we don't have the minified output --
-                            // we have the original output
-                            double percentage;
-                            if (!m_echoInput)
-                            {
-                                // calculate the percentage saved
-                                percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
-                                WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsMessage,
-                                                  sourceLength,
-                                                  encodedBytes.Length,
-                                                  percentage
-                                                  ));
-                            }
-                            else
-                            {
-
-                                WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsOutputMessage,
-                                    encodedBytes.Length
-                                    ));
-                            }
-
-                            // calculate how much a simple gzip compression would compress the output
-                            long gzipLength = CalculateGzipSize(encodedBytes);
-
-                            // calculate the savings and display the result
-                            percentage = Math.Round((1 - ((double)gzipLength) / encodedBytes.Length) * 100, 1);
-                            WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsGzipMessage, gzipLength, percentage));
-
-                            // blank line after
-                            WriteProgress();
-                        }
-
-                        // send to console out
-                        Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
-                        //Console.Out.Write(crunchedCode);
-                    }
-                }
-                else
-                {
-                    retVal = this.ClobberFileAndExecuteOperation(
-                        crunchGroup.Output.Path,
-                        delegate
-                        {
-                            // create the output file using the given encoding
-                            using (StreamWriter outputStream = new StreamWriter(
-                               crunchGroup.Output.Path,
-                               false,
-                               encodingOutput
-                               ))
-                            {
-                                outputStream.Write(crunchedCode);
-                            }
-
-                            // only output the size analysis if there is actually some output to measure
-                            if (File.Exists(crunchGroup.Output.Path))
-                            {
-                                // get the size of the resulting file
-                                FileInfo crunchedFileInfo = new FileInfo(crunchGroup.Output.Path);
-                                long crunchedLength = crunchedFileInfo.Length;
-                                if (crunchedLength > 0)
-                                {
-                                    // blank line before
-                                    WriteProgress();
-
-                                    // if we are just echoing the input, don't bother calculating
-                                    // the minify savings because there aren't any
-                                    double percentage;
-                                    if (!m_echoInput)
-                                    {
-                                        // calculate the percentage saved by minification
-                                        percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
-                                        WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsMessage,
-                                                          sourceLength,
-                                                          crunchedLength,
-                                                          percentage
-                                                          ));
-                                    }
-                                    else
-                                    {
-
-                                        WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsOutputMessage,
-                                            crunchedLength
-                                            ));
-                                    }
-
-                                    // compute how long a simple gzip might compress the resulting file
-                                    long gzipLength = CalculateGzipSize(File.ReadAllBytes(crunchGroup.Output.Path));
-
-                                    // calculate the percentage of compression and display the results
-                                    percentage = Math.Round((1 - ((double)gzipLength) / crunchedLength) * 100, 1);
-                                    WriteProgress(Extensions.FormatInvariant(AjaxMin.SavingsGzipMessage, gzipLength, percentage));
-
-                                    // blank line after
-                                    WriteProgress();
-                                }
-                            }
-                        });
-                }
-            }
-            catch (Exception e)
-            {
-                retVal = 1;
-                System.Diagnostics.Debug.WriteLine(e.ToString());
-                WriteError("AM-EXCEPTION", e.Message);
+                    });
             }
 
             if (retVal == 0 && m_errorsFound)
@@ -1223,7 +1214,7 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     retVal = 1;
-                    WriteError("AM-IO", Extensions.FormatInvariant(AjaxMin.NoClobberError, filePath));
+                    WriteError("AM-IO", AjaxMin.NoClobberError.FormatInvariant(filePath));
                 }
             }
             catch (ArgumentException e)
@@ -1429,7 +1420,7 @@ namespace Microsoft.Ajax.Utilities
                                     // make sure the resource file actually exists! It's an error if it doesn't.
                                     if (!File.Exists(resourceFile))
                                     {
-                                        throw new XmlException(Extensions.FormatInvariant(AjaxMin.XmlResourceNotExist,
+                                        throw new XmlException(AjaxMin.XmlResourceNotExist.FormatInvariant(
                                           pathAttribute.Value
                                           ));
                                     }
@@ -1478,7 +1469,7 @@ namespace Microsoft.Ajax.Utilities
                                     // make sure the input file actually exists! It's an error if it doesn't.
                                     if (!File.Exists(inputFile))
                                     {
-                                        throw new XmlException(Extensions.FormatInvariant(AjaxMin.XmlInputNotExist,
+                                        throw new XmlException(AjaxMin.XmlInputNotExist.FormatInvariant(
                                           pathAttribute.Value
                                           ));
                                     }
@@ -1534,7 +1525,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(e.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, Extensions.FormatInvariant(AjaxMin.InputXmlError, e.Message));
+                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(e.Message));
             }
             // return an array of CrunchGroup objects
             return crunchGroups.ToArray();
@@ -1567,7 +1558,7 @@ namespace Microsoft.Ajax.Utilities
         private ResourceStrings ProcessResourceFile(string resourceFileName)
         {
             WriteProgress(
-                Extensions.FormatInvariant(AjaxMin.ReadingResourceFile, Path.GetFileName(resourceFileName))
+                AjaxMin.ReadingResourceFile.FormatInvariant(Path.GetFileName(resourceFileName))
                 );
 
             // which meethod we call to process the resources depends on the file extension
@@ -1770,9 +1761,7 @@ namespace Microsoft.Ajax.Utilities
             }
             // else we are not empty and we already end in a space, so all is good
 
-            return string.Format(
-                CultureInfo.CurrentCulture,
-                "{0}: {1}{2} {3}: {4}",
+            return "{0}: {1}{2} {3}: {4}".FormatInvariant(
                 location, // not localized
                 subcategory, // localizable, optional
                 "error", // NOT localized
@@ -1810,7 +1799,7 @@ namespace Microsoft.Ajax.Utilities
 
             // combine the information for output
             var sb = new StringBuilder();
-            sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "{0} (version {1})", string.IsNullOrEmpty(product) ? assemblyName.Name : product, assemblyName.Version));
+            sb.AppendLine("{0} (version {1})".FormatInvariant(string.IsNullOrEmpty(product) ? assemblyName.Name : product, assemblyName.Version));
             if (!string.IsNullOrEmpty(description)) { sb.AppendLine(description); }
             if (!string.IsNullOrEmpty(copyright)) { sb.AppendLine(copyright); }
             return sb.ToString();

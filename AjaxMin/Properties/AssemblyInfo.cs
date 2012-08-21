@@ -28,7 +28,7 @@ using System.Security.Permissions;
 [assembly: AssemblyCulture("")]
 
 // needs to read and write files
-[assembly: FileIOPermission(SecurityAction.RequestMinimum, Unrestricted = true)]
+//[assembly: FileIOPermission(SecurityAction.RequestMinimum, Unrestricted = true)]
 
 // we are compliant and not visible to COM by default
 [assembly: System.CLSCompliant(true)]

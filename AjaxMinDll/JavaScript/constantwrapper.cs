@@ -321,7 +321,7 @@ namespace Microsoft.Ajax.Utilities
                             // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
                             // no matter what output encoding we may use.
                             AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), @"\u", ref sb);
-                            sb.AppendFormat(CultureInfo.InvariantCulture, "{0:x}", (int)c);
+                            sb.Append("{0:x}".FormatInvariant((int)c));
                             startOfStretch = ndx + 1;
                             break;
 
@@ -341,7 +341,7 @@ namespace Microsoft.Ajax.Utilities
                                     // and \10 through \40 are backreferences if they correspond to existing 
                                     // backreference groups. So we can't use octal for the characters with values
                                     // between 0 and 31. encode with a hexadecimal escape sequence
-                                    AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), string.Format(CultureInfo.InvariantCulture, "\\x{0:x2}", (int)c), ref sb);
+                                    AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\x{0:x2}".FormatInvariant((int)c), ref sb);
                                     startOfStretch = ndx + 1;
                                 }
                                 else
@@ -355,13 +355,13 @@ namespace Microsoft.Ajax.Utilities
                                     if (intValue < 8)
                                     {
                                         // single octal digit
-                                        sb.Append(intValue.ToString(CultureInfo.InvariantCulture));
+                                        sb.Append(intValue.ToStringInvariant());
                                     }
                                     else
                                     {
                                         // two octal digits
-                                        sb.Append((intValue / 8).ToString(CultureInfo.InvariantCulture));
-                                        sb.Append((intValue % 8).ToString(CultureInfo.InvariantCulture));
+                                        sb.Append((intValue / 8).ToStringInvariant());
+                                        sb.Append((intValue % 8).ToStringInvariant());
                                     }
 
                                     startOfStretch = ndx + 1;
@@ -461,7 +461,6 @@ namespace Microsoft.Ajax.Utilities
 
                             // parse the hexadecimal digits portion
                             // can't use NumberStyles.HexNumber in double.Parse, so we need to do the conversion manually
-                            //return double.Parse(match.Result("${hex}"), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                             double doubleValue = 0;
                             string hexRep = match.Result("${hex}");
 

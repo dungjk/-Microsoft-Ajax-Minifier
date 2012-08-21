@@ -138,6 +138,7 @@
     <Content Include="TestData\CSS\Expected\EmbeddedAspNetBlock\TopLevel.css" />
     <Content Include="TestData\CSS\Expected\Encoding\escaped.css" />
     <Content Include="TestData\CSS\Expected\Encoding\escaped_utf8.css" />
+    <Content Include="TestData\CSS\Expected\Errors\BadRGB.css" />
     <Content Include="TestData\CSS\Expected\Errors\InvalidClassName.css" />
     <Content Include="TestData\CSS\Expected\Errors\UnterminatedString.css" />
     <Content Include="TestData\CSS\Expected\Hacks\IEhacks.css" />
@@ -217,6 +218,7 @@
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\StringWithBlock.css" />
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\TopLevel.css" />
     <Content Include="TestData\CSS\Input\Encoding\escaped.css" />
+    <Content Include="TestData\CSS\Input\Errors\BadRGB.css" />
     <Content Include="TestData\CSS\Input\Errors\InvalidClassName.css" />
     <Content Include="TestData\CSS\Input\Errors\UnterminatedString.css" />
     <Content Include="TestData\CSS\Input\Hacks\IEhacks.css" />

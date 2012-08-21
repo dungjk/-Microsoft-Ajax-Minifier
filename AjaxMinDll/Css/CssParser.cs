@@ -2527,13 +2527,25 @@ namespace Microsoft.Ajax.Utilities
                         // if this isn't the first number, we better find a comma separator
                         if (ndx > 0)
                         {
-                            if (CurrentTokenType != TokenType.Character
-                              || CurrentTokenText != ",")
+                            if (CurrentTokenType == TokenType.Character && CurrentTokenText == ",")
+                            {
+                                // add it to the rgb string builder
+                                sbRGB.Append(',');
+                            }
+                            else if (CurrentTokenType == TokenType.Character && CurrentTokenText == ")")
                             {
                                 ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
+
+                                // closing paren is the end of the function! exit the loop
+                                useRGB = true;
+                                break;
                             }
-                            // add it to the rgb string builder
-                            sbRGB.Append(',');
+                            else
+                            {
+                                ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
+                                sbRGB.Append(CurrentTokenText);
+                                useRGB = true;
+                            }
 
                             // skip to the next significant
                             comments = NextSignificantToken();
@@ -2549,8 +2561,7 @@ namespace Microsoft.Ajax.Utilities
                         // although we ALLOW negative numbers here, we'll trim them
                         // later. But in the mean time, save a negation flag.
                         bool negateNumber = false;
-                        if (CurrentTokenType == TokenType.Character
-                          && CurrentTokenText == "-")
+                        if (CurrentTokenType == TokenType.Character && CurrentTokenText == "-")
                         {
                             negateNumber = true;
                             comments = NextSignificantToken();
@@ -2563,52 +2574,74 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
-                        if (CurrentTokenType != TokenType.Number
-                          && CurrentTokenType != TokenType.Percentage)
-                        {
-                            ReportError(0, CssErrorCode.ExpectedRgbNumberOrPercentage, CurrentTokenText);
-                        }
-
                         // we might adjust the value, so save the token text
                         string tokenText = CurrentTokenText;
-                        if (CurrentTokenType == TokenType.Number)
+
+                        if (CurrentTokenType != TokenType.Number && CurrentTokenType != TokenType.Percentage)
                         {
-                            // get the number value
-                            float numberValue = System.Convert.ToSingle(tokenText, CultureInfo.InvariantCulture) * (negateNumber ? -1 : 1);
-                            // make sure it's between 0 and 255
-                            if (numberValue < 0)
-                            {
-                                tokenText = "0";
-                                rgb[ndx] = 0;
-                            }
-                            else if (numberValue > 255)
-                            {
-                                tokenText = "255";
-                                rgb[ndx] = 255;
-                            }
-                            else
-                            {
-                                rgb[ndx] = System.Convert.ToInt32(numberValue);
-                            }
+                            ReportError(0, CssErrorCode.ExpectedRgbNumberOrPercentage, CurrentTokenText);
+                            useRGB = true;
                         }
                         else
                         {
-                            // percentage
-                            float percentageValue = System.Convert.ToSingle(tokenText.Substring(0, tokenText.Length - 1), CultureInfo.InvariantCulture)
-                            * (negateNumber ? -1 : 1);
-                            if (percentageValue < 0)
+                            if (CurrentTokenType == TokenType.Number)
                             {
-                                tokenText = "0%";
-                                rgb[ndx] = 0;
-                            }
-                            else if (percentageValue > 100)
-                            {
-                                tokenText = "100%";
-                                rgb[ndx] = 255;
+                                // get the number value
+                                float numberValue;
+                                if (tokenText.TryParseSingleInvariant(out numberValue))
+                                {
+                                    numberValue *= (negateNumber ? -1 : 1);
+                                    // make sure it's between 0 and 255
+                                    if (numberValue < 0)
+                                    {
+                                        tokenText = "0";
+                                        rgb[ndx] = 0;
+                                    }
+                                    else if (numberValue > 255)
+                                    {
+                                        tokenText = "255";
+                                        rgb[ndx] = 255;
+                                    }
+                                    else
+                                    {
+                                        rgb[ndx] = System.Convert.ToInt32(numberValue);
+                                    }
+                                }
+                                else
+                                {
+                                    // error -- not even a number. Keep the rgb function
+                                    // (and don't change the token)
+                                    useRGB = true;
+                                }
                             }
                             else
                             {
-                                rgb[ndx] = System.Convert.ToInt32(percentageValue * 255 / 100);
+                                // percentage
+                                float percentageValue;
+                                if (tokenText.Substring(0, tokenText.Length - 1).TryParseSingleInvariant(out percentageValue))
+                                {
+                                    percentageValue *= (negateNumber ? -1 : 1);
+                                    if (percentageValue < 0)
+                                    {
+                                        tokenText = "0%";
+                                        rgb[ndx] = 0;
+                                    }
+                                    else if (percentageValue > 100)
+                                    {
+                                        tokenText = "100%";
+                                        rgb[ndx] = 255;
+                                    }
+                                    else
+                                    {
+                                        rgb[ndx] = System.Convert.ToInt32(percentageValue * 255 / 100);
+                                    }
+                                }
+                                else
+                                {
+                                    // error -- not even a number. Keep the rgb function
+                                    // (and don't change the token)
+                                    useRGB = true;
+                                }
                             }
                         }
 
@@ -2636,7 +2669,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // we can collapse it to either #rrggbb or #rgb
                         // calculate the full hex string and crunch it
-                        string fullCode = string.Format(CultureInfo.InvariantCulture, "#{0:x2}{1:x2}{2:x2}", rgb[0], rgb[1], rgb[2]);
+                        string fullCode = "#{0:x2}{1:x2}{2:x2}".FormatInvariant(rgb[0], rgb[1], rgb[2]);
                         string hexString = CrunchHexColor(fullCode, Settings.ColorNames, m_noColorAbbreviation);
                         Append(hexString);
 
@@ -3658,7 +3691,7 @@ namespace Microsoft.Ajax.Utilities
 
                                 default:
                                     // regular unicode escape
-                                    sb.Append(string.Format(CultureInfo.InvariantCulture, "\\{0:x}", char.ConvertToUtf32(text, ndx)));
+                                    sb.Append("\\{0:x}".FormatInvariant(char.ConvertToUtf32(text, ndx)));
 
                                     // if the NEXT character (if there is one) is a hex digit, 
                                     // we will need to append a space to signify the end of the escape sequence, since this
@@ -3780,7 +3813,7 @@ namespace Microsoft.Ajax.Utilities
                     && !text.StartsWith("#", StringComparison.Ordinal))
                 {
                     bool nameConvertedToHex = false;
-                    string lowerCaseText = text.ToLower(CultureInfo.InvariantCulture);
+                    string lowerCaseText = text.ToLowerInvariant();
                     string rgbString;
 
                     switch (Settings.ColorNames)
@@ -3923,7 +3956,7 @@ namespace Microsoft.Ajax.Utilities
             // (the slash followed by six hex digits), we might
             // need to append a space before the next valid character if it is a valid hex digit.
             // (we will always need to append another space after an escape sequence if the next valid character is a space)
-            var hex = string.Format(CultureInfo.InvariantCulture, "\\{0:x}", (int)character);
+            var hex = "\\{0:x}".FormatInvariant((int)character);
             sb.Append(hex);
             return hex.Length < 7;
         }
@@ -4000,19 +4033,17 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // yes -- collapse it and make sure it's lower-case so we don't 
                     // have to do any case-insensitive comparisons
-                    hexColor = string.Format(
-                      CultureInfo.InvariantCulture,
-                      "#{0}{1}{2}",
+                    hexColor = "#{0}{1}{2}".FormatInvariant(
                       match.Result("${r}"),
                       match.Result("${g}"),
                       match.Result("${b}")
-                      ).ToLower(CultureInfo.InvariantCulture);
+                      ).ToLowerInvariant();
                 }
                 else
                 {
                     // make sure it's lower-case so we don't have to do any
                     // case-insensitive comparisons
-                    hexColor = hexColor.ToLower(CultureInfo.InvariantCulture);
+                    hexColor = hexColor.ToLowerInvariant();
                 }
             }
 
@@ -4086,7 +4117,7 @@ namespace Microsoft.Ajax.Utilities
             //        3 == this can lead to performance problems
             //        4 == this is just not right
 
-            string message = string.Format(CultureInfo.InvariantCulture, CssStrings.ResourceManager.GetString(errorNumber.ToString(), CssStrings.Culture), arguments);
+            string message = CssStrings.ResourceManager.GetString(errorNumber.ToString(), CssStrings.Culture).FormatInvariant(arguments);
             CssParserException exc = new CssParserException(
                 (int)errorNumber,
                 severity,
@@ -4111,7 +4142,7 @@ namespace Microsoft.Ajax.Utilities
             if (CssError != null && exception != null && !Settings.IgnoreAllErrors)
             {
                 // format our CSS error code
-                string errorCode = string.Format(CultureInfo.InvariantCulture, "CSS{0}", (exception.Error & (0xffff)));
+                string errorCode = "CSS{0}".FormatInvariant((exception.Error & (0xffff)));
 
                 // if we have no errors in our error ignore list, or if we do but this error code is not in
                 // that list, fire the event to whomever is listening for it.
@@ -4162,7 +4193,7 @@ namespace Microsoft.Ajax.Utilities
                     return CssStrings.Severity4;
 
                 default:
-                    return string.Format(CultureInfo.InvariantCulture, CssStrings.SeverityUnknown, severity);
+                    return CssStrings.SeverityUnknown.FormatInvariant(severity);
             }
         }
 

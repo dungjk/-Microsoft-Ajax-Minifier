@@ -1129,7 +1129,7 @@ namespace Microsoft.Ajax.Utilities
                         // because they might be part of an actual escape sequence.
                         // So just return the escaped sequence as-is and don't forget to keep any whitespace that
                         // may follow.
-                        unicode = string.Format(CultureInfo.InvariantCulture, followedByWhitespace ? @"\{0:x} " : @"\{0:x}", unicodeValue);
+                        unicode = (followedByWhitespace ? @"\{0:x} " : @"\{0:x}").FormatInvariant(unicodeValue);
                     }
                     else
                     {
@@ -1833,7 +1833,7 @@ namespace Microsoft.Ajax.Utilities
             //        3 == this can lead to performance problems
             //        4 == this is just not right
 
-            string message = string.Format(CultureInfo.InvariantCulture, CssStrings.ResourceManager.GetString(error.ToString(), CssStrings.Culture), args);
+            string message = CssStrings.ResourceManager.GetString(error.ToString(), CssStrings.Culture).FormatInvariant(args);
             OnScannerError(new CssScannerException(
                 (int)error,
                 severity,

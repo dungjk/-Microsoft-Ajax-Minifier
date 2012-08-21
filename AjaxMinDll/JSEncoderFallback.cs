@@ -102,11 +102,7 @@ namespace Microsoft.Ajax.Utilities
         private static string GetEncoding(int charValue)
         {
             // format: \uXXXX
-            return string.Format(
-              CultureInfo.InvariantCulture,
-              "\\u{0:x4}",
-              charValue
-              );
+            return "\\u{0:x4}".FormatInvariant(charValue);
         }
 
         /// <summary>

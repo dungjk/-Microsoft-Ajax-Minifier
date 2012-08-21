@@ -577,7 +577,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// Executes the Ajax Minifier build task
         /// </summary>
         /// <returns>True if the build task successfully succeded; otherwise, false.</returns>
-        [SecurityCritical]
+        //[SecurityCritical]
         public override bool Execute()
         {
             m_minifier.WarningLevel = this.WarningLevel;
@@ -590,13 +590,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     // no combined name; the source extension and target extension properties must be set.
                     if (this.JsSourceExtensionPattern.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsSourceExtensionPattern");
+                        Log.LogError(Strings.RequiredParameterIsEmpty, "JsSourceExtensionPattern");
                         return false;
                     }
 
                     if (this.JsTargetExtension.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "JsTargetExtension");
+                        Log.LogError(Strings.RequiredParameterIsEmpty, "JsTargetExtension");
                         return false;
                     }
                 }
@@ -605,13 +605,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     // a combined name was specified - must NOT use source/target extension properties
                     if (!this.JsSourceExtensionPattern.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "JsSourceExtensionPattern");
+                        Log.LogError(Strings.CannotUseCombinedAndIndividual, "JsSourceExtensionPattern");
                         return false;
                     }
 
                     if (!this.JsTargetExtension.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "JsTargetExtension");
+                        Log.LogError(Strings.CannotUseCombinedAndIndividual, "JsTargetExtension");
                         return false;
                     }
                 }
@@ -633,7 +633,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     else
                     {
                         // log a WARNING that the symbol map generation was skipped -- don't break the build
-                        Log.LogWarning(StringManager.GetString(StringEnum.MapDestinationIsReadOnly, m_symbolsMapFile));
+                        Log.LogWarning(Strings.MapDestinationIsReadOnly, m_symbolsMapFile);
                         MinifyJavaScript();
                     }
                 }
@@ -651,13 +651,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     if (this.CssSourceExtensionPattern.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssSourceExtensionPattern");
+                        Log.LogError(Strings.RequiredParameterIsEmpty, "CssSourceExtensionPattern");
                         return false;
                     }
 
                     if (this.CssTargetExtension.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.RequiredParameterIsEmpty, "CssTargetExtension");
+                        Log.LogError(Strings.RequiredParameterIsEmpty, "CssTargetExtension");
                         return false;
                     }
                 }
@@ -665,13 +665,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     if (!this.CssSourceExtensionPattern.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "CssSourceExtensionPattern");
+                        Log.LogError(Strings.CannotUseCombinedAndIndividual, "CssSourceExtensionPattern");
                         return false;
                     }
 
                     if (!this.CssTargetExtension.IsNullOrWhiteSpace())
                     {
-                        LogTaskError(StringEnum.CannotUseCombinedAndIndividual, "CssTargetExtension");
+                        Log.LogError(Strings.CannotUseCombinedAndIndividual, "CssTargetExtension");
                         return false;
                     }
                 }
@@ -703,7 +703,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     else
                     {
                         // log a WARNING that the minification was skipped -- don't break the build
-                        Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path);
                     }
                 }
             }
@@ -719,13 +719,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        LogFileError(this.JsCombinedFileName, StringEnum.NoWritePermission, this.JsCombinedFileName);
+                        LogFileError(this.JsCombinedFileName, Strings.NoWritePermission, this.JsCombinedFileName);
                     }
                 }
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(this.JsCombinedFileName), this.JsCombinedFileName));
+                    Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(this.JsCombinedFileName), this.JsCombinedFileName);
                 }
             }
         }
@@ -750,14 +750,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         }
                         catch (Exception e)
                         {
-                            LogFileError(item.ItemSpec, StringEnum.DidNotMinify, path, e.Message);
+                            LogFileError(item.ItemSpec, Strings.DidNotMinify, path, e.Message);
                             throw;
                         }
                     }
                     else
                     {
                         // log a WARNING that the minification was skipped -- don't break the build
-                        Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path));
+                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path);
                     }
                 }
             }
@@ -773,13 +773,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        LogFileError(this.CssCombinedFileName, StringEnum.NoWritePermission, this.CssCombinedFileName);
+                        LogFileError(this.CssCombinedFileName, Strings.NoWritePermission, this.CssCombinedFileName);
                     }
                 }
                 else
                 {
                     // log a WARNING that the minification was skipped -- don't break the build
-                    Log.LogWarning(StringManager.GetString(StringEnum.DestinationIsReadOnly, Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName));
+                    Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName);
                 }
             }
         }
@@ -818,13 +818,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        LogFileError(sourceName, StringEnum.NoWritePermission, outputPath);
+                        LogFileError(sourceName, Strings.NoWritePermission, outputPath);
                     }
                 }
             }
             catch (Exception e)
             {
-                LogFileError(sourceName, StringEnum.DidNotMinify, outputPath, e.Message);
+                LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
                 throw;
             }
             finally
@@ -886,7 +886,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                     catch (Exception e)
                     {
-                        LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.JsCombinedFileName, e.Message);
+                        LogFileError(item.ItemSpec, Strings.DidNotMinify, this.JsCombinedFileName, e.Message);
                         throw;
                     }
                 }
@@ -933,13 +933,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        LogFileError(outputPath, StringEnum.NoWritePermission, outputPath);
+                        LogFileError(outputPath, Strings.NoWritePermission, outputPath);
                     }
                 }
             }
             catch (Exception e)
             {
-                LogFileError(sourceName, StringEnum.DidNotMinify, outputPath, e.Message);
+                LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
                 throw;
             }
         }
@@ -973,7 +973,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
                 catch (Exception e)
                 {
-                    LogFileError(item.ItemSpec, StringEnum.DidNotMinify, this.CssCombinedFileName, e.Message);
+                    LogFileError(item.ItemSpec, Strings.DidNotMinify, this.CssCombinedFileName, e.Message);
                     throw;
                 }
             }
@@ -986,25 +986,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
         #region Logging methods
 
         /// <summary>
-        /// Call this method to log an error against the build task itself, before any specific files are processed
-        /// </summary>
-        /// <param name="messageIdentifier">String resource identifier</param>
-        /// <param name="messageArguments">any optional formatting arguments</param>
-        private void LogTaskError(StringEnum messageIdentifier, params object[] messageArguments)
-        {
-            var message = StringManager.GetString(messageIdentifier);
-            Log.LogError(message, messageArguments);
-        }
-
-        /// <summary>
         /// Call this method to log an error against the build of a particular source file
         /// </summary>
         /// <param name="path">path of the input source file</param>
         /// <param name="messageIdentifier">String resource identifier</param>
         /// <param name="messageArguments">any optional formatting arguments</param>
-        private void LogFileError(string path, StringEnum messageIdentifier, params object[] messageArguments)
+        private void LogFileError(string path, string message, params object[] messageArguments)
         {
-            var message = StringManager.GetString(messageIdentifier);
             Log.LogError(
                 null,
                 null,
@@ -1100,7 +1088,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
 
             // if we cannot parse it for any reason, post the error and stop the task.
-            LogTaskError(StringEnum.InvalidInputParameter, strValue);
+            Log.LogError(Strings.InvalidInputParameter, strValue);
             return default(T);
         }
 

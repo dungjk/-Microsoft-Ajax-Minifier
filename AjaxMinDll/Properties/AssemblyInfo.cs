@@ -30,7 +30,7 @@ using System.Security;
 // minimum permission (execute) and nothing optional
 //[assembly: SecurityPermission(SecurityAction.RequestMinimum, Execution = true)]
 //[assembly: PermissionSet(SecurityAction.RequestOptional, Name = "Nothing")]
-[assembly: SecurityCritical(SecurityCriticalScope.Explicit)]
+//[assembly: SecurityCritical(SecurityCriticalScope.Explicit)]
 [assembly: AllowPartiallyTrustedCallers]
 
 // we are compliant and not visible to COM by default

@@ -133,7 +133,7 @@ namespace Microsoft.Ajax.Utilities
             if (CompilerError != null && !m_settings.IgnoreAllErrors)
             {
                 // format the error code
-                string errorCode = string.Format(CultureInfo.InvariantCulture, "JS{0}", (int)se.ErrorCode);
+                string errorCode = "JS{0}".FormatInvariant((int)se.ErrorCode);
                 if (m_settings != null && (m_settings.IgnoreErrors == null || !m_settings.IgnoreErrors.Contains(errorCode)))
                 {
                     // get the offending line
@@ -194,7 +194,7 @@ namespace Microsoft.Ajax.Utilities
                     return JScript.Severity4;
 
                 default:
-                    return string.Format(CultureInfo.InvariantCulture, JScript.SeverityUnknown, severity);
+                    return JScript.SeverityUnknown.FormatInvariant(severity);
             }
         }
 
@@ -376,7 +376,7 @@ namespace Microsoft.Ajax.Utilities
 
             //foreach (var token in m_scanner.TokenCounts.Keys)
             //{
-            //    Debug.WriteLine(string.Format("Token {0}: {1} instances", token.ToString(), m_scanner.TokenCounts[token]));
+            //    Debug.WriteLine("Token {0}: {1} instances".FormatInvariant(token.ToString(), m_scanner.TokenCounts[token]));
             //}
 
             if (scriptBlock != null && Settings.MinifyCode)
@@ -4099,13 +4099,19 @@ namespace Microsoft.Ajax.Utilities
                                     break;
 
                                 default:
-                                    // NOT: identifier, string, number, or getter/setter.
-                                    // see if it's a token that COULD be an identifier.
-                                    ident = JSKeyword.CanBeIdentifier(m_currentToken.Token);
-                                    if (ident != null)
+                                    // NOT: identifier token, string, number, or getter/setter.
+                                    // see if it's a token that COULD be an identifierName.
+                                    ident = m_scanner.GetIdentifier();
+                                    if (JSScanner.IsValidIdentifier(ident))
                                     {
-                                        // don't throw a warning -- it's okay to have a keyword that
-                                        // can be an identifier here.
+                                        // BY THE SPEC, if it's a valid identifierName -- which includes reserved words -- then it's
+                                        // okay for object literal syntax. However, reserved words here won't work in all browsers,
+                                        // so if it is a reserved word, let's throw a low-sev cross-browser warning on the code.
+                                        if (JSKeyword.CanBeIdentifier(m_currentToken.Token) == null)
+                                        {
+                                            ReportError(JSError.ObjectLiteralReserverdWord, m_currentToken.Clone(), true);
+                                        }
+
                                         field = new ObjectLiteralField(ident, PrimitiveType.String, m_currentToken.Clone(), this);
                                     }
                                     else

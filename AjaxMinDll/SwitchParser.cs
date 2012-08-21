@@ -859,7 +859,7 @@ namespace Microsoft.Ajax.Utilities
                                     if (paramPartUpper.StartsWith("0X", StringComparison.OrdinalIgnoreCase))
                                     {
                                         // it's hex -- convert the number after the "0x"
-                                        if (long.TryParse(paramPartUpper.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out killSwitch))
+                                        if (paramPartUpper.Substring(2).TryParseLongInvariant(NumberStyles.AllowHexSpecifier, out killSwitch))
                                         {
                                             // save the switch for both JS and Css
                                             JSSettings.KillSwitch = CssSettings.KillSwitch = killSwitch;
@@ -876,7 +876,7 @@ namespace Microsoft.Ajax.Utilities
                                             OnInvalidSwitch(switchPart, paramPart);
                                         }
                                     }
-                                    else if (long.TryParse(paramPartUpper, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out killSwitch))
+                                    else if (paramPartUpper.TryParseLongInvariant(NumberStyles.AllowLeadingSign, out killSwitch))
                                     {
                                         // save the switch for both JS and CSS
                                         JSSettings.KillSwitch = CssSettings.KillSwitch = killSwitch;
@@ -929,7 +929,7 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             // must be an unsigned decimal integer value
                                             int lineThreshold;
-                                            if (int.TryParse(lineParts[0], NumberStyles.None, CultureInfo.InvariantCulture, out lineThreshold))
+                                            if (lineParts[0].TryParseIntInvariant(NumberStyles.None, out lineThreshold))
                                             {
                                                 JSSettings.LineBreakThreshold =
                                                     CssSettings.LineBreakThreshold = lineThreshold;
@@ -999,7 +999,7 @@ namespace Microsoft.Ajax.Utilities
                                                 {
                                                     // get the numeric portion; must be a decimal integer
                                                     int indentSize;
-                                                    if (int.TryParse(lineParts[breakIndex], NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
+                                                    if (lineParts[breakIndex].TryParseIntInvariant(NumberStyles.None, out indentSize))
                                                     {
                                                         // same value for JS and CSS.
                                                         // don't need to check for negative, because the tryparse method above does NOT
@@ -1205,7 +1205,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // get the numeric portion; must be a decimal integer
                                     int indentSize;
-                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out indentSize))
+                                    if (paramPart.TryParseIntInvariant(NumberStyles.None, out indentSize))
                                     {
                                         // same value for JS and CSS.
                                         // don't need to check for negative, because the tryparse method above does NOT
@@ -1456,7 +1456,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // must be an unsigned decimal integer value
                                     int warningLevel;
-                                    if (int.TryParse(paramPart, NumberStyles.None, CultureInfo.InvariantCulture, out warningLevel))
+                                    if (paramPart.TryParseIntInvariant(NumberStyles.None, out warningLevel))
                                     {
                                         WarningLevel = warningLevel;
                                     }

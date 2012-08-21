@@ -791,7 +791,7 @@ namespace Microsoft.Ajax.Utilities
                                 if (literalReference.Count > minCount)
                                 {
                                     // create a special name that won't collide with any other variable names
-                                    string specialName = string.Format(CultureInfo.InvariantCulture, "[literal:{0}]", ++s_literalCounter);
+                                    string specialName = "[literal:{0}]".FormatInvariant(++s_literalCounter);
 
                                     // add a generated var statement at the top of the function block that
                                     // is equal to the literal value (just use the first constant wrapper as a model)

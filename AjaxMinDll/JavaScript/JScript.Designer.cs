@@ -556,6 +556,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Reserved word used as object literal property name; cross-browser issue..
+        /// </summary>
+        internal static string ObjectLiteralReserverdWord {
+            get {
+                return ResourceManager.GetString("ObjectLiteralReserverdWord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Octal literals are deprecated. Possible cross-browser behavior difference.
         /// </summary>
         internal static string OctalLiteralsDeprecated {

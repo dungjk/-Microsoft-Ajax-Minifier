@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="SyntaxError" xml:space="preserve">
     <value>Syntax error</value>
@@ -389,5 +389,8 @@
   </data>
   <data name="FallbackEncodingFailed" xml:space="preserve">
     <value>Fallback character encoding failed</value>
+  </data>
+  <data name="ObjectLiteralReserverdWord" xml:space="preserve">
+    <value>Reserved word used as object literal property name; cross-browser issue.</value>
   </data>
 </root>

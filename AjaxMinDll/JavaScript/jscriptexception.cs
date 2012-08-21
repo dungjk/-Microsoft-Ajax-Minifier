@@ -240,14 +240,12 @@ namespace Microsoft.Ajax.Utilities
                 if (m_valueObject != null)
                 {
                     return (m_errorCode == JSError.DuplicateName)
-                        ? string.Format(CultureInfo.InvariantCulture, JScript.ResourceManager.GetString(code), m_valueObject)
+                        ? JScript.ResourceManager.GetString(code, JScript.Culture).FormatInvariant(m_valueObject)
                         : m_valueObject;
                 }
 
                 // special case some errors with contextual information
-                return string.Format(
-                    CultureInfo.InvariantCulture, 
-                    JScript.ResourceManager.GetString(code), 
+                return JScript.ResourceManager.GetString(code, JScript.Culture).FormatInvariant(
                     m_context == null ? string.Empty : m_context.Code);
             }
         }
@@ -270,6 +268,16 @@ namespace Microsoft.Ajax.Utilities
         #region constructors
 
         public JScriptException() : this(JSError.UncaughtException, null) { }
+        public JScriptException(string msg) : this(msg, null) { }
+        public JScriptException(string msg, Exception innerException)
+            : base(msg, innerException)
+        {
+            m_valueObject = msg;
+            m_context = null;
+            m_fileContext = null;
+            m_errorCode = JSError.UncaughtException;
+            SetHResult();
+        }
 
         internal JScriptException(JSError errorNumber, Context context)
         {
@@ -344,6 +352,7 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.DuplicateConstantDeclaration:
                 case JSError.KeywordUsedAsIdentifier:
                 case JSError.MisplacedFunctionDeclaration:
+                case JSError.ObjectLiteralReserverdWord:
                     return 2;
 
                 case JSError.ArgumentNotReferenced:

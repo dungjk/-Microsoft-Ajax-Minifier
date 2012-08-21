@@ -137,6 +137,7 @@ namespace Microsoft.Ajax.Utilities
                     0,
                     0,
                     e.Message));
+                throw;
             }
             return crunched;
         }
@@ -201,6 +202,7 @@ namespace Microsoft.Ajax.Utilities
                     0,
                     0,
                     e.Message));
+                throw;
             }
             return minifiedResults;
         }

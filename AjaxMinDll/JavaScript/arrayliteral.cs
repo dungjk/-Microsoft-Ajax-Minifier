@@ -83,7 +83,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // we'll append the index to the guess for this array
                     string parentGuess = Parent.GetFunctionGuess(this);
-                    return string.Format(CultureInfo.InvariantCulture, "{0}_{1}", parentGuess, ndx);
+                    return "{0}_{1}".FormatInvariant(parentGuess, ndx);
                 }
             }
             // didn't find it

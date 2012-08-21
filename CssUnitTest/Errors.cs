@@ -92,5 +92,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void BadRGB()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

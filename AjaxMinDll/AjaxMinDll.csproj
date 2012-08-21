@@ -32,7 +32,7 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -48,6 +48,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug\</OutputPath>
@@ -129,6 +130,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>CssStrings.resx</DependentUpon>
     </Compile>
+    <Compile Include="Extensions.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="JavaScript\activationobject.cs" />
     <Compile Include="JavaScript\AnalyzeNodeVisitor.cs" />

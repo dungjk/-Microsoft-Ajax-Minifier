@@ -143,7 +143,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         WriteProgress();
-                        WriteProgress(Extensions.FormatInvariant(AjaxMin.UnknownScopeType, scope.GetType().ToString()));
+                        WriteProgress(AjaxMin.UnknownScopeType.FormatInvariant(scope.GetType().ToString()));
                     }
                 }
             }
@@ -178,7 +178,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             WriteProgress();
-            WriteProgress(Extensions.FormatInvariant(AjaxMin.BlockScopeHeader,
+            WriteProgress(AjaxMin.BlockScopeHeader.FormatInvariant(
               blockType,
               blockScope.Context.StartLineNumber,
               blockScope.Context.StartColumn + 1,
@@ -196,7 +196,7 @@ namespace Microsoft.Ajax.Utilities
             var functionField = funcObj.VariableField;
             if (functionField != null && functionField.CrunchedName != null)
             {
-                crunched = Extensions.FormatInvariant(AjaxMin.CrunchedTo, functionField.CrunchedName, functionField.RefCount);
+                crunched = AjaxMin.CrunchedTo.FormatInvariant(functionField.CrunchedName, functionField.RefCount);
             }
 
             // get the status if the function
@@ -224,7 +224,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         statusBuilder.Append('[');
                     }
-                    statusBuilder.Append(Extensions.FormatInvariant(AjaxMin.FunctionInfoReferences,
+                    statusBuilder.Append(AjaxMin.FunctionInfoReferences.FormatInvariant(
                         funcObj.RefCount
                         ));
                 }
@@ -274,7 +274,7 @@ namespace Microsoft.Ajax.Utilities
 
             // output
             WriteProgress();
-            WriteProgress(Extensions.FormatInvariant(AjaxMin.FunctionHeader,
+            WriteProgress(AjaxMin.FunctionHeader.FormatInvariant(
                 AjaxMin.ResourceManager.GetString(functionType, AjaxMin.Culture),
                 funcObj.Name,
                 funcObj.Context.StartLineNumber,
@@ -301,7 +301,7 @@ namespace Microsoft.Ajax.Utilities
             // calculate the crunched label
             if (variableField.CrunchedName != null)
             {
-                crunched = Extensions.FormatInvariant(AjaxMin.CrunchedTo, variableField.CrunchedName, variableField.RefCount);
+                crunched = AjaxMin.CrunchedTo.FormatInvariant(variableField.CrunchedName, variableField.RefCount);
             }
 
             // get the field's default scope and type
@@ -314,18 +314,18 @@ namespace Microsoft.Ajax.Utilities
                 string outerScope;
                 string outerType;
                 GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
-                crunched = Extensions.FormatInvariant(AjaxMin.MemberInfoWithPossibly, outerScope, outerType);
+                crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
             }
 
             var definedLocation = string.Empty;
             var definedContext = (variableField.OuterField ?? variableField).OriginalContext;
             if (definedContext != null)
             {
-                definedLocation = Extensions.FormatInvariant(AjaxMin.MemberInfoDefinedLocation, definedContext.StartLineNumber, definedContext.StartColumn + 1);
+                definedLocation = AjaxMin.MemberInfoDefinedLocation.FormatInvariant(definedContext.StartLineNumber, definedContext.StartColumn + 1);
             }
 
             // format the entire string
-            WriteProgress(Extensions.FormatInvariant(AjaxMin.MemberInfoFormat,
+            WriteProgress(AjaxMin.MemberInfoFormat.FormatInvariant(
                 name,
                 scope,
                 type,
@@ -451,7 +451,7 @@ namespace Microsoft.Ajax.Utilities
                 WriteProgress(AjaxMin.UndefinedGlobalHeader);
                 foreach (UndefinedReferenceException ex in undefinedList)
                 {
-                    WriteProgress(Extensions.FormatInvariant(AjaxMin.UndefinedInfo,
+                    WriteProgress(AjaxMin.UndefinedInfo.FormatInvariant(
                       ex.Name,
                       ex.Line,
                       ex.Column,
