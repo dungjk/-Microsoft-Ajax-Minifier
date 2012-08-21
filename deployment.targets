@@ -42,26 +42,29 @@
 
     <Target Name="BuildDropShare" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
         <Message Text="Creating drop share..." Importance="high" />
-        
+
         <MakeDir Directories="$(TargetDir)Drop" Condition="!Exists('$(TargetDir)Drop')" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.exe" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.pdb" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.dll" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.pdb" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinSetup\Release\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop" />
+        <MakeDir Directories="$(TargetDir)Drop\net20" Condition="!Exists('$(TargetDir)Drop\net20')" />
+        <MakeDir Directories="$(TargetDir)Drop\net35" Condition="!Exists('$(TargetDir)Drop\net35')" />
+        <MakeDir Directories="$(TargetDir)Drop\net40" Condition="!Exists('$(TargetDir)Drop\net40')" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.exe" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMin\bin\Release\AjaxMin.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.dll" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\Release\AjaxMinLibrary.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\Release\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinSetup\Release\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop\net40" />
 
-        <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\Release\AjaxMin2005.exe" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\Release\AjaxMin2005.pdb" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\Release\AjaxMinLibrary2005.dll" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\Release\AjaxMinLibrary2005.pdb" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\Release\AjaxMin2005.exe" DestinationFolder="$(TargetDir)Drop\net20" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\Release\AjaxMin2005.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\Release\AjaxMinLibrary2005.dll" DestinationFolder="$(TargetDir)Drop\net20" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\Release\AjaxMinLibrary2005.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
 
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\Release\AjaxMinLibrary2008.dll" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\Release\AjaxMinLibrary2008.pdb" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\Release\AjaxMinTask2008.dll" DestinationFolder="$(TargetDir)Drop" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\Release\AjaxMinTask2008.pdb" DestinationFolder="$(TargetDir)Drop" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\Release\AjaxMinLibrary2008.dll" DestinationFolder="$(TargetDir)Drop\net35" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\Release\AjaxMinLibrary2008.pdb" DestinationFolder="$(TargetDir)Drop\net35" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\Release\AjaxMinTask2008.dll" DestinationFolder="$(TargetDir)Drop\net35" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\Release\AjaxMinTask2008.pdb" DestinationFolder="$(TargetDir)Drop\net35" />
 
         <MakeDir Directories="$(TargetDir)Drop\packages" Condition="!Exists('$(TargetDir)Drop\packages')" />
         <!-- get the list of all references that are marked as "copy local" -->
