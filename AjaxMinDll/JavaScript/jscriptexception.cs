@@ -352,7 +352,7 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.DuplicateConstantDeclaration:
                 case JSError.KeywordUsedAsIdentifier:
                 case JSError.MisplacedFunctionDeclaration:
-                case JSError.ObjectLiteralReserverdWord:
+                case JSError.ObjectLiteralReservedWord:
                     return 2;
 
                 case JSError.ArgumentNotReferenced:

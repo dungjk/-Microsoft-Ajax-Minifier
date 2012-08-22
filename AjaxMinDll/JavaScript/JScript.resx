@@ -390,7 +390,7 @@
   <data name="FallbackEncodingFailed" xml:space="preserve">
     <value>Fallback character encoding failed</value>
   </data>
-  <data name="ObjectLiteralReserverdWord" xml:space="preserve">
+  <data name="ObjectLiteralReservedWord" xml:space="preserve">
     <value>Reserved word used as object literal property name; cross-browser issue.</value>
   </data>
 </root>

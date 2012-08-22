@@ -558,9 +558,9 @@ namespace Microsoft.Ajax.Utilities {
         /// <summary>
         ///   Looks up a localized string similar to Reserved word used as object literal property name; cross-browser issue..
         /// </summary>
-        internal static string ObjectLiteralReserverdWord {
+        internal static string ObjectLiteralReservedWord {
             get {
-                return ResourceManager.GetString("ObjectLiteralReserverdWord", resourceCulture);
+                return ResourceManager.GetString("ObjectLiteralReservedWord", resourceCulture);
             }
         }
         

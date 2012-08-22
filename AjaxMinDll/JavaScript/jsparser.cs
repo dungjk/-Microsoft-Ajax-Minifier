@@ -4109,7 +4109,7 @@ namespace Microsoft.Ajax.Utilities
                                         // so if it is a reserved word, let's throw a low-sev cross-browser warning on the code.
                                         if (JSKeyword.CanBeIdentifier(m_currentToken.Token) == null)
                                         {
-                                            ReportError(JSError.ObjectLiteralReserverdWord, m_currentToken.Clone(), true);
+                                            ReportError(JSError.ObjectLiteralReservedWord, m_currentToken.Clone(), true);
                                         }
 
                                         field = new ObjectLiteralField(ident, PrimitiveType.String, m_currentToken.Clone(), this);
