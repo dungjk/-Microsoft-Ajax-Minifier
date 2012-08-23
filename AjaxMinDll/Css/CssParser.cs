@@ -3578,9 +3578,17 @@ namespace Microsoft.Ajax.Utilities
                             // but we also want to NOT escape \ or space characters. If the identifier had
                             // an escaped space character, it will still be escaped -- so any spaces would
                             // be necessary whitespace for the end of unicode escapes.
-                            if (nextChar != '-'
+                            if (nextChar == '\\')
+                            {
+                                // escape characters cause the next character -- no matter what it is -- to
+                                // be part of the escape and not escaped itself. Even if this is part of a
+                                // unicode or character escape, this will hold true. Increment the index and
+                                // loop around again so that we skip over both the backslash and the following
+                                // character.
+                                ++ndx;
+                            }
+                            else if (nextChar != '-'
                                 && nextChar != '_'
-                                && nextChar != '\\'
                                 && nextChar != ' '
                                 && ('0' > nextChar || nextChar > '9')
                                 && ('a' > nextChar || nextChar > 'z')

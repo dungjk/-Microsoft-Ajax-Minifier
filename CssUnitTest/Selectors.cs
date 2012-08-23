@@ -101,5 +101,11 @@ namespace CssUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void Escapes()
+    {
+        TestHelper.Instance.RunTest();
+    }
   }
 }
