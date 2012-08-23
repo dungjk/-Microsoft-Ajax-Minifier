@@ -9,8 +9,7 @@
         <licenseUrl>http://ajaxmin.codeplex.com/license</licenseUrl>
         <projectUrl>http://ajaxmin.codeplex.com/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>JavaScript and CSS minification Library for use in .NET applications that want to
-        provide minification or parsing functionality.</description>
+        <description>JavaScript and CSS minification Library for use in .NET applications that want to provide minification or parsing functionality.</description>
         <copyright>Copyright 2012 by Microsoft Corp. All rights reserved.</copyright>
         <tags>JavaScript CSS minification crunch parser ast ajaxmin</tags>
     </metadata>
@@ -21,10 +20,8 @@
         <file src="AjaxMinDll2008\bin\$Configuration$\AjaxMinLibrary2008.pdb" target="lib/net35"/>
         <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMinLibrary2005.dll" target="lib/net20"/>
         <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMinLibrary2005.pdb" target="lib/net20"/>
-        <!--<file src="AjaxMin\bin\$Configuration$\AjaxMin.exe" target="tools/net20"/>
-        <file src="AjaxMin\bin\$Configuration$\AjaxMin.pdb" target="tools/net20"/>-->
-        <!--<file src="AjaxMinTask\bin\$Configuration$\AjaxMin.tasks" target="tools/net20"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="tools/net20"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net20"/>-->
+        <!--<file src="AjaxMinDll2005\bin\$Configuration$\ExtensionsShim.dll" target="lib/net20"/>
+        <file src="AjaxMinDll2005\bin\$Configuration$\ExtensionsShim.pdb" target="lib/net20"/>-->
+        <file src="**\*.cs" target="src"/>
     </files>
 </package>
