@@ -272,14 +272,14 @@ namespace Microsoft.Ajax.Utilities
             // that we can modify without having to worry about modifying the
             // settings. Pass the list on to the scanner object, too, since it
             // might be adding debug lookups as it scans the code.
-            if (settings.StripDebugStatements)
+            if (m_settings.StripDebugStatements)
             {
                 // if the settings list is not null, use it to initialize a new list
                 // with the same settings. If it is null, initialize an empty list 
                 // because we already determined that we want to strip debug statements,
                 // and the scanner might add items to the list as it scans the source.
                 m_debugLookups = m_settings.DebugLookups != null
-                    ? new List<string>(settings.DebugLookups)
+                    ? new List<string>(m_settings.DebugLookups)
                     : new List<string>();
             }
             else
