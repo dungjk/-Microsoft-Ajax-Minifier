@@ -135,5 +135,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void KillIfReturn()
+        {
+            TestHelper.Instance.RunTest("-kill:-1");
+        }
     }
 }

@@ -804,6 +804,7 @@ namespace Microsoft.Ajax.Utilities
 
                     case PrimitiveType.Number:
                         if (node.Context == null
+                            || !node.Context.HasCode
                             || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
                         {
                             // apply minification to the literal to get it as small as possible

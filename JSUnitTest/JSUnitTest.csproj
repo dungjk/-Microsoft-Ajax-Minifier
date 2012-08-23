@@ -141,6 +141,7 @@
     <Content Include="TestData\JS\Expected\BlockOpts\DirectivePrologue.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ExprReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\IfReturnReturn.js" />
+    <Content Include="TestData\JS\Expected\BlockOpts\KillIfReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ReturnIfs.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ReturnVoid.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\VarIntoFor.js" />
@@ -407,6 +408,7 @@
     <Content Include="TestData\JS\Input\BlockOpts\DirectivePrologue.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ExprReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\IfReturnReturn.js" />
+    <Content Include="TestData\JS\Input\BlockOpts\KillIfReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ReturnIfs.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ReturnVoid.js" />
     <Content Include="TestData\JS\Input\BlockOpts\VarIntoFor.js" />
