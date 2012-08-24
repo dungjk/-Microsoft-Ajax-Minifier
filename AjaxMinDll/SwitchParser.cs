@@ -113,8 +113,8 @@ namespace Microsoft.Ajax.Utilities
         public SwitchParser(CodeSettings jsSettings, CssSettings cssSettings)
         {
             // apply the switches to these two settings objects
-            JSSettings = jsSettings;
-            CssSettings = cssSettings;
+            JSSettings = jsSettings ?? new CodeSettings();
+            CssSettings = cssSettings ?? new CssSettings();
         }
 
         #region command line to argument array
@@ -734,7 +734,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string global in paramPart.Split(','))
+                                    foreach (string global in paramPart.Split(',', ';'))
                                     {
                                         // better be a valid JavaScript identifier
                                         if (!JSScanner.IsValidIdentifier(global))
