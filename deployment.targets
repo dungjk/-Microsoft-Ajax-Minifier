@@ -63,10 +63,8 @@
 
         <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\$(Configuration)\AjaxMin2005.exe" DestinationFolder="$(TargetDir)Drop\net20" />
         <Copy SourceFiles="$(SolutionDir)AjaxMin2005\bin\$(Configuration)\AjaxMin2005.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\AjaxMinLibrary2005.dll" DestinationFolder="$(TargetDir)Drop\net20" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\AjaxMinLibrary2005.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\ExtensionsShim.dll" DestinationFolder="$(TargetDir)Drop\net20" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\ExtensionsShim.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\Merged\AjaxMinLibrary2005.dll" DestinationFolder="$(TargetDir)Drop\net20" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinDll2005\bin\$(Configuration)\Merged\AjaxMinLibrary2005.pdb" DestinationFolder="$(TargetDir)Drop\net20" />
 
         <MakeDir Directories="$(TargetDir)Drop\packages" Condition="!Exists('$(TargetDir)Drop\packages')" />
         <!-- get the list of all references that are marked as "copy local" -->

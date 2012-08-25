@@ -387,11 +387,35 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+    <!-- target will be executed if the input is newer than the output -->
+    <Target Name="MergeAssemblies" AfterTargets="Build"
+            Inputs="@(MainAssembly)"
+            Outputs="@(MainAssembly->'%(FullPath).ilmergetrigger')">
+        <!-- get the list of all references that are marked as "copy local" -->
+        <CreateItem Include="@(ReferencePath)" Condition="'%(CopyLocal)'=='true'">
+            <Output TaskParameter="Include" ItemName="ILMergeAssemblies"/>
+        </CreateItem>
+
+        <!-- do the merging -->
+        <Message Text="Merging assemblies" Importance="high" />
+        <MakeDir Directories="$(TargetDir)Merged" Condition="!Exists('$(TargetDir)Merged')" />
+        <Exec Command="&quot;$(SolutionDir)ILmerge.exe&quot; /keyfile:&quot;$(SolutionDir)ajaxmin.snk&quot; /out:&quot;@(MainAssembly->'%(RelativeDir)Merged\%(Filename)%(Extension)')&quot; &quot;@(MainAssembly)&quot; @(ILMergeAssemblies->'&quot;%(FullPath)&quot;', ' ') /targetplatform:v2,%WINDIR%\Microsoft.NET\Framework\v2.0.50727 /log"
+              LogStandardErrorAsError="true" />
+
+        <!-- write the output file AFTER we copy over the intermediate file so the time is later and
+             we won't trigger another execute unless the intermediate file is generated anew -->
+        <WriteLinesToFile File="@(MainAssembly->'%(FullPath).ilmergetrigger')" Lines="done" Overwrite="true" />
+    </Target>
+
+    <Target Name="CleanILMergeTrigger" AfterTargets="Clean">
+        <Message Text="Cleaning ILMerge trigger" Importance="high" />
+        <CreateItem Include="$(TargetDir)*.ilmergetrigger">
+            <Output TaskParameter="Include" ItemName="ILMergeTrigger"/>
+        </CreateItem>
+        <Delete Files="@(ILMergeTrigger)" />
+        
+        <Delete Files="@(MainAssembly->'%(RelativeDir)Merged\%(Filename)%(Extension)')" ContinueOnError="true" />
+        <RemoveDir Directories="$(TargetDir)Merged" Condition="Exists('$(TargetDir)Merged')" />
+    </Target>
 </Project>
