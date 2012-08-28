@@ -134,6 +134,17 @@ namespace Microsoft.Ajax.Utilities
             Document.ReportUndefined(ex);
         }
 
+        internal void ChangeFileContext(string fileContext)
+        {
+            // if the file context is the same, then there's nothing to change
+            if (string.Compare(Document.FileContext, fileContext, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                // different source. Need to create a clone of the current document context but
+                // with the new file context
+                Document = Document.DifferentFileContext(fileContext);
+            }
+        }
+
         internal void HandleError(JSError errorId)
         {
             HandleError(errorId, null, false);

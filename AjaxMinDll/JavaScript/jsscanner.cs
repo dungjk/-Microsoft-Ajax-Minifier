@@ -681,6 +681,60 @@ namespace Microsoft.Ajax.Utilities
                                             }
                                         }
                                     }
+                                    else if (CheckCaseInsensitiveSubstring(m_currentPos, "#SOURCE"))
+                                    {
+                                        // found ///#SOURCE comment
+                                        m_currentPos += 7;
+                                        SkipBlanks();
+
+                                        // pull the line, the column, and the source path off the line
+                                        var linePos = 0;
+                                        var colPos = 0;
+
+                                        // line number is first
+                                        if (!IsLineTerminator(GetChar(m_currentPos), 0))
+                                        {
+                                            if (!PPScanInteger(out linePos))
+                                            {
+                                                // not an integer -- skip the rest of the line and move on
+                                                SkipSingleLineComment();
+                                                goto nextToken;
+                                            }
+
+                                            SkipBlanks();
+                                        }
+
+                                        // column number is second
+                                        if (!IsLineTerminator(GetChar(m_currentPos), 0))
+                                        {
+                                            if (!PPScanInteger(out colPos))
+                                            {
+                                                // not an integer -- skip the rest of the line and move on
+                                                SkipSingleLineComment();
+                                                goto nextToken;
+                                            }
+
+                                            SkipBlanks();
+                                        }
+
+                                        // the path should be the last part of the line.
+                                        // skip to the end and then use the part between.
+                                        var ndxStart = m_currentPos;
+                                        SkipToEndOfLine();
+                                        if (m_currentPos > ndxStart)
+                                        {
+                                            // there is a non-blank source token.
+                                            // so we have the line and the column and the source.
+                                            // use them. Remember, though: we stopped BEFORE the line terminator,
+                                            // so as we hit it, we're going to add one to the line, so start one line
+                                            // LESS than what we want.
+                                            m_currentToken.ChangeFileContext(m_strSourceCode.Substring(ndxStart, m_currentPos - ndxStart).TrimEnd());
+                                            this.CurrentLine = linePos - 1;
+                                            this.StartLinePosition = linePos - colPos - 1;
+                                        }
+
+                                        goto nextToken;
+                                    }
                                     else if (UsePreprocessorDefines)
                                     {
                                         var testForNot = false;
@@ -2252,6 +2306,19 @@ namespace Microsoft.Ajax.Utilities
             m_inSingleLineComment = false;
         }
 
+        private void SkipToEndOfLine()
+        {
+            var c = GetChar(m_currentPos);
+            while (c != 0
+                && c != '\n'
+                && c != '\r'
+                && c != '\x2028'
+                && c != '\x2029')
+            {
+                c = GetChar(++m_currentPos);
+            }
+        }
+
         // this method is public because it's used from the authoring code
         public int SkipMultilineComment(bool importantComment)
         {
@@ -2802,6 +2869,27 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return identifier;
+        }
+
+        private bool PPScanInteger(out int intValue)
+        {
+            var startPos = m_currentPos;
+            while (IsDigit(GetChar(m_currentPos)))
+            {
+                ++m_currentPos;
+            }
+
+            var success = false;
+            if ( m_currentPos > startPos)
+            {
+                success = int.TryParse(m_strSourceCode.Substring(startPos, m_currentPos - startPos), out intValue);
+            }
+            else
+            {
+                intValue = 0;
+            }
+
+            return success;
         }
 
         private int PPSkipToDirective(params string[] endStrings)

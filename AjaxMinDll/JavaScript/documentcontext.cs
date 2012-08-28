@@ -42,6 +42,19 @@ namespace Microsoft.Ajax.Utilities
             Source = source;
         }
 
+        internal DocumentContext DifferentFileContext(string fileContext)
+        {
+            // use the SAME parser and reported variable dictionary
+            var documentContext = new DocumentContext(m_parser, Source)
+            {
+                IsGenerated = this.IsGenerated,
+                FileContext = fileContext
+            };
+
+            documentContext.m_reportedVariables = this.m_reportedVariables;
+            return documentContext;
+        }
+
         //---------------------------------------------------------------------------------------
         // HandleError
         //
