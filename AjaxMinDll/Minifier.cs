@@ -237,12 +237,13 @@ namespace Microsoft.Ajax.Utilities
         /// This method is deprecated. The list of known global names has been moved to the CodeSettings
         /// object. If codeSettings.KnownGlobalNames is null and the globalNames parameter is not, this
         /// API will populate the codeSettings object. Otherwise the globalNames parameter will be ignored.
+        /// See <see cref="CodeSettings.KnownGlobalNamesList" />.
         /// </summary>
         /// <param name="source"></param>
         /// <param name="codeSettings"></param>
         /// <param name="globalNames"></param>
         /// <returns></returns>
-        [Obsolete("This method is deprecated; use the CodeSettings object to pass known global names")]
+        [Obsolete("This method is deprecated; use CodeSettings.KnownGlobalNamesList to pass known global names")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string MinifyJavaScript(string source, CodeSettings codeSettings, params string[] globalNames)
         {
@@ -256,11 +257,12 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// This method is deprecated. The list of known global names has been moved to the CodeSettings object. 
+        /// See <see cref="CodeSettings.KnownGlobalNamesList" />.
         /// </summary>
         /// <param name="source">source Javascript</param>
         /// <param name="globalNames">array of known global object names</param>
         /// <returns>minified Javascript</returns>
-        [Obsolete("This method is deprecated; use the CodeSettings object to pass known global names")]
+        [Obsolete("This method is deprecated; use CodeSettings.KnownGlobalNamesList to pass known global names")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string MinifyJavaScript(string source, params string[] globalNames)
         {
@@ -281,6 +283,7 @@ namespace Microsoft.Ajax.Utilities
     /// <summary>
     /// This class is deprecated; it will be removed in future versions.
     /// Please use Microsoft.Ajax.Utilities.Minifier instead.
+    /// See <see cref="Minifier" />.
     /// </summary>
     [Obsolete("This class is deprecated; use Microsoft.Ajax.Utilities.Minifier instead")]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -290,6 +293,7 @@ namespace Microsoft.Ajax.Utilities
         /// Crunched JS string passed to it using default code settings, returning crunched string.
         /// This API is deprecated and will be removed in future versions. Please use
         /// Microsoft.Ajax.Utilities.Minifier.MinifyJavaScript instead.
+        /// See <see cref="Minifier" />.
         /// </summary>
         /// <param name="source">source Javascript</param>
         /// <returns>crunched Javascript</returns>
@@ -305,6 +309,7 @@ namespace Microsoft.Ajax.Utilities
         /// Crunched JS string passed to it, returning crunched string.
         /// This API is deprecated and will be removed in future versions. Please use
         /// Microsoft.Ajax.Utilities.Minifier.MinifyJavaScript instead.
+        /// See <see cref="Minifier" />.
         /// </summary>
         /// <param name="source">source Javascript</param>
         /// <param name="codeSettings">code minification settings</param>

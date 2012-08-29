@@ -79,7 +79,7 @@ namespace Microsoft.Ajax.Utilities
         public CodeSettings()
         {
             this.CollapseToLiteral = true;
-            this.CombineDuplicateLiterals = false;
+            //this.CombineDuplicateLiterals = false;
             this.EvalTreatment = EvalTreatment.Ignore;
             this.InlineSafeStrings = true;
             this.LocalRenaming = LocalRenaming.CrunchAll;
@@ -115,7 +115,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 CollapseToLiteral = this.CollapseToLiteral,
-                CombineDuplicateLiterals = this.CombineDuplicateLiterals,
+                //CombineDuplicateLiterals = this.CombineDuplicateLiterals,
                 DebugLookupList = this.DebugLookupList,
                 EvalLiteralExpressions = this.EvalLiteralExpressions,
                 EvalTreatment = this.EvalTreatment,
@@ -435,7 +435,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    SetKnownGlobalNames(value.Split(','));
+                    SetKnownGlobalNames(value.Split(',', ';'));
                 }
                 else
                 {
@@ -560,7 +560,8 @@ namespace Microsoft.Ajax.Utilities
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool CatchAsLocal
         {
-            get; set;
+            get { return false; }
+            set { }
         }
 
         /// <summary>
@@ -576,10 +577,12 @@ namespace Microsoft.Ajax.Utilities
         /// Combine duplicate literals within function scopes to local variables [true]
         /// or leave them as-is [false]. Default is false.
         /// </summary>
+        [Obsolete("This setting is no longer available")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool CombineDuplicateLiterals
         {
-            get; set;
+            get { return false; }
+            set { }
         }
 
         /// <summary>
@@ -594,7 +597,7 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Gets or sets a value indicating whether eval-statements are "safe."
-        /// Deprecated in favor of EvalTreatment, which is an enumeration
+        /// Deprecated in favor of <see cref="CodeSettings.EvalTreatment" />, which is an enumeration
         /// allowing for more options than just true or false.
         /// True for this property is the equivalent of EvalTreament.Ignore;
         /// False is the equivalent to EvalTreament.MakeAllSafe
@@ -769,7 +772,8 @@ namespace Microsoft.Ajax.Utilities
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool W3Strict
         {
-            get; set;
+            get { return false; }
+            set { }
         }
 
         /// <summary>

@@ -1,1 +1,1 @@
-﻿function Func(){var t="bar",i=new Object(1),r={},u={bar:42,"while":16,1:t},f={bar:t,"while":t,ack:t,42:16,get foo(){return 1},set foo(n){this.ack=n}};i.foo=t;var e={get:42,set:"x"},o={one:1,two:2},s={}}
+﻿function Func(){var t=new Object(1),i={},r={bar:42,"while":16,1:"bar"},u={bar:"bar","while":"bar",ack:"bar",42:16,get foo(){return 1},set foo(n){this.ack=n}};t.foo="bar";var f={get:42,set:"x"},e={one:1,two:2},o={}}

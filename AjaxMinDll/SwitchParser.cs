@@ -288,7 +288,7 @@ namespace Microsoft.Ajax.Utilities
             if (args != null)
             {
                 // these lists will only be created if needed
-                List<string> defines = null;
+                Dictionary<string, string> defines = null;
                 List<string> debugLookups = null;
                 List<string> globals = null;
                 List<string> ignoreErrors = null;
@@ -584,29 +584,46 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    // use paramPart because it has been forced to upper-case and these identifiers are
-                                    // supposed to be case-insensitive
-                                    foreach (string upperCaseName in paramPartUpper.Split(','))
+                                    foreach (string define in paramPart.Split(','))
                                     {
-                                        // better be a valid JavaScript identifier
-                                        if (!JSScanner.IsValidIdentifier(upperCaseName))
+                                        string trimmedName;
+                                        string value;
+                                        var ndxEquals = define.IndexOf('=');
+                                        if (ndxEquals < 0)
                                         {
-                                            OnInvalidSwitch(switchPart, upperCaseName);
+                                            trimmedName = define.Trim();
+                                            value = string.Empty;
+                                        }
+                                        else
+                                        {
+                                            trimmedName = define.Substring(0, ndxEquals).Trim();
+                                            value = define.Substring(ndxEquals + 1);
+                                        }
+
+                                        // better be a valid JavaScript identifier
+                                        if (!JSScanner.IsValidIdentifier(trimmedName))
+                                        {
+                                            OnInvalidSwitch(switchPart, define);
                                         }
                                         else if (defines == null)
                                         {
                                             // if we haven't created the list yet, do it now
-                                            defines = new List<string>();
-                                            defines.Add(upperCaseName);
+                                            defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                                            defines.Add(trimmedName, value);
                                         }
-                                        else if (!defines.Contains(upperCaseName))
+                                        else if (!defines.ContainsKey(trimmedName))
                                         {
-                                            // don't add duplicates
-                                            defines.Add(upperCaseName);
+                                            // doesn't have it at all
+                                            defines.Add(trimmedName, value);
+                                        }
+                                        else
+                                        {
+                                            // we want the latest value
+                                            defines[trimmedName] = value;
                                         }
 
                                         // if we're defining the DEBUG name, set the strip-debug-statements flag to false
-                                        if (string.CompareOrdinal(upperCaseName, "DEBUG") == 0)
+                                        if (string.Compare(trimmedName, "DEBUG", StringComparison.OrdinalIgnoreCase) == 0)
                                         {
                                             JSSettings.StripDebugStatements = false;
                                         }
@@ -1033,11 +1050,13 @@ namespace Microsoft.Ajax.Utilities
                                 // two areas with two options each: keep or combine and eval or noeval
                                 if (paramPartUpper == "KEEP")
                                 {
-                                    JSSettings.CombineDuplicateLiterals = false;
+                                    // no longer supported....
+                                    //JSSettings.CombineDuplicateLiterals = false;
                                 }
                                 else if (paramPartUpper == "COMBINE")
                                 {
-                                    JSSettings.CombineDuplicateLiterals = true;
+                                    // no longer supported....
+                                    //JSSettings.CombineDuplicateLiterals = true;
                                 }
                                 else if (paramPartUpper == "EVAL")
                                 {
@@ -1536,13 +1555,15 @@ namespace Microsoft.Ajax.Utilities
 
                             case "HC":
                                 // equivalent to -literals:combine -rename:all -unused:remove
-                                JSSettings.CombineDuplicateLiterals = true;
+                                // literal-combining no longer supported....
+                                //JSSettings.CombineDuplicateLiterals = true;
                                 goto case "H";
 
                             case "HLC":
                             case "HCL":
                                 // equivalent to -literals:combine -rename:localization -unused:remove
-                                JSSettings.CombineDuplicateLiterals = true;
+                                // literal-combining no longer supported....
+                                //JSSettings.CombineDuplicateLiterals = true;
                                 goto case "HL";
 
                             case "J":
@@ -1593,9 +1614,8 @@ namespace Microsoft.Ajax.Utilities
                 // then set the appropriate property in the settings object(s)
                 if (defines != null)
                 {
-                    var defineList = defines.ToArray();
-                    JSSettings.SetPreprocessorDefines(defineList);
-                    CssSettings.SetPreprocessorDefines(defineList);
+                    JSSettings.SetPreprocessorValues(defines);
+                    CssSettings.SetPreprocessorValues(defines);
                 }
 
                 if (debugLookups != null)
@@ -1758,7 +1778,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region helper methods
 
-        private static void AlignDebugDefine(bool stripDebugStatements, ref List<string> defines)
+        private static void AlignDebugDefine(bool stripDebugStatements, ref Dictionary<string, string> defines)
         {
             // if we are setting the debug switch on, then make sure we 
             // add the DEBUG value to the defines
@@ -1766,7 +1786,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we are turning debug off.
                 // make sure we DON'T have the DEBUG define in the list
-                if (defines != null && defines.Contains("DEBUG"))
+                if (defines != null && defines.ContainsKey("DEBUG"))
                 {
                     defines.Remove("DEBUG");
                     if (defines.Count == 0)
@@ -1779,14 +1799,14 @@ namespace Microsoft.Ajax.Utilities
             {
                 // turning debug on, but we haven't created the list yet.
                 // do it now, and add the DEBUG define to it
-                defines = new List<string>();
-                defines.Add("DEBUG");
+                defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                defines.Add("debug", string.Empty);
             }
-            else if (!defines.Contains("DEBUG"))
+            else if (!defines.ContainsKey("DEBUG"))
             {
                 // turning debug on, we have already created the list,
                 // and debug is not already in it -- add it now.
-                defines.Add("DEBUG");
+                defines.Add("debug", string.Empty);
             }
         }
 

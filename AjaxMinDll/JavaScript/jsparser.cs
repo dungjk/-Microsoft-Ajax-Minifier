@@ -240,11 +240,12 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>
         /// Create a new JSParser object.
-        /// Obsolete -- the passed array of known global names will be ignored.
+        /// Obsolete -- the passed array of known global names will be ignored. Specify known globals on <see cref="CodeSettings.KnownGlobalNamesList" />.
         /// </summary>
         /// <param name="source">JavaScript source to parse</param>
         /// <param name="globalVars">Obsolete - parameter IGNORED</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "globalVars"), Obsolete("This constructor is obsolete - set known global names via the CodeSettings object")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "globalVars")]
+        [Obsolete("This constructor is obsolete - set known global names via the CodeSettings object")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public JSParser(string source, string[] globalVars)
             : this(source)
@@ -304,7 +305,7 @@ namespace Microsoft.Ajax.Utilities
             m_scanner.UsePreprocessorDefines = m_settings.IsModificationAllowed(TreeModifications.PreprocessorDefines);
             if (m_scanner.UsePreprocessorDefines)
             {
-                m_scanner.SetPreprocessorDefines(m_settings.PreprocessorDefines);
+                m_scanner.SetPreprocessorDefines(m_settings.PreprocessorValues);
             }
 
             // set the raw tokens flag
@@ -402,12 +403,14 @@ namespace Microsoft.Ajax.Utilities
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
 
+                /* TODO: RMEOVE CODE ALTOGETHER
                 if (m_settings.CombineDuplicateLiterals)
                 {
                     // check to see if we need to create a literal shortcuts and add them to
                     // the appropriate scope
                     m_globalScope.AnalyzeLiterals();
                 }
+                */
 
                 // then do a depth-first traversal of the scope tree. When we come to a global
                 // field referenced by the scope, add it to the verboten set for this scope
@@ -509,12 +512,14 @@ namespace Microsoft.Ajax.Utilities
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
 
+                /* TODO: REMOVE CODE ALTOGETHER
                 if (m_settings.CombineDuplicateLiterals)
                 {
                     // check to see if we need to create a literal shortcuts and add them to
                     // the appropriate scope
                     m_globalScope.AnalyzeLiterals();
                 }
+                */
 
                 // then do a depth-first traversal of the scope tree. When we come to a global
                 // field referenced by the scope, add it to the verboten set for this scope
@@ -912,9 +917,6 @@ namespace Microsoft.Ajax.Utilities
 
                 if (JSToken.Semicolon == m_currentToken.Token)
                 {
-                    // update the statement's context to include the semicolon
-                    statement.Context.UpdateWith(m_currentToken);
-
                     // if the statement is an asp.net block, then set the property on it that indicates that this
                     // block was terminated with a semicolon.
                     var aspNetBlock = statement as AspNetBlockNode;

@@ -22,16 +22,13 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class FunctionScope : ActivationObject
     {
-        private FunctionObject m_owningFunctionObject;
-        public FunctionObject FunctionObject
-        {
-            get { return m_owningFunctionObject; }
-            set { m_owningFunctionObject = value; }
-        }
+        public FunctionObject FunctionObject { get; set; }
 
         private Dictionary<ActivationObject, ActivationObject> m_refScopes;
 
+        /* TODO: REMOVE CODE ALTOGETHER
         private List<ThisLiteral> m_thisLiterals;
+        */
 
         internal FunctionScope(ActivationObject parent, bool isExpression, JSParser parser)
             : base(parent, parser)
@@ -43,6 +40,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /* TODO: REMOVE CODE ALTOGETHER
         internal void AddThisLiteral(ThisLiteral thisLiteral)
         {
             if (m_thisLiterals == null)
@@ -51,7 +49,9 @@ namespace Microsoft.Ajax.Utilities
             }
             m_thisLiterals.Add(thisLiteral);
         }
+        */
 
+        /* TODO: REMOVE CODE ALTOGETHER
         internal override void AnalyzeScope()
         {
             if (Parser.Settings.CombineDuplicateLiterals)
@@ -59,9 +59,11 @@ namespace Microsoft.Ajax.Utilities
                 // combine this literals
                 CreateThisShortcuts();
             }
+
             // default processing
             base.AnalyzeScope();
         }
+        */
 
         internal JSVariableField AddNewArgumentField(String name)
         {
@@ -79,7 +81,7 @@ namespace Microsoft.Ajax.Utilities
 
         internal bool IsArgumentTrimmable(JSVariableField argumentField)
         {
-            return m_owningFunctionObject.IsArgumentTrimmable(argumentField);
+            return FunctionObject.IsArgumentTrimmable(argumentField);
         }
 
         public override JSVariableField FindReference(string name)
@@ -186,6 +188,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region This-combining code
 
+        /* TODO: REMOVE THIS CODE ALTOGETHER
         private void CreateThisShortcuts()
         {
             // if we are renaming variables, AND
@@ -217,6 +220,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+        */
 
         #endregion
     }

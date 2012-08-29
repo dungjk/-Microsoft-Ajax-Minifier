@@ -225,23 +225,45 @@ namespace Microsoft.Ajax.Utilities
             //TokenCounts = new Dictionary<JSToken, int>();
         }
 
+        /// <summary>
+        /// Set the lis of predefined preprocessor names, but without values
+        /// </summary>
+        /// <param name="definedNames">list of names only</param>
         public void SetPreprocessorDefines(ReadOnlyCollection<string> definedNames)
         {
             // this is a destructive set, blowing away any previous list
             if (definedNames != null && definedNames.Count > 0)
             {
                 // create a new list
-                m_defines = new Dictionary<string, string>();
+                m_defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 // add an entrty for each non-duplicate, valid name passed to us
                 foreach (var definedName in definedNames)
                 {
-                    var upperCaseName = definedName.ToUpperInvariant();
-                    if (JSScanner.IsValidIdentifier(upperCaseName) && !m_defines.ContainsKey(upperCaseName))
+                    if (JSScanner.IsValidIdentifier(definedName) && !m_defines.ContainsKey(definedName))
                     {
-                        m_defines.Add(upperCaseName, upperCaseName);
+                        m_defines.Add(definedName, string.Empty);
                     }
                 }
+            }
+            else
+            {
+                // we have no defined names
+                m_defines = null;
+            }
+        }
+
+        /// <summary>
+        /// Set the list of preprocessor defined names and values
+        /// </summary>
+        /// <param name="defines">dictionary of name/value pairs</param>
+        public void SetPreprocessorDefines(IDictionary<string, string> defines)
+        {
+            // this is a destructive set, blowing away any previous list
+            if (defines != null && defines.Count > 0)
+            {
+                // copy the dictionary
+                m_defines = new Dictionary<string, string>(defines, StringComparer.OrdinalIgnoreCase);
             }
             else
             {
@@ -726,11 +748,19 @@ namespace Microsoft.Ajax.Utilities
                                             // there is a non-blank source token.
                                             // so we have the line and the column and the source.
                                             // use them. Remember, though: we stopped BEFORE the line terminator,
-                                            // so as we hit it, we're going to add one to the line, so start one line
-                                            // LESS than what we want.
+                                            // so read ONE line terminator for the end of this line.
+                                            SkipOneLineTerminator();
+
+                                            // change the file context
                                             m_currentToken.ChangeFileContext(m_strSourceCode.Substring(ndxStart, m_currentPos - ndxStart).TrimEnd());
-                                            this.CurrentLine = linePos - 1;
-                                            this.StartLinePosition = linePos - colPos - 1;
+
+                                            // adjust the line number
+                                            this.CurrentLine = linePos;
+
+                                            // the start line position is the current position less the column position.
+                                            // and because the column position in the comment is one-based, add one to get 
+                                            // back to zero-based: current - (col - 1)
+                                            this.StartLinePosition = m_currentPos - colPos + 1;
                                         }
 
                                         goto nextToken;
@@ -823,16 +853,31 @@ namespace Microsoft.Ajax.Utilities
                                                 var identifier = PPScanIdentifier(true);
                                                 if (!string.IsNullOrEmpty(identifier))
                                                 {
+                                                    // see if we're assigning a value
+                                                    string value = string.Empty;
+                                                    if (GetChar(m_currentPos) == '=')
+                                                    {
+                                                        // we are! get the rest of the line as the trimmed string
+                                                        var ndxStart = ++m_currentPos;
+                                                        SkipToEndOfLine();
+                                                        value = m_strSourceCode.Substring(ndxStart, m_currentPos - ndxStart);
+                                                    }
+
                                                     // if there is no dictionary of defines yet, create one now
                                                     if (m_defines == null)
                                                     {
-                                                        m_defines = new Dictionary<string, string>();
+                                                        m_defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                                                     }
 
                                                     // if the identifier is not already in the dictionary, add it now
                                                     if (!m_defines.ContainsKey(identifier))
                                                     {
-                                                        m_defines.Add(identifier, identifier);
+                                                        m_defines.Add(identifier, value);
+                                                    }
+                                                    else
+                                                    {
+                                                        // it already exists -- just set the value
+                                                        m_defines[identifier] = value;
                                                     }
 
                                                     // if we are asking for raw tokens, we DON'T want to return this comment.
@@ -2316,6 +2361,32 @@ namespace Microsoft.Ajax.Utilities
                 && c != '\x2029')
             {
                 c = GetChar(++m_currentPos);
+            }
+        }
+
+        private void SkipOneLineTerminator()
+        {
+            var c = GetChar(m_currentPos);
+            if (c == '\r')
+            {
+                // skip over the \r; and if it's followed by a \n, skip it, too
+                if (GetChar(++m_currentPos) == '\n')
+                {
+                    ++m_currentPos;
+                }
+
+                CurrentLine++;
+                StartLinePosition = m_currentPos;
+            }
+            else if (c == '\n'
+                || c == '\x2028'
+                || c == '\x2029')
+            {
+                // skip over the single line-feed character
+                ++m_currentPos;
+
+                CurrentLine++;
+                StartLinePosition = m_currentPos;
             }
         }
 

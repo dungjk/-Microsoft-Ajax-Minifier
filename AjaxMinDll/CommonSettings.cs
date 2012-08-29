@@ -273,7 +273,24 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// Collection of names to define for the preprocessor
         /// </summary>
-        public ReadOnlyCollection<string> PreprocessorDefines { get; private set; }
+        public ReadOnlyCollection<string> PreprocessorDefines 
+        { 
+            get 
+            {
+                var defines = new List<string>();
+                if (PreprocessorValues != null)
+                {
+                    defines.AddRange(PreprocessorValues.Keys);
+                }
+
+                return new ReadOnlyCollection<string>(defines); 
+            } 
+        }
+
+        /// <summary>
+        /// dictionary of defines and their values
+        /// </summary>
+        public IDictionary<string, string> PreprocessorValues { get; private set; }
 
         /// <summary>
         /// Set the collection of defined names for the preprocessor
@@ -282,31 +299,64 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>number of names successfully added to the collection</returns>
         public int SetPreprocessorDefines(params string[] definedNames)
         {
-            int numAdded = 0;
             if (definedNames == null || definedNames.Length == 0)
             {
-                PreprocessorDefines = null;
+                PreprocessorValues = null;
             }
             else
             {
                 // create a list with a capacity equal to the number of items in the array
-                var checkedNames = new List<string>(definedNames.Length);
+                PreprocessorValues = new Dictionary<string, string>(definedNames.Length, StringComparer.OrdinalIgnoreCase);
 
                 // validate that each name in the array is a valid JS identifier
-                foreach (var name in definedNames)
+                foreach (var define in definedNames)
                 {
+                    string trimmedName;
+                    var ndxEquals = define.IndexOf('=');
+                    if (ndxEquals < 0)
+                    {
+                        trimmedName = define.Trim();
+                    }
+                    else
+                    {
+                        trimmedName = define.Substring(0, ndxEquals).Trim();
+                    }
+
                     // must be a valid JS identifier
-                    string trimmedName = name.Trim();
                     if (JSScanner.IsValidIdentifier(trimmedName))
                     {
-                        checkedNames.Add(trimmedName);
+                        PreprocessorValues.Add(trimmedName, ndxEquals < 0 ? string.Empty : define.Substring(ndxEquals + 1));
                     }
                 }
-                PreprocessorDefines = new ReadOnlyCollection<string>(checkedNames);
-                numAdded = checkedNames.Count;
             }
 
-            return numAdded;
+            return PreprocessorValues == null ? 0 : PreprocessorValues.Count;
+        }
+
+        /// <summary>
+        /// Set the dictionary of preprocessor defines and values
+        /// </summary>
+        /// <param name="defines">dictionary to set</param>
+        public int SetPreprocessorValues(IDictionary<string, string> defines)
+        {
+            if (defines != null && defines.Count > 0)
+            {
+                PreprocessorValues = new Dictionary<string, string>(defines.Count, StringComparer.OrdinalIgnoreCase);
+                foreach (var define in defines.Keys)
+                {
+                    if (JSScanner.IsValidIdentifier(define))
+                    {
+                        PreprocessorValues.Add(define, defines[define]);
+                    }
+                }
+            }
+            else
+            {
+                // clear it out
+                PreprocessorValues = null;
+            }
+
+            return PreprocessorValues == null ? 0 : PreprocessorValues.Count;
         }
 
         /// <summary>
@@ -319,17 +369,27 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the defined names to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                if (PreprocessorDefines != null)
+                if (PreprocessorValues != null)
                 {
-                    foreach (var definedName in PreprocessorDefines)
+                    foreach (var definedName in PreprocessorValues.Keys)
                     {
                         if (sb.Length > 0)
                         {
                             sb.Append(',');
                         }
+
                         sb.Append(definedName);
+                        var defineValue = PreprocessorValues[definedName];
+                        if (!string.IsNullOrEmpty(defineValue))
+                        {
+                            sb.Append('=');
+
+                            // TODO: how can I escape any commas?
+                            sb.Append(defineValue);
+                        }
                     }
                 }
+
                 return sb.ToString();
             }
             set
@@ -340,7 +400,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    SetPreprocessorDefines(null);
+                    PreprocessorValues = null;
                 }
             }
         }

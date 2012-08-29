@@ -50,8 +50,10 @@ namespace Microsoft.Ajax.Utilities
         private bool m_useStrict;//= false;
 
         // for literal-combining
+        /* TODO: REMOVE CODE ALTOGETHER
         private Dictionary<string, LiteralReference> m_literalMap;
         private static uint s_literalCounter; // = 0;
+        */
 
         private JSParser m_parser;
         protected JSParser Parser
@@ -288,6 +290,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /* TODO: REMOVE CODE ALTOGETHER
         internal virtual void AnalyzeLiterals()
         {
             // create our shortcuts first
@@ -307,6 +310,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+        */
 
         #region crunching methods
 
@@ -750,6 +754,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region Literal-combining code
 
+        /* TODO: REMOVE CODE ALTOGETHER
         protected virtual void CreateLiteralShortcuts()
         {
             if (m_literalMap != null)
@@ -1006,6 +1011,7 @@ namespace Microsoft.Ajax.Utilities
                 m_count++;
             }
         }
+        */
 
         #endregion
 

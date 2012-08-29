@@ -41,7 +41,7 @@ namespace Microsoft.Ajax.Utilities
 
             // define the Window object's properties, and methods
             m_windowObject = new GlobalObject(
-              new string[] { "applicationCache", "clientInformation", "clipboardData", "closed", "document", "event", "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", "opener", "parent", "screen", "self", "sessionStorage", "status", "top" },
+              new string[] { "applicationCache", "clientInformation", "clipboardData", "closed", "console", "document", "event", "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", "opener", "parent", "screen", "self", "sessionStorage", "status", "top" },
               new string[] { "addEventListener", "alert", "attachEvent", "blur", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", "detachEvent", "dispatchEvent", "execScript", "focus", "getComputedStyle", "getSelection", "moveBy", "moveTo", "navigate", "open", "postMessage", "prompt", "removeEventListener", "resizeBy", "resizeTo", "scroll", "scrollBy", "scrollTo", "setActive", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog" }
               );
         }
@@ -156,6 +156,7 @@ namespace Microsoft.Ajax.Utilities
         }
 
         // the global scope does nothing when told to add literals -- just returns null
+        /* TODO: REMOVE CODE ALTOGETHER
         internal override List<ConstantWrapper> AddLiteral(ConstantWrapper constantWrapper, ActivationObject refScope)
         {
             return null;
@@ -165,5 +166,6 @@ namespace Microsoft.Ajax.Utilities
         {
             // do nothing -- we don't create shortcuts in the global scope
         }
+        */
     }
 }

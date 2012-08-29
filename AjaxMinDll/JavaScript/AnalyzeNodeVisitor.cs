@@ -1545,6 +1545,7 @@ namespace Microsoft.Ajax.Utilities
                 // we only need to process the literals IF we are actually going to do
                 // anything with them (combine duplicates). So if we aren't, don't call
                 // AddLiteral because it hugely inflates the processing time of the application.
+                /* TODO REMOVE THIS CODE ALTOGETHER
                 if (m_parser.Settings.CombineDuplicateLiterals)
                 {
                     // add this literal to the scope's literal collection. 
@@ -1561,6 +1562,7 @@ namespace Microsoft.Ajax.Utilities
                         thisScope.AddLiteral(node, thisScope);
                     }
                 }
+                */
 
                 // this node has no children, so don't bother calling the base
                 //base.Visit(node);
@@ -2583,6 +2585,7 @@ namespace Microsoft.Ajax.Utilities
 
         public override void Visit(ThisLiteral node)
         {
+            /* TODO: REMOVE CODE ALTOGETHER
             // we're going to look for the first FunctionScope on the stack
             FunctionScope functionScope = null;
 
@@ -2607,6 +2610,7 @@ namespace Microsoft.Ajax.Utilities
                 // add this object to the list of thisliterals
                 functionScope.AddThisLiteral(node);
             }
+            */
         }
 
         public override void Visit(TryNode node)

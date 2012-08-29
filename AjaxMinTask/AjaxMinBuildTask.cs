@@ -304,10 +304,12 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.CombineDuplicateLiterals"/> for more information.
         /// </summary>
+        [Obsolete("This setting is no longer available")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool JsCombineDuplicateLiterals
         {
-            get { return this.m_jsCodeSettings.CombineDuplicateLiterals; }
-            set { this.m_jsCodeSettings.CombineDuplicateLiterals = value; }
+            get { return false;/* this.m_jsCodeSettings.CombineDuplicateLiterals;*/ }
+            set { /*this.m_jsCodeSettings.CombineDuplicateLiterals = value;*/ }
         }
         
         /// <summary>
