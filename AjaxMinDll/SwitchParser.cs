@@ -914,6 +914,7 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "LINE":
+                            case "LINES":
                                 if (string.IsNullOrEmpty(paramPartUpper))
                                 {
                                     // if no number specified, use the max default threshold
