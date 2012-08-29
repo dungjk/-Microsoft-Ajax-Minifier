@@ -45,50 +45,44 @@ namespace Microsoft.Ajax.Utilities
             }
 
             Document = document;
+
             StartLineNumber = 1;
             EndLineNumber = 1;
             EndPosition = (Document.Source == null) ? -1 : Document.Source.Length;
-            Token = JSToken.None;
-            m_errorReported = 1000000;
-        }
 
-        public Context(DocumentContext document, int lineNumber, int startLinePos, int startPos, int endLineNumber,
-                         int endLinePos, int endPos, JSToken token)
-        {
-            Document = document;
-            StartLineNumber = lineNumber;
-            StartLinePosition = startLinePos;
-            StartPosition = startPos;
-            EndLineNumber = endLineNumber;
-            EndLinePosition = endLinePos;
-            EndPosition = endPos;
-            Token = token;
+            Token = JSToken.None;
             m_errorReported = 1000000;
         }
 
         public Context Clone()
         {
-            Context context = new Context(Document, StartLineNumber, StartLinePosition, StartPosition,
-                               EndLineNumber, EndLinePosition, EndPosition, Token);
-            context.m_errorReported = m_errorReported;
-            return context;
+            return new Context(this.Document)
+            {
+                StartLineNumber = this.StartLineNumber, 
+                StartLinePosition = this.StartLinePosition, 
+                StartPosition = this.StartPosition,
+                EndLineNumber = this.EndLineNumber, 
+                EndLinePosition = this.EndLinePosition, 
+                EndPosition = this.EndPosition, 
+                Token = this.Token,
+                m_errorReported = this.m_errorReported
+            };
         }
 
         public Context CombineWith(Context other)
         {
-            return (other == null
-              ? this.Clone()
-              : new Context(
-                Document,
-                StartLineNumber,
-                StartLinePosition,
-                StartPosition,
-                other.EndLineNumber,
-                other.EndLinePosition,
-                other.EndPosition,
-                Token
-                )
-              );
+            return other == null
+                ? this.Clone()
+                : new Context(Document)
+                    {
+                        StartLineNumber = this.StartLineNumber,
+                        StartLinePosition = this.StartLinePosition,
+                        StartPosition = this.StartPosition,
+                        EndLineNumber = other.EndLineNumber,
+                        EndLinePosition = other.EndLinePosition,
+                        EndPosition = other.EndPosition,
+                        Token = this.Token
+                    };
         }
 
         public int StartColumn

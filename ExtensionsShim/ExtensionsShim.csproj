@@ -10,8 +10,8 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ExtensionsShim</RootNamespace>
     <AssemblyName>ExtensionsShim</AssemblyName>
-      <AssemblyOriginatorKeyFile>..\AjaxMin.snk</AssemblyOriginatorKeyFile>
-      <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <AssemblyOriginatorKeyFile>..\AjaxMin.snk</AssemblyOriginatorKeyFile>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SccProjectName>SAK</SccProjectName>
     <SccLocalPath>SAK</SccLocalPath>
@@ -49,6 +49,7 @@
     <Compile Include="..\AjaxMin\Properties\ProductAssemblyInfo.cs">
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Delegates.cs" />
     <Compile Include="ExtensionsShim.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

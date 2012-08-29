@@ -34,15 +34,17 @@ namespace Microsoft.Ajax.Utilities
     //***************************************************************************************
     public class JSParser
     {
+        private const int c_MaxSkippedTokenNumber = 50;
 
-        private Context m_sourceContext;
+        private DocumentContext m_document;
         private JSScanner m_scanner;
         private Context m_currentToken;
-        private Context m_errorToken;  // used for errors to flag that the same token has to be returned.
+
+        // used for errors to flag that the same token has to be returned.
         // We could have used just a boolean but having a Context does not
         // add any overhead and allow to really save the info, if that will ever be needed
+        private bool m_useCurrentForNext;
         private int m_tokensSkipped;
-        private const int c_MaxSkippedTokenNumber = 50;
         private NoSkipTokenSet m_noSkipTokenSet;
         private long m_goodTokensProcessed;
 
@@ -214,16 +216,14 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         public JSParser(string source)
         {
-            Context context = new Context(new DocumentContext(this, source));
-
-            m_sourceContext = context;
-            m_currentToken = context.Clone();
-            m_scanner = new JSScanner(m_currentToken);
-            m_noSkipTokenSet = new NoSkipTokenSet();
-
+            m_severity = 5;
             m_blockType = new List<BlockType>(16);
             m_labelTable = new Dictionary<string, LabelInfo>();
-            m_severity = 5;
+            m_noSkipTokenSet = new NoSkipTokenSet();
+
+            m_document = new DocumentContext(this, source);
+            m_scanner = new JSScanner(new Context(m_document));
+            m_currentToken = new Context(m_document);
 
             // if the scanner encounters a special "globals" comment, it'll fire this event
             // at which point we will define a field with that name in the global scope. 
@@ -240,12 +240,13 @@ namespace Microsoft.Ajax.Utilities
 
         public string FileContext
         {
-            get { return m_sourceContext.Document.FileContext; }
+            get 
+            { 
+                return m_document.FileContext; 
+            }
             set 
             { 
-                // make sure we set the file content on both the source context
-                // AND the current token context
-                m_currentToken.Document.FileContext = m_sourceContext.Document.FileContext = value; 
+                m_document.FileContext = value; 
             }
         }
 
@@ -559,9 +560,9 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private Block ParseStatements()
         {
-            m_program = new Block(m_sourceContext.Clone(), this);
+            m_program = new Block(m_currentToken.Clone(), this);
             m_blockType.Add(BlockType.Block);
-            m_errorToken = null;
+            m_useCurrentForNext = false;
             try
             {
                 GetNextToken();
@@ -613,7 +614,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                             else
                             {
-                                m_errorToken = null;
+                                m_useCurrentForNext = false;
                                 do
                                 {
                                     GetNextToken();
@@ -1737,9 +1738,13 @@ namespace Microsoft.Ajax.Utilities
                                 catch (RecoveryTokenException)
                                 {
                                     if (JSToken.Semicolon == m_currentToken.Token)
-                                        m_errorToken = null;
+                                    {
+                                        m_useCurrentForNext = false;
+                                    }
                                     else
+                                    {
                                         throw;
+                                    }
                                 }
                                 finally
                                 {
@@ -3800,7 +3805,7 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case JSToken.StringLiteral:
-                    ast = new ConstantWrapper(m_scanner.StringLiteral, PrimitiveType.String, m_currentToken.Clone(), this);
+                    ast = new ConstantWrapper(m_scanner.EscapedString, PrimitiveType.String, m_currentToken.Clone(), this);
                     break;
 
                 case JSToken.IntegerLiteral:
@@ -4016,7 +4021,7 @@ namespace Microsoft.Ajax.Utilities
                                     break;
 
                                 case JSToken.StringLiteral:
-                                    field = new ObjectLiteralField(m_scanner.StringLiteral, PrimitiveType.String, m_currentToken.Clone(), this);
+                                    field = new ObjectLiteralField(m_scanner.EscapedString, PrimitiveType.String, m_currentToken.Clone(), this);
                                     break;
 
                                 case JSToken.IntegerLiteral:
@@ -4675,25 +4680,25 @@ namespace Microsoft.Ajax.Utilities
         {
             try
             {
-                if (null != m_errorToken)
+                if (m_useCurrentForNext)
                 {
-                    if (m_breakRecursion > 10)
+                    // we just want to keep using the current token.
+                    // but don't get into an infinite loop -- after a while,
+                    // give up and grab the next token from the scanner anyway
+                    m_useCurrentForNext = false;
+                    if (m_breakRecursion++ > 10)
                     {
-                        m_errorToken = null;
-                        m_scanner.GetNextToken();
-                        return;
+                        m_currentToken = m_scanner.ScanNextToken();
                     }
-                    m_breakRecursion++;
-                    m_currentToken = m_errorToken;
-                    m_errorToken = null;
                 }
                 else
                 {
                     m_goodTokensProcessed++;
                     m_breakRecursion = 0;
 
-                    // the scanner shares this.currentToken with the parser
-                    m_scanner.GetNextToken();
+                    // the scanner reuses the same context object for performance,
+                    // so if we ever mean to hold onto it later, we need to clone it.
+                    m_currentToken = m_scanner.ScanNextToken();
                 }
             }
             catch (ScannerException e)
@@ -4773,7 +4778,7 @@ namespace Microsoft.Ajax.Utilities
                     m_goodTokensProcessed = -1;
                 else
                 {
-                    m_errorToken = m_currentToken;
+                    m_useCurrentForNext = true;
                     m_goodTokensProcessed = 0;
                 }
             }
@@ -4808,12 +4813,12 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private void EOFError(JSError errorId)
         {
-            Context eofCtx = m_sourceContext.Clone();
+            Context eofCtx = m_currentToken.Clone();
             eofCtx.StartLineNumber = m_scanner.CurrentLine;
-            eofCtx.EndLineNumber = eofCtx.StartLineNumber;
             eofCtx.StartLinePosition = m_scanner.StartLinePosition;
+            eofCtx.EndLineNumber = eofCtx.StartLineNumber;
             eofCtx.EndLinePosition = eofCtx.StartLinePosition;
-            eofCtx.StartPosition = m_sourceContext.EndPosition;
+            eofCtx.StartPosition = m_document.Source.Length;
             eofCtx.EndPosition++;
             eofCtx.HandleError(errorId);
         }
@@ -4832,7 +4837,7 @@ namespace Microsoft.Ajax.Utilities
 
         private void SkipTokensAndThrow(AstNode partialAST)
         {
-            m_errorToken = null; // make sure we go to the next token
+            m_useCurrentForNext = false; // make sure we go to the next token
             bool checkForEndOfLine = m_noSkipTokenSet.HasToken(JSToken.EndOfLine);
             while (!m_noSkipTokenSet.HasToken(m_currentToken.Token))
             {
@@ -4840,7 +4845,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (m_scanner.GotEndOfLine)
                     {
-                        m_errorToken = m_currentToken;
+                        m_useCurrentForNext = true;
                         throw new RecoveryTokenException(JSToken.EndOfLine, partialAST);
                     }
                 }
@@ -4853,7 +4858,8 @@ namespace Microsoft.Ajax.Utilities
                 if (JSToken.EndOfFile == m_currentToken.Token)
                     throw new EndOfFileException();
             }
-            m_errorToken = m_currentToken;
+
+            m_useCurrentForNext = true;
             // got a token in the no skip set, throw
             throw new RecoveryTokenException(m_currentToken.Token, partialAST);
         }
@@ -4879,7 +4885,7 @@ namespace Microsoft.Ajax.Utilities
             else
             {
                 // assume that the caller will deal with the token so move the state back to normal
-                m_errorToken = null;
+                m_useCurrentForNext = false;
             }
             return i;
         }

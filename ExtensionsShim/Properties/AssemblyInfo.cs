@@ -16,7 +16,7 @@
 
 using System.Reflection;
 using System.Resources;
-using System.Security.Permissions;
+using System.Security;
 
 //
 // General Information about an assembly is controlled through the following 
@@ -29,6 +29,8 @@ using System.Security.Permissions;
 
 // needs to read and write files
 //[assembly: FileIOPermission(SecurityAction.RequestMinimum, Unrestricted = true)]
+[assembly: SecurityCritical(SecurityCriticalScope.Explicit)]
+[assembly: AllowPartiallyTrustedCallers]
 
 // we are compliant and not visible to COM by default
 [assembly: System.CLSCompliant(true)]

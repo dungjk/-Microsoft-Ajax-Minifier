@@ -1,10 +1,14 @@
 ﻿
 
 ///#UNDEF notdefined
-///#DEFINE FooBar
+///#DEFINE FooBar = BatMan
 
 ///#IFDEF foobar
-var a = "foobar";
+///#if foobar === batman
+var a = "foobar is batman";
+///#else
+var a = "foobar not batman";
+///#endif
 ///#ELSE
 var a = "not foobar";
 ///#ENDIF
@@ -17,7 +21,7 @@ var b = "foobar";
 var b = "not foobar";
 ///#ENDIF
 
-///#ifdef ackbar
+///#ifdef ackbar    some other crap we'll ignore
 var c = "ackbar";
 ///#else
 var c = "not ackbar";

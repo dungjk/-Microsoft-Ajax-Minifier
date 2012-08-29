@@ -108,5 +108,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void DefineIf()
+        {
+            TestHelper.Instance.RunTest("-reorder:n");
+        }
+
+        [TestMethod]
+        public void DefineIf_defines()
+        {
+            TestHelper.Instance.RunTest("-define:version=2.0,ackbar=ADMIRAL,MEOW=hiss -reorder:n");
+        }
     }
 }

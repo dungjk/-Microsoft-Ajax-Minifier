@@ -1,4 +1,4 @@
-﻿// ExtensionsShim.cs
+﻿// Delegates.cs
 //
 // Copyright 2012 Microsoft Corporation
 //
@@ -14,14 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-namespace System.Runtime.CompilerServices
+namespace Microsoft.Ajax.Utilities
 {
-    /// <summary>
-    /// extension attribute required to compile .NET 3.5 extension methods in .NET 2.0
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class ExtensionAttribute : Attribute
-    {
-    }
+    // this is one of the many useful delegates defined in .NET 3.5 and higher
+    public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
 }

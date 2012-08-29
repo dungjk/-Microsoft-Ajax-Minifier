@@ -17,6 +17,7 @@
 namespace Microsoft.Ajax.Utilities
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
 
     public static class Extensions
@@ -95,4 +96,28 @@ namespace Microsoft.Ajax.Utilities
             return number.ToStringInvariant(null);
         }
     }
+
+    /// <summary>
+    /// Helpful class for specifying a simple IComparer implementation using a lambda-expression.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class Comparer<T> : IComparer<T>
+    {
+        Func<T, T, int> m_comparison;
+
+        public Comparer(Func<T, T, int> comparison)
+        {
+            m_comparison = comparison;
+        }
+
+        #region IComparer<T> Members
+
+        public int Compare(T x, T y)
+        {
+            return m_comparison(x, y);
+        }
+
+        #endregion
+    }
+
 }
