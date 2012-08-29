@@ -80,9 +80,6 @@
     <Compile Include="..\AjaxMin\DefaultScopeReport.cs">
       <Link>DefaultScopeReport.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMin\Extensions.cs">
-      <Link>Extensions.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMin\GlobalSuppressions.cs">
       <Link>GlobalSuppressions.cs</Link>
     </Compile>

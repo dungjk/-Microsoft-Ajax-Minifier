@@ -27,14 +27,6 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.Ajax.Minifier.Tasks
 {
-    public static class StringExtension
-    {
-        public static bool IsNullOrWhiteSpace(this string value)
-        {
-            return string.IsNullOrEmpty(value) || value.Trim().Length == 0;
-        }
-    }
-
     /// <summary>
     /// Provides the MS Build task for Microsoft Ajax Minifier. Please see the list of supported properties below.
     /// </summary>
@@ -299,17 +291,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             get { return this.m_jsCodeSettings.CollapseToLiteral;  }
             set { this.m_jsCodeSettings.CollapseToLiteral = value; }
-        }
-        
-        /// <summary>
-        /// <see cref="CodeSettings.CombineDuplicateLiterals"/> for more information.
-        /// </summary>
-        [Obsolete("This setting is no longer available")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public bool JsCombineDuplicateLiterals
-        {
-            get { return false;/* this.m_jsCodeSettings.CombineDuplicateLiterals;*/ }
-            set { /*this.m_jsCodeSettings.CombineDuplicateLiterals = value;*/ }
         }
         
         /// <summary>

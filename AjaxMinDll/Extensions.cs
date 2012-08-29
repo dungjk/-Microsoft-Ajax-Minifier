@@ -19,7 +19,7 @@ namespace Microsoft.Ajax.Utilities
     using System;
     using System.Globalization;
 
-    internal static class Extensions
+    public static class Extensions
     {
         public static string FormatInvariant(this string format, params object[] args)
         {
@@ -66,18 +66,33 @@ namespace Microsoft.Ajax.Utilities
             return text == null ? false : long.TryParse(text, numberStyles, CultureInfo.InvariantCulture, out number);
         }
 
-        public static string ToStringInvariant(this int number, string format = null)
+        public static bool IsNullOrWhiteSpace(this string text)
+        {
+            return string.IsNullOrEmpty(text) || text.Trim().Length == 0;
+        }
+
+        public static string ToStringInvariant(this int number, string format)
         {
             return format == null
                 ? number.ToString(CultureInfo.InvariantCulture)
                 : number.ToString(format, CultureInfo.InvariantCulture);
         }
 
-        public static string ToStringInvariant(this double number, string format = null)
+        public static string ToStringInvariant(this double number, string format)
         {
             return format == null
                 ? number.ToString(CultureInfo.InvariantCulture)
                 : number.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant(this int number)
+        {
+            return number.ToStringInvariant(null);
+        }
+
+        public static string ToStringInvariant(this double number)
+        {
+            return number.ToStringInvariant(null);
         }
     }
 }

@@ -354,6 +354,7 @@ namespace Microsoft.Ajax.Utilities
             get { return HideFromOutput; }
         }
 
+        /* TODO: REMOVE UNUSED CODE
         internal void AddGeneratedVar(string name, AstNode initializer, bool isLiteral)
         {
             // if the body is empty, create one now
@@ -398,6 +399,7 @@ namespace Microsoft.Ajax.Utilities
                 Body.Insert(0, var);
             }
         }
+        */
 
         internal bool IsArgumentTrimmable(JSVariableField targetArgumentField)
         {

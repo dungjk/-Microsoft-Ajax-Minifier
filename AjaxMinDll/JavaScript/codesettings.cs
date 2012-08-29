@@ -554,35 +554,12 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         /// <summary>
-        /// deprecated setting; do not use
-        /// </summary>
-        [Obsolete("This property is obsolete and no longer used")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public bool CatchAsLocal
-        {
-            get { return false; }
-            set { }
-        }
-
-        /// <summary>
         /// collapse new Array() to [] and new Object() to {} [true]
         /// or leave ais [false]. Default is true.
         /// </summary>
         public bool CollapseToLiteral
         {
             get; set;
-        }
-
-        /// <summary>
-        /// Combine duplicate literals within function scopes to local variables [true]
-        /// or leave them as-is [false]. Default is false.
-        /// </summary>
-        [Obsolete("This setting is no longer available")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public bool CombineDuplicateLiterals
-        {
-            get { return false; }
-            set { }
         }
 
         /// <summary>
@@ -766,14 +743,6 @@ namespace Microsoft.Ajax.Utilities
         {
             get;
             set;
-        }
-
-        [Obsolete("This property is obsolete and no longer used")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public bool W3Strict
-        {
-            get { return false; }
-            set { }
         }
 
         /// <summary>

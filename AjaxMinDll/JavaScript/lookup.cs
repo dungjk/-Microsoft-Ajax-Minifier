@@ -98,6 +98,7 @@ namespace Microsoft.Ajax.Utilities
             return m_name;
         }
 
+        /* TODO: REMOVED UNUSED CODE
         internal void SetOuterLocalField(ActivationObject parentScope)
         {
             // if we're trying to set the outer local field using a global scope,
@@ -127,6 +128,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+        */
 
         private static bool MatchMemberName(AstNode node, string lookup, int startIndex, int endIndex)
         {
