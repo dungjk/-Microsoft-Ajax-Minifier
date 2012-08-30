@@ -3245,7 +3245,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 public override int Compare(string x, string y)
                 {
-                    var delta = x.Length - y.Length;
+                    var delta = y.Length - x.Length;
                     return delta != 0 ? delta : string.CompareOrdinal(x, y);
                 }
             }
