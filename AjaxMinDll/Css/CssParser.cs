@@ -3830,7 +3830,7 @@ namespace Microsoft.Ajax.Utilities
                             // we don't want any color names in our code.
                             // convert ALL known color names to hex, so see if there is a match on
                             // the set containing all the name-to-hex values
-                            if (ColorSlice<AllColorNames>.Data.TryGetValue(lowerCaseText, out rgbString))
+                            if (ColorSlice.AllColorNames.TryGetValue(lowerCaseText, out rgbString))
                             {
                                 text = rgbString;
                                 nameConvertedToHex = true;
@@ -3842,7 +3842,7 @@ namespace Microsoft.Ajax.Utilities
                             // convert all non-strict name to hex, AND any strict names to hex if the hex is
                             // shorter than the name. So check the set that contains all non-strict name-to-hex
                             // values and all the strict name-to-hex values where hex is shorter than name.
-                            if (ColorSlice<StrictHexShorterThanNameAndAllNonStrict>.Data.TryGetValue(lowerCaseText, out rgbString))
+                            if (ColorSlice.StrictHexShorterThanNameAndAllNonStrict.TryGetValue(lowerCaseText, out rgbString))
                             {
                                 text = rgbString;
                                 nameConvertedToHex = true;
@@ -3852,7 +3852,7 @@ namespace Microsoft.Ajax.Utilities
                         case CssColor.Major:
                             // we don't care if there are non-strict color name. So check the set that only
                             // contains name-to-hex pairs where the hex is shorter than the name.
-                            if (ColorSlice<HexShorterThanName>.Data.TryGetValue(lowerCaseText, out rgbString))
+                            if (ColorSlice.HexShorterThanName.TryGetValue(lowerCaseText, out rgbString))
                             {
                                 text = rgbString;
                                 nameConvertedToHex = true;
@@ -3865,7 +3865,7 @@ namespace Microsoft.Ajax.Utilities
                     // to do this check if our color name setting is hex-only, because we would
                     // have already converted the name if we know about it
                     if (Settings.ColorNames != CssColor.Hex && !nameConvertedToHex
-                        && ColorSlice<AllColorNames>.Data.TryGetValue(lowerCaseText, out rgbString))
+                        && ColorSlice.AllColorNames.TryGetValue(lowerCaseText, out rgbString))
                     {
                         // the color exists in the table, so we're pretty sure this is a color.
                         // make sure it's lower case
@@ -4076,13 +4076,13 @@ namespace Microsoft.Ajax.Utilities
                 // if the map contains an entry for this color, then we
                 // should use the name instead because it's smaller.
                 string colorName;
-                if (ColorSlice<StrictNameShorterThanHex>.Data.TryGetValue(hexColor, out colorName))
+                if (ColorSlice.StrictNameShorterThanHex.TryGetValue(hexColor, out colorName))
                 {
                     hexColor = colorName;
                 }
                 else if (colorNames == CssColor.Major)
                 {
-                    if (ColorSlice<NameShorterThanHex>.Data.TryGetValue(hexColor, out colorName))
+                    if (ColorSlice.NameShorterThanHex.TryGetValue(hexColor, out colorName))
                     {
                         hexColor = colorName;
                     }

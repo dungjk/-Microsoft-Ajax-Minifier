@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
     //     Indicates that a method is an extension method, or that a class or assembly
     //     contains extension methods.
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method)]
-    public sealed class ExtensionAttribute : Attribute
+    internal sealed class ExtensionAttribute : Attribute
     {
         // Summary:
         //     Initializes a new instance of the System.Runtime.CompilerServices.ExtensionAttribute
@@ -38,6 +38,7 @@ namespace Microsoft.Ajax.Utilities
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
 
     public static class Extensions
     {
@@ -113,6 +114,12 @@ namespace Microsoft.Ajax.Utilities
         public static string ToStringInvariant(this double number)
         {
             return number.ToStringInvariant(null);
+        }
+
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            var hash = new HashSet<TKey>();
+            return source.Where(p => hash.Add(keySelector(p)));
         }
     }
 }

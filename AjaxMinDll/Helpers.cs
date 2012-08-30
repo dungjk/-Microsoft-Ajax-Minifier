@@ -16,11 +16,37 @@
 
 namespace Microsoft.Ajax.Utilities
 {
-
 #if NET_20
+    using System.Collections;
 
-    // this is one of the many useful delegates defined in .NET 3.5 and higher
+    // these are a few of the many useful delegates defined in .NET 3.5 and higher
+    public delegate TResult Func<in T1, out TResult>(T1 arg1);
     public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+
+    /// <summary>
+    /// class HashSet doesn't really do it justice, but it will fit the bill for what we need of it
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class HashSet<T>
+    {
+        private Hashtable m_table;
+
+        public HashSet()
+        {
+            m_table = new Hashtable();
+        }
+
+        public bool Add(T item)
+        {
+            var added = !m_table.ContainsKey(item);
+            if (added)
+            {
+                m_table.Add(item, null);
+            }
+
+            return added;
+        }
+    }
 
 #endif
 
