@@ -3205,7 +3205,7 @@ namespace Microsoft.Ajax.Utilities
         private sealed class PPOperators : SortedDictionary<string, Func<string, string, bool>>
         {
             private PPOperators()
-                : base(new Comparer<string>((x, y) => { var delta = y.Length - x.Length; return delta != 0 ? delta : string.CompareOrdinal(x, y); }))
+                : base(new LengthComparer())
             {
                 // add the operator information
                 this.Add("==", PPIsEqual);
@@ -3217,6 +3217,8 @@ namespace Microsoft.Ajax.Utilities
                 this.Add("<=", PPIsLessThanOrEqual);
                 this.Add(">=", PPIsGreaterThanOrEqual);
             }
+
+            #region thread-safe lazy-loading property and nested class
 
             public static PPOperators Instance
             {
@@ -3230,6 +3232,27 @@ namespace Microsoft.Ajax.Utilities
             {
                 internal static readonly PPOperators Instance = new PPOperators();
             }
+
+            #endregion
+
+            #region sorting class
+
+            /// <summary>
+            /// Sorting class for the sorted dictionary base to make sure the operators are
+            /// enumerated with the LONGEST strings first, before the shorter strings.
+            /// </summary>
+            private class LengthComparer : Comparer<string>
+            {
+                public override int Compare(string x, string y)
+                {
+                    var delta = x.Length - y.Length;
+                    return delta != 0 ? delta : string.CompareOrdinal(x, y);
+                }
+            }
+
+            #endregion
+
+            #region condition execution methods
 
             private static bool PPIsStrictEqual(string left, string right)
             {
@@ -3339,12 +3362,26 @@ namespace Microsoft.Ajax.Utilities
                 return isTrue;
             }
 
+            #endregion
+
+            #region static helper methods
+
+            /// <summary>
+            /// Try converting the two strings to doubles
+            /// </summary>
+            /// <param name="left">first string</param>
+            /// <param name="right">second string</param>
+            /// <param name="leftNumeric">first string converted to double</param>
+            /// <param name="rightNumeric">second string converted to double</param>
+            /// <returns>true if the conversion was successful; false otherwise</returns>
             private static bool ConvertToNumeric(string left, string right, out double leftNumeric, out double rightNumeric)
             {
                 rightNumeric = default(double);
                 return double.TryParse(left, NumberStyles.Any, CultureInfo.InvariantCulture, out leftNumeric)
                     && double.TryParse(right, NumberStyles.Any, CultureInfo.InvariantCulture, out rightNumeric);
             }
+
+            #endregion
         }
     }
 

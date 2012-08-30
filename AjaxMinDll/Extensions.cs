@@ -14,6 +14,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NET_20
+
+namespace System.Runtime.CompilerServices
+{
+    // Summary:
+    //     Indicates that a method is an extension method, or that a class or assembly
+    //     contains extension methods.
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method)]
+    public sealed class ExtensionAttribute : Attribute
+    {
+        // Summary:
+        //     Initializes a new instance of the System.Runtime.CompilerServices.ExtensionAttribute
+        //     class.
+        public ExtensionAttribute() { }
+    }
+}
+
+#endif
+
 namespace Microsoft.Ajax.Utilities
 {
     using System;
@@ -96,28 +115,4 @@ namespace Microsoft.Ajax.Utilities
             return number.ToStringInvariant(null);
         }
     }
-
-    /// <summary>
-    /// Helpful class for specifying a simple IComparer implementation using a lambda-expression.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class Comparer<T> : IComparer<T>
-    {
-        Func<T, T, int> m_comparison;
-
-        public Comparer(Func<T, T, int> comparison)
-        {
-            m_comparison = comparison;
-        }
-
-        #region IComparer<T> Members
-
-        public int Compare(T x, T y)
-        {
-            return m_comparison(x, y);
-        }
-
-        #endregion
-    }
-
 }

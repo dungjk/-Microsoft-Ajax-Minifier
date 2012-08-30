@@ -132,6 +132,7 @@
     </Compile>
     <Compile Include="Extensions.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="JavaScript\activationobject.cs" />
     <Compile Include="JavaScript\AnalyzeNodeVisitor.cs" />
     <Compile Include="JavaScript\arrayliteral.cs" />

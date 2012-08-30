@@ -134,10 +134,6 @@
       <Project>{AAAA10AC-122E-4B87-B458-3EC03A06E331}</Project>
       <Name>AjaxMinDll2005</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ExtensionsShim\ExtensionsShim.csproj">
-      <Project>{ABB7F892-87B3-4859-ADAA-1EC1B30034DF}</Project>
-      <Name>ExtensionsShim</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

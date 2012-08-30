@@ -85,6 +85,9 @@
     <Compile Include="..\AjaxMinDll\GlobalSuppressions.cs">
       <Link>GlobalSuppressions.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\Helpers.cs">
+      <Link>Helpers.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\activationobject.cs">
       <Link>JavaScript\activationobject.cs</Link>
     </Compile>
