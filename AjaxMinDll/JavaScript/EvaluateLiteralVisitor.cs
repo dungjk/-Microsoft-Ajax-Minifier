@@ -1638,8 +1638,9 @@ namespace Microsoft.Ajax.Utilities
             var elementCount = arrayLiteral.Elements.Count;
             for (var ndx = 0; ndx < elementCount; ++ndx)
             {
-                // if any one element isn't a constant, then bail with false
-                if (!(arrayLiteral.Elements[ndx] is ConstantWrapper))
+                // if any one element isn't a constant or isn't safe for combination, then bail with false
+                var constantWrapper = arrayLiteral.Elements[ndx] as ConstantWrapper;
+                if (constantWrapper == null || !constantWrapper.IsOkayToCombine)
                 {
                     return false;
                 }
@@ -1651,10 +1652,9 @@ namespace Microsoft.Ajax.Utilities
 
         private static string ComputeJoin(ArrayLiteral arrayLiteral, ConstantWrapper separatorNode)
         {
-            // if the separator node is null, then the separator is null.
-            // otherwise get the string value of the separator so we don't have to
-            // keep evaluating it.
-            var separator = separatorNode == null ? null : separatorNode.ToString();
+            // if the separator node is null, then the separator is a single comma character.
+            // otherwise it's just the string value of the separator.
+            var separator = separatorNode == null ? "," : separatorNode.ToString();
 
             var sb = new StringBuilder();
             for (var ndx = 0; ndx < arrayLiteral.Elements.Count; ++ndx)
@@ -1942,7 +1942,7 @@ namespace Microsoft.Ajax.Utilities
                                         // last test: compute the combined string and only use it if it's actually
                                         // shorter than the original code
                                         var combinedJoin = ComputeJoin(arrayLiteral, separator);
-                                        if (combinedJoin.Length < node.ToCode().Length)
+                                        if (combinedJoin.Length + 2 < node.ToCode().Length)
                                         {
                                             // transform: [c,c,c].join(s) => "cscsc"
                                             node.Parent.ReplaceChild(node,

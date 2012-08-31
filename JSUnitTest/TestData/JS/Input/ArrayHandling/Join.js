@@ -13,6 +13,7 @@ function yes1()
 
 function yes2()
 {
+    // not passing a separator means to use a comma
     return ["one", 2, "three"].join();
 }
 
@@ -48,4 +49,12 @@ function no4()
 {
     // the joined string is longer than the code
     return ["a", "b", "c"].join(" always comes before ");
+}
+
+function no5()
+{
+    // the decimal double is a no-go -- we don't know if there is
+    // a cross-browser or cross-platform difference in the precision
+    // or the text conversion
+    return ["one", -1234567890.12345678, "three"].join();
 }

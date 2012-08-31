@@ -515,7 +515,7 @@ namespace Microsoft.Ajax.Utilities
                 // vertical tab character. Cross-browser difference there.
                 var isOkay = (!IsStringLiteral && !IsNumericLiteral)
                     || (IsNumericLiteral && NumberIsOkayToCombine((double)Value))
-                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && !Context.Code.Contains("\\v"));
+                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && (!Context.HasCode || !Context.Code.Contains("\\v")));
 
                 // broke this out into a separate test because I originally thought I would only do it if the
                 // AllowEmbeddedAspNetBlocks switch was set. But I think this is important enough to do all the time.
@@ -708,11 +708,15 @@ namespace Microsoft.Ajax.Utilities
                         {
                             return "-Infinity";
                         }
+
+                        // use the "R" format, which guarantees that the double value can
+                        // be round-tripped to the same value
+                        return doubleValue.ToStringInvariant("R");
                     }
                     break;
             }
 
-            // otherwise this must be a string or a regular double
+            // otherwise this must be a string
             return Value.ToString();
         }
     }
