@@ -5,3 +5,47 @@ function Func(p1)
     b = a.join("-");
     return(b);
 }
+
+function yes1()
+{
+    return ["one", "two", "three"].join(',');
+}
+
+function yes2()
+{
+    return ["one", 2, "three"].join();
+}
+
+function yes3()
+{
+    return ["one", 2, "three or " + 42 + " more"].join("-");
+}
+
+function yes4()
+{
+    return "and a " + [1,2,3].join(" and a ") + " [music]";
+}
+
+function no1(a)
+{
+    // not a constant join separator
+    return ["one", "two", "three"].join(a);
+}
+
+function no2()
+{
+    // more than one parameter -- that ain't right
+    return ["one", "two", "three"].join(',', 42);
+}
+
+function no3(a)
+{
+    // not all the array literal elements are constants
+    return ["one", "two", "three", a].join(',');
+}
+
+function no4()
+{
+    // the joined string is longer than the code
+    return ["a", "b", "c"].join(" always comes before ");
+}

@@ -1633,6 +1633,47 @@ namespace Microsoft.Ajax.Utilities
             return newLiteral;
         }
 
+        private static bool OnlyHasConstantItems(ArrayLiteral arrayLiteral)
+        {
+            var elementCount = arrayLiteral.Elements.Count;
+            for (var ndx = 0; ndx < elementCount; ++ndx)
+            {
+                // if any one element isn't a constant, then bail with false
+                if (!(arrayLiteral.Elements[ndx] is ConstantWrapper))
+                {
+                    return false;
+                }
+            }
+
+            // if we get here, they were all constant
+            return true;
+        }
+
+        private static string ComputeJoin(ArrayLiteral arrayLiteral, ConstantWrapper separatorNode)
+        {
+            // if the separator node is null, then the separator is null.
+            // otherwise get the string value of the separator so we don't have to
+            // keep evaluating it.
+            var separator = separatorNode == null ? null : separatorNode.ToString();
+
+            var sb = new StringBuilder();
+            for (var ndx = 0; ndx < arrayLiteral.Elements.Count; ++ndx)
+            {
+                // add the separator between items (if we have one)
+                if (ndx > 0 && !string.IsNullOrEmpty(separator))
+                {
+                    sb.Append(separator);
+                }
+
+                // the element is a constant wrapper (we wouldn't get this far if it wasn't),
+                // but we've overloaded the virtual ToString method on ConstantWrappers to convert the
+                // constant value to a string value.
+                sb.Append(arrayLiteral.Elements[ndx].ToString());
+            }
+
+            return sb.ToString();
+        }
+
         #endregion
 
         //
@@ -1864,6 +1905,53 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
                         // TODO: shouldn't we check if they BOTH are binary operators? (a*6)*(5*b) ==> a*30*b (for instance)
+                    }
+                }
+            }
+        }
+
+        public override void Visit(CallNode node)
+        {
+            if (node != null)
+            {
+                // depth-first
+                base.Visit(node);
+
+                // if this isn't a constructor and it isn't a member-brackets operator
+                if (!node.IsConstructor && !node.InBrackets)
+                {
+                    // check to see if this is a call of certain member functions
+                    var member = node.Function as Member;
+                    if (member != null)
+                    {
+                        if (string.CompareOrdinal(member.Name, "join") == 0 && node.Arguments.Count <= 1
+                            && m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateLiteralJoins))
+                        {
+                            // this is a call to join with zero or one argument (no more)
+                            // see if the root is an array literal
+                            var arrayLiteral = member.Root as ArrayLiteral;
+                            if (arrayLiteral != null)
+                            {
+                                // it is -- make sure the separator is either not specified or is a constant
+                                ConstantWrapper separator = null;
+                                if (node.Arguments.Count == 0 || (separator = node.Arguments[0] as ConstantWrapper) != null)
+                                {
+                                    // and the array literal must contain only constant items
+                                    if (OnlyHasConstantItems(arrayLiteral))
+                                    {
+                                        // last test: compute the combined string and only use it if it's actually
+                                        // shorter than the original code
+                                        var combinedJoin = ComputeJoin(arrayLiteral, separator);
+                                        if (combinedJoin.Length < node.ToCode().Length)
+                                        {
+                                            // transform: [c,c,c].join(s) => "cscsc"
+                                            node.Parent.ReplaceChild(node,
+                                                new ConstantWrapper(combinedJoin, PrimitiveType.String, node.Context, node.Parser));
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

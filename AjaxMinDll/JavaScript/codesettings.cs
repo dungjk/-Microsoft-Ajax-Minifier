@@ -1053,5 +1053,10 @@ namespace Microsoft.Ajax.Utilities
         /// Whether to invert iterator{if(cond)continue;st1;st2} to iterator{if(!cond){st1;st2}}
         /// </summary>
         InvertIfContinue                            = 0x0000800000000000,
+
+        /// <summary>
+        /// Whether to convert [a,b,c].join(s) to "asbsc" if all items are constants.
+        /// </summary>
+        EvaluateLiteralJoins                        = 0x0001000000000000,
     }
 }
