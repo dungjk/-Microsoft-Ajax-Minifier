@@ -98,5 +98,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Exponent()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

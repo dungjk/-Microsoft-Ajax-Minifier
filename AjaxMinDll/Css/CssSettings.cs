@@ -71,6 +71,7 @@ namespace Microsoft.Ajax.Utilities
                 PreprocessorDefineList = this.PreprocessorDefineList,
                 TermSemicolons = this.TermSemicolons,
                 CssType = this.CssType,
+                BlocksStartOnSameLine = this.BlocksStartOnSameLine,
             };
 
             // add the resource strings (if any)

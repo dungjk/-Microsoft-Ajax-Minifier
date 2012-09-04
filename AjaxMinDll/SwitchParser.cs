@@ -77,9 +77,9 @@ namespace Microsoft.Ajax.Utilities
         public bool PrettyPrint { get; private set; }
 
         /// <summary>
-        /// Gets an integer value indicating the warning severity threshold for reporting. Default is zero (syntax errors only).
+        /// Gets or sets an integer value indicating the warning severity threshold for reporting. Default is zero (syntax errors only).
         /// </summary>
-        public int WarningLevel { get; private set; }
+        public int WarningLevel { get; set; }
 
         /// <summary>
         /// Gets the string output encoding name. Default is null, indicating the default output encoding should be used.
@@ -115,6 +115,23 @@ namespace Microsoft.Ajax.Utilities
             // apply the switches to these two settings objects
             JSSettings = jsSettings ?? new CodeSettings();
             CssSettings = cssSettings ?? new CssSettings();
+        }
+
+        public SwitchParser Clone()
+        {
+            // clone the settings
+            var newParser = new SwitchParser(this.JSSettings.Clone(), this.CssSettings.Clone());
+
+            // don't forget to copy the other properties
+            newParser.AnalyzeMode = this.AnalyzeMode;
+            newParser.EncodingInputName = this.EncodingInputName;
+            newParser.EncodingOutputName = this.EncodingOutputName;
+            newParser.PrettyPrint = this.PrettyPrint;
+            newParser.ReportFormat = this.ReportFormat;
+            newParser.ReportPath = this.ReportPath;
+            newParser.WarningLevel = this.WarningLevel;
+
+            return newParser;
         }
 
         #region command line to argument array

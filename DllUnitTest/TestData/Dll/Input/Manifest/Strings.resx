@@ -117,43 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CannotUseCombinedAndIndividual" xml:space="preserve">
-    <value>Cannot use Combined- and Individual-file properties at the same time.</value>
+  <data name="Bar" xml:space="preserve">
+    <value>over the lazy dog.</value>
   </data>
-  <data name="DestinationIsReadOnly" xml:space="preserve">
-    <value>Did not minify '{0}': destination file '{1}' is read-only.</value>
-  </data>
-  <data name="DidNotMinify" xml:space="preserve">
-    <value>Did not minify to destination file '{0}': {1}</value>
-  </data>
-  <data name="DirectorySourceRequiresCodeType" xml:space="preserve">
-    <value>Specifying a folder input requires the use of the type attribute on the output group.</value>
-  </data>
-  <data name="InvalidEncodingName" xml:space="preserve">
-    <value>Invalid encoding name: {0}</value>
-  </data>
-  <data name="InvalidInputParameter" xml:space="preserve">
-    <value>Invalid property value to AjaxMin build task: '{0}'</value>
-  </data>
-  <data name="MapDestinationIsReadOnly" xml:space="preserve">
-    <value>Did not generate symbol map: destination file '{0}' is read-only.</value>
-  </data>
-  <data name="NoWritePermission" xml:space="preserve">
-    <value>No permission to minify to destination file '{0}'</value>
-  </data>
-  <data name="RequiredInputDoesntExist" xml:space="preserve">
-    <value>Required input file doesn't exist: {0}</value>
-  </data>
-  <data name="RequiredParameterIsEmpty" xml:space="preserve">
-    <value>Required AjaxMin build task property '{0}' is missing or empty.</value>
-  </data>
-  <data name="SkippedOutputFile" xml:space="preserve">
-    <value>Output file {0} skipped</value>
-  </data>
-  <data name="UnknownCodeType" xml:space="preserve">
-    <value>Unable to determine code type from input file extensions. Please us type attribute on the output group.</value>
-  </data>
-  <data name="UnsupportedResourceType" xml:space="preserve">
-    <value>Resource files can only be .RESX or .RESOURCES files</value>
+  <data name="Foo" xml:space="preserve">
+    <value>The quik brown fox jumps</value>
   </data>
 </root>

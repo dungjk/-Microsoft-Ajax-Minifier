@@ -117,6 +117,7 @@
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="CommonSettings.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="ContextError.cs" />
     <Compile Include="CssEncoderFallback.cs" />
     <Compile Include="Css\CssColorName.cs" />

@@ -30,6 +30,11 @@ namespace Microsoft.Ajax.Utilities
         private Dictionary<string, int> m_sourceFileIndexMap = new Dictionary<string, int>();
         private int currentIndex;
 
+        public string Name
+        {
+            get { return "ScriptSharp"; }
+        }
+
         public ScriptSharpSourceMap(XmlWriter writer)
         {
             if (writer == null)

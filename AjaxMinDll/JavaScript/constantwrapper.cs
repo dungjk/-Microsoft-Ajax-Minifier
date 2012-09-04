@@ -713,7 +713,6 @@ namespace Microsoft.Ajax.Utilities
                         // be round-tripped to the same value
                         return doubleValue.ToStringInvariant("R");
                     }
-                    break;
             }
 
             // otherwise this must be a string

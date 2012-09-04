@@ -36,16 +36,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
         #region private fields
 
         /// <summary>
-        /// Internal js code settings class. Used to store build task parameter values for JS.
-        /// </summary>
-        private CodeSettings m_jsCodeSettings = new CodeSettings();
-
-        /// <summary>
-        /// Internal css code settings class. Used to store build task parameter values for CSS.
-        /// </summary>
-        private CssSettings m_cssCodeSettings = new CssSettings();
-
-        /// <summary>
         /// AjaxMin Minifier
         /// </summary>
         private readonly Utilities.Minifier m_minifier = new Utilities.Minifier();
@@ -76,17 +66,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
             set
             {
-                if (m_switchParser == null)
-                {
-                    // create a new switch-parser class, passing in this object's JS and CSS code settings
-                    // so they are used as the bases to which the switch values are applied
-                    m_switchParser = new Utilities.SwitchParser(m_jsCodeSettings, m_cssCodeSettings);
-
-                    // hook the unknown switches event so we can do something similar to the EXE for
-                    // file processing (since the DLL can't access the file system)
-                    m_switchParser.UnknownParameter += OnUnknownParameter;
-                }
-
                 // parse the switches
                 m_switchParser.Parse(value);
 
@@ -216,7 +195,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// Warning level threshold for reporting errors. Defalut valus is 0 (syntax/run-time errors)
         /// </summary>
-        public int WarningLevel { get; set; }
+        public int WarningLevel 
+        { 
+            get
+            {
+                return m_switchParser.WarningLevel;
+            }
+            set
+            {
+                m_switchParser.WarningLevel = value;
+            }
+        }
 
         /// <summary>
         /// Whether to treat AjaxMin warnings as build errors (true) or not (false). Default value is false.
@@ -237,14 +226,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
             { 
                 // there are technically separate lists for JS and CSS, but we'll set them
                 // to the same value, so just use the JS list as the reference here.
-                return this.m_jsCodeSettings.IgnoreErrorList; 
+                return this.m_switchParser.JSSettings.IgnoreErrorList; 
             }
             set 
             { 
                 // there are technically separate lists for JS and CSS, but we'll just set them
                 // to the same values.
-                this.m_jsCodeSettings.IgnoreErrorList = value;
-                this.m_cssCodeSettings.IgnoreErrorList = value;
+                this.m_switchParser.JSSettings.IgnoreErrorList = value;
+                this.m_switchParser.CssSettings.IgnoreErrorList = value;
             }
         }
 
@@ -280,8 +269,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsEnsureFinalSemicolon 
         {
-            get { return this.m_jsCodeSettings.TermSemicolons; }
-            set { this.m_jsCodeSettings.TermSemicolons = value; }
+            get { return this.m_switchParser.JSSettings.TermSemicolons; }
+            set { this.m_switchParser.JSSettings.TermSemicolons = value; }
         }
 
         /// <summary>
@@ -289,8 +278,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsCollapseToLiteral
         {
-            get { return this.m_jsCodeSettings.CollapseToLiteral;  }
-            set { this.m_jsCodeSettings.CollapseToLiteral = value; }
+            get { return this.m_switchParser.JSSettings.CollapseToLiteral;  }
+            set { this.m_switchParser.JSSettings.CollapseToLiteral = value; }
         }
         
         /// <summary>
@@ -298,8 +287,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsEvalTreatment
         {
-            get { return this.m_jsCodeSettings.EvalTreatment.ToString(); }
-            set { this.m_jsCodeSettings.EvalTreatment = ParseEnumValue<EvalTreatment>(value); }
+            get { return this.m_switchParser.JSSettings.EvalTreatment.ToString(); }
+            set { this.m_switchParser.JSSettings.EvalTreatment = ParseEnumValue<EvalTreatment>(value); }
         }
         
         /// <summary>
@@ -307,8 +296,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public int JsIndentSize
         {
-            get { return this.m_jsCodeSettings.IndentSize; }
-            set { this.m_jsCodeSettings.IndentSize = value; }
+            get { return this.m_switchParser.JSSettings.IndentSize; }
+            set { this.m_switchParser.JSSettings.IndentSize = value; }
         }
         
         /// <summary>
@@ -316,8 +305,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsInlineSafeStrings
         {
-            get { return this.m_jsCodeSettings.InlineSafeStrings; }
-            set { this.m_jsCodeSettings.InlineSafeStrings = value; }
+            get { return this.m_switchParser.JSSettings.InlineSafeStrings; }
+            set { this.m_switchParser.JSSettings.InlineSafeStrings = value; }
         }
         
         /// <summary>
@@ -325,8 +314,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsLocalRenaming
         {
-            get { return this.m_jsCodeSettings.LocalRenaming.ToString(); }
-            set { this.m_jsCodeSettings.LocalRenaming = ParseEnumValue<LocalRenaming>(value); }
+            get { return this.m_switchParser.JSSettings.LocalRenaming.ToString(); }
+            set { this.m_switchParser.JSSettings.LocalRenaming = ParseEnumValue<LocalRenaming>(value); }
         }
 
         /// <summary>
@@ -334,8 +323,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsManualRenamePairs
         {
-            get { return this.m_jsCodeSettings.RenamePairs; }
-            set { this.m_jsCodeSettings.RenamePairs = value; }
+            get { return this.m_switchParser.JSSettings.RenamePairs; }
+            set { this.m_switchParser.JSSettings.RenamePairs = value; }
         }
 
         /// <summary>
@@ -343,8 +332,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsNoAutoRename
         {
-            get { return this.m_jsCodeSettings.NoAutoRenameList; }
-            set { this.m_jsCodeSettings.NoAutoRenameList = value; }
+            get { return this.m_switchParser.JSSettings.NoAutoRenameList; }
+            set { this.m_switchParser.JSSettings.NoAutoRenameList = value; }
         }
 
         /// <summary>
@@ -352,8 +341,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsKnownGlobalNames
         {
-            get { return this.m_jsCodeSettings.KnownGlobalNamesList; }
-            set { this.m_jsCodeSettings.KnownGlobalNamesList = value; }
+            get { return this.m_switchParser.JSSettings.KnownGlobalNamesList; }
+            set { this.m_switchParser.JSSettings.KnownGlobalNamesList = value; }
         }
 
         /// <summary>
@@ -361,8 +350,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsDebugLookups
         {
-            get { return this.m_jsCodeSettings.DebugLookupList; }
-            set { this.m_jsCodeSettings.DebugLookupList = value; }
+            get { return this.m_switchParser.JSSettings.DebugLookupList; }
+            set { this.m_switchParser.JSSettings.DebugLookupList = value; }
         }
         
         /// <summary>
@@ -370,8 +359,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsMacSafariQuirks
         {
-            get { return this.m_jsCodeSettings.MacSafariQuirks; }
-            set { this.m_jsCodeSettings.MacSafariQuirks = value; }
+            get { return this.m_switchParser.JSSettings.MacSafariQuirks; }
+            set { this.m_switchParser.JSSettings.MacSafariQuirks = value; }
         }
 
         /// <summary>
@@ -379,8 +368,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsIgnoreConditionalCompilation
         {
-            get { return this.m_jsCodeSettings.IgnoreConditionalCompilation; }
-            set { this.m_jsCodeSettings.IgnoreConditionalCompilation = value; }
+            get { return this.m_switchParser.JSSettings.IgnoreConditionalCompilation; }
+            set { this.m_switchParser.JSSettings.IgnoreConditionalCompilation = value; }
         }
 
         /// <summary>
@@ -388,8 +377,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsMinifyCode
         {
-            get { return this.m_jsCodeSettings.MinifyCode; }
-            set { this.m_jsCodeSettings.MinifyCode = value; }
+            get { return this.m_switchParser.JSSettings.MinifyCode; }
+            set { this.m_switchParser.JSSettings.MinifyCode = value; }
         }
 
         /// <summary>
@@ -397,8 +386,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsOutputMode
         {
-            get { return this.m_jsCodeSettings.OutputMode.ToString(); }
-            set { this.m_jsCodeSettings.OutputMode = ParseEnumValue<OutputMode>(value); }
+            get { return this.m_switchParser.JSSettings.OutputMode.ToString(); }
+            set { this.m_switchParser.JSSettings.OutputMode = ParseEnumValue<OutputMode>(value); }
         }
 
         /// <summary>
@@ -406,8 +395,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsPreserveFunctionNames
         {
-            get { return this.m_jsCodeSettings.PreserveFunctionNames; }
-            set { this.m_jsCodeSettings.PreserveFunctionNames = value; }
+            get { return this.m_switchParser.JSSettings.PreserveFunctionNames; }
+            set { this.m_switchParser.JSSettings.PreserveFunctionNames = value; }
         }
 
         /// <summary>
@@ -415,8 +404,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsRemoveFunctionExpressionNames
         {
-            get { return this.m_jsCodeSettings.RemoveFunctionExpressionNames; }
-            set { this.m_jsCodeSettings.RemoveFunctionExpressionNames = value; }
+            get { return this.m_switchParser.JSSettings.RemoveFunctionExpressionNames; }
+            set { this.m_switchParser.JSSettings.RemoveFunctionExpressionNames = value; }
         }
         
         /// <summary>
@@ -424,8 +413,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsRemoveUnneededCode
         {
-            get { return this.m_jsCodeSettings.RemoveUnneededCode; }
-            set { this.m_jsCodeSettings.RemoveUnneededCode = value; }
+            get { return this.m_switchParser.JSSettings.RemoveUnneededCode; }
+            set { this.m_switchParser.JSSettings.RemoveUnneededCode = value; }
         }
         
         /// <summary>
@@ -433,8 +422,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsStripDebugStatements
         {
-            get { return this.m_jsCodeSettings.StripDebugStatements; }
-            set { this.m_jsCodeSettings.StripDebugStatements = value; }
+            get { return this.m_switchParser.JSSettings.StripDebugStatements; }
+            set { this.m_switchParser.JSSettings.StripDebugStatements = value; }
         }
 
         /// <summary>
@@ -442,8 +431,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool JsAllowEmbeddedAspNetBlocks
         {
-            get { return this.m_jsCodeSettings.AllowEmbeddedAspNetBlocks; }
-            set { this.m_jsCodeSettings.AllowEmbeddedAspNetBlocks = value; }
+            get { return this.m_switchParser.JSSettings.AllowEmbeddedAspNetBlocks; }
+            set { this.m_switchParser.JSSettings.AllowEmbeddedAspNetBlocks = value; }
         }
 
         /// <summary>
@@ -451,8 +440,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string JsPreprocessorDefines
         {
-            get { return this.m_jsCodeSettings.PreprocessorDefineList; }
-            set { this.m_jsCodeSettings.PreprocessorDefineList = value; }
+            get { return this.m_switchParser.JSSettings.PreprocessorDefineList; }
+            set { this.m_switchParser.JSSettings.PreprocessorDefineList = value; }
         }
 
         #endregion
@@ -487,8 +476,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string CssColorNames
         {
-            get { return this.m_cssCodeSettings.ColorNames.ToString(); }
-            set { this.m_cssCodeSettings.ColorNames = ParseEnumValue<CssColor>(value); }
+            get { return this.m_switchParser.CssSettings.ColorNames.ToString(); }
+            set { this.m_switchParser.CssSettings.ColorNames = ParseEnumValue<CssColor>(value); }
         }
         
         /// <summary>
@@ -496,8 +485,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public string CssCommentMode
         {
-            get { return this.m_cssCodeSettings.CommentMode.ToString(); }
-            set { this.m_cssCodeSettings.CommentMode = ParseEnumValue<CssComment>(value); }
+            get { return this.m_switchParser.CssSettings.CommentMode.ToString(); }
+            set { this.m_switchParser.CssSettings.CommentMode = ParseEnumValue<CssComment>(value); }
         }
         
         /// <summary>
@@ -505,8 +494,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool CssExpandOutput
         {
-            get { return this.m_cssCodeSettings.OutputMode == OutputMode.MultipleLines; }
-            set { this.m_cssCodeSettings.OutputMode = value ? OutputMode.MultipleLines : OutputMode.SingleLine; }
+            get { return this.m_switchParser.CssSettings.OutputMode == OutputMode.MultipleLines; }
+            set { this.m_switchParser.CssSettings.OutputMode = value ? OutputMode.MultipleLines : OutputMode.SingleLine; }
         }
 
         /// <summary>
@@ -514,8 +503,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public int CssIndentSpaces
         {
-            get { return this.m_cssCodeSettings.IndentSize; }
-            set { this.m_cssCodeSettings.IndentSize = value; }
+            get { return this.m_switchParser.CssSettings.IndentSize; }
+            set { this.m_switchParser.CssSettings.IndentSize = value; }
         }
         
         /// <summary>
@@ -523,8 +512,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool CssTermSemicolons
         {
-            get { return this.m_cssCodeSettings.TermSemicolons; }
-            set { this.m_cssCodeSettings.TermSemicolons = value; }
+            get { return this.m_switchParser.CssSettings.TermSemicolons; }
+            set { this.m_switchParser.CssSettings.TermSemicolons = value; }
         }
 
         /// <summary>
@@ -532,8 +521,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool CssMinifyExpressions
         {
-            get { return this.m_cssCodeSettings.MinifyExpressions; }
-            set { this.m_cssCodeSettings.MinifyExpressions = value; }
+            get { return this.m_switchParser.CssSettings.MinifyExpressions; }
+            set { this.m_switchParser.CssSettings.MinifyExpressions = value; }
         }
 
         /// <summary>
@@ -541,8 +530,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public bool CssAllowEmbeddedAspNetBlocks
         {
-            get { return this.m_cssCodeSettings.AllowEmbeddedAspNetBlocks; }
-            set { this.m_cssCodeSettings.AllowEmbeddedAspNetBlocks = value; }
+            get { return this.m_switchParser.CssSettings.AllowEmbeddedAspNetBlocks; }
+            set { this.m_switchParser.CssSettings.AllowEmbeddedAspNetBlocks = value; }
         }
 
         #endregion
@@ -554,6 +543,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
         public AjaxMin()
         {
             this.JsEnsureFinalSemicolon = true;
+            this.m_switchParser = new SwitchParser();
+            this.m_switchParser.UnknownParameter += OnUnknownParameter;
         }
 
         /// <summary>
@@ -607,7 +598,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             m_symbolsMapFile,
                             new XmlWriterSettings { CloseOutput = true, Indent = true }))
                         {
-                            using (m_jsCodeSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                            using (m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
                             {
                                 MinifyJavaScript();
                             }
@@ -779,13 +770,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             try
             {
-                if (m_jsCodeSettings.SymbolsMap != null)
+                if (m_switchParser.JSSettings.SymbolsMap != null)
                 {
-                    m_jsCodeSettings.SymbolsMap.StartPackage(outputPath);
+                    m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath);
                 }
 
                 this.m_minifier.FileName = sourceName;
-                string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_jsCodeSettings);
+                string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
                 if (this.m_minifier.ErrorList.Count > 0)
                 {
                     foreach (var error in this.m_minifier.ErrorList)
@@ -812,9 +803,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
             finally
             {
-                if (m_jsCodeSettings.SymbolsMap != null)
+                if (m_switchParser.JSSettings.SymbolsMap != null)
                 {
-                    m_jsCodeSettings.SymbolsMap.EndPackage();
+                    m_switchParser.JSSettings.SymbolsMap.EndPackage();
                 }
             }
         }
@@ -827,14 +818,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // value that ensures proper termination of the code so it concatenates
             // properly. So save the setting value, set the value to true, then
             // make sure to restore it for the last file
-            var savedSetting = this.m_jsCodeSettings.TermSemicolons;
-            this.m_jsCodeSettings.TermSemicolons = true;
+            var savedSetting = this.m_switchParser.JSSettings.TermSemicolons;
+            this.m_switchParser.JSSettings.TermSemicolons = true;
 
             try
             {
-                if (m_jsCodeSettings.SymbolsMap != null)
+                if (m_switchParser.JSSettings.SymbolsMap != null)
                 {
-                    m_jsCodeSettings.SymbolsMap.StartPackage(this.JsCombinedFileName);
+                    m_switchParser.JSSettings.SymbolsMap.StartPackage(this.JsCombinedFileName);
                 }
 
                 for(var ndx = 0; ndx < this.JsSourceFiles.Length; ++ndx)
@@ -849,10 +840,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         // if this is the last file, restore the setting to its original value
                         if (ndx == this.JsSourceFiles.Length - 1)
                         {
-                            this.m_jsCodeSettings.TermSemicolons = savedSetting;
+                            this.m_switchParser.JSSettings.TermSemicolons = savedSetting;
                         }
 
-                        string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_jsCodeSettings);
+                        string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
                         if (this.m_minifier.ErrorList.Count > 0)
                         {
                             foreach (var error in this.m_minifier.ErrorList)
@@ -862,7 +853,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         }
 
                         outputBuilder.Append(minifiedJs);
-                        if (this.m_jsCodeSettings.OutputMode == OutputMode.MultipleLines)
+                        if (this.m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines)
                         {
                             outputBuilder.AppendLine();
                         }
@@ -877,12 +868,12 @@ namespace Microsoft.Ajax.Minifier.Tasks
             finally
             {
                 // make SURE we restore that setting
-                this.m_jsCodeSettings.TermSemicolons = savedSetting;
+                this.m_switchParser.JSSettings.TermSemicolons = savedSetting;
 
                 // close the symbol map if we are creating one
-                if (m_jsCodeSettings.SymbolsMap != null)
+                if (m_switchParser.JSSettings.SymbolsMap != null)
                 {
-                    m_jsCodeSettings.SymbolsMap.EndPackage();
+                    m_switchParser.JSSettings.SymbolsMap.EndPackage();
                 }
             }
 
@@ -900,7 +891,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             try
             {
                 this.m_minifier.FileName = sourceName;
-                string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_cssCodeSettings);
+                string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_switchParser.CssSettings);
                 if (this.m_minifier.ErrorList.Count > 0)
                 {
                     foreach (var error in this.m_minifier.ErrorList)
@@ -939,7 +930,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     var sourceCode = File.ReadAllText(item.ItemSpec);
 
                     this.m_minifier.FileName = item.ItemSpec;
-                    string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_cssCodeSettings);
+                    string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_switchParser.CssSettings);
                     if (this.m_minifier.ErrorList.Count > 0)
                     {
                         foreach (var error in this.m_minifier.ErrorList)
@@ -949,7 +940,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
 
                     outputBuilder.Append(results);
-                    if (this.m_cssCodeSettings.OutputMode == OutputMode.MultipleLines)
+                    if (this.m_switchParser.CssSettings.OutputMode == OutputMode.MultipleLines)
                     {
                         outputBuilder.AppendLine();
                     }
@@ -990,7 +981,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         }
 
         /// <summary>
-        /// Call this method to log an error using a ContentError object
+        /// Call this method to log an error using a ContextError object
         /// </summary>
         /// <param name="error">Error to log</param>
         private void LogContextError(ContextError error)

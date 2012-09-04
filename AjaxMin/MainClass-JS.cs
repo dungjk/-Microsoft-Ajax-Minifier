@@ -37,13 +37,13 @@ namespace Microsoft.Ajax.Utilities
 
         #region file processing
 
-        private int PreprocessJSFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
+        private int PreprocessJSFile(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
         {
             // blank line before
             WriteProgress();
 
             // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
 
             // create the a parser object for our chunk of code
             JSParser parser = new JSParser(source);
@@ -52,11 +52,25 @@ namespace Microsoft.Ajax.Utilities
             parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
 
             // hook the engine events
-            parser.CompilerError += OnCompilerError;
+            parser.CompilerError += (sender, ea) =>
+                {
+                    var error = ea.Error;
+
+                    // ignore severity values greater than our severity level
+                    // also ignore errors that are in our ignore list (if any)
+                    if (error.Severity <= switchParser.WarningLevel)
+                    {
+                        // we found an error
+                        m_errorsFound = true;
+
+                        // write the error out
+                        WriteError(error.ToString());
+                    }
+                };
             parser.UndefinedReference += OnUndefinedReference;
 
             // pull our JS settings from the switch-parser class
-            CodeSettings settings = m_switchParser.JSSettings;
+            CodeSettings settings = switchParser.JSSettings;
 
             // if this isn't the last file, make SURE we terminate the last statement with
             // a semicolon, since we'll be adding more code for the next file. But save the previous
@@ -91,13 +105,13 @@ namespace Microsoft.Ajax.Utilities
             return 0;
         }
 
-        private int ProcessJSFileEcho(string sourceFileName, string encodingName, StringBuilder outputBuilder, ref long sourceLength)
+        private int ProcessJSFileEcho(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, ref long sourceLength)
         {
             // blank line before
             WriteProgress();
 
             // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
             if (!string.IsNullOrEmpty(source))
             {
                 // create the a parser object for our chunk of code
@@ -107,22 +121,36 @@ namespace Microsoft.Ajax.Utilities
                 parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
 
                 // hook the engine events
-                parser.CompilerError += OnCompilerError;
+                parser.CompilerError += (sender, ea) =>
+                {
+                    var error = ea.Error;
+
+                    // ignore severity values greater than our severity level
+                    // also ignore errors that are in our ignore list (if any)
+                    if (error.Severity <= switchParser.WarningLevel)
+                    {
+                        // we found an error
+                        m_errorsFound = true;
+
+                        // write the error out
+                        WriteError(error.ToString());
+                    }
+                };
                 parser.UndefinedReference += OnUndefinedReference;
 
                 // pull our JS settings from the switch-parser class
-                CodeSettings settings = m_switchParser.JSSettings;
+                CodeSettings settings = switchParser.JSSettings;
 
                 Block scriptBlock = parser.Parse(settings);
                 if (scriptBlock != null)
                 {
-                    if (m_switchParser.AnalyzeMode)
+                    if (switchParser.AnalyzeMode)
                     {
                         // blank line before
                         WriteProgress();
 
                         // output our report
-                        CreateReport(parser.GlobalScope);
+                        CreateReport(parser.GlobalScope, switchParser);
                     }
                 }
                 else
@@ -143,13 +171,13 @@ namespace Microsoft.Ajax.Utilities
             return 0;
         }
 
-        private int ProcessJSFile(string sourceFileName, string encodingName, OutputVisitor outputVisitor, bool isLastFile, ref long sourceLength)
+        private int ProcessJSFile(string sourceFileName, string encodingName, SwitchParser switchParser, OutputVisitor outputVisitor, bool isLastFile, ref long sourceLength)
         {
             // blank line before
             WriteProgress();
 
             // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
 
             // create the a parser object for our chunk of code
             JSParser parser = new JSParser(source);
@@ -158,11 +186,25 @@ namespace Microsoft.Ajax.Utilities
             parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
 
             // hook the engine events
-            parser.CompilerError += OnCompilerError;
+            parser.CompilerError += (sender, ea) =>
+            {
+                var error = ea.Error;
+
+                // ignore severity values greater than our severity level
+                // also ignore errors that are in our ignore list (if any)
+                if (error.Severity <= switchParser.WarningLevel)
+                {
+                    // we found an error
+                    m_errorsFound = true;
+
+                    // write the error out
+                    WriteError(error.ToString());
+                }
+            };
             parser.UndefinedReference += OnUndefinedReference;
 
             // pull our JS settings from the switch-parser class
-            CodeSettings settings = m_switchParser.JSSettings;
+            CodeSettings settings = switchParser.JSSettings;
 
             // if this isn't the last file, make SURE we terminate the last statement with
             // a semicolon, since we'll be adding more code for the next file. But save the previous
@@ -176,13 +218,13 @@ namespace Microsoft.Ajax.Utilities
             Block scriptBlock = parser.Parse(settings);
             if (scriptBlock != null)
             {
-                if (m_switchParser.AnalyzeMode)
+                if (switchParser.AnalyzeMode)
                 {
                     // blank line before
                     WriteProgress();
 
                     // output our report
-                    CreateReport(parser.GlobalScope);
+                    CreateReport(parser.GlobalScope, switchParser);
                 }
 
                 // crunch the output and write it to debug stream, but make sure
@@ -208,8 +250,6 @@ namespace Microsoft.Ajax.Utilities
 
         private static string CreateJSFromResourceStrings(ResourceStrings resourceStrings)
         {
-            IDictionaryEnumerator enumerator = resourceStrings.GetEnumerator();
-
             StringBuilder sb = new StringBuilder();
             // start the var statement using the requested name and open the initializer object literal
             sb.Append("var ");
@@ -223,7 +263,7 @@ namespace Microsoft.Ajax.Utilities
             bool firstItem = true;
 
             // loop through all items in the collection
-            while (enumerator.MoveNext())
+            foreach(var keyPair in resourceStrings.NameValuePairs)
             {
                 // if this isn't the first item, we need to add a comma separator
                 if (!firstItem)
@@ -240,7 +280,7 @@ namespace Microsoft.Ajax.Utilities
                 // and then the value
                 // must quote if not valid JS identifier format, or if it is, but it's a keyword
                 // (use strict mode just to be safe)
-                string propertyName = enumerator.Key.ToString();
+                string propertyName = keyPair.Key;
                 if (!JSScanner.IsValidIdentifier(propertyName) || JSScanner.IsKeyword(propertyName, true))
                 {
                     sb.Append("\"");
@@ -261,7 +301,7 @@ namespace Microsoft.Ajax.Utilities
                 // pass false for whether to use W3Strict formatting for character escapes (use maximum browser compatibility)
                 // pass true for ecma strict mode
                 string stringValue = ConstantWrapper.EscapeString(
-                    enumerator.Value.ToString(),
+                    keyPair.Value,
                     false,
                     false,
                     true
@@ -304,21 +344,21 @@ namespace Microsoft.Ajax.Utilities
         
         #region reporting methods
 
-        private void CreateReport(GlobalScope globalScope)
+        private void CreateReport(GlobalScope globalScope, SwitchParser switchParser)
         {
             string reportText;
             using (var writer = new StringWriter(CultureInfo.InvariantCulture))
             {
-                using (IScopeReport scopeReport = CreateScopeReport())
+                using (IScopeReport scopeReport = CreateScopeReport(switchParser))
                 {
-                    scopeReport.CreateReport(writer, globalScope, m_switchParser.JSSettings.MinifyCode);
+                    scopeReport.CreateReport(writer, globalScope, switchParser.JSSettings.MinifyCode);
                 }
                 reportText = writer.ToString();
             }
 
             if (!string.IsNullOrEmpty(reportText))
             {
-                if (string.IsNullOrEmpty(m_switchParser.ReportPath))
+                if (string.IsNullOrEmpty(switchParser.ReportPath))
                 {
                     // no report path specified; send to console
                     WriteProgress(reportText);
@@ -329,7 +369,7 @@ namespace Microsoft.Ajax.Utilities
                     // report path specified -- write to the file.
                     // don't append; use UTF-8 as the output format.
                     // let any exceptions bubble up.
-                    using (var writer = new StreamWriter(m_switchParser.ReportPath, false, Encoding.UTF8))
+                    using (var writer = new StreamWriter(switchParser.ReportPath, false, Encoding.UTF8))
                     {
                         writer.Write(reportText);
                     }
@@ -337,13 +377,13 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private IScopeReport CreateScopeReport()
+        private static IScopeReport CreateScopeReport(SwitchParser switchParser)
         {
             // check the switch parser for a report format.
             // At this time we only have two: XML or DEFAULT. If it's XML, use
             // the XML report; all other values use the default report.
             // No error checking at this time. 
-            if (string.CompareOrdinal(m_switchParser.ReportFormat, "XML") == 0)
+            if (string.CompareOrdinal(switchParser.ReportFormat, "XML") == 0)
             {
                 return new XmlScopeReport();
             }
@@ -354,21 +394,6 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region Error-handling Members
-
-        private void OnCompilerError(object sender, JScriptExceptionEventArgs e)
-        {
-            ContextError error = e.Error;
-            // ignore severity values greater than our severity level
-            // also ignore errors that are in our ignore list (if any)
-            if (error.Severity <= m_switchParser.WarningLevel)
-            {
-                // we found an error
-                m_errorsFound = true;
-
-                // write the error out
-                WriteError(error.ToString());
-            }
-        }
 
         private void OnUndefinedReference(object sender, UndefinedReferenceEventArgs e)
         {

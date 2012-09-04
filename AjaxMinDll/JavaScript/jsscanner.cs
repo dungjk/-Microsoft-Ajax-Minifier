@@ -2599,6 +2599,13 @@ namespace Microsoft.Ajax.Utilities
 
         private int PPSkipToDirective(params string[] endStrings)
         {
+            // save the current position - if we hit an EOF before we find a directive
+            // we're looking for, we'll use this as the end of the error context so we
+            // don't have the whole rest of the file printed out with the error.
+            var endPosition = m_scannerState.CurrentPosition;
+            var endLineNum = m_scannerState.CurrentLine;
+            var endLinePos = m_scannerState.StartLinePosition;
+
             while (true)
             {
                 char c = GetChar(m_scannerState.CurrentPosition++);
@@ -2608,11 +2615,22 @@ namespace Microsoft.Ajax.Utilities
                     case (char)0:
                         if (m_scannerState.CurrentPosition >= m_endPos)
                         {
+                            // adjust the scanner state
                             m_scannerState.CurrentPosition--;
                             m_scannerState.CurrentToken.EndPosition = m_scannerState.CurrentPosition;
                             m_scannerState.CurrentToken.EndLineNumber = m_scannerState.CurrentLine;
                             m_scannerState.CurrentToken.EndLinePosition = m_scannerState.StartLinePosition;
-                            HandleError(JSError.NoCCEnd);
+
+                            // create a clone of the current token and set the ending to be the end of the
+                            // directive for which we're trying to find an end. Use THAT context for the 
+                            // error context. Then throw an exception so we can bail.
+                            var contextError = m_scannerState.CurrentToken.Clone();
+                            contextError.EndPosition = endPosition;
+                            contextError.EndLineNumber = endLineNum;
+                            contextError.EndLinePosition = endLinePos;
+                            contextError.HandleError(string.CompareOrdinal(endStrings[0], "#ENDDEBUG") == 0 
+                                ? JSError.NoEndDebugDirective 
+                                : JSError.NoEndIfDirective);
                             throw new ScannerException(JSError.ErrorEndOfFile);
                         }
 
@@ -2668,6 +2686,15 @@ namespace Microsoft.Ajax.Utilities
                                         // found the ending string
                                         return ndx;
                                     }
+                                }
+
+                                // not something we're looking for -- but is it a simple ///#END?
+                                if (CheckCaseInsensitiveSubstring("#END"))
+                                {
+                                    // it is! Well, we were expecting either #ENDIF or #ENDDEBUG, but we found just an #END.
+                                    // that's not how the syntax is SUPPOSED to go. But let's let it fly.
+                                    // the ending token is always the first one.
+                                    return 0;
                                 }
                             }
                         }
@@ -2841,6 +2868,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // the condition is FALSE!
                             // skip to #ELSE or #ENDIF and continue processing normally.
+                            // (make sure the end if always the first one)
                             if (PPSkipToDirective("#ENDIF", "#ELSE") == 0)
                             {
                                 // encountered the #ENDIF directive, so we know to reset the flag
@@ -2881,6 +2909,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 // the condition is FALSE!
                                 // skip to #ELSE or #ENDIF and continue processing normally.
+                                // (make sure the end if always the first one)
                                 if (PPSkipToDirective("#ENDIF", "#ELSE") == 0)
                                 {
                                     // encountered the #ENDIF directive, so we know to reset the flag

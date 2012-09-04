@@ -308,7 +308,14 @@ namespace Microsoft.Ajax.Utilities
                 {
                     m_scanner = new CssScanner(reader);
                     m_scanner.AllowEmbeddedAspNetBlocks = this.Settings.AllowEmbeddedAspNetBlocks;
-                    m_scanner.ScannerError += new EventHandler<CssScannerErrorEventArgs>(OnScannerError);
+                    m_scanner.ScannerError += (sender, ea) =>
+                        {
+                            OnCssError(ea.Exception);
+                        };
+                    m_scanner.ContextChange += (sender, ea) =>
+                        {
+                            FileContext = ea.FileContext;
+                        };
 
                     // create the string builder into which we will be 
                     // building our crunched stylesheet
@@ -2229,9 +2236,14 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (wasEmpty)
                 {
-                    Append(' ');
+                    if (m_skippedSpace)
+                    {
+                        Append(' ');
+                    }
+
                     wasEmpty = false;
                 }
+
                 AppendCurrent();
                 NextToken();
                 hasUnary = true;
@@ -3523,11 +3535,7 @@ namespace Microsoft.Ajax.Utilities
                     StringBuilder escapedBuilder = null;
                     var startIndex = 0;
                     var protectNextHexCharacter = false;
-
-                    // for identifiers, if the first character is a hyphen or an underscore, then it's a prefix
-                    // and we want to look at the next character for nmstart. For dimensions, also ignore the minus
-                    // sign and the next character will always be a digit.
-                    var firstIndex = text[0] == '_' || text[0] == '-' ? 1 : 0;
+                    var firstIndex = 0;
 
                     // if the token type is an identifier, we need to make sure the first character
                     // is a proper identifier start, or is escaped. But if it's a dimension, the first
@@ -3536,6 +3544,10 @@ namespace Microsoft.Ajax.Utilities
                     // be okay.
                     if (tokenType == TokenType.Identifier)
                     {
+                        // for identifiers, if the first character is a hyphen or an underscore, then it's a prefix
+                        // and we want to look at the next character for nmstart.
+                        firstIndex = text[0] == '_' || text[0] == '-' ? 1 : 0;
+
                         // the only valid non-escaped first characters are A-Z (and a-z)
                         var firstChar = text[firstIndex];
 
@@ -3564,6 +3576,36 @@ namespace Microsoft.Ajax.Utilities
                                 startIndex = firstIndex + 1;
                             }
                         }
+                    }
+                    else
+                    {
+                        // for dimensions, we want to skip over the numeric part. So any sign, then decimal
+                        // digits, then a decimal point (period), then decimal digits. The rest will be the identifier
+                        // part that we want to escape.
+                        if (text[0] == '+' || text[0] == '-')
+                        {
+                            ++firstIndex;
+                        }
+
+                        while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
+                        {
+                            ++firstIndex;
+                        }
+
+                        if (text[firstIndex] == '.')
+                        {
+                            ++firstIndex;
+                        }
+
+                        while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
+                        {
+                            ++firstIndex;
+                        }
+
+                        // since we start at the first character AFTER firstIndex, subtract
+                        // one so we get back to the first character that isn't a part of
+                        // the number portion
+                        --firstIndex;
                     }
 
                     // loop through remaining characters, escaping any invalid nmchar characters
@@ -4203,11 +4245,6 @@ namespace Microsoft.Ajax.Utilities
                 default:
                     return CssStrings.SeverityUnknown.FormatInvariant(severity);
             }
-        }
-
-        void OnScannerError(object sender, CssScannerErrorEventArgs e)
-        {
-            OnCssError(e.Exception);
         }
 
         #endregion

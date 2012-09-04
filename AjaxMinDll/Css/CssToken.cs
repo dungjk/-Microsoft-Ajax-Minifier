@@ -83,6 +83,12 @@ namespace Microsoft.Ajax.Utilities
               m_end.Clone()
               );
         }
+
+        public void Reset(int line, int column)
+        {
+            m_start = new Position(line, column);
+            m_end = new Position(line, column);
+        }
     }
 
     internal class Position

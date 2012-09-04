@@ -26,7 +26,7 @@ namespace Microsoft.Ajax.Utilities
     {
         #region ProcessCssFile method
 
-        private int ProcessCssFile(string sourceFileName, string encodingName, StringBuilder outputBuilder, ref long sourceLength)
+        private int ProcessCssFile(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, ref long sourceLength)
         {
             int retVal = 0;
 
@@ -36,13 +36,25 @@ namespace Microsoft.Ajax.Utilities
             try
             {
                 // read the input file
-                var source = ReadInputFile(sourceFileName, encodingName, ref sourceLength);
+                var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
 
                 // process input source...
                 CssParser parser = new CssParser();
-                parser.CssError += new EventHandler<CssErrorEventArgs>(OnCssError);
+                parser.CssError += (sender, ea) =>
+                    {
+                        var error = ea.Error;
+                        // ignore severity values greater than our severity level
+                        if (error.Severity <= switchParser.WarningLevel)
+                        {
+                            // we found an error
+                            m_errorsFound = true;
+
+                            WriteError(error.ToString());
+                        }
+                    };
+
                 parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
-                parser.Settings = m_switchParser.CssSettings;
+                parser.Settings = switchParser.CssSettings;
 
                 // crunch the source and output to the string builder we were passed
                 string crunchedStyles = parser.Parse(source);
@@ -76,19 +88,6 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return retVal;
-        }
-
-        void OnCssError(object sender, CssErrorEventArgs e)
-        {
-            ContextError error = e.Error;
-            // ignore severity values greater than our severity level
-            if (error.Severity <= m_switchParser.WarningLevel)
-            {
-                // we found an error
-                m_errorsFound = true;
-
-                WriteError(error.ToString());
-            }
         }
 
         #endregion

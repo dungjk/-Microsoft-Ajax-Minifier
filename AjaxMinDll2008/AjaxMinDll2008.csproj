@@ -49,6 +49,9 @@
     <Compile Include="..\AjaxMinDll\CommonSettings.cs">
       <Link>CommonSettings.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\Configuration.cs">
+      <Link>Configuration.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\ContextError.cs">
       <Link>ContextError.cs</Link>
     </Compile>

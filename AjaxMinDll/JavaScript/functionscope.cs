@@ -51,19 +51,14 @@ namespace Microsoft.Ajax.Utilities
         }
         */
 
-        /* TODO: REMOVE CODE ALTOGETHER
         internal override void AnalyzeScope()
         {
-            if (Parser.Settings.CombineDuplicateLiterals)
+            if (FunctionObject != null)
             {
-                // combine this literals
-                CreateThisShortcuts();
+                // default processing
+                base.AnalyzeScope();
             }
-
-            // default processing
-            base.AnalyzeScope();
         }
-        */
 
         internal JSVariableField AddNewArgumentField(String name)
         {

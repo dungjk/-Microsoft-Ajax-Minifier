@@ -88,6 +88,24 @@ namespace Microsoft.Ajax.Minifier.Tasks {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Specifying a folder input requires the use of the type attribute on the output group..
+        /// </summary>
+        internal static string DirectorySourceRequiresCodeType {
+            get {
+                return ResourceManager.GetString("DirectorySourceRequiresCodeType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid encoding name: {0}.
+        /// </summary>
+        internal static string InvalidEncodingName {
+            get {
+                return ResourceManager.GetString("InvalidEncodingName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid property value to AjaxMin build task: &apos;{0}&apos;.
         /// </summary>
         internal static string InvalidInputParameter {
@@ -115,11 +133,47 @@ namespace Microsoft.Ajax.Minifier.Tasks {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Required input file doesn&apos;t exist: {0}.
+        /// </summary>
+        internal static string RequiredInputDoesntExist {
+            get {
+                return ResourceManager.GetString("RequiredInputDoesntExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Required AjaxMin build task property &apos;{0}&apos; is missing or empty..
         /// </summary>
         internal static string RequiredParameterIsEmpty {
             get {
                 return ResourceManager.GetString("RequiredParameterIsEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Output file {0} skipped.
+        /// </summary>
+        internal static string SkippedOutputFile {
+            get {
+                return ResourceManager.GetString("SkippedOutputFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to determine code type from input file extensions. Please us type attribute on the output group..
+        /// </summary>
+        internal static string UnknownCodeType {
+            get {
+                return ResourceManager.GetString("UnknownCodeType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource files can only be .RESX or .RESOURCES files.
+        /// </summary>
+        internal static string UnsupportedResourceType {
+            get {
+                return ResourceManager.GetString("UnsupportedResourceType", resourceCulture);
             }
         }
     }

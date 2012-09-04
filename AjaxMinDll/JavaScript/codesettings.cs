@@ -143,6 +143,9 @@ namespace Microsoft.Ajax.Utilities
                 StrictMode = this.StrictMode,
                 StripDebugStatements = this.StripDebugStatements,
                 TermSemicolons = this.TermSemicolons,
+                BlocksStartOnSameLine = this.BlocksStartOnSameLine,
+                ErrorIfNotInlineSafe = this.ErrorIfNotInlineSafe,
+                SymbolsMap = this.SymbolsMap,
             };
 
             // set the resource strings if there are any

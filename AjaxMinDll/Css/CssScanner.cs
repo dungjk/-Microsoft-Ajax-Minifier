@@ -94,143 +94,155 @@ namespace Microsoft.Ajax.Utilities
             m_rawNumber = null;
 
             CssToken token = null;
-            switch (m_currentChar)
+            bool tryAgain;
+            do
             {
-                case '\0':
-                    // end of file
-                    m_isAtEOF = true;
-                    break;
+                tryAgain = false;
+                switch (m_currentChar)
+                {
+                    case '\0':
+                        // end of file
+                        m_isAtEOF = true;
+                        break;
 
-                case '\r':
-                case '\n':
-                case '\f':
-                    // we hit an end-of-line character, but treat it like any other whitespace
-                    GotEndOfLine = true;
-                    goto case ' ';
+                    case '\r':
+                    case '\n':
+                    case '\f':
+                        // we hit an end-of-line character, but treat it like any other whitespace
+                        GotEndOfLine = true;
+                        goto case ' ';
 
-                case ' ':
-                case '\t':
-                    // no matter how much whitespace is actually in
-                    // the stream, we're just going to encode a single
-                    // space in the token itself
-                    while (IsSpace(m_currentChar))
-                    {
-                        if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
+                    case ' ':
+                    case '\t':
+                        // no matter how much whitespace is actually in
+                        // the stream, we're just going to encode a single
+                        // space in the token itself
+                        while (IsSpace(m_currentChar))
                         {
-                            GotEndOfLine = true;
+                            if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
+                            {
+                                GotEndOfLine = true;
+                            }
+
+                            NextChar();
                         }
+                        token = new CssToken(TokenType.Space, ' ', m_context);
+                        break;
 
-                        NextChar();
-                    }
-                    token = new CssToken(TokenType.Space, ' ', m_context);
-                    break;
-
-                case '/':
-                    token = ScanComment();
-                    break;
-
-                case '<':
-					if (AllowEmbeddedAspNetBlocks && PeekChar() == '%')
-					{
-						token = ScanAspNetBlock();
-					}
-					else
-					{
-						token = ScanCDO();
-					}
-                    break;
-
-                case '-':
-                    token = ScanCDC();
-                    if (token == null)
-                    {
-                        // identifier in CSS2.1 and CSS3 can start with a hyphen
-                        // to indicate vendor-specific identifiers.
-                        string ident = GetIdent();
-                        if (ident != null)
+                    case '/':
+                        token = ScanComment();
+                        if (token == null)
                         {
-                            // vendor-specific identifier
-                            // but first see if it's a vendor-specific function!
-                            if (m_currentChar == '(')
-                            {
-                                // it is -- consume the parenthesis; it's part of the token
-                                NextChar();
-                                token = new CssToken(TokenType.Function, "-" + ident + '(', m_context);
-                            }
-                            else
-                            {
-                                // nope -- just a regular identifier
-                                token = new CssToken(TokenType.Identifier, "-" + ident, m_context);
-                            }
+                            // this could happen if we processed an ajaxmin directive.
+                            // go around again and try for the next token
+                            tryAgain = true;
+                        }
+                        break;
+
+                    case '<':
+                        if (AllowEmbeddedAspNetBlocks && PeekChar() == '%')
+                        {
+                            token = ScanAspNetBlock();
                         }
                         else
                         {
-                            // just a hyphen character
-                            token = new CssToken(TokenType.Character, '-', m_context);
+                            token = ScanCDO();
                         }
-                    }
-                    break;
+                        break;
 
-                case '~':
-                    token = ScanIncludes();
-                    break;
+                    case '-':
+                        token = ScanCDC();
+                        if (token == null)
+                        {
+                            // identifier in CSS2.1 and CSS3 can start with a hyphen
+                            // to indicate vendor-specific identifiers.
+                            string ident = GetIdent();
+                            if (ident != null)
+                            {
+                                // vendor-specific identifier
+                                // but first see if it's a vendor-specific function!
+                                if (m_currentChar == '(')
+                                {
+                                    // it is -- consume the parenthesis; it's part of the token
+                                    NextChar();
+                                    token = new CssToken(TokenType.Function, "-" + ident + '(', m_context);
+                                }
+                                else
+                                {
+                                    // nope -- just a regular identifier
+                                    token = new CssToken(TokenType.Identifier, "-" + ident, m_context);
+                                }
+                            }
+                            else
+                            {
+                                // just a hyphen character
+                                token = new CssToken(TokenType.Character, '-', m_context);
+                            }
+                        }
+                        break;
 
-                case '|':
-                    token = ScanDashMatch();
-                    break;
+                    case '~':
+                        token = ScanIncludes();
+                        break;
 
-                case '^':
-                    token = ScanPrefixMatch();
-                    break;
+                    case '|':
+                        token = ScanDashMatch();
+                        break;
 
-                case '$':
-                    token = ScanSuffixMatch();
-                    break;
+                    case '^':
+                        token = ScanPrefixMatch();
+                        break;
 
-                case '*':
-                    token = ScanSubstringMatch();
-                    break;
+                    case '$':
+                        token = ScanSuffixMatch();
+                        break;
 
-                case '\'':
-                case '"':
-                    token = ScanString();
-                    break;
+                    case '*':
+                        token = ScanSubstringMatch();
+                        break;
 
-                case '#':
-                    token = ScanHash();
-                    break;
+                    case '\'':
+                    case '"':
+                        token = ScanString();
+                        break;
 
-                case '@':
-                    token = ScanAtKeyword();
-                    break;
+                    case '#':
+                        token = ScanHash();
+                        break;
 
-                case '!':
-                    token = ScanImportant();
-                    break;
+                    case '@':
+                        token = ScanAtKeyword();
+                        break;
 
-                case 'U':
-                case 'u':
-                    token = ScanUrl();
-                    break;
+                    case '!':
+                        token = ScanImportant();
+                        break;
 
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                case '.':
-                    token = ScanNum();
-                    break;
+                    case 'U':
+                    case 'u':
+                        token = ScanUrl();
+                        break;
 
-                default:
-                    token = ScanIdent();
-                    break;
-            }
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+                    case '.':
+                        token = ScanNum();
+                        break;
+
+                    default:
+                        token = ScanIdent();
+                        break;
+                }
+            } while (tryAgain);
+
             return token;
         }
 
@@ -282,11 +294,97 @@ namespace Microsoft.Ajax.Utilities
                 }
                 token = new CssToken(TokenType.Comment, sb.ToString(), m_context);
             }
-            else
+            else if (m_currentChar == '/')
+            {
+                // we found '//' might be our special ///#source directive
+                if (PeekChar() == '/')
+                {
+                    // found '///'
+                    NextChar();
+                    if (PeekChar() == '#')
+                    {
+                        // okay, we have ///#, which we are going to reserve for all AjaxMin directive comments.
+                        // so the source better not have something meaningful for the rest of the line.
+                        NextChar();
+
+                        if (ReadString("#SOURCE"))
+                        {
+                            // we have a source directive: ///#source line col file
+                            // skip space
+                            DirectiveSkipSpace();
+
+                            // pull the line and column numbers. Must be positive integers greater than zero.
+                            int line = DirectiveScanInteger();
+                            if (line > 0)
+                            {
+                                DirectiveSkipSpace();
+                                int column = DirectiveScanInteger();
+                                if (column > 0)
+                                {
+                                    DirectiveSkipSpace();
+
+                                    // the rest of the comment line is the file path.
+                                    var sb = new StringBuilder();
+                                    while (m_currentChar != '\n' && m_currentChar != '\r')
+                                    {
+                                        sb.Append(m_currentChar);
+                                        DirectiveNextChar();
+                                    }
+
+                                    var fileContext = sb.ToString().TrimEnd();
+                                    if (!string.IsNullOrEmpty(fileContext))
+                                    {
+                                        // we got a proper line, column, and non-blank path. reset our context
+                                        // with the new line and column.
+                                        this.OnContextChange(fileContext, line, column);
+                                    }
+                                }
+                            }
+                        }
+
+                        // START SPECIAL PROCESSING
+                        // don't use NextChar here because that method updates the line/col position.
+                        // at this stage, we are processing a directive, and we may have set the line/col
+                        // that we're supposed to be at for the start of the next line. So make SURE we
+                        // don't update lin/col until we get to the next line.
+                        // skip anything remaining up to a line terminator
+                        while (m_currentChar != '\n' && m_currentChar != '\r')
+                        {
+                            DirectiveNextChar();
+                        }
+
+                        // then skip a SINGLE line terminator without advancing the line
+                        // (although a \r\n pair is a single line terminator)
+                        if (m_currentChar == '\n' || m_currentChar == '\f')
+                        {
+                            DirectiveNextChar();
+                        }
+                        else if (m_currentChar == '\r')
+                        {
+                            if (DirectiveNextChar() == '\n')
+                            {
+                                DirectiveNextChar();
+                            }
+                        }
+
+                        // return null here so we don't fall through and return a / character.
+                        return null;
+                    }
+                    else
+                    {
+                        // nope; the third / back so the current char is still the second '/'
+                        // and we'll return a single-char token for the first char
+                        PushChar('/');
+                    }
+                }
+            }
+
+            if (token == null)
             {
                 // not a comment
                 token = new CssToken(TokenType.Character, '/', m_context);
             }
+
             return token;
         }
 
@@ -1823,6 +1921,38 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
+        #region special directive-processing (non-CSS) methods
+
+        private char DirectiveNextChar()
+        {
+            var next = m_reader.Read();
+            m_currentChar = next < 0 ? '\0' : (char)next;
+            return m_currentChar;
+        }
+
+        private void DirectiveSkipSpace()
+        {
+            while (m_currentChar == ' ' || m_currentChar == '\t')
+            {
+                NextChar();
+            }
+        }
+
+        private int DirectiveScanInteger()
+        {
+            // returns 0 if there is no number at the current position
+            var number = 0;
+            while ('0' <= m_currentChar && m_currentChar <= '9')
+            {
+                number = number * 10 + (m_currentChar - '0');
+                NextChar();
+            }
+
+            return number;
+        }
+
+        #endregion
+
         #region Error handling
 
         private void ReportError(int severity, CssErrorCode error, params object[] args)
@@ -1850,6 +1980,17 @@ namespace Microsoft.Ajax.Utilities
             if (ScannerError != null)
             {
                 ScannerError(this, new CssScannerErrorEventArgs(exc));
+            }
+        }
+
+        public event EventHandler<CssScannerContextChangeEventArgs> ContextChange;
+
+        protected void OnContextChange(string fileContext, int line, int column)
+        {
+            m_context.Reset(line, column);
+            if (ContextChange != null)
+            {
+                ContextChange(this, new CssScannerContextChangeEventArgs(fileContext/*, line, column*/));
             }
         }
 
@@ -1898,6 +2039,20 @@ namespace Microsoft.Ajax.Utilities
         public CssScannerErrorEventArgs(CssScannerException exc)
         {
             Exception = exc;
+        }
+    }
+
+    internal class CssScannerContextChangeEventArgs : EventArgs
+    {
+        public string FileContext {get; private set;}
+        //public int Line {get; private set;}
+        //public int Column {get; private set;}
+
+        public CssScannerContextChangeEventArgs(string fileContext/*, int line, int column*/)
+        {
+            FileContext = fileContext;
+            //Line = line;
+            //Column = column;
         }
     }
 }

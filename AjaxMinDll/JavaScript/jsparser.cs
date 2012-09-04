@@ -565,7 +565,16 @@ namespace Microsoft.Ajax.Utilities
             m_useCurrentForNext = false;
             try
             {
+                // get the first token
                 GetNextToken();
+                
+                // if the block doesn't have a proper file context, then let's set it from the 
+                // first token -- that token might have had a ///#source directive!
+                if (string.IsNullOrEmpty(m_program.Context.Document.FileContext))
+                {
+                    m_program.Context.Document.FileContext = m_currentToken.Document.FileContext;
+                }
+
                 m_noSkipTokenSet.Add(NoSkipTokenSet.s_StartStatementNoSkipTokenSet);
                 m_noSkipTokenSet.Add(NoSkipTokenSet.s_TopLevelNoSkipTokenSet);
 

@@ -92,6 +92,11 @@ namespace Microsoft.Ajax.Utilities
             return string.IsNullOrEmpty(text) || text.Trim().Length == 0;
         }
 
+        public static string IfNullOrWhiteSpace(this string text, string defaultValue)
+        {
+            return string.IsNullOrEmpty(text) || text.Trim().Length == 0 ? defaultValue : text;
+        }
+
         public static string ToStringInvariant(this int number, string format)
         {
             return format == null
@@ -120,6 +125,16 @@ namespace Microsoft.Ajax.Utilities
         {
             var hash = new HashSet<TKey>();
             return source.Where(p => hash.Add(keySelector(p)));
+        }
+
+        public static TResult IfNotNull<TObject, TResult>(this TObject obj, Func<TObject,TResult> action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException("action");
+            }
+
+            return obj == null ? default(TResult) : action(obj);
         }
     }
 }

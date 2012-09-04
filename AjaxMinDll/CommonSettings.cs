@@ -429,7 +429,7 @@ namespace Microsoft.Ajax.Utilities
 
         public void AddResourceStrings(IEnumerable<ResourceStrings> collection)
         {
-            // if we haven't createed the collection yet, do so now
+            // if we haven't created the collection yet, do so now
             if (m_resourceStrings == null)
             {
                 m_resourceStrings = new List<ResourceStrings>();

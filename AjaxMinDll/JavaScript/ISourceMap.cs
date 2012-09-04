@@ -24,5 +24,6 @@ namespace Microsoft.Ajax.Utilities
         void EndPackage();
         object StartSymbol(AstNode astNode, int startLine, int startColumn);
         void EndSymbol(object symbol, int endLine, int endColumn, string parentContext);
+        string Name { get; }
     }
 }

@@ -393,4 +393,10 @@
   <data name="ObjectLiteralReservedWord" xml:space="preserve">
     <value>Reserved word used as object literal property name; cross-browser issue.</value>
   </data>
+  <data name="NoEndDebugDirective" xml:space="preserve">
+    <value>Expected ///#ENDDEBUG directive</value>
+  </data>
+  <data name="NoEndIfDirective" xml:space="preserve">
+    <value>Expected ///#ENDIF directive</value>
+  </data>
 </root>

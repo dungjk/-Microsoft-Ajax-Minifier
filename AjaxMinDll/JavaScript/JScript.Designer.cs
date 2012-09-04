@@ -403,6 +403,24 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Expected ///#ENDDEBUG directive.
+        /// </summary>
+        internal static string NoEndDebugDirective {
+            get {
+                return ResourceManager.GetString("NoEndDebugDirective", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected ///#ENDIF directive.
+        /// </summary>
+        internal static string NoEndIfDirective {
+            get {
+                return ResourceManager.GetString("NoEndIfDirective", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected &apos;=&apos;.
         /// </summary>
         internal static string NoEqual {

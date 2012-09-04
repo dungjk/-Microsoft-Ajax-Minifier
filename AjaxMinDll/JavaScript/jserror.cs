@@ -104,6 +104,8 @@ namespace Microsoft.Ajax.Utilities
         UnclosedFunction = 1301, // end of file encountered before function is properly closed
         AmbiguousVariable = 1302, // variable name is ambiguous in certain browsers
         ObjectLiteralReservedWord = 1303, // reserved word used as object literal property name
+        NoEndIfDirective = 1304, // expected #ENDIF directive
+        NoEndDebugDirective = 1305, // expected #ENDDEBUG directive
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"
