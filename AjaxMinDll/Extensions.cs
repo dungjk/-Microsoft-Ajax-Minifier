@@ -89,12 +89,20 @@ namespace Microsoft.Ajax.Utilities
 
         public static bool IsNullOrWhiteSpace(this string text)
         {
+#if NET_20 || NET_35
             return string.IsNullOrEmpty(text) || text.Trim().Length == 0;
+#else
+            return string.IsNullOrWhiteSpace(text);
+#endif
         }
 
         public static string IfNullOrWhiteSpace(this string text, string defaultValue)
         {
+#if NET_20 || NET_35
             return string.IsNullOrEmpty(text) || text.Trim().Length == 0 ? defaultValue : text;
+#else
+            return string.IsNullOrWhiteSpace(text) ? defaultValue : text;
+#endif
         }
 
         public static string ToStringInvariant(this int number, string format)
