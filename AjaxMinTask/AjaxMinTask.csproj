@@ -72,7 +72,9 @@
     <None Include="AjaxMin.tasks">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="AjaxMinTask.targets" />
+    <None Include="AjaxMinTask.targets">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Migrated rules for AjaxMinTask.ruleset" />
   </ItemGroup>
   <ItemGroup>

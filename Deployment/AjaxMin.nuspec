@@ -14,14 +14,8 @@
         <tags>JavaScript CSS minification crunch parser ast ajaxmin</tags>
     </metadata>
     <files>
-        <file src="AjaxMinDll\bin\$Configuration$\AjaxMinLibrary.dll" target="lib/net40"/>
-        <file src="AjaxMinDll\bin\$Configuration$\AjaxMinLibrary.pdb" target="lib/net40"/>
-        <file src="AjaxMinDll2008\bin\$Configuration$\AjaxMinLibrary2008.dll" target="lib/net35"/>
-        <file src="AjaxMinDll2008\bin\$Configuration$\AjaxMinLibrary2008.pdb" target="lib/net35"/>
-        <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMinLibrary2005.dll" target="lib/net20"/>
-        <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMinLibrary2005.pdb" target="lib/net20"/>
-        <!--<file src="AjaxMinDll2005\bin\$Configuration$\ExtensionsShim.dll" target="lib/net20"/>
-        <file src="AjaxMinDll2005\bin\$Configuration$\ExtensionsShim.pdb" target="lib/net20"/>-->
+        <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMin.dll" target="lib/net20"/>
+        <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMin.pdb" target="lib/net20"/>
         <file src="**\*.cs" target="src"/>
     </files>
 </package>
