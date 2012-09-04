@@ -100,6 +100,12 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_BDC23091702B402083539707F5702CF6"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -107,12 +113,6 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_717187F2D25F46A7B880FEF6FCEC17B8"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -262,7 +262,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMinLibrary, Version=4.63.4630.14158, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMinLibrary, Version=4.63.4630.17694, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                     "_2E4169AB6A5FF555BF4309E80428F97F"
@@ -469,15 +469,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{2D1B58E1-D8CF-4D66-A7A5-5B7FD29292B1}"
-        "PackageCode" = "8:{EBF22BEE-8EB6-4421-B860-6C32C1D119A5}"
+        "ProductCode" = "8:{A7E3C611-FDBD-4CD7-8914-03FFA4CDAF37}"
+        "PackageCode" = "8:{2DED97B3-E0AC-4A0F-9355-6C02127BEF89}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.63"
+        "ProductVersion" = "8:4.64"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
