@@ -335,8 +335,14 @@ Valid OPTS are zero or more of:
         determines whether opening braces are written on their own new line, 
         at the end of the previous line, or reflecting what is in the source
         code. Default is new.
-  -clobber[:BOOL] &gt; when false, will not overwrite existing output file.
-        True always writes output file. Default is false.
+  -noclobber[:BOOL] &gt; when the Boolean flag is true (or not supplied), will
+        never overwrite an existing file. When false, the default behavior is
+        applied: will overwrite an existing file only if it is not marked as
+        read-only.
+  -clobber[:BOOL] &gt; when the Boolean flag is true (or not supplied), will 
+        always overwrite an existing file, even if it is marked as read-only.
+        When false, the default behavior is applied: will overwrite an
+        existing file only if it is not marked as read-only.
   -define:NAME(,NAME)* &gt; add defined case-insensitive names to the list used 
         by the preprocessor.
   -echo &gt; output is an echo of the original input.
