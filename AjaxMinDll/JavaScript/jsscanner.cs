@@ -2585,7 +2585,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             var success = false;
-            if ( m_scannerState.CurrentPosition > startPos)
+            if (m_scannerState.CurrentPosition > startPos)
             {
                 success = int.TryParse(m_strSourceCode.Substring(startPos, m_scannerState.CurrentPosition - startPos), out intValue);
             }

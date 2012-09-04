@@ -40,7 +40,7 @@ namespace Microsoft.Ajax.Utilities
     using System.Globalization;
     using System.Linq;
 
-    public static class Extensions
+    public static class AjaxMinExtensions
     {
         public static string FormatInvariant(this string format, params object[] args)
         {
