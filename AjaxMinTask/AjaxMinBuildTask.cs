@@ -542,9 +542,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public AjaxMin()
         {
-            this.JsEnsureFinalSemicolon = true;
             this.m_switchParser = new SwitchParser();
             this.m_switchParser.UnknownParameter += OnUnknownParameter;
+            this.JsEnsureFinalSemicolon = true;
         }
 
         /// <summary>
