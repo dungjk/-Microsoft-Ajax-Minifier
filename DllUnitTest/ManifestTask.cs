@@ -1,15 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace DllUnitTest
+﻿namespace DllUnitTest
 {
+    using System.Diagnostics;
+    using System.IO;
     using Microsoft.Ajax.Minifier.Tasks;
+    using Microsoft.Build.Utilities;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Summary description for ManifestTask
@@ -55,9 +50,11 @@ namespace DllUnitTest
         [ClassInitialize()]
         public static void MyClassInitialize(TestContext testContext) 
         {
-            s_inputFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Input", "Manifest");
-            s_outputFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Output", "Manifest");
-            s_expectedFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Expected", "Manifest");
+            var testClassName = testContext.FullyQualifiedTestClassName.Substring(
+                testContext.FullyQualifiedTestClassName.LastIndexOf('.') + 1);
+            s_inputFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Input", testClassName);
+            s_outputFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Output", testClassName);
+            s_expectedFolder = Path.Combine(testContext.DeploymentDirectory, "Dll", "Expected", testClassName);
 
             // make sure the output folder exists
             Directory.CreateDirectory(s_outputFolder);
