@@ -512,8 +512,10 @@ namespace Microsoft.Ajax.Utilities
                                     // the first item is the flag (if any), and the rest (if any) are the "debug" lookup names
                                     var items = paramPart.Split(',');
 
-                                    // use the first value as the debug boolean switch
-                                    if (BooleanSwitch(items[0], true, out parameterFlag))
+                                    // use the first value as the debug boolean switch.
+                                    // since we are splitting the non-uppercase param part, we need to 
+                                    // make sure the first item is capitalized for our boolean test.
+                                    if (BooleanSwitch(items[0].ToUpperInvariant(), true, out parameterFlag))
                                     {
                                         // actually the inverse - a TRUE on the -debug switch means we DON'T want to
                                         // strip debug statements, and a FALSE means we DO want to strip them
