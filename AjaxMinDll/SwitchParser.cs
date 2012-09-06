@@ -344,7 +344,7 @@ namespace Microsoft.Ajax.Utilities
                                 ReportFormat = null;
                                 if (paramPartUpper != null)
                                 {
-                                    var items = paramPartUpper.Split(',');
+                                    var items = paramPartUpper.Split(',',';');
                                     foreach (var item in items)
                                     {
                                         if (string.CompareOrdinal(item, "OUT") == 0)
@@ -510,7 +510,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // we have a comma-separated list.
                                     // the first item is the flag (if any), and the rest (if any) are the "debug" lookup names
-                                    var items = paramPart.Split(',');
+                                    var items = paramPart.Split(',', ';');
 
                                     // use the first value as the debug boolean switch.
                                     // since we are splitting the non-uppercase param part, we need to 
@@ -603,7 +603,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string define in paramPart.Split(','))
+                                    foreach (string define in paramPart.Split(',', ';'))
                                     {
                                         string trimmedName;
                                         string value;
@@ -804,7 +804,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string errorCode in paramPartUpper.Split(','))
+                                    foreach (string errorCode in paramPartUpper.Split(',',';'))
                                     {
                                         if (string.CompareOrdinal(errorCode, "ALL") == 0)
                                         {
@@ -839,7 +839,7 @@ namespace Microsoft.Ajax.Utilities
                                 else
                                 {
                                     // for each comma-separated part...
-                                    foreach(var inlinePart in paramPartUpper.Split(','))
+                                    foreach(var inlinePart in paramPartUpper.Split(',',';'))
                                     {
                                         if (string.CompareOrdinal(inlinePart, "FORCE") == 0)
                                         {
@@ -951,7 +951,7 @@ namespace Microsoft.Ajax.Utilities
                                 else
                                 {
                                     // split along commas (case-insensitive)
-                                    var lineParts = paramPartUpper.Split(',');
+                                    var lineParts = paramPartUpper.Split(',',';');
 
                                     // by default, the line-break index will be 1 (the second option).
                                     // we will change this index to 0 if the first parameter is multi/single
@@ -1174,7 +1174,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string ident in paramPart.Split(','))
+                                    foreach (string ident in paramPart.Split(',',';'))
                                     {
                                         // better be a valid JavaScript identifier
                                         if (!JSScanner.IsValidIdentifier(ident))
@@ -1268,7 +1268,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // there is at least one equal sign -- treat this as a set of JS identifier
                                     // pairs. split on commas -- multiple pairs can be specified
-                                    var paramPairs = paramPart.Split(',');
+                                    var paramPairs = paramPart.Split(',',';');
                                     foreach (var paramPair in paramPairs)
                                     {
                                         // split on the equal sign -- each pair needs to have an equal sige

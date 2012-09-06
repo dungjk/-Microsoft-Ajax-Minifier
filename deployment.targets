@@ -54,13 +54,13 @@
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinSetup\$(Configuration)\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop\net40" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net40" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net40" />
 
         <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\$(Configuration)\AjaxMinLibrary2008.dll" DestinationFolder="$(TargetDir)Drop\net35" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\$(Configuration)\AjaxMinLibrary2008.pdb" DestinationFolder="$(TargetDir)Drop\net35" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net35" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net35" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net35" />
+        <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net35" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\$(Configuration)\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop\net35" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask2008\bin\$(Configuration)\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop\net35" />
 

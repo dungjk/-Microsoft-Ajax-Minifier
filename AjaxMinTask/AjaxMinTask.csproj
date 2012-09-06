@@ -69,13 +69,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AjaxMin.tasks">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="AjaxMinTask.targets">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="AjaxMin.tasks" />
+    <None Include="AjaxMinTask.targets" />
+    <None Include="install.ps1" />
     <None Include="Migrated rules for AjaxMinTask.ruleset" />
+    <None Include="uninstall.ps1" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Strings.resx">
