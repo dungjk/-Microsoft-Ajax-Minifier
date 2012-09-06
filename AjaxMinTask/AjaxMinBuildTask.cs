@@ -784,16 +784,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         LogContextError(error);
                     }
                 }
-                else
+
+                try
                 {
-                    try
-                    {
-                        File.WriteAllText(outputPath, minifiedJs);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        LogFileError(sourceName, Strings.NoWritePermission, outputPath);
-                    }
+                    File.WriteAllText(outputPath, minifiedJs);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    LogFileError(sourceName, Strings.NoWritePermission, outputPath);
                 }
             }
             catch (Exception e)
@@ -899,16 +897,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         LogContextError(error);
                     }
                 }
-                else
+
+                try
                 {
-                    try
-                    {
-                        File.WriteAllText(outputPath, results);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        LogFileError(outputPath, Strings.NoWritePermission, outputPath);
-                    }
+                    File.WriteAllText(outputPath, results);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    LogFileError(outputPath, Strings.NoWritePermission, outputPath);
                 }
             }
             catch (Exception e)
