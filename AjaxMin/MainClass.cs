@@ -1117,9 +1117,13 @@ namespace Microsoft.Ajax.Utilities
 
             string crunchedCode = outputBuilder.ToString();
 
+            // use the crunch-group encoding. If none specified, use the default output encoding.
+            // if nothing has been specified, use ASCII if sending to the console (no output file)
+            // otherwise UTF-8.
             Encoding encodingOutput = GetOutputEncoding(
                 crunchGroup.InputType,
-                crunchGroup.Output.EncodingName ?? switchParser.EncodingOutputName);
+                crunchGroup.Output.EncodingName ?? switchParser.EncodingOutputName
+                ?? (string.IsNullOrEmpty(crunchGroup.Output.Path) ? "ASCII" : "UTF-8"));
 
             // now write the final output file
             if (string.IsNullOrEmpty(crunchGroup.Output.Path))
