@@ -310,9 +310,16 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 var minifiedCode = block.ToCode();
 
                 // write output
-                using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+                if (!Log.HasLoggedErrors)
                 {
-                    writer.Write(minifiedCode);
+                    using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+                    {
+                        writer.Write(minifiedCode);
+                    }
+                }
+                else
+                {
+                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
                 }
             }
             finally
@@ -339,9 +346,16 @@ namespace Microsoft.Ajax.Minifier.Tasks
             var minifiedCode = parser.Parse(inputCode);
 
             // write output
-            using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+            if (!Log.HasLoggedErrors)
             {
-                writer.Write(minifiedCode);
+                using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+                {
+                    writer.Write(minifiedCode);
+                }
+            }
+            else
+            {
+                Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
             }
         }
 

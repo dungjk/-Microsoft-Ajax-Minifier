@@ -687,13 +687,20 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 if (FileIsWritable(this.JsCombinedFileName))
                 {
                     var minifiedJs = MinifyAndConcatenateJavaScript();
-                    try
+                    if (!Log.HasLoggedErrors)
                     {
-                        File.WriteAllText(this.JsCombinedFileName, minifiedJs);
+                        try
+                        {
+                            File.WriteAllText(this.JsCombinedFileName, minifiedJs);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            LogFileError(this.JsCombinedFileName, Strings.NoWritePermission, this.JsCombinedFileName);
+                        }
                     }
-                    catch (UnauthorizedAccessException)
+                    else
                     {
-                        LogFileError(this.JsCombinedFileName, Strings.NoWritePermission, this.JsCombinedFileName);
+                        Log.LogWarning(Strings.DidNotMinify, this.JsCombinedFileName, Strings.ThereWereErrors);
                     }
                 }
                 else
@@ -741,13 +748,20 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 if (FileIsWritable(this.CssCombinedFileName))
                 {
                     var minifiedResults = MinifyAndConcatenateStyleSheet();
-                    try
+                    if (!Log.HasLoggedErrors)
                     {
-                        File.WriteAllText(this.CssCombinedFileName, minifiedResults);
+                        try
+                        {
+                            File.WriteAllText(this.CssCombinedFileName, minifiedResults);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            LogFileError(this.CssCombinedFileName, Strings.NoWritePermission, this.CssCombinedFileName);
+                        }
                     }
-                    catch (UnauthorizedAccessException)
+                    else
                     {
-                        LogFileError(this.CssCombinedFileName, Strings.NoWritePermission, this.CssCombinedFileName);
+                        Log.LogWarning(Strings.DidNotMinify, this.CssCombinedFileName, Strings.ThereWereErrors);
                     }
                 }
                 else
@@ -785,13 +799,20 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                 }
 
-                try
+                if (!Log.HasLoggedErrors)
                 {
-                    File.WriteAllText(outputPath, minifiedJs);
+                    try
+                    {
+                        File.WriteAllText(outputPath, minifiedJs);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(sourceName, Strings.NoWritePermission, outputPath);
+                    }
                 }
-                catch (UnauthorizedAccessException)
+                else
                 {
-                    LogFileError(sourceName, Strings.NoWritePermission, outputPath);
+                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
                 }
             }
             catch (Exception e)
@@ -898,13 +919,20 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                 }
 
-                try
+                if (!Log.HasLoggedErrors)
                 {
-                    File.WriteAllText(outputPath, results);
+                    try
+                    {
+                        File.WriteAllText(outputPath, results);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(outputPath, Strings.NoWritePermission, outputPath);
+                    }
                 }
-                catch (UnauthorizedAccessException)
+                else
                 {
-                    LogFileError(outputPath, Strings.NoWritePermission, outputPath);
+                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
                 }
             }
             catch (Exception e)
