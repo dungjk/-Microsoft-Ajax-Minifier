@@ -160,6 +160,15 @@ namespace Microsoft.Ajax.Minifier.Tasks {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Errors were encountered..
+        /// </summary>
+        internal static string ThereWereErrors {
+            get {
+                return ResourceManager.GetString("ThereWereErrors", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unable to determine code type from input file extensions. Please us type attribute on the output group..
         /// </summary>
         internal static string UnknownCodeType {

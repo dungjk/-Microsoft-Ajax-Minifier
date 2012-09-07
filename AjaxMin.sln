@@ -61,9 +61,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AjaxMinDll2008", "AjaxMinDl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AjaxMinTask2008", "AjaxMinTask2008\AjaxMinTask2008.csproj", "{C1090C91-A7A2-4FC5-B267-B411EBC6E70D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AjaxMinStub", "AjaxMinStub\AjaxMinStub.csproj", "{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}"
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 13
+		SccNumberOfProjects = 14
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs02
 		SccLocalPath0 = .
@@ -103,6 +105,9 @@ Global
 		SccProjectUniqueName12 = AjaxMinTask2008\\AjaxMinTask2008.csproj
 		SccProjectName12 = AjaxMinTask2008
 		SccLocalPath12 = AjaxMinTask2008
+		SccProjectUniqueName13 = AjaxMinStub\\AjaxMinStub.csproj
+		SccProjectName13 = AjaxMinStub
+		SccLocalPath13 = AjaxMinStub
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = AjaxMin.vsmdi
@@ -228,6 +233,16 @@ Global
 		{C1090C91-A7A2-4FC5-B267-B411EBC6E70D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{C1090C91-A7A2-4FC5-B267-B411EBC6E70D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{C1090C91-A7A2-4FC5-B267-B411EBC6E70D}.Release|x86.ActiveCfg = Release|Any CPU
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Debug|x86.ActiveCfg = Debug|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Debug|x86.Build.0 = Debug|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Release|Any CPU.ActiveCfg = Release|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Release|Mixed Platforms.Build.0 = Release|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Release|x86.ActiveCfg = Release|x86
+		{3FB14356-8CA2-4A38-B8E0-B38AAE8E366B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

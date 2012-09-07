@@ -150,6 +150,9 @@
   <data name="SkippedOutputFile" xml:space="preserve">
     <value>Output file {0} skipped</value>
   </data>
+  <data name="ThereWereErrors" xml:space="preserve">
+    <value>Errors were encountered.</value>
+  </data>
   <data name="UnknownCodeType" xml:space="preserve">
     <value>Unable to determine code type from input file extensions. Please us type attribute on the output group.</value>
   </data>

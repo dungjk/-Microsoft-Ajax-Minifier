@@ -1011,7 +1011,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         private void LogContextError(ContextError error)
         {
             // log it either as an error or a warning
-            if(TreatWarningsAsErrors || error.IsError)
+            if(TreatWarningsAsErrors || error.Severity < 2)
             {
                 Log.LogError(
                     error.Subcategory,  // subcategory 

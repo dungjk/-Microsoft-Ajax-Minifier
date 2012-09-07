@@ -165,9 +165,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AjaxMin.cmd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="app.config" />
     <None Include="Migrated rules for AjaxMin.ruleset" />
   </ItemGroup>

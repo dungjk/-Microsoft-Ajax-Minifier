@@ -78,34 +78,12 @@
         public void ManifestTaskTest()
         {
             // create the task, set it up, and execute it
-            var task = new AjaxMinManifestTask();
-            task.InputFolder = s_inputFolder;
-            task.SourceFolder = "TestData/Dll/Input/Manifest/";
-            task.OutputFolder = s_outputFolder;
-            task.Configuration = "Debug";
-            task.ProjectDefaultSwitches = "-define:FOO=bar";
-            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Manifest.xml" } };
-
-            // our mockup build engine
-            var buildEngine = new TestBuildEngine()
-            {
-                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
-            };
-            task.BuildEngine = buildEngine;
-
-            var success = task.Execute();
-            Trace.Write("TASK RESULT: ");
-            Trace.WriteLine(success);
-
-            Trace.WriteLine(string.Empty);
-            Trace.WriteLine("BUILD MESSAGES:");
-            foreach(var logMessage in buildEngine.LogMessages)
-            {
-                Trace.WriteLine(logMessage);
-            }
+            var task = CreateAndSetupTask();
+            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Input\ManifestTask\Manifest.xml" } };
 
             // check overall success
-            Assert.IsFalse(success, "expected the task to fail (source has errors)");
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
 
             // make sure all the files we expect were created
             Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test1.js")), "test1.js does not exist");
@@ -118,12 +96,61 @@
             var test2JSVerify = VerifyFileContents("test2.js");
             var test1CssVerify = VerifyFileContents("test1.css");
 
-            // TODO: verify map file
-
+            // TODO: verify map file contents
 
             Assert.IsTrue(test1JSVerify, "Test1.js output doesn't match");
             Assert.IsTrue(test2JSVerify, "Test2.js output doesn't match");
             Assert.IsTrue(test1CssVerify, "Test1.css output doesn't match");
+        }
+
+        [TestMethod]
+        public void ManifestTaskFail()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Input\ManifestTask\ManifestFail.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsFalse(success, "expected the task to fail because of errors");
+            Assert.IsTrue(((TestBuildEngine)task.BuildEngine).LogMessages.Count > 0, "expect error messages");
+
+            // make sure all the output file did not get created
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "failoutput.js")), "failoutput.js should not exist");
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "failoutput.css")), "failoutput.css should not exist");
+        }
+
+        private AjaxMinManifestTask CreateAndSetupTask()
+        {
+            var task = new AjaxMinManifestTask();
+            task.InputFolder = s_inputFolder;
+            task.SourceFolder = "TestData/Dll/Input/ManifestTask/";
+            task.OutputFolder = s_outputFolder;
+            task.Configuration = "Debug";
+            task.ProjectDefaultSwitches = "-define:FOO=bar";
+
+            task.BuildEngine = new TestBuildEngine()
+            {
+                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
+            };
+
+            return task;
+        }
+
+        private bool ExecuteAndLog(AjaxMinManifestTask task)
+        {
+            var success = task.Execute();
+            Trace.Write("TASK RESULT: ");
+            Trace.WriteLine(success);
+
+            Trace.WriteLine(string.Empty);
+            Trace.WriteLine("BUILD MESSAGES:");
+            foreach (var logMessage in ((TestBuildEngine)task.BuildEngine).LogMessages)
+            {
+                Trace.WriteLine(logMessage);
+            }
+
+            return success;
         }
 
         private bool VerifyFileContents(string fileName)

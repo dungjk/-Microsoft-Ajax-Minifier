@@ -83,6 +83,8 @@
     <Content Include="TestData\Dll\Expected\ManifestTask\test1.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test2.js" />
     <Content Include="TestData\Dll\Expected\SourceChange.js" />
+    <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.css" />
+    <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\file1.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\file2.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test1.css" />
@@ -94,8 +96,11 @@
     <Content Include="TestData\Dll\Input\ManifestTask\file3.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\file3.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file4.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\HasError.css" />
+    <Content Include="TestData\Dll\Input\ManifestTask\HasError.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\ManifestFail.xml" />
     <Content Include="TestData\Dll\Input\SourceChange.js" />
-    <Content Include="TestData\Dll\manifest.xml" />
+    <Content Include="TestData\Dll\Input\ManifestTask\manifest.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AjaxMinTask\AjaxMinTask.csproj">

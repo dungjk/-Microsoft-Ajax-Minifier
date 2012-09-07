@@ -88,13 +88,6 @@
             task.CssSourceExtensionPattern = @"\.css$";
             task.CssTargetExtension = ".min.css";
 
-            // our mockup build engine
-            var buildEngine = new TestBuildEngine()
-            {
-                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
-            };
-            task.BuildEngine = buildEngine;
-
             // make sure the files we expect to create are not there to begin with
             // unfortunately the task puts the minified files in the same folder as the source,
             // so there's no separate output folder
@@ -127,6 +120,51 @@
         }
 
         [TestMethod]
+        public void TestAjaxMinTaskFail()
+        {
+            // create the task
+            var task = new AjaxMin();
+
+            // common settings
+            task.JsKnownGlobalNames = "jQuery,$";
+            task.JsEvalTreatment = "MakeImmediateSafe";
+            task.Switches = "-rename:none -reorder:N";
+
+            // set up the JS files
+            task.JsSourceFiles = new[] { 
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\fail.js" },
+            };
+
+            // set up the CSS files
+            task.CssSourceFiles = new[] {
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\fail.css" },
+            };
+
+            // our mockup build engine
+            task.BuildEngine = new TestBuildEngine()
+            {
+                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
+            };
+
+            // set up separate output JS files
+            task.JsSourceExtensionPattern = @"\.js$";
+            task.JsTargetExtension = ".min.js";
+
+            // set up separate output CSS files
+            task.CssSourceExtensionPattern = @"\.css$";
+            task.CssTargetExtension = ".min.css";
+
+
+            // check overall success
+            var success = ExecuteAndReport(task);
+            Assert.IsFalse(success, "expected the task to fail");
+
+            // make sure all the files we expect were created
+            Assert.IsFalse(File.Exists(Path.Combine(s_inputFolder, "fail.min.js")), "fail.min.js should not exist");
+            Assert.IsFalse(File.Exists(Path.Combine(s_inputFolder, "fail.min.css")), "fail.min.css should not exist");
+        }
+
+        [TestMethod]
         public void TestAjaxMinCombinedTask()
         {
             // create the task
@@ -151,6 +189,49 @@
 
             Assert.IsTrue(testJSVerify, "Combined.min.js output doesn't match");
             Assert.IsTrue(testCssVerify, "Combined.min.css output doesn't match");
+        }
+
+        [TestMethod]
+        public void TestAjaxMinCombinedFail()
+        {
+            // create the task
+            var task = new AjaxMin();
+
+            // common settings
+            task.JsKnownGlobalNames = "jQuery,$";
+            task.JsEvalTreatment = "MakeImmediateSafe";
+            task.Switches = "-rename:none -reorder:N";
+
+            // set up the JS files
+            task.JsSourceFiles = new[] { 
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\file1.js" },
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\fail.js" },
+            };
+
+            // set up the CSS files
+            task.CssSourceFiles = new[] {
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\test1.css" },
+                new TaskItem() { ItemSpec = @"Dll\Input\AjaxMinTask\fail.css" },
+            };
+
+            // our mockup build engine
+            task.BuildEngine = new TestBuildEngine()
+            {
+                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
+            };
+
+            // set up the combined file outputs
+            task.JsCombinedFileName = @"Dll\Output\AjaxMinTask\CombinedFail.min.js";
+            task.CssCombinedFileName = @"Dll\Output\AjaxMinTask\CombinedFail.min.css";
+
+            var success = ExecuteAndReport(task);
+
+            // check overall success
+            Assert.IsFalse(success, "expected the task to fail");
+
+            // make sure all the files we expect were created
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "CombinedFail.min.js")), "CombinedFail.min.js should not exist");
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "CombinedFail.min.css")), "CombinedFail.min.css should not exist");
         }
 
         private AjaxMin CreateTaskWithInputs()
