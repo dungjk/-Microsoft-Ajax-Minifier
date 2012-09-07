@@ -25,70 +25,60 @@ namespace JSUnitTest
     [TestClass()]
     public class Declarations
     {
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void New()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void This()
         {
             TestHelper.Instance.RunTest("-unused:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Var()
         {
             TestHelper.Instance.RunTest("-enc:out ascii");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void With()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void With_H()
         {
             TestHelper.Instance.RunTest("-rename:all -unused:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Function()
         {
             TestHelper.Instance.RunTest("-unused:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Identifiers()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void LocalizationVars()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void LocalizationVars_H()
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void LocalizationVars_HL()
         {

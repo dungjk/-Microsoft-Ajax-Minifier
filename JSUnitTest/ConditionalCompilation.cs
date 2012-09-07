@@ -24,56 +24,48 @@ namespace JSUnitTest
   [TestClass]
   public class ConditionalCompilation
   {
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void IfElse()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Set()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void PPConstant()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void PPOps()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StartWithIf()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StartWithSet()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void NoEnd()
     {
         TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void SpecialCase()
     {

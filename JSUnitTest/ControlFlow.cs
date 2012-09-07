@@ -25,14 +25,12 @@ namespace JSUnitTest
     [TestClass()]
     public class ControlFlow
     {
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Break()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Continue()
         {
@@ -46,21 +44,18 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger()
         {
             TestHelper.Instance.RunTest("-debug:Y -kill:0x400000000000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_D()
         {
             TestHelper.Instance.RunTest("-debug:N -kill:0x400000000000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_OnCustom()
         {
@@ -71,14 +66,12 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest("-debug:,AckBar,FooBar -kill:0x400000000000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_OffCustom()
         {
             TestHelper.Instance.RunTest("-debug:N,AckBar,FooBar,Debug,$Debug,Web.Debug -kill:0x400000000000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Debugger_OffNone()
         {
@@ -88,28 +81,24 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest("-debug:N, -kill:0x400000000000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void DoWhile()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void ForWhile()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void ForIn()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void ForVar_reorder()
         {
@@ -122,77 +111,66 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest("-reorder:N");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void If()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Labels()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Labels_H()
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Return()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Switch()
         {
             TestHelper.Instance.RunTest("-unused:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Switch_h()
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void TryCatch()
         {
             TestHelper.Instance.RunTest("-mac:FALSE");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void TryCatch_m()
         {
             TestHelper.Instance.RunTest("-mac:Y");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void CatchScope()
         {
             TestHelper.Instance.RunTest("-rename:none"); // we see the difference when hypercrunch is on
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void CatchScope_Local()
         {
             TestHelper.Instance.RunTest("-rename:all"); // catch-local switch and hypercrunch
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void EncloseBlock()
         {
@@ -201,14 +179,12 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest("-reorder:no -kill:0x21800002000");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Throw()
         {
             TestHelper.Instance.RunTest("-mac:N");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Throw_M()
         {

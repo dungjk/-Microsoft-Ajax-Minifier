@@ -25,98 +25,84 @@ namespace JSUnitTest
   [TestClass()]
   public class ObjectCreation
   {
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Object()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Object_H()
     {
         TestHelper.Instance.RunTest("-rename:all");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Object_hc()
     {
         TestHelper.Instance.RunTest("-rename:all -literals:combine");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Object_L()
     {
       TestHelper.Instance.RunTest("-new:keep");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void CompareObjects()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Constructor()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Constructor_H()
     {
         TestHelper.Instance.RunTest("-rename:all");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Constructor_hc()
     {
         TestHelper.Instance.RunTest("-rename:all -literals:combine");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Prototype()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void InstanceOf()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void ToStr()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void TypeOf()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void RegularExpressions()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Strings()
     {
@@ -124,7 +110,6 @@ namespace JSUnitTest
       TestHelper.Instance.RunTest("-enc:out ascii");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Strings_Utf8()
     {

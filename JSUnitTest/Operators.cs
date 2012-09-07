@@ -24,63 +24,54 @@ namespace JSUnitTest
     [TestClass]
     public class Operators
     {
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Member()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void In()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Void()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Unary()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Assign()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Conditional()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Comma()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void New()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void InstanceOf()
         {

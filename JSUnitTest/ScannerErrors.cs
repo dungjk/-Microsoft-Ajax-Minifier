@@ -22,21 +22,18 @@ namespace JSUnitTest
   [TestClass]
   public class ScannerErrors
   {
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void BadHexDigit()
     {
       TestHelper.Instance.RunErrorTest(null, JSError.BadHexDigit);
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StringEOF()
     {
       TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void StringEOL()
     {

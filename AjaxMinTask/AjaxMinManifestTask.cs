@@ -353,7 +353,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             return Path.IsPathRooted(path)
                 ? path
-                : string.IsNullOrWhiteSpace(this.OutputFolder)
+                : this.OutputFolder.IsNullOrWhiteSpace()
                     ? Path.Combine(manifestFolder, path)
                     : Path.Combine(this.OutputFolder, path);
         }
@@ -362,7 +362,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             return Path.IsPathRooted(path)
                 ? path
-                : string.IsNullOrWhiteSpace(this.InputFolder)
+                : this.InputFolder.IsNullOrWhiteSpace()
                     ? Path.Combine(manifestFolder, path)
                     : Path.Combine(this.InputFolder, path);
         }

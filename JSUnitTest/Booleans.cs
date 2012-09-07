@@ -25,7 +25,6 @@ namespace JSUnitTest
     [TestClass()]
     public class Booleans
     {
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Boolean()
         {

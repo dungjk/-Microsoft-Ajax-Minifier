@@ -25,14 +25,12 @@ namespace JSUnitTest
     [TestClass()]
     public class GlobalMethods
     {
-      [DeploymentItem("AjaxMin.exe")]
       [TestMethod()]
       public void Eval()
       {
         TestHelper.Instance.RunTest();
       }
 
-      [DeploymentItem("AjaxMin.exe")]
       [TestMethod()]
       public void GlobalObject()
       {

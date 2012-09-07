@@ -25,35 +25,30 @@ namespace JSUnitTest
   [TestClass()]
   public class Assignments
   {
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Assign()
     {
       TestHelper.Instance.RunTest("-enc:out ascii");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Assign_utf8()
     {
       TestHelper.Instance.RunTest("-enc:out utf-8");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void CompoundAssign()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void MultiVars()
     {
       TestHelper.Instance.RunTest();
     }
 
-	[DeploymentItem("AjaxMin.exe")]
 	[TestMethod()]
 	public void AssignAspNetBlock()
 	{

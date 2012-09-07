@@ -25,28 +25,24 @@ namespace JSUnitTest
     [TestClass()]
     public class FunctionCreation
     {
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NewFunction()
         {
             TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void Arguments()
         {
           TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void FuncExpr()
         {
           TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NamedFuncExpr_reorder()
         {
@@ -59,42 +55,36 @@ namespace JSUnitTest
             TestHelper.Instance.RunTest("-reorder:N");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NamedFuncExpr_nfe()
         {
             TestHelper.Instance.RunTest("-reorder:N -fnames:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NamedFuncExpr_h()
         {
             TestHelper.Instance.RunTest("-reorder:N -rename:all");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NamedFuncExpr_hnfe()
         {
             TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:keep");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void NamedFuncExpr_hlock()
         {
             TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:lock");
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void BadSemicolon()
         {
           TestHelper.Instance.RunTest();
         }
 
-        [DeploymentItem("AjaxMin.exe")]
         [TestMethod()]
         public void VarArgList()
         {

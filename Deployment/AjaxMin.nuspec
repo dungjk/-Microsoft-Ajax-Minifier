@@ -17,16 +17,21 @@
         <!-- reference the old name, .NET 2.0 dll -->
         <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMin.dll" target="lib/net20"/>
         <file src="AjaxMinDll2005\bin\$Configuration$\AjaxMin.pdb" target="lib/net20"/>
+        <file src="AjaxMinDll2008\bin\$Configuration$\AjaxMin.dll" target="lib/net35"/>
+        <file src="AjaxMinDll2008\bin\$Configuration$\AjaxMin.pdb" target="lib/net35"/>
+        <file src="AjaxMinDll\bin\$Configuration$\AjaxMin.dll" target="lib/net40"/>
+        <file src="AjaxMinDll\bin\$Configuration$\AjaxMin.pdb" target="lib/net40"/>
+
         <!-- task stuff in the tools folder -->
         <file src="AjaxMinTask\install.ps1" target="tools"/>
         <file src="AjaxMinTask\uninstall.ps1" target="tools"/>
+        
         <file src="AjaxMinTask\AjaxMin.tasks" target="tools/net40"/>
         <file src="AjaxMinTask\AjaxMinTask.targets" target="tools/net40"/>
-        
         <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="tools/net40"/>
         <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinLibrary.dll" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinLibrary.pdb" target="tools/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="tools/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.pdb" target="tools/net40"/>
         <file src="**\*.cs" target="src"/>
     </files>
 </package>

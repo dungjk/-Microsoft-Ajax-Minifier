@@ -48,6 +48,9 @@
     <Compile Include="..\AjaxMinTask\AjaxMinBuildTask.cs">
       <Link>AjaxMinBuildTask.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinTask\AjaxMinManifestTask.cs">
+      <Link>AjaxMinManifestTask.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinTask\GlobalSuppressions.cs">
       <Link>GlobalSuppressions.cs</Link>
     </Compile>
@@ -61,11 +64,6 @@
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\AjaxMinTask\AjaxMin.tasks">
-      <Link>AjaxMin.tasks</Link>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\AjaxMinTask\Strings.resx">

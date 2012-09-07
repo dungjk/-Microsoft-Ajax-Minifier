@@ -25,42 +25,36 @@ namespace JSUnitTest
   [TestClass()]
   public class ArrayHandling
   {
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Array()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Array_L()
     {
       TestHelper.Instance.RunTest("-new:keep");
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Join()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Length()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Reverse()
     {
       TestHelper.Instance.RunTest();
     }
 
-    [DeploymentItem("AjaxMin.exe")]
     [TestMethod()]
     public void Sort()
     {
