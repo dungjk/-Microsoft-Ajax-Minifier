@@ -105,6 +105,22 @@ namespace Microsoft.Ajax.Utilities
 #endif
         }
 
+        public static string SubstringUpToFirst(this string text, char delimiter)
+        {
+            // if the string is null, return null
+            if (text == null)
+            {
+                return null;
+            }
+
+            // get the index of the first delimiter character
+            var indexOf = text.IndexOf(delimiter);
+
+            // if the delimiter doesn't exist in the string, return the whole string.
+            // otherwise return from the beginning up to BUT NOT INCLUDING the delimiter.
+            return indexOf < 0 ? text : text.Substring(0, indexOf);
+        }
+
         public static string ToStringInvariant(this int number, string format)
         {
             return format == null
@@ -143,6 +159,17 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return obj == null ? default(TResult) : action(obj);
+        }
+
+        public static bool AddIfUnique<TItem>(this IList<TItem> list, TItem item)
+        {
+            if (list != null && !list.Contains(item))
+            {
+                list.Add(item);
+                return true;
+            }
+
+            return false;
         }
     }
 }

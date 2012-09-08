@@ -25,7 +25,7 @@ namespace Microsoft.Ajax.Utilities
     {
         private GlobalObject m_globalObject;
         private GlobalObject m_windowObject;
-        private ReadOnlyCollection<string> m_assumedGlobals;
+        private IList<string> m_assumedGlobals;
         private List<UndefinedReferenceException> m_undefined;
 
         public IList<UndefinedReferenceException> UndefinedReferences { get { return m_undefined; } }
@@ -56,9 +56,24 @@ namespace Microsoft.Ajax.Utilities
             m_undefined.Add(exception);
         }
 
-        internal void SetAssumedGlobals(ReadOnlyCollection<string> globals)
+        internal void SetAssumedGlobals(ReadOnlyCollection<string> globals, ReadOnlyCollection<string> debugLookups)
         {
-            m_assumedGlobals = globals;
+            // start off with any known globals
+            m_assumedGlobals = globals == null ? null : new List<string>(globals);
+
+            // chek to see if there are any debug lookups
+            if (debugLookups != null && debugLookups.Count > 0)
+            {
+                if (m_assumedGlobals == null)
+                {
+                    m_assumedGlobals = new List<string>(debugLookups.Count);
+                }
+
+                foreach (var debugLookup in debugLookups)
+                {
+                    m_assumedGlobals.AddIfUnique(debugLookup.SubstringUpToFirst('.'));
+                }
+            }
         }
 
         internal override void AnalyzeScope()

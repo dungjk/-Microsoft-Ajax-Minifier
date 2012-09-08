@@ -547,10 +547,10 @@ namespace Microsoft.Ajax.Utilities
                     m_inputFiles = new List<string>();
                     m_inputFiles.Add(fileName);
                 }
-                else if (!m_inputFiles.Contains(fileName))
+                else
                 {
                     // we don't want duplicates
-                    m_inputFiles.Add(fileName);
+                    m_inputFiles.AddIfUnique(fileName);
                 }
             }
         }

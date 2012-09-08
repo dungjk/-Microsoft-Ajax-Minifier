@@ -1,0 +1,1 @@
+﻿function foo(arf,bat){Foo.Bar.Log("Arf: "+arf+"; bat: "+bat)}

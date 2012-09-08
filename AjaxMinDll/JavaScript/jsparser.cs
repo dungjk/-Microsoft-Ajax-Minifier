@@ -357,7 +357,7 @@ namespace Microsoft.Ajax.Utilities
             GlobalScope.UseStrict = m_settings.StrictMode;
 
             // make sure the global scope knows about our known global names
-            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames);
+            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames, m_settings.DebugLookups);
 
             // parse a block of statements
             Block scriptBlock = ParseStatements();
@@ -460,7 +460,7 @@ namespace Microsoft.Ajax.Utilities
             GlobalScope.UseStrict = m_settings.StrictMode;
 
             // make sure the global scope knows about our known global names
-            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames);
+            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalNames, m_settings.DebugLookups);
 
             // container for the expression
             Block block = null;

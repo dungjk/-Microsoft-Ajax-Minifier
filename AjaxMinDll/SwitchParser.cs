@@ -570,9 +570,9 @@ namespace Microsoft.Ajax.Utilities
                                             }
 
                                             // don't add duplicates or invalid identifiers
-                                            if (isValid && !debugLookups.Contains(identifier))
+                                            if (isValid)
                                             {
-                                                debugLookups.Add(identifier);
+                                                debugLookups.AddIfUnique(identifier);
                                             }
                                         }
                                     }
@@ -783,10 +783,10 @@ namespace Microsoft.Ajax.Utilities
                                             globals = new List<string>();
                                             globals.Add(global);
                                         }
-                                        else if (!globals.Contains(global))
+                                        else
                                         {
                                             // don't add duplicates
-                                            globals.Add(global);
+                                            globals.AddIfUnique(global);
                                         }
                                     }
                                 }
@@ -821,10 +821,7 @@ namespace Microsoft.Ajax.Utilities
                                             }
 
                                             // don't add duplicates
-                                            if (!ignoreErrors.Contains(errorCode))
-                                            {
-                                                ignoreErrors.Add(errorCode);
-                                            }
+                                            ignoreErrors.AddIfUnique(errorCode);
                                         }
                                     }
                                 }
@@ -1187,10 +1184,10 @@ namespace Microsoft.Ajax.Utilities
                                             noAutoRename = new List<string>();
                                             noAutoRename.Add(ident);
                                         }
-                                        else if (!noAutoRename.Contains(ident))
+                                        else
                                         {
                                             // don't add duplicates
-                                            noAutoRename.Add(ident);
+                                            noAutoRename.AddIfUnique(ident);
                                         }
                                     }
                                 }
@@ -1729,9 +1726,9 @@ namespace Microsoft.Ajax.Utilities
                             noAutoRename = new List<string>();
                             noAutoRename.Add(idAttribute.Value);
                         }
-                        else if (!noAutoRename.Contains(idAttribute.Value))
+                        else
                         {
-                            noAutoRename.Add(idAttribute.Value);
+                            noAutoRename.AddIfUnique(idAttribute.Value);
                         }
                     }
                 }

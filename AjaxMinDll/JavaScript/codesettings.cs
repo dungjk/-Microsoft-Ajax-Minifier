@@ -497,17 +497,17 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         // if it's a valid chain, then we can add it to the list
-                        if (isValid && !checkedNames.Contains(trimmedName))
+                        if (isValid)
                         {
-                            checkedNames.Add(trimmedName);
+                            checkedNames.AddIfUnique(trimmedName);
                         }
                     }
                     else
                     {
                         // no period. must be a regular valid identifier.
-                        if (JSScanner.IsValidIdentifier(trimmedName) && !checkedNames.Contains(trimmedName))
+                        if (JSScanner.IsValidIdentifier(trimmedName))
                         {
-                            checkedNames.Add(trimmedName);
+                            checkedNames.AddIfUnique(trimmedName);
                         }
                     }
                 }

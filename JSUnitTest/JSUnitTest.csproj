@@ -75,6 +75,7 @@
     <Compile Include="Common\TestHelper.cs" />
     <Compile Include="ConditionalCompilation.cs" />
     <Compile Include="ControlFlow.cs" />
+    <Compile Include="DebugNamespaces.cs" />
     <Compile Include="Declarations.cs" />
     <Compile Include="FunctionCreation.cs" />
     <Compile Include="GlobalMethods.cs" />
@@ -213,6 +214,9 @@
     <Content Include="TestData\JS\Expected\ControlFlow\While.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_ForNoVar.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_NoFor.js" />
+    <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal.js" />
+    <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_debug.js" />
+    <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_release.js" />
     <Content Include="TestData\JS\Expected\Declarations\Const.js" />
     <Content Include="TestData\JS\Expected\Declarations\Function.js" />
     <Content Include="TestData\JS\Expected\Declarations\Identifiers.js" />
@@ -462,6 +466,7 @@
     <Content Include="TestData\JS\Input\ControlFlow\Throw.js" />
     <Content Include="TestData\JS\Input\ControlFlow\TryCatch.js" />
     <Content Include="TestData\JS\Input\ControlFlow\While.js" />
+    <Content Include="TestData\JS\Input\DebugNamespaces\DebugAsKnownGlobal.js" />
     <Content Include="TestData\JS\Input\Declarations\Const.js" />
     <Content Include="TestData\JS\Input\Declarations\Function.js" />
     <Content Include="TestData\JS\Input\Declarations\Identifiers.js" />

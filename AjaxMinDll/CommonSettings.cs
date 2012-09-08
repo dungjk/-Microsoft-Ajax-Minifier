@@ -218,10 +218,7 @@ namespace Microsoft.Ajax.Utilities
                 for (var ndx = 0; ndx < ignoreErrors.Length; ++ndx)
                 {
                     string errorCode = ignoreErrors[ndx].Trim().ToUpperInvariant();
-                    if (!uniqueCodes.Contains(errorCode))
-                    {
-                        uniqueCodes.Add(errorCode);
-                    }
+                    uniqueCodes.AddIfUnique(errorCode);
                 }
                 IgnoreErrors = new ReadOnlyCollection<string>(uniqueCodes);
                 numAdded = IgnoreErrors.Count;

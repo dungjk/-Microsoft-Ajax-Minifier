@@ -584,11 +584,7 @@ namespace Microsoft.Ajax.Utilities
                     // if the namespace is not already in the list, 
                     // save current text as a declared namespace value 
                     // that can be used in the rest of the code
-                    if (!m_namespaces.Contains(CurrentTokenText))
-                    {
-                        m_namespaces.Add(CurrentTokenText);
-                    }
-                    else
+                    if (!m_namespaces.AddIfUnique(CurrentTokenText))
                     {
                         // error -- we already have this namespace in the list
                         ReportError(1, CssErrorCode.DuplicateNamespaceDeclaration, CurrentTokenText);
