@@ -3091,6 +3091,10 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
+                        // this first identifier is the root namespace for the debug object.
+                        // let's also treat it as a known global.
+                        OnGlobalDefine(identifier);
+
                         // see if we have a period and keep looping to get IDENT(.IDENT)*
                         while (GetChar(m_scannerState.CurrentPosition) == '.')
                         {

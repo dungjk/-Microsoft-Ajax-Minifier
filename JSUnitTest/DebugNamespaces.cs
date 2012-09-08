@@ -89,7 +89,15 @@ namespace JSUnitTest
         {
             // we should NOT get an unknown global error because we specified it as a debug namespace.
             // it should NOT be in the output, though, because we have debug mode turned off.
-            TestHelper.Instance.RunTest("-rename:none -debug:Y,Foo.Bar,Bat,Foo.Cakes");
+            TestHelper.Instance.RunErrorTest("-rename:none -debug:N,Foo.Bar,Bat,Foo.Cakes");
+        }
+
+        [TestMethod]
+        public void DebugNamespaceDirective()
+        {
+            // we should NOT get an unknown global error because we specified it as a debug namespace.
+            // it should NOT be in the output, though, because we have debug mode turned off.
+            TestHelper.Instance.RunErrorTest("-rename:none -debug:N");
         }
     }
 }
