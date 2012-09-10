@@ -169,18 +169,5 @@ namespace Microsoft.Ajax.Utilities
             // there are no local fields in the global scope
             return null;
         }
-
-        // the global scope does nothing when told to add literals -- just returns null
-        /* TODO: REMOVE CODE ALTOGETHER
-        internal override List<ConstantWrapper> AddLiteral(ConstantWrapper constantWrapper, ActivationObject refScope)
-        {
-            return null;
-        }
-
-        protected override void CreateLiteralShortcuts()
-        {
-            // do nothing -- we don't create shortcuts in the global scope
-        }
-        */
     }
 }

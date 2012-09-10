@@ -98,38 +98,6 @@ namespace Microsoft.Ajax.Utilities
             return m_name;
         }
 
-        /* TODO: REMOVED UNUSED CODE
-        internal void SetOuterLocalField(ActivationObject parentScope)
-        {
-            // if we're trying to set the outer local field using a global scope,
-            // then ignore this request. This should only do something for scopes with
-            // local variables
-            if (!(parentScope is GlobalScope))
-            {
-                // get the field reference for this lookup value
-                JSVariableField variableField = parentScope.FindReference(m_name);
-                if (variableField != null)
-                {
-                    // see if this scope already points to this name
-                    if (parentScope[m_name] == null)
-                    {
-                        // create an inner reference so we don't keep walking up the scope chain for this name
-                        variableField = parentScope.CreateInnerField(variableField);
-                    }
-
-                    // save the field
-                    VariableField = variableField;
-
-                    // add a reference
-                    if (VariableField != null)
-                    {
-                        VariableField.AddReference(parentScope);
-                    }
-                }
-            }
-        }
-        */
-
         private static bool MatchMemberName(AstNode node, string lookup, int startIndex, int endIndex)
         {
             // the node needs to be a Member node, and if it is, the appropriate portion of the lookup

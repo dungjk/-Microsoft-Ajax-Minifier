@@ -390,15 +390,6 @@ namespace Microsoft.Ajax.Utilities
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
 
-                /* TODO: RMEOVE CODE ALTOGETHER
-                if (m_settings.CombineDuplicateLiterals)
-                {
-                    // check to see if we need to create a literal shortcuts and add them to
-                    // the appropriate scope
-                    m_globalScope.AnalyzeLiterals();
-                }
-                */
-
                 // then do a depth-first traversal of the scope tree. When we come to a global
                 // field referenced by the scope, add it to the verboten set for this scope
                 // and all its parent scopes, all the way up the chain. If we come across an
@@ -498,15 +489,6 @@ namespace Microsoft.Ajax.Utilities
                 // analyze the scope chain (also needed for hypercrunch)
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
-
-                /* TODO: REMOVE CODE ALTOGETHER
-                if (m_settings.CombineDuplicateLiterals)
-                {
-                    // check to see if we need to create a literal shortcuts and add them to
-                    // the appropriate scope
-                    m_globalScope.AnalyzeLiterals();
-                }
-                */
 
                 // then do a depth-first traversal of the scope tree. When we come to a global
                 // field referenced by the scope, add it to the verboten set for this scope

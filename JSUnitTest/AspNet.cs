@@ -14,9 +14,6 @@ namespace JSUnitTest
     {
         public AspNet()
         {
-            //
-            // TODO: Add constructor logic here
-            //
         }
 
         private TestContext testContextInstance;

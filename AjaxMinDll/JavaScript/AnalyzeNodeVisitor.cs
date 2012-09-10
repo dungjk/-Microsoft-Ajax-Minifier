@@ -1542,28 +1542,6 @@ namespace Microsoft.Ajax.Utilities
                     parentNode = parentNode.Parent;
                 }
 
-                // we only need to process the literals IF we are actually going to do
-                // anything with them (combine duplicates). So if we aren't, don't call
-                // AddLiteral because it hugely inflates the processing time of the application.
-                /* TODO REMOVE THIS CODE ALTOGETHER
-                if (m_parser.Settings.CombineDuplicateLiterals)
-                {
-                    // add this literal to the scope's literal collection. 
-                    // HOWEVER, we do NOT want to add it for consideration of literal combination
-                    // if any scope above us is a with-scope -- otherwise the 
-                    // variable we use to combine the literals might be confused with a
-                    // property on the with-object. 
-                    // AND we don't want to do it if the scope is unknown, for the same reason.
-                    // we won't really know if the variable we create will interfere with the 
-                    // scope resolution of any variables that me in the eval string.
-                    ActivationObject thisScope = ScopeStack.Peek();
-                    if (thisScope.IsKnownAtCompileTime && !thisScope.IsInWithScope)
-                    {
-                        thisScope.AddLiteral(node, thisScope);
-                    }
-                }
-                */
-
                 // this node has no children, so don't bother calling the base
                 //base.Visit(node);
             }
@@ -2581,36 +2559,6 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
-        }
-
-        public override void Visit(ThisLiteral node)
-        {
-            /* TODO: REMOVE CODE ALTOGETHER
-            // we're going to look for the first FunctionScope on the stack
-            FunctionScope functionScope = null;
-
-            // get the current scope
-            ActivationObject activationObject = ScopeStack.Peek();
-            do
-            {
-                functionScope = activationObject as FunctionScope;
-                if (functionScope != null)
-                {
-                    // found it -- break out of the loop
-                    break;
-                }
-
-                // otherwise go up the chain
-                activationObject = activationObject.Parent;
-            } while (activationObject != null);
-
-            // if we found one....
-            if (functionScope != null)
-            {
-                // add this object to the list of thisliterals
-                functionScope.AddThisLiteral(node);
-            }
-            */
         }
 
         public override void Visit(TryNode node)

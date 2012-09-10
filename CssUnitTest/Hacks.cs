@@ -14,9 +14,6 @@ namespace CssUnitTest
     {
         public Hacks()
         {
-            //
-            // TODO: Add constructor logic here
-            //
         }
 
         private TestContext testContextInstance;

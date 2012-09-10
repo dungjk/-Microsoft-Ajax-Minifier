@@ -292,8 +292,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 if (symbolMap != null)
                 {
                     // create the map writer and the source map implementation.
-                    // TODO: we only have one implementation right now; in the future we will need to
-                    // look at the Name attribute and implement the proper one.
+                    // TODO: we only have one implementation right now; in the future we will need 
+                    // to look at the Name attribute and implement the proper one.
                     var xmlSettings = new XmlWriterSettings { CloseOutput = true, Indent = true };
                     mapWriter = XmlWriter.Create(GetRootedOutput(symbolMap.Path, manifestFolder), xmlSettings);
                     settings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);

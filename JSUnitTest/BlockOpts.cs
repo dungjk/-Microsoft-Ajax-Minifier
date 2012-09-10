@@ -28,9 +28,6 @@ namespace JSUnitTest
 
         public BlockOpts()
         {
-            //
-            // TODO: Add constructor logic here
-            //
         }
 
         private TestContext testContextInstance;

@@ -29,9 +29,6 @@ namespace JSUnitTest
 
         public CatchVariable()
         {
-            //
-            // TODO: Add constructor logic here
-            //
         }
 
         private TestContext testContextInstance;
