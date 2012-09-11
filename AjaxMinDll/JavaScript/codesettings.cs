@@ -122,6 +122,7 @@ namespace Microsoft.Ajax.Utilities
                 IgnoreConditionalCompilation = this.IgnoreConditionalCompilation,
                 IgnoreAllErrors = this.IgnoreAllErrors,
                 IgnoreErrorList = this.IgnoreErrorList,
+                IgnorePreprocessorDefines = this.IgnorePreprocessorDefines,
                 IndentSize = this.IndentSize,
                 InlineSafeStrings = this.InlineSafeStrings,
                 KillSwitch = this.KillSwitch,
@@ -627,6 +628,12 @@ namespace Microsoft.Ajax.Utilities
         public bool IgnoreConditionalCompilation { get; set; }
 
         /// <summary>
+        /// Gets or sets a boolean value indicating whether or not to ignore preprocessor defines comment syntax (true) or
+        /// to evaluate them (false; default)
+        /// </summary>
+        public bool IgnorePreprocessorDefines { get; set; }
+
+        /// <summary>
         /// Gets or sets a boolean value indicating whether to break up string literals containing &lt;/script&gt; so inline code won't break [true, default]
         /// or to leave string literals as-is [false]
         /// </summary>
@@ -969,7 +976,10 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// Use preprocessor defines and the ///#IFDEF directive
         /// </summary>
-        PreprocessorDefines                         = 0x0000000100000000,
+        // WAY too dangerous to have this a kill-switch. Made a separate CodeSettings property: IgnorePreprocessorDefines.
+        // people put -kill:-1 thinking they're just turning off minification, but they were ALSO turning off all the ///#IF processing
+        // and getting unexpected errors when both paths make the output.
+        //PreprocessorDefines                         = 0x0000000100000000,
 
         /// <summary>
         /// Remove the quotes arounf objectl literal property names when

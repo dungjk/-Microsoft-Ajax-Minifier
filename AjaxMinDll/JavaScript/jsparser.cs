@@ -289,7 +289,7 @@ namespace Microsoft.Ajax.Utilities
                  && m_settings.IsModificationAllowed(TreeModifications.StripDebugStatements);
 
             // set any defines
-            m_scanner.UsePreprocessorDefines = m_settings.IsModificationAllowed(TreeModifications.PreprocessorDefines);
+            m_scanner.UsePreprocessorDefines = !m_settings.IgnorePreprocessorDefines;
             if (m_scanner.UsePreprocessorDefines)
             {
                 m_scanner.SetPreprocessorDefines(m_settings.PreprocessorValues);
