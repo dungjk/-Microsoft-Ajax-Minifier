@@ -25,10 +25,10 @@ namespace Microsoft.Ajax.Utilities
     {
         private GlobalObject m_globalObject;
         private GlobalObject m_windowObject;
-        private IList<string> m_assumedGlobals;
-        private List<UndefinedReferenceException> m_undefined;
+        private HashSet<string> m_assumedGlobals;
+        private HashSet<UndefinedReferenceException> m_undefined;
 
-        public IList<UndefinedReferenceException> UndefinedReferences { get { return m_undefined; } }
+        public ICollection<UndefinedReferenceException> UndefinedReferences { get { return m_undefined; } }
 
         internal GlobalScope(JSParser parser)
             : base(null, parser)
@@ -50,28 +50,23 @@ namespace Microsoft.Ajax.Utilities
         {
             if (m_undefined == null)
             {
-                m_undefined = new List<UndefinedReferenceException>();
+                m_undefined = new HashSet<UndefinedReferenceException>();
             }
 
             m_undefined.Add(exception);
         }
 
-        internal void SetAssumedGlobals(ReadOnlyCollection<string> globals, ReadOnlyCollection<string> debugLookups)
+        internal void SetAssumedGlobals(IEnumerable<string> globals, IEnumerable<string> debugLookups)
         {
             // start off with any known globals
-            m_assumedGlobals = globals == null ? null : new List<string>(globals);
+            m_assumedGlobals = globals == null ? new HashSet<string>() : new HashSet<string>(globals);
 
             // chek to see if there are any debug lookups
-            if (debugLookups != null && debugLookups.Count > 0)
+            if (debugLookups != null)
             {
-                if (m_assumedGlobals == null)
-                {
-                    m_assumedGlobals = new List<string>(debugLookups.Count);
-                }
-
                 foreach (var debugLookup in debugLookups)
                 {
-                    m_assumedGlobals.AddIfUnique(debugLookup.SubstringUpToFirst('.'));
+                    m_assumedGlobals.Add(debugLookup.SubstringUpToFirst('.'));
                 }
             }
         }
@@ -137,7 +132,7 @@ namespace Microsoft.Ajax.Utilities
                 if (variableField == null)
                 {
                     // see if this value is provided in our "assumed" global list specified on the command line
-                    if (m_assumedGlobals != null && m_assumedGlobals.Count > 0)
+                    if (m_assumedGlobals.Count > 0)
                     {
                         foreach (string globalName in m_assumedGlobals)
                         {

@@ -18,22 +18,45 @@ namespace Microsoft.Ajax.Utilities
 {
 #if NET_20
     using System.Collections;
+    using System.Collections.Generic;
 
     // these are a few of the many useful delegates defined in .NET 3.5 and higher
     public delegate TResult Func<in T1, out TResult>(T1 arg1);
     public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
 
     /// <summary>
-    /// class HashSet doesn't really do it justice, but it will fit the bill for what we need of it
+    /// use a templated Dictionary to aproximate a hashed set.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class HashSet<T>
+    public class HashSet<T> : IEnumerable<T>, ICollection<T>
     {
-        private Hashtable m_table;
+        private Dictionary<T,T> m_table;
+
+        public int Count
+        {
+            get
+            {
+                return m_table.Count;
+            }
+        }
 
         public HashSet()
         {
-            m_table = new Hashtable();
+            m_table = new Dictionary<T, T>();
+        }
+
+        public HashSet(IEnumerable<T> items)
+        {
+            m_table = new Dictionary<T, T>();
+            foreach (var item in items)
+            {
+                m_table.Add(item, default(T));
+            }
+        }
+
+        public HashSet(IEqualityComparer<T> comparer)
+        {
+            m_table = new Dictionary<T, T>(comparer);
         }
 
         public bool Add(T item)
@@ -41,11 +64,63 @@ namespace Microsoft.Ajax.Utilities
             var added = !m_table.ContainsKey(item);
             if (added)
             {
-                m_table.Add(item, null);
+                m_table.Add(item, default(T));
             }
 
             return added;
         }
+
+        public bool Contains(T key)
+        {
+            return m_table.ContainsKey(key);
+        }
+
+        #region IEnumerable Members
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_table.GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable<T> Members
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return m_table.Keys.GetEnumerator();
+        }
+
+        #endregion
+
+        #region ICollection<T> Members
+
+        void ICollection<T>.Add(T item)
+        {
+            m_table.Add(item, default(T));
+        }
+
+        public void Clear()
+        {
+            m_table.Clear();
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            m_table.Keys.CopyTo(array, arrayIndex);
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        public bool Remove(T item)
+        {
+            return m_table.Remove(item);
+        }
+
+        #endregion
     }
 
 #endif

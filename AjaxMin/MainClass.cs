@@ -549,8 +549,8 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    // we don't want duplicates
-                    m_inputFiles.AddIfUnique(fileName);
+                    // duplicates are okay
+                    m_inputFiles.Add(fileName);
                 }
             }
         }
@@ -1005,7 +1005,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    if (m_echoInput && switchParser.JSSettings.ResourceStrings != null)
+                    if (m_echoInput && switchParser.JSSettings.ResourceStrings.Count > 0)
                     {
                         // we're just echoing the output -- so output a JS version of the dictionary
                         // create JS from the dictionary and output it to the stream
@@ -1627,7 +1627,7 @@ namespace Microsoft.Ajax.Utilities
             return path;
         }
 
-        private string GetConfigArguments(Dictionary<string, string> configArguments)
+        private string GetConfigArguments(IDictionary<string, string> configArguments)
         {
             // try getting the current configuration
             string arguments;
@@ -1901,28 +1901,18 @@ namespace Microsoft.Ajax.Utilities
 
         private static long CalculateGzipSize(byte[] bytes)
         {
-            var gzipLength = 0L;
-            var memoryStream = new MemoryStream();
-            try
+            using(var memoryStream = new MemoryStream())
             {
-                using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                // the third parameter tells the GZIP stream to leave the base stream open so it doesn't
+                // dispose of it when it gets disposed. This is needed because we need to dispose the 
+                // GZIP stream before it will write ANY of its data.
+                using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
                 {
-                    memoryStream = null;
                     gzipStream.Write(bytes, 0, bytes.Length);
-                    gzipStream.Flush();
-                    gzipLength = ((MemoryStream)gzipStream.BaseStream).Position;
                 }
-            }
-            finally
-            {
-                if (memoryStream != null)
-                {
-                    memoryStream.Close();
-                    memoryStream = null;
-                }
-            }
 
-            return gzipLength;
+                return memoryStream.Position;
+            }
         }
 
         #endregion

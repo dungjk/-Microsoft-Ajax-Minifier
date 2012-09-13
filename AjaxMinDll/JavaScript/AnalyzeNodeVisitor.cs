@@ -1203,7 +1203,7 @@ namespace Microsoft.Ajax.Utilities
                 // if we are replacing resource references with strings generated from resource files
                 // and this is a brackets call: lookup[args]
                 var resourceList = m_parser.Settings.ResourceStrings;
-                if (node.InBrackets && resourceList != null && resourceList.Count > 0)
+                if (node.InBrackets && resourceList.Count > 0)
                 {
                     // if we don't have a match visitor, create it now
                     if (m_matchVisitor == null)
@@ -2154,7 +2154,7 @@ namespace Microsoft.Ajax.Utilities
                 // if we don't even have any resource strings, then there's nothing
                 // we need to do and we can just perform the base operation
                 var resourceList = m_parser.Settings.ResourceStrings;
-                if (resourceList != null && resourceList.Count > 0)
+                if (resourceList.Count > 0)
                 {
                     // if we haven't created the match visitor yet, do so now
                     if (m_matchVisitor == null)

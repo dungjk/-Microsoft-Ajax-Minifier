@@ -75,10 +75,7 @@ namespace Microsoft.Ajax.Utilities
             };
 
             // add the resource strings (if any)
-            if (this.ResourceStrings != null)
-            {
-                newSettings.AddResourceStrings(this.ResourceStrings);
-            }
+            newSettings.AddResourceStrings(this.ResourceStrings);
 
             return newSettings;
         }

@@ -48,7 +48,7 @@ namespace Microsoft.Ajax.Utilities
 
         // a list of strings that we can add new ones to or clear
         // depending on comments we may find in the source
-        private IList<string> m_debugLookups;
+        internal ICollection<string> DebugLookupCollection { get; set; }
 
         /// <summary>
         /// List of important comment contexts we encountered before we found the 
@@ -1049,11 +1049,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void SetDebugLookupList(IList<string> debugLookups)
-        {
-            m_debugLookups = debugLookups;
-        }
-
         /// <summary>
         /// Pop the first important comment context off the queue and return it (if any)
         /// </summary>
@@ -1073,15 +1068,15 @@ namespace Microsoft.Ajax.Utilities
         /// Set the lis of predefined preprocessor names, but without values
         /// </summary>
         /// <param name="definedNames">list of names only</param>
-        public void SetPreprocessorDefines(ReadOnlyCollection<string> definedNames)
+        public void SetPreprocessorDefines(ICollection<string> definedNames)
         {
             // this is a destructive set, blowing away any previous list
             if (definedNames != null && definedNames.Count > 0)
             {
-                // create a new list
+                // create a new list, case-INsensitive
                 m_defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-                // add an entrty for each non-duplicate, valid name passed to us
+                // add an entry for each non-duplicate, valid name passed to us
                 foreach (var definedName in definedNames)
                 {
                     if (JSScanner.IsValidIdentifier(definedName) && !m_defines.ContainsKey(definedName))
@@ -1106,8 +1101,17 @@ namespace Microsoft.Ajax.Utilities
             // this is a destructive set, blowing away any previous list
             if (defines != null && defines.Count > 0)
             {
-                // copy the dictionary
-                m_defines = new Dictionary<string, string>(defines, StringComparer.OrdinalIgnoreCase);
+                // create a new dictionary, case-INsensitive
+                m_defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                // add an entry for each unique, valid name passed to us.
+                foreach (var nameValuePair in defines)
+                {
+                    if (JSScanner.IsValidIdentifier(nameValuePair.Key) && !m_defines.ContainsKey(nameValuePair.Key))
+                    {
+                        m_defines.Add(nameValuePair.Key, nameValuePair.Value);
+                    }
+                }
             }
             else
             {
@@ -3076,47 +3080,41 @@ namespace Microsoft.Ajax.Utilities
             if (GetChar(m_scannerState.CurrentPosition) == '=')
             {
                 // we have ///#DEBUG=
-                // if the debug lookup list is null, 
-                // then we don't care about trying to add new ones or clear 
-                // existing list, so just skip over the comment.
-                if (m_debugLookups != null)
+                // get the namespace after the equal sign
+                ++m_scannerState.CurrentPosition;
+                var identifier = PPScanIdentifier(false);
+                if (identifier == null)
                 {
-                    // get the namespace after the equal sign
-                    ++m_scannerState.CurrentPosition;
-                    var identifier = PPScanIdentifier(false);
-                    if (identifier == null)
+                    // nothing. clear the debug namespaces
+                    DebugLookupCollection.Clear();
+                }
+                else
+                {
+                    // this first identifier is the root namespace for the debug object.
+                    // let's also treat it as a known global.
+                    OnGlobalDefine(identifier);
+
+                    // see if we have a period and keep looping to get IDENT(.IDENT)*
+                    while (GetChar(m_scannerState.CurrentPosition) == '.')
                     {
-                        // nothing. clear the debug namespaces
-                        m_debugLookups.Clear();
+                        ++m_scannerState.CurrentPosition;
+                        var nextIdentifier = PPScanIdentifier(false);
+                        if (nextIdentifier != null)
+                        {
+                            identifier += '.' + nextIdentifier;
+                        }
+                        else
+                        {
+                            // problem with the formatting -- ignore this comment
+                            identifier = null;
+                            break;
+                        }
                     }
-                    else
+
+                    if (identifier != null)
                     {
-                        // this first identifier is the root namespace for the debug object.
-                        // let's also treat it as a known global.
-                        OnGlobalDefine(identifier);
-
-                        // see if we have a period and keep looping to get IDENT(.IDENT)*
-                        while (GetChar(m_scannerState.CurrentPosition) == '.')
-                        {
-                            ++m_scannerState.CurrentPosition;
-                            var nextIdentifier = PPScanIdentifier(false);
-                            if (nextIdentifier != null)
-                            {
-                                identifier += '.' + nextIdentifier;
-                            }
-                            else
-                            {
-                                // problem with the formatting -- ignore this comment
-                                identifier = null;
-                                break;
-                            }
-                        }
-
-                        if (identifier != null)
-                        {
-                            // add the identifier to the debug list
-                            m_debugLookups.Add(identifier);
-                        }
+                        // add the identifier to the debug list
+                        DebugLookupCollection.Add(identifier);
                     }
                 }
 

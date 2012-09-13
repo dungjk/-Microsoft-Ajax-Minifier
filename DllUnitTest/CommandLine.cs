@@ -248,8 +248,16 @@ namespace DllUnitTest
                 }
                 else if (!object.Equals(parsedProperty, expectedProperty))
                 {
-                    Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedProperty ?? "<null>", expectedProperty ?? "<null>", property.Name, type.Name));
-                    success = false;
+                    if (property.Name.EndsWith("Collection"))
+                    {
+                        // ignore it
+                        success = true;
+                    }
+                    else
+                    {
+                        Trace.WriteLine(string.Format("\tFAIL: Parsed {3} property {2} is {0}, expected is {1}", parsedProperty ?? "<null>", expectedProperty ?? "<null>", property.Name, type.Name));
+                        success = false;
+                    }
                 }
                 else
                 {

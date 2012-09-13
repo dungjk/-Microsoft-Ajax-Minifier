@@ -97,10 +97,36 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         if (ea.Index < ea.Arguments.Count - 1)
                         {
                             // the renaming file is specified as the NEXT argument
-                            using (var reader = new StreamReader(ea.Arguments[++ea.Index]))
+                            var fileReader = new StreamReader(ea.Arguments[++ea.Index]);
+                            try
                             {
-                                // read the XML file and parse it into the parameters
-                                m_switchParser.ParseRenamingXml(reader.ReadToEnd());
+                                using (var reader = XmlReader.Create(fileReader))
+                                {
+                                    fileReader = null;
+
+                                    // let the manifest factory do all the heavy lifting of parsing the XML
+                                    // into config objects
+                                    var config = Microsoft.Ajax.Utilities.Configuration.ManifestFactory.Create(reader);
+                                    if (config != null)
+                                    {
+                                        // add any rename pairs
+                                        foreach (var pair in config.RenameIdentifiers)
+                                        {
+                                            m_switchParser.JSSettings.AddRenamePair(pair.Key, pair.Value);
+                                        }
+
+                                        // add any no-rename identifiers
+                                        m_switchParser.JSSettings.SetNoAutoRenames(config.NoRenameIdentifiers);
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                if (fileReader != null)
+                                {
+                                    fileReader.Close();
+                                    fileReader = null;
+                                }
                             }
                         }
                     }

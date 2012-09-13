@@ -26,6 +26,8 @@ using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
 {
+    using Configuration;
+
     public partial class MainClass
     {
         #region JS-only settings
@@ -320,23 +322,42 @@ namespace Microsoft.Ajax.Utilities
 
         private void ProcessRenamingFile(string filePath)
         {
-            string xml;
-            using (var reader = new StreamReader(filePath))
-            {
-                // read the XML file
-                xml = reader.ReadToEnd();
-            }
-
+            var fileReader = new StreamReader(filePath);
             try
             {
-                // this doesn't catch any exceptions, so we need to handle them
-                m_switchParser.ParseRenamingXml(xml);
+                using (var reader = XmlReader.Create(fileReader))
+                {
+                    fileReader = null;
+
+                    // let the manifest factory do all the heavy lifting of parsing the XML
+                    // into config objects
+                    var config = ManifestFactory.Create(reader);
+                    if (config != null)
+                    {
+                        // add any rename pairs
+                        foreach (var pair in config.RenameIdentifiers)
+                        {
+                            m_switchParser.JSSettings.AddRenamePair(pair.Key, pair.Value);
+                        }
+
+                        // add any no-rename identifiers
+                        m_switchParser.JSSettings.SetNoAutoRenames(config.NoRenameIdentifiers);
+                    }
+                }
             }
             catch (XmlException e)
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(e.ToString());
                 throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(e.Message));
+            }
+            finally
+            {
+                if (fileReader != null)
+                {
+                    fileReader.Close();
+                    fileReader = null;
+                }
             }
         }
 

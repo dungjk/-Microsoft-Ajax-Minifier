@@ -259,22 +259,18 @@ namespace Microsoft.Ajax.Utilities
                 // fields that match and are still slated to rename as uncrunchable so they won't get renamed.
                 // if the settings say we're not going to renaming anything automatically (KeepAll), then we 
                 // have nothing to do.
-                if (Parser.Settings.LocalRenaming != LocalRenaming.KeepAll
-                    && Parser.Settings.NoAutoRenameIdentifiers != null
-                    && Parser.Settings.NoAutoRenameIdentifiers.Count > 0)
+                if (Parser.Settings.LocalRenaming != LocalRenaming.KeepAll)
                 {
-                    // go through the list of fields in this scope. Anything defined in the script that
-                    // is in the parser rename map should be renamed and the auto-rename flag reset so
-                    // we don't change it later.
-                    foreach (var varField in m_nameTable.Values)
+                    foreach (var noRename in Parser.Settings.NoAutoRenameCollection)
                     {
                         // don't rename outer fields (only actual fields), 
                         // and we're only concerned with fields that can still
                         // be automatically renamed. If the field is all that AND is listed in
                         // the collection, set the CanCrunch to false
-                        if (varField.OuterField == null
-                            && varField.CanCrunch
-                            && Parser.Settings.NoAutoRenameIdentifiers.Contains(varField.Name))
+                        JSVariableField varField;
+                        if (m_nameTable.TryGetValue(noRename, out varField)
+                            && varField.OuterField == null
+                            && varField.CanCrunch)
                         {
                             // no, we don't want to crunch this field
                             varField.CanCrunch = false;

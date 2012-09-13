@@ -381,7 +381,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     : Path.Combine(this.InputFolder, path);
         }
 
-        private SwitchParser ParseConfigSettings(Dictionary<string, string> configArguments, SwitchParser defaults)
+        private SwitchParser ParseConfigSettings(IDictionary<string, string> configArguments, SwitchParser defaults)
         {
             // first get the appropriate string for this configuration. Check for arguments that
             // match this configuration, and if none exist, check for the defaults (blank config)

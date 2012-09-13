@@ -160,16 +160,5 @@ namespace Microsoft.Ajax.Utilities
 
             return obj == null ? default(TResult) : action(obj);
         }
-
-        public static bool AddIfUnique<TItem>(this IList<TItem> list, TItem item)
-        {
-            if (list != null && !list.Contains(item))
-            {
-                list.Add(item);
-                return true;
-            }
-
-            return false;
-        }
     }
 }

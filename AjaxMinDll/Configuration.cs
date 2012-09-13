@@ -29,6 +29,8 @@ namespace Microsoft.Ajax.Utilities.Configuration
         private const string ResourceElementName = "resource";
         private const string InputElementName = "input";
         private const string SymbolMapElementName = "symbolMap";
+        private const string RenameElementName = "rename";
+        private const string NoRenameElementName = "norename";
 
         private const string PathAttributeName = "path";
         private const string EncodingAttributeName = "encoding";
@@ -37,6 +39,9 @@ namespace Microsoft.Ajax.Utilities.Configuration
         private const string NameAttributeName = "name";
         private const string OptionalAttributeName = "optional";
         private const string ConfigAttributeName = "config";
+        private const string FromAttributeName = "from";
+        private const string ToAttributeName = "to";
+        private const string IdentifierAttributeName = "id";
 
         #endregion
 
@@ -63,6 +68,14 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
                         case OutputElementName:
                             configurationNode.Outputs.Add(ReadOutputElement(reader.ReadSubtree()));
+                            break;
+
+                        case RenameElementName:
+                            ReadRenameElement(reader.ReadSubtree(), configurationNode.RenameIdentifiers);
+                            break;
+
+                        case NoRenameElementName:
+                            ReadNoRenameElement(reader.ReadSubtree(), configurationNode.NoRenameIdentifiers);
                             break;
                     }
                 }
@@ -135,6 +148,14 @@ namespace Microsoft.Ajax.Utilities.Configuration
                             ReadArgumentsElement(reader.ReadSubtree(), outputNode.Arguments);
                             break;
 
+                        case RenameElementName:
+                            ReadRenameElement(reader.ReadSubtree(), outputNode.RenameIdentifiers);
+                            break;
+
+                        case NoRenameElementName:
+                            ReadNoRenameElement(reader.ReadSubtree(), outputNode.NoRenameIdentifiers);
+                            break;
+
                         case SymbolMapElementName:
                             outputNode.SymbolMap = ReadSymbolMapElement(reader.ReadSubtree());
                             break;
@@ -152,6 +173,75 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
             reader.Close();
             return outputNode;
+        }
+
+        private static void ReadRenameElement(XmlReader reader, IDictionary<string, string> renameIdentifiers)
+        {
+            string fromIdentifier = null;
+            string toIdentifier = null;
+            
+            reader.Read();
+            while (reader.MoveToNextAttribute())
+            {
+                switch (reader.Name)
+                {
+                    case FromAttributeName:
+                        fromIdentifier = reader.Value;
+                        break;
+
+                    case ToAttributeName:
+                        toIdentifier = reader.Value;
+                        break;
+                }
+            }
+
+            // must exist and be unique (ignore duplicates)
+            if (!fromIdentifier.IsNullOrWhiteSpace() && !toIdentifier.IsNullOrWhiteSpace()
+                && JSScanner.IsValidIdentifier(fromIdentifier)
+                && JSScanner.IsValidIdentifier(toIdentifier))
+            {
+                if (renameIdentifiers.ContainsKey(fromIdentifier))
+                {
+                    // already exists -- replace the "to" identifier
+                    renameIdentifiers[fromIdentifier] = toIdentifier;
+                }
+                else
+                {
+                    // add it new
+                    renameIdentifiers.Add(fromIdentifier, toIdentifier);
+                }
+            }
+
+            reader.Close();
+        }
+
+        private static void ReadNoRenameElement(XmlReader reader, ICollection<string> noRenameIdentifiers)
+        {
+            string identifier = null;
+
+            reader.Read();
+            while (reader.MoveToNextAttribute())
+            {
+                switch (reader.Name)
+                {
+                    case IdentifierAttributeName:
+                        identifier = reader.Value;
+                        break;
+
+                    case NameAttributeName:
+                        identifier = reader.Value;
+                        break;
+                }
+            }
+
+            // must exist and be unique (ignore duplicates)
+            if (!identifier.IsNullOrWhiteSpace()
+                && JSScanner.IsValidIdentifier(identifier))
+            {
+                noRenameIdentifiers.Add(identifier);
+            }
+
+            reader.Close();
         }
 
         private static SymbolMap ReadSymbolMapElement(XmlReader reader)
@@ -263,7 +353,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
             return inputNode;
         }
 
-        private static void ReadArgumentsElement(XmlReader reader, Dictionary<string, string> configDictionary)
+        private static void ReadArgumentsElement(XmlReader reader, IDictionary<string, string> configDictionary)
         {
             while (reader.Read())
             {
@@ -301,13 +391,17 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
     public class Manifest
     {
-        public Dictionary<string,string> DefaultArguments { get; private set; }
+        public IDictionary<string,string> DefaultArguments { get; private set; }
+        public IDictionary<string, string> RenameIdentifiers { get; private set; }
+        public ICollection<string> NoRenameIdentifiers { get; private set; }
         public IList<OutputGroup> Outputs { get; private set; }
 
         public Manifest()
         {
             Outputs = new List<OutputGroup>();
             DefaultArguments = new Dictionary<string, string>();
+            RenameIdentifiers = new Dictionary<string, string>();
+            NoRenameIdentifiers = new HashSet<string>();
         }
     }
 
@@ -319,7 +413,9 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
         public SymbolMap SymbolMap { get; set; }
 
-        public Dictionary<string, string> Arguments { get; private set; }
+        public IDictionary<string, string> Arguments { get; private set; }
+        public IDictionary<string, string> RenameIdentifiers { get; private set; }
+        public ICollection<string> NoRenameIdentifiers { get; private set; }
         public IList<Resource> Resources { get; private set; }
         public IList<InputFile> Inputs { get; private set; }
 
@@ -328,6 +424,8 @@ namespace Microsoft.Ajax.Utilities.Configuration
             Resources = new List<Resource>();
             Inputs = new List<InputFile>();
             Arguments = new Dictionary<string, string>();
+            RenameIdentifiers = new Dictionary<string, string>();
+            NoRenameIdentifiers = new HashSet<string>();
         }
     }
 

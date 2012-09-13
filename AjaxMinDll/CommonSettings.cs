@@ -85,7 +85,13 @@ namespace Microsoft.Ajax.Utilities
             KillSwitch = 0;
             LineBreakThreshold = int.MaxValue - 1000;
             AllowEmbeddedAspNetBlocks = false;
+
+            IgnoreErrorCollection = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            PreprocessorValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            ResourceStrings = new List<ResourceStrings>();
         }
+
+        #region properties
 
         /// <summary>
         /// Gets or sets a boolean value indicating whether embedded asp.net blocks (&lt;% %>) should be recognized and output as is. Default is false.
@@ -106,6 +112,16 @@ namespace Microsoft.Ajax.Utilities
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Gets or sets a flag for whether to ignore ALL errors found in the input code.
+        /// Default is false.
+        /// </summary>
+        public bool IgnoreAllErrors 
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>
@@ -158,6 +174,8 @@ namespace Microsoft.Ajax.Utilities
             set;
         }
 
+        #endregion
+
         #region Indent methods
 
         // this is the indent level and size for the pretty-print
@@ -190,41 +208,54 @@ namespace Microsoft.Ajax.Utilities
         #region IgnoreErrors list
 
         /// <summary>
-        /// Gets or sets a flag for whether to ignore ALL errors found in the input code.
-        /// Default is false.
-        /// </summary>
-        public bool IgnoreAllErrors { get; set; }
-
-        /// <summary>
         /// Collection of errors to ignore
         /// </summary>
-        public ReadOnlyCollection<string> IgnoreErrors { get; private set; }
+        [Obsolete("Use IgnoreErrorCollection instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ReadOnlyCollection<string> IgnoreErrors 
+        {
+            get
+            {
+                var newList = new List<string>();
+                newList.AddRange(IgnoreErrorCollection);
+                return new ReadOnlyCollection<string>(newList);
+            }
+        }
+
+        /// <summary>
+        /// Set the list of errors to ignore
+        /// </summary>
+        /// <param name="definedNames">array of error code strings</param>
+        /// <returns>number of error codes successfully added to the collection</returns>
+        [Obsolete("Use SetIgnoreErrors passing in an IEnumerable<string> instead instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public int SetIgnoreErrors(params string[] ignoreErrors)
+        {
+            return SetIgnoreErrors((ICollection<string>)ignoreErrors);
+        }
+
+        /// <summary>
+        /// Gets a collection of errors to ignore
+        /// </summary>
+        public ICollection<string> IgnoreErrorCollection { get; private set; }
 
         /// <summary>
         /// Set the collection of errors to ignore
         /// </summary>
-        /// <param name="definedNames">array of error code strings</param>
+        /// <param name="definedNames">collection of error code strings</param>
         /// <returns>number of error codes successfully added to the collection</returns>
-        public int SetIgnoreErrors(params string[] ignoreErrors)
+        public int SetIgnoreErrors(IEnumerable<string> ignoreErrors)
         {
-            int numAdded = 0;
-            if (ignoreErrors == null || ignoreErrors.Length == 0)
+            IgnoreErrorCollection.Clear();
+            if (ignoreErrors != null)
             {
-                IgnoreErrors = null;
-            }
-            else
-            {
-                var uniqueCodes = new List<string>(ignoreErrors.Length);
-                for (var ndx = 0; ndx < ignoreErrors.Length; ++ndx)
+                foreach (var ignoreError in ignoreErrors)
                 {
-                    string errorCode = ignoreErrors[ndx].Trim().ToUpperInvariant();
-                    uniqueCodes.AddIfUnique(errorCode);
+                    IgnoreErrorCollection.Add(ignoreError.Trim());
                 }
-                IgnoreErrors = new ReadOnlyCollection<string>(uniqueCodes);
-                numAdded = IgnoreErrors.Count;
             }
 
-            return numAdded;
+            return IgnoreErrorCollection.Count;
         }
 
         /// <summary>
@@ -237,28 +268,29 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                if (IgnoreErrors != null)
+                foreach (var errorCode in IgnoreErrorCollection)
                 {
-                    foreach (var errorCode in IgnoreErrors)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        sb.Append(errorCode);
+                        sb.Append(',');
                     }
+                    sb.Append(errorCode);
                 }
+
                 return sb.ToString();
             }
             set
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    SetIgnoreErrors(value.Split(','));
+                    foreach (var error in value.Split(','))
+                    {
+                        IgnoreErrorCollection.Add(error);
+                    }
                 }
                 else
                 {
-                    SetIgnoreErrors(null);
+                    IgnoreErrorCollection.Clear();
                 }
             }
         }
@@ -270,16 +302,14 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// Collection of names to define for the preprocessor
         /// </summary>
+        [Obsolete("Use PreprocessorValues instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ReadOnlyCollection<string> PreprocessorDefines 
         { 
             get 
             {
                 var defines = new List<string>();
-                if (PreprocessorValues != null)
-                {
-                    defines.AddRange(PreprocessorValues.Keys);
-                }
-
+                defines.AddRange(PreprocessorValues.Keys);
                 return new ReadOnlyCollection<string>(defines); 
             } 
         }
@@ -296,15 +326,9 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>number of names successfully added to the collection</returns>
         public int SetPreprocessorDefines(params string[] definedNames)
         {
-            if (definedNames == null || definedNames.Length == 0)
+            PreprocessorValues.Clear();
+            if (definedNames != null && definedNames.Length > 0)
             {
-                PreprocessorValues = null;
-            }
-            else
-            {
-                // create a list with a capacity equal to the number of items in the array
-                PreprocessorValues = new Dictionary<string, string>(definedNames.Length, StringComparer.OrdinalIgnoreCase);
-
                 // validate that each name in the array is a valid JS identifier
                 foreach (var define in definedNames)
                 {
@@ -327,7 +351,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            return PreprocessorValues == null ? 0 : PreprocessorValues.Count;
+            return PreprocessorValues.Count;
         }
 
         /// <summary>
@@ -336,24 +360,19 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="defines">dictionary to set</param>
         public int SetPreprocessorValues(IDictionary<string, string> defines)
         {
+            PreprocessorValues.Clear();
             if (defines != null && defines.Count > 0)
             {
-                PreprocessorValues = new Dictionary<string, string>(defines.Count, StringComparer.OrdinalIgnoreCase);
-                foreach (var define in defines.Keys)
+                foreach (var define in defines)
                 {
-                    if (JSScanner.IsValidIdentifier(define))
+                    if (JSScanner.IsValidIdentifier(define.Key))
                     {
-                        PreprocessorValues.Add(define, defines[define]);
+                        PreprocessorValues.Add(define.Key, define.Value);
                     }
                 }
             }
-            else
-            {
-                // clear it out
-                PreprocessorValues = null;
-            }
 
-            return PreprocessorValues == null ? 0 : PreprocessorValues.Count;
+            return PreprocessorValues.Count;
         }
 
         /// <summary>
@@ -366,24 +385,20 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the defined names to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                if (PreprocessorValues != null)
+                foreach (var defined in PreprocessorValues)
                 {
-                    foreach (var definedName in PreprocessorValues.Keys)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
+                        sb.Append(',');
+                    }
 
-                        sb.Append(definedName);
-                        var defineValue = PreprocessorValues[definedName];
-                        if (!string.IsNullOrEmpty(defineValue))
-                        {
-                            sb.Append('=');
+                    sb.Append(defined.Key);
+                    if (!string.IsNullOrEmpty(defined.Value))
+                    {
+                        sb.Append('=');
 
-                            // TODO: how can I escape any commas?
-                            sb.Append(defineValue);
-                        }
+                        // TODO: how can I escape any commas?
+                        sb.Append(defined.Value);
                     }
                 }
 
@@ -397,7 +412,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    PreprocessorValues = null;
+                    PreprocessorValues.Clear();
                 }
             }
         }
@@ -407,51 +422,38 @@ namespace Microsoft.Ajax.Utilities
         #region Resource Strings
 
         /// <summary>
-        /// Collection of names to define for the preprocessor
+        /// Collection of resource string objects
         /// </summary>
-        private List<ResourceStrings> m_resourceStrings;
-        public IList<ResourceStrings> ResourceStrings { get { return m_resourceStrings; } }
+        public IList<ResourceStrings> ResourceStrings { get; private set; }
 
         public void AddResourceStrings(ResourceStrings resourceStrings)
         {
-            // if we haven't createed the collection yet, do so now
-            if (m_resourceStrings == null)
-            {
-                m_resourceStrings = new List<ResourceStrings>();
-            }
-
             // add it
-            m_resourceStrings.Add(resourceStrings);
+            ResourceStrings.Add(resourceStrings);
         }
 
         public void AddResourceStrings(IEnumerable<ResourceStrings> collection)
         {
-            // if we haven't created the collection yet, do so now
-            if (m_resourceStrings == null)
-            {
-                m_resourceStrings = new List<ResourceStrings>();
-            }
-
             // just add the whole collection
-            m_resourceStrings.AddRange(collection);
+            if (collection != null)
+            {
+                foreach (var resourceStrings in collection)
+                {
+                    ResourceStrings.Add(resourceStrings);
+                }
+            }
         }
 
         public void ClearResourceStrings()
         {
-            if (m_resourceStrings != null)
-            {
-                // clear it and set our pointer to null
-                m_resourceStrings.Clear();
-                m_resourceStrings = null;
-            }
+            // clear it and set our pointer to null
+            ResourceStrings.Clear();
         }
 
         public void RemoveResourceStrings(ResourceStrings resourceStrings)
         {
-            if (m_resourceStrings != null)
-            {
-                m_resourceStrings.Remove(resourceStrings);
-            }
+            // remove it
+            ResourceStrings.Remove(resourceStrings);
         }
 
         #endregion

@@ -58,7 +58,7 @@ namespace Microsoft.Ajax.Utilities
             get; set;
         }
 
-        private readonly List<string> m_namespaces;
+        private readonly HashSet<string> m_namespaces;
 
         public string FileContext { get; set; }
 
@@ -271,7 +271,7 @@ namespace Microsoft.Ajax.Utilities
 
             // create a list of strings that represent the namespaces declared
             // in a @namespace statement. We will clear this every time we parse a new source string.
-            m_namespaces = new List<string>();
+            m_namespaces = new HashSet<string>();
         }
 
         public string Parse(string source)
@@ -584,7 +584,7 @@ namespace Microsoft.Ajax.Utilities
                     // if the namespace is not already in the list, 
                     // save current text as a declared namespace value 
                     // that can be used in the rest of the code
-                    if (!m_namespaces.AddIfUnique(CurrentTokenText))
+                    if (!m_namespaces.Add(CurrentTokenText))
                     {
                         // error -- we already have this namespace in the list
                         ReportError(1, CssErrorCode.DuplicateNamespaceDeclaration, CurrentTokenText);
@@ -3174,7 +3174,7 @@ namespace Microsoft.Ajax.Utilities
                             m_valueReplacement = null;
 
                             var resourceList = Settings.ResourceStrings;
-                            if (resourceList != null && resourceList.Count > 0)
+                            if (resourceList.Count > 0)
                             {
                                 // get the id of the string we want to substitute
                                 string ident = match.Result("${id}");
@@ -3814,7 +3814,7 @@ namespace Microsoft.Ajax.Utilities
                             m_valueReplacement = null;
 
                             var resourceList = Settings.ResourceStrings;
-                            if (resourceList != null && resourceList.Count > 0)
+                            if (resourceList.Count > 0)
                             {
                                 // it is! see if we have a replacement string
                                 string id = match.Result("${id}");
@@ -4192,8 +4192,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // if we have no errors in our error ignore list, or if we do but this error code is not in
                 // that list, fire the event to whomever is listening for it.
-                if (Settings.IgnoreErrors == null ||
-                    !Settings.IgnoreErrors.Contains(errorCode))
+                if (!Settings.IgnoreErrorCollection.Contains(errorCode))
                 {
                     CssError(this, new CssErrorEventArgs(exception,
                         new ContextError(

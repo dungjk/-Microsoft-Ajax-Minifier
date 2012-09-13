@@ -95,13 +95,19 @@ namespace Microsoft.Ajax.Utilities
             this.EvalLiteralExpressions = true;
             this.ManualRenamesProperties = true;
 
+            // no default globals
+            this.m_knownGlobals = new HashSet<string>();
+
             // by default there are five names in the debug lookup collection
             var initialList = new string[] { "Debug", "$Debug", "WAssert", "Msn.Debug", "Web.Debug" };
-            this.DebugLookups = new ReadOnlyCollection<string>(initialList);
+            this.m_debugLookups = new HashSet<string>(initialList);
 
             // by default, let's NOT rename $super, so we don't break the Prototype library.
             // going to try to come up with a better solution, so this is just a stop-gap for now.
-            this.NoAutoRenameIdentifiers = new ReadOnlyCollection<string>(new string[] { "$super" });
+            this.m_noRenameSet = new HashSet<string>(new string[] { "$super" });
+
+            // nothing renamed by default
+            this.m_identifierReplacementMap = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -150,10 +156,7 @@ namespace Microsoft.Ajax.Utilities
             };
 
             // set the resource strings if there are any
-            if (this.ResourceStrings != null)
-            {
-                newSettings.AddResourceStrings(this.ResourceStrings);
-            }
+            newSettings.AddResourceStrings(this.ResourceStrings);
 
             return newSettings;
         }
@@ -178,13 +181,7 @@ namespace Microsoft.Ajax.Utilities
             // both names MUST be valid JavaScript identifiers
             if (JSScanner.IsValidIdentifier(sourceName) && JSScanner.IsValidIdentifier(newName))
             {
-                if (m_identifierReplacementMap == null)
-                {
-                    // if there isn't a rename map, create it now and add the first pair
-                    m_identifierReplacementMap = new Dictionary<string, string>();
-                    m_identifierReplacementMap.Add(sourceName, newName);
-                }
-                else if (m_identifierReplacementMap.ContainsKey(sourceName))
+                if (m_identifierReplacementMap.ContainsKey(sourceName))
                 {
                     // just replace the value
                     m_identifierReplacementMap[sourceName] = newName;
@@ -207,11 +204,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public void ClearRenamePairs()
         {
-            if (m_identifierReplacementMap != null)
-            {
-                m_identifierReplacementMap.Clear();
-                m_identifierReplacementMap = null;
-            }
+            m_identifierReplacementMap.Clear();
         }
 
         /// <summary>
@@ -221,7 +214,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return m_identifierReplacementMap != null && m_identifierReplacementMap.Count > 0;
+                return m_identifierReplacementMap.Count > 0;
             }
         }
 
@@ -232,13 +225,10 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>new name if it exists, null otherwise</returns>
         public string GetNewName(string sourceName)
         {
-            // default is null
-            string newName = null;
-
-            // if there is no map, then there is no new name
-            if (m_identifierReplacementMap != null)
+            string newName;
+            if (!m_identifierReplacementMap.TryGetValue(sourceName, out newName))
             {
-                m_identifierReplacementMap.TryGetValue(sourceName, out newName);
+                newName = null;
             }
 
             return newName;
@@ -253,19 +243,18 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                if (m_identifierReplacementMap != null)
+                foreach (var entry in m_identifierReplacementMap)
                 {
-                    foreach (string sourceName in m_identifierReplacementMap.Keys)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        sb.Append(sourceName);
-                        sb.Append('=');
-                        sb.Append(m_identifierReplacementMap[sourceName]);
+                        sb.Append(',');
                     }
+
+                    sb.Append(entry.Key);
+                    sb.Append('=');
+                    sb.Append(entry.Value);
                 }
+
                 return sb.ToString();
             }
 
@@ -274,7 +263,7 @@ namespace Microsoft.Ajax.Utilities
                 if (!string.IsNullOrEmpty(value))
                 {
                     // pairs are comma-separated
-                    foreach (var pair in value.Split(','))
+                    foreach (var pair in value.Split(',', ';'))
                     {
                         // source name and new name are separated by an equal sign
                         var parts = pair.Split('=');
@@ -289,7 +278,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else
                 {
-                    ClearRenamePairs();
+                    m_identifierReplacementMap.Clear();
                 }
             }
         }
@@ -298,42 +287,62 @@ namespace Microsoft.Ajax.Utilities
 
         #region No automatic rename
 
+        private HashSet<string> m_noRenameSet;
+
         /// <summary>
         /// read-only collection of identifiers we do not want renamed
         /// </summary>
-        public ReadOnlyCollection<string> NoAutoRenameIdentifiers { get; private set; }
+        [Obsolete("This property is deprecated; use NoAutoRenameCollection instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ReadOnlyCollection<string> NoAutoRenameIdentifiers
+        {
+            get
+            {
+                return new ReadOnlyCollection<string>(new List<string>(NoAutoRenameCollection));
+            }
+        }
 
         /// <summary>
         /// sets the collection of known global names to the array of string passed to this method
         /// </summary>
         /// <param name="globalArray">array of known global names</param>
+        [Obsolete("This property is deprecated; use SetnoAutoRenames instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public int SetNoAutoRename(params string[] noRenameNames)
         {
-            int numAdded = 0;
-            if (noRenameNames == null || noRenameNames.Length == 0)
-            {
-                NoAutoRenameIdentifiers = null;
-            }
-            else
-            {
-                // create a list with a capacity equal to the number of items in the array
-                var checkedNames = new List<string>(noRenameNames.Length);
+            return SetNoAutoRenames(noRenameNames);
+        }
 
+        public IEnumerable<string> NoAutoRenameCollection { get { return m_noRenameSet; } }
+
+        /// <summary>
+        /// sets the collection of known global names to the enumeration of strings passed to this method
+        /// </summary>
+        /// <param name="globalArray">array of known global names</param>
+        public int SetNoAutoRenames(IEnumerable<string> noRenameNames)
+        {
+            m_noRenameSet.Clear();
+            if (noRenameNames != null)
+            {
                 // validate that each name in the array is a valid JS identifier
                 foreach (var name in noRenameNames)
                 {
-                    // must be a valid JS identifier
-                    string trimmedName = name.Trim();
-                    if (JSScanner.IsValidIdentifier(trimmedName))
-                    {
-                        checkedNames.Add(trimmedName);
-                    }
+                    AddNoAutoRename(name);
                 }
-                NoAutoRenameIdentifiers = new ReadOnlyCollection<string>(checkedNames);
-                numAdded = checkedNames.Count;
             }
 
-            return numAdded;
+            return m_noRenameSet.Count;
+        }
+
+        public bool AddNoAutoRename(string noRename)
+        {
+            if (!JSScanner.IsValidIdentifier(noRename))
+            {
+                return false;
+            }
+
+            m_noRenameSet.Add(noRename);
+            return true;
         }
 
         /// <summary>
@@ -344,16 +353,13 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                if (NoAutoRenameIdentifiers != null)
+                foreach (var noRename in m_noRenameSet)
                 {
-                    foreach (var noRename in NoAutoRenameIdentifiers)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        sb.Append(noRename);
+                        sb.Append(',');
                     }
+                    sb.Append(noRename);
                 }
                 return sb.ToString();
             }
@@ -362,11 +368,14 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    SetNoAutoRename(value.Split(','));
+                    foreach (var noRename in value.Split(',', ';'))
+                    {
+                        AddNoAutoRename(noRename);
+                    }
                 }
                 else
                 {
-                    SetNoAutoRename(null);
+                    m_noRenameSet.Clear();
                 }
             }
         }
@@ -374,43 +383,70 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region known globals
+
+        private HashSet<string> m_knownGlobals;
         
         /// <summary>
         /// read-only collection of known global names
         /// </summary>
-        public ReadOnlyCollection<string> KnownGlobalNames { get; private set; }
+        [Obsolete("This property is deprecated; use KnownGlobalsCollection instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ReadOnlyCollection<string> KnownGlobalNames
+        {
+            get
+            {
+                return new ReadOnlyCollection<string>(new List<string>(KnownGlobalCollection));
+            }
+        }
 
         /// <summary>
         /// sets the collection of known global names to the array of string passed to this method
         /// </summary>
         /// <param name="globalArray">array of known global names</param>
+        [Obsolete("This property is deprecated; use SetKnownGlobalIdentifiers instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public int SetKnownGlobalNames(params string[] globalArray)
         {
-            int numAdded = 0;
-            if (globalArray == null || globalArray.Length == 0)
-            {
-                KnownGlobalNames = null;
-            }
-            else
-            {
-                // create a list with a capacity equal to the number of items in the array
-                var checkedNames = new List<string>(globalArray.Length);
+            return SetKnownGlobalIdentifiers(globalArray);
+        }
 
-                // validate that each name in the array is a valid JS identifier
+        /// <summary>
+        /// Gets the known global name collection
+        /// </summary>
+        public IEnumerable<string> KnownGlobalCollection { get { return m_knownGlobals; } }
+
+        /// <summary>
+        /// sets the collection of known global names to the array of string passed to this method
+        /// </summary>
+        /// <param name="globalArray">collection of known global names</param>
+        public int SetKnownGlobalIdentifiers(IEnumerable<string> globalArray)
+        {
+            m_knownGlobals.Clear();
+            if (globalArray != null)
+            {
                 foreach (var name in globalArray)
                 {
-                    // must be a valid JS identifier
-                    string trimmedName = name.Trim();
-                    if (JSScanner.IsValidIdentifier(trimmedName))
-                    {
-                        checkedNames.Add(trimmedName);
-                    }
+                    AddKnownGlobal(name);
                 }
-                KnownGlobalNames = new ReadOnlyCollection<string>(checkedNames);
-                numAdded = checkedNames.Count;
             }
 
-            return numAdded;
+            return m_knownGlobals.Count;
+        }
+
+        /// <summary>
+        /// Add a known global identifier to the list
+        /// </summary>
+        /// <param name="identifier">global identifier</param>
+        /// <returns>true if valid identifier; false if invalid identifier</returns>
+        public bool AddKnownGlobal(string identifier)
+        {
+            if (JSScanner.IsValidIdentifier(identifier))
+            {
+                m_knownGlobals.Add(identifier);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -421,17 +457,15 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 StringBuilder sb = new StringBuilder();
-                if (KnownGlobalNames != null)
+                foreach (var knownGlobal in m_knownGlobals)
                 {
-                    foreach (var knownGlobal in KnownGlobalNames)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        sb.Append(knownGlobal);
+                        sb.Append(',');
                     }
+                    sb.Append(knownGlobal);
                 }
+
                 return sb.ToString();
             }
 
@@ -439,11 +473,14 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    SetKnownGlobalNames(value.Split(',', ';'));
+                    foreach (var knownGlobal in value.Split(',', ';'))
+                    {
+                        AddKnownGlobal(knownGlobal);
+                    }
                 }
                 else
                 {
-                    SetKnownGlobalNames(null);
+                    m_knownGlobals.Clear();
                 }
             }
         }
@@ -452,71 +489,90 @@ namespace Microsoft.Ajax.Utilities
 
         #region Debug lookups
 
+        private HashSet<string> m_debugLookups;
+
         /// <summary>
         /// Collection of "debug" lookup identifiers
         /// </summary>
-        public ReadOnlyCollection<string> DebugLookups { get; private set; }
+        [Obsolete("This property is deprecated; use DebugLookupCollection instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ReadOnlyCollection<string> DebugLookups
+        {
+            get
+            {
+                return new ReadOnlyCollection<string>(new List<string>(DebugLookupCollection));
+            }
+        }
+
+        /// <summary>
+        /// Gets the set of debug lookups
+        /// </summary>
+        public IEnumerable<string> DebugLookupCollection { get { return m_debugLookups; } }
 
         /// <summary>
         /// Set the collection of debug "lookup" identifiers
         /// </summary>
         /// <param name="definedNames">array of debug lookup identifier strings</param>
         /// <returns>number of names successfully added to the collection</returns>
+        [Obsolete("This property is deprecated; use SetDebugNamespaces instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public int SetDebugLookups(params string[] debugLookups)
         {
-            int numAdded = 0;
-            if (debugLookups == null || debugLookups.Length == 0)
-            {
-                DebugLookups = null;
-            }
-            else
-            {
-                // create a list with a capacity equal to the number of items in the array
-                var checkedNames = new List<string>(debugLookups.Length);
+            return SetDebugNamespaces(debugLookups);
+        }
 
+        /// <summary>
+        /// Set the collection of debug "lookup" identifiers
+        /// </summary>
+        /// <param name="definedNames">collection of debug lookup identifier strings</param>
+        /// <returns>number of names successfully added to the collection</returns>
+        public int SetDebugNamespaces(IEnumerable<string> debugLookups)
+        {
+            m_debugLookups.Clear();
+            if (debugLookups != null)
+            {
                 // validate that each name in the array is a valid JS identifier
                 foreach (var lookup in debugLookups)
                 {
-                    string trimmedName = lookup.Trim();
+                    AddDebugLookup(lookup);
+                }
+            }
 
-                    // see if there is a period AFTER the first character. The string must START
-                    // with a valid JS identifier, so if it starts with a period, it's invalid anyway.
-                    if (trimmedName.IndexOf('.') > 0)
+            return m_debugLookups.Count;
+        }
+
+        public bool AddDebugLookup(string debugNamespace)
+        {
+            // a blank identifier is okay -- we just ignore it
+            if (!string.IsNullOrEmpty(debugNamespace))
+            {
+                // but if it's not blank, it better be a valid JavaScript identifier or member chain
+                if (debugNamespace.IndexOf('.') > 0)
+                {
+                    // it's a member chain -- check that each part is a valid JS identifier
+                    var names = debugNamespace.Split('.');
+                    foreach (var name in names)
                     {
-                        // there's a period -- this must be a member chain of valid JS identifiers
-                        var memberChain = trimmedName.Split('.');
-
-                        // assume it's good unless we find a bad identifier in the chain
-                        var isValid = true;
-                        foreach (var name in memberChain)
+                        if (!JSScanner.IsValidIdentifier(name))
                         {
-                            if (!JSScanner.IsValidIdentifier(name))
-                            {
-                                isValid = false;
-                                break;
-                            }
-                        }
-
-                        // if it's a valid chain, then we can add it to the list
-                        if (isValid)
-                        {
-                            checkedNames.AddIfUnique(trimmedName);
-                        }
-                    }
-                    else
-                    {
-                        // no period. must be a regular valid identifier.
-                        if (JSScanner.IsValidIdentifier(trimmedName))
-                        {
-                            checkedNames.AddIfUnique(trimmedName);
+                            return false;
                         }
                     }
                 }
-                DebugLookups = new ReadOnlyCollection<string>(checkedNames);
-                numAdded = checkedNames.Count;
+                else
+                {
+                    // no dot -- just an identifier
+                    if (!JSScanner.IsValidIdentifier(debugNamespace))
+                    {
+                        return false;
+                    }
+                }
+
+                m_debugLookups.Add(debugNamespace);
+                return true;
             }
 
-            return numAdded;
+            return false;
         }
 
         /// <summary>
@@ -529,33 +585,33 @@ namespace Microsoft.Ajax.Utilities
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
                 var sb = new StringBuilder();
-                if (DebugLookups != null)
+                foreach (var debugLookup in m_debugLookups)
                 {
-                    foreach (var debugLookup in DebugLookups)
+                    if (sb.Length > 0)
                     {
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        sb.Append(debugLookup);
+                        sb.Append(',');
                     }
+                    sb.Append(debugLookup);
                 }
+
                 return sb.ToString();
             }
             set
             {
+                m_debugLookups.Clear();
                 if (!string.IsNullOrEmpty(value))
                 {
-                    SetDebugLookups(value.Split(','));
-                }
-                else
-                {
-                    SetDebugLookups(null);
+                    foreach(var debugLookup in value.Split(',', ';'))
+                    {
+                        AddDebugLookup(debugLookup);
+                    }
                 }
             }
         }
 
         #endregion
+
+        #region properties
 
         /// <summary>
         /// collapse new Array() to [] and new Object() to {} [true]
@@ -755,6 +811,10 @@ namespace Microsoft.Ajax.Utilities
             set;
         }
 
+        #endregion
+
+        #region public methods
+
         /// <summary>
         /// Determine whether a particular AST tree modification is allowed, or has
         /// been squelched (regardless of any other settings)
@@ -765,6 +825,8 @@ namespace Microsoft.Ajax.Utilities
         {
             return (KillSwitch & (long)modification) == 0;
         }
+
+        #endregion
     }
 
     [Flags]

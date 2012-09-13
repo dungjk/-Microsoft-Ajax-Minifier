@@ -135,10 +135,11 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                // we want to look through the parser's debug lookup list (if there is one)
-                // and see if we match any of the debug lookups specified therein.
-                if (Parser.DebugLookups != null)
+                // if we don't want to strip debug statements, then nothing is a debug statement
+                if (Parser.Settings.StripDebugStatements)
                 {
+                    // we want to look through the parser's debug lookup list (if there is one)
+                    // and see if we match any of the debug lookups specified therein.
                     foreach (var lookup in Parser.DebugLookups)
                     {
                         // see if there's a period in this lookup

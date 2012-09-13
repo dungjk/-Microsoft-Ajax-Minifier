@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
 {
@@ -302,16 +301,9 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="args"></param>
         public void Parse(string[] args)
         {
+            var listSeparators = new[] { ',', ';' };
             if (args != null)
             {
-                // these lists will only be created if needed
-                Dictionary<string, string> defines = null;
-                List<string> debugLookups = null;
-                List<string> globals = null;
-                List<string> ignoreErrors = null;
-                List<string> noAutoRename = null;
-                Dictionary<string, string> renameMap = null;
-
                 var levelSpecified = false;
                 var renamingSpecified = false;
                 var killSpecified = false;
@@ -344,7 +336,7 @@ namespace Microsoft.Ajax.Utilities
                                 ReportFormat = null;
                                 if (paramPartUpper != null)
                                 {
-                                    var items = paramPartUpper.Split(',',';');
+                                    var items = paramPartUpper.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries);
                                     foreach (var item in items)
                                     {
                                         if (string.CompareOrdinal(item, "OUT") == 0)
@@ -510,7 +502,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // we have a comma-separated list.
                                     // the first item is the flag (if any), and the rest (if any) are the "debug" lookup names
-                                    var items = paramPart.Split(',', ';');
+                                    var items = paramPart.Split(listSeparators);
 
                                     // use the first value as the debug boolean switch.
                                     // since we are splitting the non-uppercase param part, we need to 
@@ -522,57 +514,26 @@ namespace Microsoft.Ajax.Utilities
                                         JSSettings.StripDebugStatements = !parameterFlag;
 
                                         // make sure we align the DEBUG define to the new switch value
-                                        AlignDebugDefine(JSSettings.StripDebugStatements, ref defines);
+                                        AlignDebugDefine(JSSettings.StripDebugStatements, JSSettings.PreprocessorValues);
                                     }
                                     else
                                     {
                                         OnInvalidSwitch(switchPart, paramPart);
                                     }
 
-                                    // and the rest as names.
-                                    if (debugLookups == null)
-                                    {
-                                        debugLookups = new List<string>();
-                                    }
+                                    // clear out the existing debug list
+                                    JSSettings.DebugLookupList = null;
 
                                     // start with index 1, since index 0 was the flag
                                     for (var item = 1; item < items.Length; ++item)
                                     {
                                         // get the identifier that was specified
                                         var identifier = items[item];
-
-                                        // a blank identifier is okay -- we just ignore it
-                                        if (!string.IsNullOrEmpty(identifier))
+                                        if (!identifier.IsNullOrWhiteSpace())
                                         {
-                                            // but if it's not blank, it better be a valid JavaScript identifier or member chain
-                                            var isValid = true;
-                                            if (identifier.IndexOf('.') > 0)
+                                            if (!JSSettings.AddDebugLookup(identifier))
                                             {
-                                                // it's a member chain -- check that each part is a valid JS identifier
-                                                var names = identifier.Split('.');
-                                                foreach (var name in names)
-                                                {
-                                                    if (!JSScanner.IsValidIdentifier(name))
-                                                    {
-                                                        OnInvalidSwitch(switchPart, name);
-                                                        isValid = false;
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                // no dot -- just an identifier
-                                                if (!JSScanner.IsValidIdentifier(identifier))
-                                                {
-                                                    OnInvalidSwitch(switchPart, identifier);
-                                                    isValid = false;
-                                                }
-                                            }
-
-                                            // don't add duplicates or invalid identifiers
-                                            if (isValid)
-                                            {
-                                                debugLookups.AddIfUnique(identifier);
+                                                OnInvalidSwitch(switchPart, identifier);
                                             }
                                         }
                                     }
@@ -588,7 +549,7 @@ namespace Microsoft.Ajax.Utilities
                                     JSSettings.StripDebugStatements = !parameterFlag;
 
                                     // make sure we align the DEBUG define to the new switch value
-                                    AlignDebugDefine(JSSettings.StripDebugStatements, ref defines);
+                                    AlignDebugDefine(JSSettings.StripDebugStatements, JSSettings.PreprocessorValues);
                                 }
 
                                 // this is a JS-only switch
@@ -603,7 +564,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string define in paramPart.Split(',', ';'))
+                                    foreach (string define in paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries))
                                     {
                                         string trimmedName;
                                         string value;
@@ -624,21 +585,29 @@ namespace Microsoft.Ajax.Utilities
                                         {
                                             OnInvalidSwitch(switchPart, define);
                                         }
-                                        else if (defines == null)
-                                        {
-                                            // if we haven't created the list yet, do it now
-                                            defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                                            defines.Add(trimmedName, value);
-                                        }
-                                        else if (!defines.ContainsKey(trimmedName))
-                                        {
-                                            // doesn't have it at all
-                                            defines.Add(trimmedName, value);
-                                        }
                                         else
                                         {
-                                            // we want the latest value
-                                            defines[trimmedName] = value;
+                                            // JS Settings
+                                            if (!JSSettings.PreprocessorValues.ContainsKey(trimmedName))
+                                            {
+                                                JSSettings.PreprocessorValues.Add(trimmedName, value);
+                                            }
+                                            else
+                                            {
+                                                // we want the latest value
+                                                JSSettings.PreprocessorValues[trimmedName] = value;
+                                            }
+
+                                            // CSS settings
+                                            if (!CssSettings.PreprocessorValues.ContainsKey(trimmedName))
+                                            {
+                                                CssSettings.PreprocessorValues.Add(trimmedName, value);
+                                            }
+                                            else
+                                            {
+                                                // we want the latest value
+                                                CssSettings.PreprocessorValues[trimmedName] = value;
+                                            }
                                         }
 
                                         // if we're defining the DEBUG name, set the strip-debug-statements flag to false
@@ -770,23 +739,12 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string global in paramPart.Split(',', ';'))
+                                    foreach (string global in paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries))
                                     {
                                         // better be a valid JavaScript identifier
-                                        if (!JSScanner.IsValidIdentifier(global))
+                                        if (!JSSettings.AddKnownGlobal(global))
                                         {
                                             OnInvalidSwitch(switchPart, global);
-                                        }
-                                        else if (globals == null)
-                                        {
-                                            // if we haven't created the list yet, do it now
-                                            globals = new List<string>();
-                                            globals.Add(global);
-                                        }
-                                        else
-                                        {
-                                            // don't add duplicates
-                                            globals.AddIfUnique(global);
                                         }
                                     }
                                 }
@@ -804,9 +762,9 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string errorCode in paramPartUpper.Split(',',';'))
+                                    foreach (string errorCode in paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries))
                                     {
-                                        if (string.CompareOrdinal(errorCode, "ALL") == 0)
+                                        if (string.Compare(errorCode, "ALL", StringComparison.OrdinalIgnoreCase) == 0)
                                         {
                                             // we want to ignore ALL errors. So set the appropriate flag
                                             JSSettings.IgnoreAllErrors =
@@ -814,14 +772,9 @@ namespace Microsoft.Ajax.Utilities
                                         }
                                         else
                                         {
-                                            // if we haven't created the list yet, do it now
-                                            if (ignoreErrors == null)
-                                            {
-                                                ignoreErrors = new List<string>();
-                                            }
-
                                             // don't add duplicates
-                                            ignoreErrors.AddIfUnique(errorCode);
+                                            JSSettings.IgnoreErrorCollection.Add(errorCode);
+                                            CssSettings.IgnoreErrorCollection.Add(errorCode);
                                         }
                                     }
                                 }
@@ -836,7 +789,7 @@ namespace Microsoft.Ajax.Utilities
                                 else
                                 {
                                     // for each comma-separated part...
-                                    foreach(var inlinePart in paramPartUpper.Split(',',';'))
+                                    foreach (var inlinePart in paramPartUpper.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries))
                                     {
                                         if (string.CompareOrdinal(inlinePart, "FORCE") == 0)
                                         {
@@ -948,7 +901,7 @@ namespace Microsoft.Ajax.Utilities
                                 else
                                 {
                                     // split along commas (case-insensitive)
-                                    var lineParts = paramPartUpper.Split(',',';');
+                                    var lineParts = paramPartUpper.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries);
 
                                     // by default, the line-break index will be 1 (the second option).
                                     // we will change this index to 0 if the first parameter is multi/single
@@ -1171,23 +1124,12 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else
                                 {
-                                    foreach (string ident in paramPart.Split(',',';'))
+                                    foreach (string ident in paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries))
                                     {
                                         // better be a valid JavaScript identifier
-                                        if (!JSScanner.IsValidIdentifier(ident))
+                                        if (!JSSettings.AddNoAutoRename(ident))
                                         {
                                             OnInvalidSwitch(switchPart, ident);
-                                        }
-                                        else if (noAutoRename == null)
-                                        {
-                                            // if we haven't created the list yet, do it now
-                                            noAutoRename = new List<string>();
-                                            noAutoRename.Add(ident);
-                                        }
-                                        else
-                                        {
-                                            // don't add duplicates
-                                            noAutoRename.AddIfUnique(ident);
                                         }
                                     }
                                 }
@@ -1265,7 +1207,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // there is at least one equal sign -- treat this as a set of JS identifier
                                     // pairs. split on commas -- multiple pairs can be specified
-                                    var paramPairs = paramPart.Split(',',';');
+                                    var paramPairs = paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries);
                                     foreach (var paramPair in paramPairs)
                                     {
                                         // split on the equal sign -- each pair needs to have an equal sige
@@ -1283,23 +1225,16 @@ namespace Microsoft.Ajax.Utilities
                                             if (fromIsValid && toIsValid)
                                             {
                                                 // create the map if it hasn't been created yet.
-                                                if (renameMap == null)
+                                                var toExisting = JSSettings.GetNewName(fromIdentifier);
+                                                if (toExisting == null)
                                                 {
-                                                    // create the map and add the first entry
-                                                    renameMap = new Dictionary<string, string>();
-                                                    renameMap.Add(fromIdentifier, toIdentifier);
+                                                    JSSettings.AddRenamePair(fromIdentifier, toIdentifier);
                                                 }
-                                                else if (renameMap.ContainsKey(fromIdentifier)
-                                                    && string.CompareOrdinal(toIdentifier, renameMap[fromIdentifier]) != 0)
+                                                else if (string.CompareOrdinal(toIdentifier, toExisting) != 0)
                                                 {
                                                     // from-identifier already exists, and the to-identifier doesn't match.
                                                     // can't rename the same name to two different names!
                                                     OnInvalidSwitch(switchPart, fromIdentifier);
-                                                }
-                                                else
-                                                {
-                                                    // add it
-                                                    renameMap.Add(fromIdentifier, toIdentifier);
                                                 }
                                             }
                                             else
@@ -1626,115 +1561,6 @@ namespace Microsoft.Ajax.Utilities
                         ndx = OnUnknownParameter(args, ndx, null, null);
                     }
                 }
-
-                // now check the collections we may have parsed. If any of them are non-null,
-                // then set the appropriate property in the settings object(s)
-                if (defines != null)
-                {
-                    JSSettings.SetPreprocessorValues(defines);
-                    CssSettings.SetPreprocessorValues(defines);
-                }
-
-                if (debugLookups != null)
-                {
-                    JSSettings.SetDebugLookups(debugLookups.ToArray());
-                }
-
-                if (globals != null)
-                {
-                    JSSettings.SetKnownGlobalNames(globals.ToArray());
-                }
-
-                if (ignoreErrors != null)
-                {
-                    var errors = ignoreErrors.ToArray();
-                    JSSettings.SetIgnoreErrors(errors);
-                    CssSettings.SetIgnoreErrors(errors);
-                }
-
-                if (noAutoRename != null)
-                {
-                    JSSettings.SetNoAutoRename(noAutoRename.ToArray());
-                }
-
-                if (renameMap != null)
-                {
-                    foreach (var fromIdentifier in renameMap.Keys)
-                    {
-                        JSSettings.AddRenamePair(fromIdentifier, renameMap[fromIdentifier]);
-                    }
-                }
-            }
-        }
-
-        #endregion
-
-        #region parse renaming XML
-
-        public void ParseRenamingXml(string xml)
-        {
-            var xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(xml);
-
-            // get all the <rename> nodes in the document
-            var renameNodes = xmlDoc.SelectNodes("//rename");
-
-            // not an error if there are no variables to rename; but if there are no nodes, then
-            // there's nothing to process
-            if (renameNodes.Count > 0)
-            {
-                // we have rename nodes to process, so clear out the map
-                JSSettings.ClearRenamePairs();
-
-                // process each <rename> node
-                for (var ndx = 0; ndx < renameNodes.Count; ++ndx)
-                {
-                    var renameNode = renameNodes[ndx];
-
-                    // get the from and to attributes
-                    var fromAttribute = renameNode.Attributes["from"];
-                    var toAttribute = renameNode.Attributes["to"];
-
-                    // need to have both, and their values both need to be non-null and non-empty,
-                    // otherwise ignore this node
-                    if (fromAttribute != null && !string.IsNullOrEmpty(fromAttribute.Value)
-                        && toAttribute != null && !string.IsNullOrEmpty(toAttribute.Value))
-                    {
-                        JSSettings.AddRenamePair(fromAttribute.Value, toAttribute.Value);
-                    }
-                }
-            }
-
-            // get all the <norename> nodes in the document
-            var norenameNodes = xmlDoc.SelectNodes("//norename");
-
-            // not an error if there aren't any
-            if (norenameNodes.Count > 0)
-            {
-                // create a list -- we're going to weed out duplicates
-                var noAutoRename = new List<string>(norenameNodes.Count);
-
-                for (var ndx = 0; ndx < norenameNodes.Count; ++ndx)
-                {
-                    var node = norenameNodes[ndx];
-                    var idAttribute = node.Attributes["id"];
-                    if (idAttribute != null && !string.IsNullOrEmpty(idAttribute.Value))
-                    {
-                        // if we haven't created it yet, do it now
-                        if (noAutoRename == null)
-                        {
-                            noAutoRename = new List<string>();
-                            noAutoRename.Add(idAttribute.Value);
-                        }
-                        else
-                        {
-                            noAutoRename.AddIfUnique(idAttribute.Value);
-                        }
-                    }
-                }
-
-                // and set the values
-                JSSettings.SetNoAutoRename(noAutoRename.ToArray());
             }
         }
 
@@ -1795,7 +1621,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region helper methods
 
-        private static void AlignDebugDefine(bool stripDebugStatements, ref Dictionary<string, string> defines)
+        private static void AlignDebugDefine(bool stripDebugStatements, IDictionary<string, string> defines)
         {
             // if we are setting the debug switch on, then make sure we 
             // add the DEBUG value to the defines
@@ -1803,21 +1629,10 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we are turning debug off.
                 // make sure we DON'T have the DEBUG define in the list
-                if (defines != null && defines.ContainsKey("DEBUG"))
+                if (defines.ContainsKey("DEBUG"))
                 {
                     defines.Remove("DEBUG");
-                    if (defines.Count == 0)
-                    {
-                        defines = null;
-                    }
                 }
-            }
-            else if (defines == null)
-            {
-                // turning debug on, but we haven't created the list yet.
-                // do it now, and add the DEBUG define to it
-                defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                defines.Add("debug", string.Empty);
             }
             else if (!defines.ContainsKey("DEBUG"))
             {
