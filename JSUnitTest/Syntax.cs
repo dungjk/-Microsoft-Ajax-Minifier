@@ -35,5 +35,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-term");
         }
+
+        [TestMethod]
+        public void SlashSpacing()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

@@ -43,6 +43,10 @@ namespace Microsoft.Ajax.Utilities
         // needed when generating map files
         private Stack<string> m_functionStack = new Stack<string>();
 
+        // if this function is set, before outputting a character will pass it to this
+        // function and insert a space if it returns true. Then we reset the function.
+        private Func<char, bool> m_addSpaceIfTrue;
+
         // normally false; gets set to true if we are in a no-in scenario
         // (in-operator not directly allowed)
         private bool m_noIn;
@@ -264,6 +268,15 @@ namespace Microsoft.Ajax.Utilities
                     {
                         Output(OperatorString(node.OperatorToken));
                         BreakLine(false);
+                    }
+
+                    if (node.OperatorToken == JSToken.Divide)
+                    {
+                        // add a function that will check if the next character is also
+                        // a forward slash. If it is, the output methods will separate them
+                        // with a space so they don't get interpreted as the start of a
+                        // single-line comment.
+                        m_addSpaceIfTrue = c => c == '/';
                     }
 
                     if (node.Operand2 != null)
@@ -2088,12 +2101,23 @@ namespace Microsoft.Ajax.Utilities
 
         private void InsertSpaceIfNeeded(char ch)
         {
-            // if the current character is a + or - and the last character was the same....
-            if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+            if (m_addSpaceIfTrue != null)
             {
-                // if we want to put a + or a - in the stream, and the previous character was
-                // an odd number of the same, then we need to add a space so it doesn't
-                // get read as ++ (or --)
+                if (m_addSpaceIfTrue(ch))
+                {
+                    // output a space
+                    m_outputStream.Write(' ');
+                    ++m_lineLength;
+                }
+
+                // reset the function
+                m_addSpaceIfTrue = null;
+            }
+            else if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+            {
+                // if the current character is a + or - and the last character was the same.
+                // if the previous character was an ODD number of the same character, 
+                // then we need to add a space so it doesn't get read as ++ (or --)
                 if (m_lastCountOdd)
                 {
                     m_outputStream.Write(' ');
@@ -2114,7 +2138,19 @@ namespace Microsoft.Ajax.Utilities
         {
             // if the current character is a + or - and the last character was the same....
             var ch = text[0];
-            if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+            if (m_addSpaceIfTrue != null)
+            {
+                if (m_addSpaceIfTrue(ch))
+                {
+                    // output a space
+                    m_outputStream.Write(' ');
+                    ++m_lineLength;
+                }
+
+                // reset the function
+                m_addSpaceIfTrue = null;
+            }
+            else if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
             {
                 // if we want to put a + or a - in the stream, and the previous character was
                 // an odd number of the same, then we need to add a space so it doesn't

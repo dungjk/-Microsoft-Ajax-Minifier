@@ -366,6 +366,7 @@
     <Content Include="TestData\JS\Expected\Switch\Unreachable.js" />
     <Content Include="TestData\JS\Expected\Syntax\BOM.js" />
     <Content Include="TestData\JS\Expected\Syntax\NestedBlocks.js" />
+    <Content Include="TestData\JS\Expected\Syntax\SlashSpacing.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\Eval_Immediate.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\Eval_J.js" />
@@ -576,6 +577,7 @@
     <Content Include="TestData\JS\Input\Switch\Unreachable.js" />
     <Content Include="TestData\JS\Input\Syntax\BOM.js" />
     <Content Include="TestData\JS\Input\Syntax\NestedBlocks.js" />
+    <Content Include="TestData\JS\Input\Syntax\SlashSpacing.js" />
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\With.js" />
