@@ -846,7 +846,7 @@ namespace Microsoft.Ajax.Utilities
                     encoding = Encoding.GetEncoding(
                         encodingName,
                         fallback,
-                        new DecoderReplacementFallback("?"));
+                        new DecoderReplacementFallback("\uFFFD"));
                 }
                 catch (ArgumentException e)
                 {

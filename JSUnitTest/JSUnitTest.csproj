@@ -257,6 +257,7 @@
     <Content Include="TestData\JS\Expected\Literals\InlineSafe_no.js" />
     <Content Include="TestData\JS\Expected\Literals\Member.js" />
     <Content Include="TestData\JS\Expected\Literals\NestedCombine.js" />
+    <Content Include="TestData\JS\Expected\Literals\NullCharacter.js" />
     <Content Include="TestData\JS\Expected\Literals\Number.js" />
     <Content Include="TestData\JS\Expected\Literals\ObjectLiteral.js" />
     <Content Include="TestData\JS\Expected\Literals\StrictEncoding.js" />
@@ -321,6 +322,7 @@
     <Content Include="TestData\JS\Expected\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Expected\ScannerErrors\UnexpectedNull.js" />
     <Content Include="TestData\JS\Expected\SourceMap\MapArgNotSpecified.js" />
     <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap.xml" />
     <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap_TwoInputs.js" />
@@ -497,6 +499,7 @@
     <Content Include="TestData\JS\Input\Literals\InlineSafeErrors.js" />
     <Content Include="TestData\JS\Input\Literals\Member.js" />
     <Content Include="TestData\JS\Input\Literals\NestedCombine.js" />
+    <Content Include="TestData\JS\Input\Literals\NullCharacter.js" />
     <Content Include="TestData\JS\Input\Literals\Number.js" />
     <Content Include="TestData\JS\Input\Literals\ObjectLiteral.js" />
     <Content Include="TestData\JS\Input\Literals\StrictEncoding.js" />
@@ -544,6 +547,7 @@
     <Content Include="TestData\JS\Input\ScannerErrors\BadHexDigit.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOF.js" />
     <Content Include="TestData\JS\Input\ScannerErrors\StringEOL.js" />
+    <Content Include="TestData\JS\Input\ScannerErrors\UnexpectedNull.js" />
     <Content Include="TestData\JS\Input\SourceMap\ScriptSharpMap.js" />
     <Content Include="TestData\JS\Input\SourceMap\MapArgNotSpecified.js" />
     <Content Include="TestData\JS\Input\StdIn\StdInTest.js" />

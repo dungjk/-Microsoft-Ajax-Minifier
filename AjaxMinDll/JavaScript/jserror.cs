@@ -111,5 +111,8 @@ namespace Microsoft.Ajax.Utilities
         IllegalAssignment = 5008, // "Illegal assignment"
         RegExpSyntax = 5017, // "Syntax error in regular expression"
         UncaughtException = 5022, // "Exception thrown and not caught"
+
+        // this error means something bad happened in the application causing failure
+        ApplicationError = 7000
     }
 }

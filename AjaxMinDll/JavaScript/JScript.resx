@@ -399,4 +399,7 @@
   <data name="NoEndIfDirective" xml:space="preserve">
     <value>Expected ///#ENDIF directive</value>
   </data>
+  <data name="ApplicationError" xml:space="preserve">
+    <value>Application failed. Please report this issue.</value>
+  </data>
 </root>

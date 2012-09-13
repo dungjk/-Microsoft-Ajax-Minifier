@@ -111,6 +111,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public bool IsEndOfFile
+        {
+            get
+            {
+                return m_scannerState.CurrentPosition >= m_endPos;
+            }
+        }
+
         /// <summary>
         /// returns true if we found one or more important comments before the current token
         /// </summary>
@@ -192,8 +200,8 @@ namespace Microsoft.Ajax.Utilities
                 char c = GetChar(m_scannerState.CurrentPosition++);
                 switch (c)
                 {
-                    case (char)0:
-                        if (m_scannerState.CurrentPosition >= m_endPos)
+                    case '\0':
+                        if (IsEndOfFile)
                         {
                             m_scannerState.CurrentPosition--;
                             token = JSToken.EndOfFile;
@@ -216,6 +224,9 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
+                            // not the end of the file -- there's a null-character in the stream!
+                            HandleError(JSError.IllegalChar);
+
                             // otherwise eat it
                             goto nextToken;
                         }
@@ -701,8 +712,8 @@ namespace Microsoft.Ajax.Utilities
                         goto case '\n';
 
                     case '\n':
-                    case (char)0x2028:
-                    case (char)0x2029:
+                    case '\u2028':
+                    case '\u2029':
                         // if we are in a single-line conditional comment, then
                         // clean up the flags and return the end of the conditional comment
                         // WITHOUT skipping past the end of line
@@ -1224,7 +1235,7 @@ namespace Microsoft.Ajax.Utilities
                 return m_strSourceCode[index];
             }
 
-            return (char)0;
+            return '\0';
         }
 
         internal string GetIdentifier()
@@ -1540,7 +1551,7 @@ namespace Microsoft.Ajax.Utilities
             // loop until we find a > with a % before it (%>)
             while (!(this.GetChar(this.m_scannerState.CurrentPosition - 1) == '%' &&
                      this.GetChar(this.m_scannerState.CurrentPosition) == '>') ||
-                     (m_scannerState.CurrentPosition >= m_endPos))
+                     IsEndOfFile)
             {
                 this.m_scannerState.CurrentPosition++;
             }
@@ -1552,7 +1563,7 @@ namespace Microsoft.Ajax.Utilities
             m_scannerState.CurrentToken.EndLinePosition = m_scannerState.StartLinePosition;
 
             // see if we found an unterminated asp.net block
-            if (m_scannerState.CurrentPosition >= m_endPos)
+            if (IsEndOfFile)
             {
                 HandleError(JSError.UnterminatedAspNetBlock);
             }
@@ -1599,7 +1610,7 @@ namespace Microsoft.Ajax.Utilities
                                 // and keep looping until we find it
                                 while (!(this.GetChar(this.m_scannerState.CurrentPosition - 1) == '%' &&
                                          this.GetChar(this.m_scannerState.CurrentPosition) == '>') ||
-                                         (m_scannerState.CurrentPosition >= m_endPos))
+                                         IsEndOfFile)
                                 {
                                     this.m_scannerState.CurrentPosition++;
                                 }
@@ -1611,7 +1622,7 @@ namespace Microsoft.Ajax.Utilities
 
                                 // we should be at the > of the %> right now.
                                 // see if we found an unterminated asp.net block
-                                if (m_scannerState.CurrentPosition >= m_endPos)
+                                if (IsEndOfFile)
                                 {
                                     HandleError(JSError.UnterminatedAspNetBlock);
                                 }
@@ -1668,7 +1679,7 @@ namespace Microsoft.Ajax.Utilities
                         break;
                     }
                     
-                    if ((char)0 == ch)
+                    if ('\0' == ch && IsEndOfFile)
                     {
                         m_scannerState.CurrentPosition--;
                         HandleError(JSError.UnterminatedString);
@@ -1722,8 +1733,8 @@ namespace Microsoft.Ajax.Utilities
                             goto case '\n';
 
                         case '\n':
-                        case (char)0x2028:
-                        case (char)0x2029:
+                        case '\u2028':
+                        case '\u2029':
                             m_scannerState.CurrentLine++;
                             m_scannerState.StartLinePosition = m_scannerState.CurrentPosition;
                             break;
@@ -1755,12 +1766,12 @@ namespace Microsoft.Ajax.Utilities
 
                         case '"':
                             result.Append('"');
-                            ch = (char)0; // so it does not exit the loop
+                            ch = '\0'; // so it does not exit the loop
                             break;
 
                         case '\'':
                             result.Append('\'');
-                            ch = (char)0; // so it does not exit the loop
+                            ch = '\0'; // so it does not exit the loop
                             break;
 
                         case '\\':
@@ -2028,7 +2039,7 @@ namespace Microsoft.Ajax.Utilities
             ++m_scannerState.CurrentPosition;
 
             char ch;
-            while ((ch = GetChar(m_scannerState.CurrentPosition++)) != '\0')
+            while ((ch = GetChar(m_scannerState.CurrentPosition++)) != '\0' || !IsEndOfFile)
             {
                 if (ch == '%'
                     && GetChar(m_scannerState.CurrentPosition) == '>')
@@ -2108,7 +2119,7 @@ namespace Microsoft.Ajax.Utilities
                         return m_scannerState.CurrentPosition;
                     }
 
-                    if ((char)0 == c)
+                    if ('\0' == c)
                     {
                         break;
                     }
@@ -2121,7 +2132,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
 
-                if ((char)0 == c && m_scannerState.CurrentPosition >= m_endPos)
+                if ('\0' == c && IsEndOfFile)
                 {
                     break;
                 }
@@ -2180,12 +2191,12 @@ namespace Microsoft.Ajax.Utilities
         {
             switch (c)
             {
-                case (char)0x09:
-                case (char)0x0B:
-                case (char)0x0C:
-                case (char)0x20:
-                case (char)0xA0:
-                case (char)0xfeff: // BOM - byte order mark
+                case '\u0009':
+                case '\u000b':
+                case '\u000c':
+                case '\u0020':
+                case '\u00a0':
+                case '\ufeff': // BOM - byte order mark
                     return true;
 
                 default:
@@ -2197,7 +2208,7 @@ namespace Microsoft.Ajax.Utilities
         {
             switch (c)
             {
-                case (char)0x0D:
+                case '\u000d':
                     // treat 0x0D0x0A as a single character
                     if (0x0A == GetChar(m_scannerState.CurrentPosition + increment))
                     {
@@ -2206,13 +2217,13 @@ namespace Microsoft.Ajax.Utilities
 
                     return true;
 
-                case (char)0x0A:
+                case '\u000a':
                     return true;
 
-                case (char)0x2028:
+                case '\u2028':
                     return true;
 
-                case (char)0x2029:
+                case '\u2029':
                     return true;
 
                 default:
@@ -2222,7 +2233,7 @@ namespace Microsoft.Ajax.Utilities
 
         private bool IsEndLineOrEOF(char c, int increment)
         {
-            return IsLineTerminator(c, increment) || (char)0 == c && m_scannerState.CurrentPosition >= m_endPos;
+            return IsLineTerminator(c, increment) || '\0' == c && IsEndOfFile;
         }
 
         private bool IsAtEndOfLine
@@ -2616,8 +2627,8 @@ namespace Microsoft.Ajax.Utilities
                 switch (c)
                 {
                     // EOF
-                    case (char)0:
-                        if (m_scannerState.CurrentPosition >= m_endPos)
+                    case '\0':
+                        if (IsEndOfFile)
                         {
                             // adjust the scanner state
                             m_scannerState.CurrentPosition--;
@@ -2654,11 +2665,11 @@ namespace Microsoft.Ajax.Utilities
                         m_scannerState.CurrentLine++;
                         m_scannerState.StartLinePosition = m_scannerState.CurrentPosition;
                         break;
-                    case (char)0x2028:
+                    case '\u2028':
                         m_scannerState.CurrentLine++;
                         m_scannerState.StartLinePosition = m_scannerState.CurrentPosition;
                         break;
-                    case (char)0x2029:
+                    case '\u2029':
                         m_scannerState.CurrentLine++;
                         m_scannerState.StartLinePosition = m_scannerState.CurrentPosition;
                         break;

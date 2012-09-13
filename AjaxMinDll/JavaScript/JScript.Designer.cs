@@ -88,6 +88,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Application failed. Please report this issue..
+        /// </summary>
+        internal static string ApplicationError {
+            get {
+                return ResourceManager.GetString("ApplicationError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Argument &apos;{0}&apos; defined but not referenced.
         /// </summary>
         internal static string ArgumentNotReferenced {

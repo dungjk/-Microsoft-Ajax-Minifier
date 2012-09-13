@@ -835,6 +835,7 @@ namespace Microsoft.Ajax.Utilities
                             Output(node.Context.Code);
                         }
                         else if (node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0
+                            || node.Context.Code.IndexOf('\0') >= 0
                             || (Settings.AllowEmbeddedAspNetBlocks && node.StringContainsAspNetReplacement))
                         {
                             // we'd rather show the raw string, but make sure it's safe for inlining

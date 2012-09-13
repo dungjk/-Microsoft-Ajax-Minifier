@@ -513,9 +513,11 @@ namespace Microsoft.Ajax.Utilities
                 // also, we don't want to combine any strings that contain \v, since
                 // IE doesn't implement the ECMAScript standard of \v being the
                 // vertical tab character. Cross-browser difference there.
+                // and most browsers treat the null character the same, but they don't treat an
+                // escaped null character the same, so don't combine if there's a null in the string, either.
                 var isOkay = (!IsStringLiteral && !IsNumericLiteral)
                     || (IsNumericLiteral && NumberIsOkayToCombine((double)Value))
-                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && (!Context.HasCode || !Context.Code.Contains("\\v")));
+                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && (!Context.HasCode || (!Context.Code.Contains("\\v") && Context.Code.IndexOf('\0') < 0)));
 
                 // broke this out into a separate test because I originally thought I would only do it if the
                 // AllowEmbeddedAspNetBlocks switch was set. But I think this is important enough to do all the time.

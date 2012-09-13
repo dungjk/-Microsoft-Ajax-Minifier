@@ -37,7 +37,13 @@ namespace JSUnitTest
     [TestMethod()]
     public void StringEOL()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
+        TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
+    }
+
+    [TestMethod()]
+    public void UnexpectedNull()
+    {
+        TestHelper.Instance.RunErrorTest(null, JSError.IllegalChar);
     }
   }
 }

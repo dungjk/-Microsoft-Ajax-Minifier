@@ -1,1 +1,1 @@
-﻿var nihao="?A?n?C";var
+﻿var nihao="�A�n�C";var

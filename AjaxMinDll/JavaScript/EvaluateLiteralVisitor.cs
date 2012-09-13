@@ -990,19 +990,9 @@ namespace Microsoft.Ajax.Utilities
                     // so if neither is a numeric literal, or if one or both are, if they are both integer literals
                     // in the range that we can EXACTLY represent them in a double, then we can proceed.
                     // NaN, +Infinity and -Infinity are also acceptable
-                    if ((!left.IsNumericLiteral || left.IsExactInteger || left.IsNaN || left.IsInfinity)
-                        && (!right.IsNumericLiteral || right.IsExactInteger || right.IsNaN || right.IsInfinity))
+                    if (left.IsOkayToCombine && right.IsOkayToCombine)
                     {
-                        // they are both either string, bool, null, or integer 
-                        // ONE MORE CHECK: if we are giving ASP.NET special handling, and
-                        // if either of the operands is a string literal containing an ASP.NET replacement, then
-                        // just to make things simple, let's NOT combine them.
-                        if (!m_parser.Settings.AllowEmbeddedAspNetBlocks
-                            || (!(left.IsStringLiteral && left.StringContainsAspNetReplacement 
-                            || right.IsStringLiteral && right.StringContainsAspNetReplacement)))
-                        {
-                            newLiteral = new ConstantWrapper(left.ToString() + right.ToString(), PrimitiveType.String, null, m_parser);
-                        }
+                        newLiteral = new ConstantWrapper(left.ToString() + right.ToString(), PrimitiveType.String, null, m_parser);
                     }
                 }
             }

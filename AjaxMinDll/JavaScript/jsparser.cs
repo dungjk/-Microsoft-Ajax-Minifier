@@ -307,11 +307,23 @@ namespace Microsoft.Ajax.Utilities
                 GetNextToken();
 
                 // until we hit the end of the file...
+                int lastEndPosition = m_currentToken.EndPosition;
                 while (m_currentToken.Token != JSToken.EndOfFile)
                 {
                     // just output the token and grab the next one
                     outputStream.Write(m_currentToken.Code);
                     GetNextToken();
+
+                    if (!m_scanner.IsEndOfFile && m_currentToken.EndPosition == lastEndPosition)
+                    {
+                        // didn't get anything, but not at the end of the file. infinite loop?
+                        m_currentToken.HandleError(JSError.ApplicationError, true);
+                        break;
+                    }
+                    else
+                    {
+                        lastEndPosition = m_currentToken.EndPosition;
+                    }
                 }
             }
         }
@@ -524,6 +536,7 @@ namespace Microsoft.Ajax.Utilities
                 try
                 {
                     var possibleDirectivePrologue = true;
+                    int lastEndPosition = m_currentToken.EndPosition;
                     while (m_currentToken.Token != JSToken.EndOfFile)
                     {
                         AstNode ast = null;
@@ -576,7 +589,23 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         if (null != ast)
+                        {
+                            // append the token to the program
                             m_program.Append(ast);
+
+                            // set the last end position to be the start of the current token.
+                            // if we parse the next statement and the end is still the start, we know
+                            // something is up and might get into an infinite loop.
+                            lastEndPosition = m_currentToken.EndPosition;
+                        }
+                        else if (!m_scanner.IsEndOfFile && m_currentToken.StartLinePosition == lastEndPosition)
+                        {
+                            // didn't parse a statement, we're not at the EOF, and we didn't move
+                            // anywhere in the input stream. If we just keep looping around, we're going
+                            // to get into an infinite loop. Break it.
+                            m_currentToken.HandleError(JSError.ApplicationError, true);
+                            break;
+                        }
                     }
 
                     if (m_scanner.HasImportantComments 

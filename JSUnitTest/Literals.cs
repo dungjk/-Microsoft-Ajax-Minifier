@@ -146,5 +146,11 @@ namespace JSUnitTest
             // turn on the error checking -- should be two errors
             TestHelper.Instance.RunErrorTest("-inline:force", JSError.StringNotInlineSafe, JSError.StringNotInlineSafe);
         }
+
+        [TestMethod]
+        public void NullCharacter()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

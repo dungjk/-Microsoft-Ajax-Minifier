@@ -623,7 +623,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     encoding = Encoding.GetEncoding(
                         encodingName,
                         fallback,
-                        new DecoderReplacementFallback("?"));
+                        new DecoderReplacementFallback("\uFFFD"));
                 }
                 catch (ArgumentException e)
                 {
