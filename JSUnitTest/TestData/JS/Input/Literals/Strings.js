@@ -22,7 +22,7 @@ for all good men";
   var doubleQuotes2 = '\"';           // escape should get removed
   var singleQuotes1 = "\'";           // escape should get removed
   var singleQuotes2 = '\'';           // should get switched to double-quote delimiter and no escape
-  var copyrights = "\251\xa9\u00a9\xA9\u00A9";  // depends on encoding sequence whether these will remain escaped
+  var copyrights = "©\xa9\u00a9\xA9\u00A9";  // depends on encoding sequence whether these will remain escaped
   var hexEsc = "\x39\xae\xAE";        // exercise numeric, lower, and upper digits for both digits
   var uniEsc = "\u328B\ubaaa\uFDF2";  // exercise numeric, lower, and upper digits for all four digits
 

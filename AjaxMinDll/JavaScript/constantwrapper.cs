@@ -46,6 +46,8 @@ namespace Microsoft.Ajax.Utilities
 #endif
 );
 
+        public bool MayHaveIssues { get; set; }
+
         public Object Value { get; set; }
 
         public PrimitiveType PrimitiveType
@@ -448,8 +450,12 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         // see if this is a hex number representation
-                        Match match = s_hexNumberFormat.Match(stringValue);
-                        if (match.Success)
+                        Match match;
+                        if (MayHaveIssues)
+                        {
+                            throw new InvalidCastException("cross-browser conversion issues");
+                        }
+                        else if ((match = s_hexNumberFormat.Match(stringValue)).Success)
                         {
                             // if we matched a sign, then we are in a cross-browser gray area.
                             // the ECMA spec says that isn't allowed. IE and Safari correctly return NaN.
@@ -474,11 +480,6 @@ namespace Microsoft.Ajax.Utilities
                                 doubleValue = (doubleValue * 16) + (ch <= '9' ? ch & 0xf : (ch & 0xf) + 9);
                             }
                             return doubleValue;
-                        }
-                        else if (Context != null && !string.IsNullOrEmpty(Context.Code)
-                            && Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0)
-                        {
-                            throw new InvalidCastException("cross-browser conversion issue with \\v escape");
                         }
                         else
                         {
@@ -516,8 +517,8 @@ namespace Microsoft.Ajax.Utilities
                 // and most browsers treat the null character the same, but they don't treat an
                 // escaped null character the same, so don't combine if there's a null in the string, either.
                 var isOkay = (!IsStringLiteral && !IsNumericLiteral)
-                    || (IsNumericLiteral && NumberIsOkayToCombine((double)Value))
-                    || (IsStringLiteral && !Object.ReferenceEquals(Context, null) && (!Context.HasCode || (!Context.Code.Contains("\\v") && Context.Code.IndexOf('\0') < 0)));
+                    || (IsNumericLiteral && !MayHaveIssues && NumberIsOkayToCombine((double)Value))
+                    || (IsStringLiteral && !MayHaveIssues);
 
                 // broke this out into a separate test because I originally thought I would only do it if the
                 // AllowEmbeddedAspNetBlocks switch was set. But I think this is important enough to do all the time.

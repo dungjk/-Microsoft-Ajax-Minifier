@@ -42,13 +42,16 @@ namespace Microsoft.Ajax.Utilities
         Function,
         Else,
         ConditionalCommentStart,        // /*@ or //@
+        ConditionalCommentEnd,          // @*/ or EOL
         ConditionalCompilationOn,       // @cc_on
         ConditionalCompilationSet,      // @set
         ConditionalCompilationIf,       // @if
         ConditionalCompilationElseIf,   // @elif
         ConditionalCompilationElse,     // @else
         ConditionalCompilationEnd,      // @end
-		AspNetBlock,
+        ConditionalCompilationVariable,           // entity defined defined during preprocessing
+
+        AspNetBlock,
 
         // used by both statement and expression switches
 
@@ -134,9 +137,10 @@ namespace Microsoft.Ajax.Utilities
         New,
         RightParenthesis,               // )
         RightBracket,                   // ]
-        PreprocessorConstant,           // entity defined defined during preprocessing
-        Comment,                        // for authoring
+        SingleLineComment,              // for authoring
+        MultipleLineComment,            // for authoring
         UnterminatedComment,            // for authoring
+        PreprocessorDirective,
 
         // reserved words
         Class,
@@ -169,9 +173,6 @@ namespace Microsoft.Ajax.Utilities
         WhiteSpace, // only returned if the RawTokens flag is set on the scanner
         Error, // only returned if the RawTokens flag is set on the scanner
         RegularExpression, // only returned if the RawTokens flag is set on the scanner
-
-        PreprocessDirective,
-        ConditionalCommentEnd,          // @*/ or EOL
 
     }
 }

@@ -816,9 +816,8 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case PrimitiveType.Number:
-                        if (node.Context == null
-                            || !node.Context.HasCode
-                            || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                        if (node.Context == null || !node.Context.HasCode
+                            || (!node.MayHaveIssues && Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals)))
                         {
                             // apply minification to the literal to get it as small as possible
                             Output(NormalizeNumber(node.ToNumber(), node.Context));
@@ -847,8 +846,7 @@ namespace Microsoft.Ajax.Utilities
                             // we don't want to modify the strings at all!
                             Output(node.Context.Code);
                         }
-                        else if (node.Context.Code.IndexOf("\\v", StringComparison.Ordinal) >= 0
-                            || node.Context.Code.IndexOf('\0') >= 0
+                        else if (node.MayHaveIssues
                             || (Settings.AllowEmbeddedAspNetBlocks && node.StringContainsAspNetReplacement))
                         {
                             // we'd rather show the raw string, but make sure it's safe for inlining
@@ -2935,9 +2933,10 @@ namespace Microsoft.Ajax.Utilities
 
                         case '\v':
                             // w3c-strict can encode this character as a \v escape. 
-                            // BUT... IE<9 doesn't recognize that escape sequence, so
-                            // it should be encoded as \x0b (or \13) instead for
-                            // maximum browser compatibility.
+                            // BUT... IE<9 doesn't recognize that escape sequence,
+                            // so encode is as hex for maximum compatibility.
+                            // if the source actually had "\v" in it, it wouldn't been
+                            // marked as having issues and not get encoded anyway.
                             goto default;
 
                         case '\f':

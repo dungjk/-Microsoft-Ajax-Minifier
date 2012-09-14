@@ -11,8 +11,8 @@ var h1=0x19, h2=0xa, h3=0xffff, h4=0x0001, h5=0xfedcba9876, h6=-0xff;
 // octal
 // because octals are deprecated and may have cross-browser issues, we should leave them
 // as-is in our code IF they would be different decoded as decimal. 
-// That last one, though, isn't an octal!
-var o1 = 0377, o2 = 012, o3 = 00, o4 = 06, o5 = 089;
+// That fifth one, though, isn't an octal!
+var o1 = 0377, o2 = 012, o3 = 00, o4 = 06, o5 = 089, o6 = 07 + 03;
 
 // literal representing the maximum numeric value. should suggest developer replace with Number.MAX_VALUE
 // while leaving the value literal crunched but still numeric
@@ -47,3 +47,10 @@ var obj = {1e969: "pos inf"};
 // by getting rid of the decimal point: 72e5
 var foo = 7200000;
 
+// try some ES6 octal literals. these can get converted and combined.
+var oct1 = 0o3774;
+var oct2 = 0O46 + 0o7;
+
+// and some ES6 binary literals. these can get converted and combined.
+var bin1 = 0b00000110;
+var bin2 = 0B00010011101010011001000101010011 & 0x0000ffff;

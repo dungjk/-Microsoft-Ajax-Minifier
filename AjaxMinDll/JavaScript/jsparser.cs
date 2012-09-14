@@ -61,6 +61,9 @@ namespace Microsoft.Ajax.Utilities
         enum BlockType { Block, Loop, Switch, Finally }
         private int m_finallyEscaped;
 
+        private bool m_foundEndOfLine;
+        private IList<Context> m_importantComments;
+
         private class LabelInfo
         {
             public readonly int BlockIndex;
@@ -213,6 +216,7 @@ namespace Microsoft.Ajax.Utilities
             m_blockType = new List<BlockType>(16);
             m_labelTable = new Dictionary<string, LabelInfo>();
             m_noSkipTokenSet = new NoSkipTokenSet();
+            m_importantComments = new List<Context>();
 
             m_document = new DocumentContext(this, source);
             m_scanner = new JSScanner(new Context(m_document));
@@ -243,7 +247,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private void InitializeScanner(CodeSettings settings, bool onlyRawTokens)
+        private void InitializeScanner(CodeSettings settings)
         {
             // save the settings
             // if we are passed null, just create a default settings object
@@ -271,9 +275,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_scanner.SetPreprocessorDefines(m_settings.PreprocessorValues);
             }
-
-            // set the raw tokens flag
-            m_scanner.RawTokens = onlyRawTokens;
         }
 
         /// <summary>
@@ -301,30 +302,124 @@ namespace Microsoft.Ajax.Utilities
                 // initialize the scanner
                 // make sure the RawTokens setting is on so that the scanner
                 // just returns everything (after doing preprocessor evaluations)
-                InitializeScanner(settings, true);
+                InitializeScanner(settings);
 
-                // get the first token
-                GetNextToken();
+                // get the first token, which might be a regular expression
+                // (since it makes no sense to start off script with a divide-operator)
+                var scanRegExp = true;
+                var tokenContext = m_scanner.ScanNextToken(scanRegExp);
 
                 // until we hit the end of the file...
-                int lastEndPosition = m_currentToken.EndPosition;
-                while (m_currentToken.Token != JSToken.EndOfFile)
+                int lastEndPosition = tokenContext.EndPosition;
+                while (tokenContext.Token != JSToken.EndOfFile)
                 {
                     // just output the token and grab the next one
-                    outputStream.Write(m_currentToken.Code);
-                    GetNextToken();
+                    outputStream.Write(tokenContext.Code);
 
-                    if (!m_scanner.IsEndOfFile && m_currentToken.EndPosition == lastEndPosition)
+                    // if this the kind of token we want to know about the next time, then save it
+                    switch (tokenContext.Token)
+                    {
+                        case JSToken.WhiteSpace:
+                        case JSToken.EndOfLine:
+                        case JSToken.AspNetBlock:
+                        case JSToken.SingleLineComment:
+                        case JSToken.MultipleLineComment:
+                        case JSToken.PreprocessorDirective:
+                        case JSToken.ConditionalCompilationOn:
+                        case JSToken.ConditionalCompilationSet:
+                        case JSToken.ConditionalCompilationIf:
+                        case JSToken.ConditionalCompilationElseIf:
+                        case JSToken.ConditionalCompilationElse:
+                        case JSToken.ConditionalCompilationEnd:
+                            // don't change the regexp flag for these tokens
+                            break;
+
+                        default:
+                            scanRegExp = RegExpCanFollow(tokenContext.Token);
+                            break;
+                    }
+
+                    tokenContext = m_scanner.ScanNextToken(scanRegExp);
+                    if (!m_scanner.IsEndOfFile && tokenContext.EndPosition == lastEndPosition)
                     {
                         // didn't get anything, but not at the end of the file. infinite loop?
-                        m_currentToken.HandleError(JSError.ApplicationError, true);
+                        tokenContext.HandleError(JSError.ApplicationError, true);
                         break;
                     }
                     else
                     {
-                        lastEndPosition = m_currentToken.EndPosition;
+                        lastEndPosition = tokenContext.EndPosition;
                     }
                 }
+            }
+        }
+
+        private static bool RegExpCanFollow(JSToken previousToken)
+        {
+            switch (previousToken)
+            {
+                case JSToken.Do:
+                case JSToken.Return:
+                case JSToken.Throw:
+                case JSToken.LeftCurly:
+                case JSToken.Semicolon:
+                case JSToken.LeftParenthesis:
+                case JSToken.LeftBracket:
+                case JSToken.ConditionalIf:
+                case JSToken.Colon:
+                case JSToken.Comma:
+                case JSToken.Case:
+                case JSToken.Else:
+                case JSToken.EndOfLine:
+                case JSToken.RightCurly:
+                case JSToken.LogicalNot:
+                case JSToken.BitwiseNot:
+                case JSToken.Delete:
+                case JSToken.Void:
+                case JSToken.New:
+                case JSToken.TypeOf:
+                case JSToken.Increment:
+                case JSToken.Decrement:
+                case JSToken.Plus:
+                case JSToken.Minus:
+                case JSToken.LogicalOr:
+                case JSToken.LogicalAnd:
+                case JSToken.BitwiseOr:
+                case JSToken.BitwiseXor:
+                case JSToken.BitwiseAnd:
+                case JSToken.Equal:
+                case JSToken.NotEqual:
+                case JSToken.StrictEqual:
+                case JSToken.StrictNotEqual:
+                case JSToken.GreaterThan:
+                case JSToken.LessThan:
+                case JSToken.LessThanEqual:
+                case JSToken.GreaterThanEqual:
+                case JSToken.LeftShift:
+                case JSToken.RightShift:
+                case JSToken.UnsignedRightShift:
+                case JSToken.Multiply:
+                case JSToken.Divide:
+                case JSToken.Modulo:
+                case JSToken.InstanceOf:
+                case JSToken.In:
+                case JSToken.Assign:
+                case JSToken.PlusAssign:
+                case JSToken.MinusAssign:
+                case JSToken.MultiplyAssign:
+                case JSToken.DivideAssign:
+                case JSToken.BitwiseAndAssign:
+                case JSToken.BitwiseOrAssign:
+                case JSToken.BitwiseXorAssign:
+                case JSToken.ModuloAssign:
+                case JSToken.LeftShiftAssign:
+                case JSToken.RightShiftAssign:
+                case JSToken.UnsignedRightShiftAssign:
+                case JSToken.None:
+                    return true;
+
+                default:
+                    return false;
             }
         }
 
@@ -337,7 +432,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // initialize the scanner with our settings
             // make sure the RawTokens setting is OFF or we won't be able to create our AST
-            InitializeScanner(settings, false);
+            InitializeScanner(settings);
 
             // make sure we initialize the global scope's strict mode to our flag, whether or not it
             // is true. This means if the setting is false, we will RESET the flag to false if we are 
@@ -423,7 +518,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // initialize the scanner with our settings
             // make sure the RawTokens setting is OFF or we won't be able to create our AST
-            InitializeScanner(settings, false);
+            InitializeScanner(settings);
 
             // make sure we initialize the global scope's strict mode to our flag, whether or not it
             // is true. This means if the setting is false, we will RESET the flag to false if we are 
@@ -608,16 +703,17 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    if (m_scanner.HasImportantComments 
+                    if (m_importantComments.Count > 0
                         && m_settings.PreserveImportantComments
                         && m_settings.IsModificationAllowed(TreeModifications.PreserveImportantComments))
                     {
                         // we have important comments before the EOF. Add the comment(s) to the program.
-                        Context commentContext;
-                        while((commentContext = m_scanner.PopImportantComment()) != null)
+                        foreach(var importantComment in m_importantComments)
                         {
-                            m_program.Append(new ImportantComment(commentContext, this));
+                            m_program.Append(new ImportantComment(importantComment, this));
                         }
+
+                        m_importantComments.Clear();
                     }
                 }
                 finally
@@ -676,14 +772,15 @@ namespace Microsoft.Ajax.Utilities
         private AstNode ParseStatement(bool fSourceElement)
         {
             AstNode statement = null;
-            if (m_scanner.HasImportantComments 
+            if (m_importantComments.Count > 0 
                 && m_settings.PreserveImportantComments
                 && m_settings.IsModificationAllowed(TreeModifications.PreserveImportantComments))
             {
                 // we have at least one important comment before the upcoming statement.
                 // pop the first important comment off the queue, return that node instead.
                 // don't advance the token -- we'll probably be coming back again for the next one (if any)
-                statement = new ImportantComment(m_scanner.PopImportantComment(), this);
+                statement = new ImportantComment(m_importantComments[0], this);
+                m_importantComments.RemoveAt(0);
             }
             else
             {
@@ -791,7 +888,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             bool bAssign;
                             // if this statement starts with a function within parens, we want to know now
-                            bool parenFunction = (m_currentToken.Token == JSToken.LeftParenthesis && m_scanner.PeekToken() == JSToken.Function);
+                            bool parenFunction = (m_currentToken.Token == JSToken.LeftParenthesis && PeekToken() == JSToken.Function);
                             statement = ParseUnaryExpression(out bAssign, false);
                             if (statement != null && parenFunction)
                             {
@@ -895,7 +992,7 @@ namespace Microsoft.Ajax.Utilities
 
                     GetNextToken();
                 }
-                else if (!m_scanner.GotEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                else if (!m_foundEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
                 {
                     ReportError(JSError.NoSemicolon, true);
                 }
@@ -911,7 +1008,16 @@ namespace Microsoft.Ajax.Utilities
             GetNextToken();
             while(m_currentToken.Token != JSToken.ConditionalCommentEnd && m_currentToken.Token != JSToken.EndOfFile)
             {
-                conditionalComment.Append(ParseStatement(fSourceElement));
+                // if we get ANOTHER start token, it's superfluous and we should ignore it.
+                // otherwise parse another statement and keep going
+                if (m_currentToken.Token == JSToken.ConditionalCommentStart)
+                {
+                    GetNextToken();
+                }
+                else
+                {
+                    conditionalComment.Append(ParseStatement(fSourceElement));
+                }
             }
 
             GetNextToken();
@@ -927,7 +1033,7 @@ namespace Microsoft.Ajax.Utilities
             string variableName = null;
             AstNode value = null;
             GetNextToken();
-            if (m_currentToken.Token == JSToken.PreprocessorConstant)
+            if (m_currentToken.Token == JSToken.ConditionalCompilationVariable)
             {
                 context.UpdateWith(m_currentToken);
                 variableName = m_currentToken.Code;
@@ -1018,7 +1124,7 @@ namespace Microsoft.Ajax.Utilities
             closingBraceContext = null;
             m_blockType.Add(BlockType.Block);
             Block codeBlock = new Block(m_currentToken.Clone(), this);
-            codeBlock.BraceOnNewLine = m_scanner.GotEndOfLine;
+            codeBlock.BraceOnNewLine = m_foundEndOfLine;
             GetNextToken();
 
             m_noSkipTokenSet.Add(NoSkipTokenSet.s_StartStatementNoSkipTokenSet);
@@ -1094,7 +1200,7 @@ namespace Microsoft.Ajax.Utilities
                 // and skip it
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_scanner.GotEndOfLine)
+            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
             {
                 // if it is anything else, it's an error
                 ReportError(JSError.NoSemicolon, true);
@@ -1202,7 +1308,7 @@ namespace Microsoft.Ajax.Utilities
                     continue;
                 }
                 
-                if (m_scanner.GotEndOfLine)
+                if (m_foundEndOfLine)
                 {
                     break;
                 }
@@ -1258,7 +1364,7 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                variableName = m_scanner.GetIdentifier();
+                variableName = m_scanner.Identifier;
             }
             Context idContext = m_currentToken.Clone();
             Context context = m_currentToken.Clone();
@@ -2028,13 +2134,13 @@ namespace Microsoft.Ajax.Utilities
             int nestLevel = 0;
             GetNextToken();
             string label = null;
-            if (!m_scanner.GotEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
+            if (!m_foundEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
             {
                 context.UpdateWith(m_currentToken);
                 // get the label block
                 if (label == null)
                 {
-                    label = m_scanner.GetIdentifier();
+                    label = m_scanner.Identifier;
                 }
 
                 if (!m_labelTable.ContainsKey(label))
@@ -2071,7 +2177,7 @@ namespace Microsoft.Ajax.Utilities
                 context.UpdateWith(m_currentToken);
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_scanner.GotEndOfLine)
+            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
             {
                 ReportError(JSError.NoSemicolon, true);
             }
@@ -2108,13 +2214,13 @@ namespace Microsoft.Ajax.Utilities
             int nestLevel = 0;
             GetNextToken();
             string label = null;
-            if (!m_scanner.GotEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
+            if (!m_foundEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
             {
                 context.UpdateWith(m_currentToken);
                 // get the label block
                 if (label == null)
                 {
-                    label = m_scanner.GetIdentifier();
+                    label = m_scanner.Identifier;
                 }
 
                 if (!m_labelTable.ContainsKey(label))
@@ -2149,7 +2255,7 @@ namespace Microsoft.Ajax.Utilities
                 context.UpdateWith(m_currentToken);
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_scanner.GotEndOfLine)
+            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
             {
                 ReportError(JSError.NoSemicolon, true);
             }
@@ -2187,7 +2293,7 @@ namespace Microsoft.Ajax.Utilities
             Context retCtx = m_currentToken.Clone();
             AstNode expr = null;
             GetNextToken();
-            if (!m_scanner.GotEndOfLine)
+            if (!m_foundEndOfLine)
             {
                 if (JSToken.Semicolon != m_currentToken.Token && JSToken.RightCurly != m_currentToken.Token)
                 {
@@ -2213,7 +2319,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                     if (JSToken.Semicolon != m_currentToken.Token
                         && JSToken.RightCurly != m_currentToken.Token
-                        && !m_scanner.GotEndOfLine)
+                        && !m_foundEndOfLine)
                     {
                         ReportError(JSError.NoSemicolon, true);
                     }
@@ -2393,7 +2499,7 @@ namespace Microsoft.Ajax.Utilities
                         ReportError(JSError.NoLeftCurly);
                     }
 
-                    braceOnNewLine = m_scanner.GotEndOfLine;
+                    braceOnNewLine = m_foundEndOfLine;
                     GetNextToken();
 
                 }
@@ -2422,7 +2528,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 ReportError(JSError.NoLeftCurly);
                             }
-                            braceOnNewLine = m_scanner.GotEndOfLine;
+                            braceOnNewLine = m_foundEndOfLine;
                             GetNextToken();
                         }
 
@@ -2600,7 +2706,7 @@ namespace Microsoft.Ajax.Utilities
             Context throwCtx = m_currentToken.Clone();
             GetNextToken();
             AstNode operand = null;
-            if (!m_scanner.GotEndOfLine)
+            if (!m_foundEndOfLine)
             {
                 if (JSToken.Semicolon != m_currentToken.Token)
                 {
@@ -2873,7 +2979,7 @@ namespace Microsoft.Ajax.Utilities
             // get the function name or make an anonymous function if in expression "position"
             if (JSToken.Identifier == m_currentToken.Token)
             {
-                name = new Lookup(m_scanner.GetIdentifier(), m_currentToken.Clone(), this);
+                name = new Lookup(m_scanner.Identifier, m_currentToken.Clone(), this);
                 GetNextToken();
             }
             else
@@ -2999,7 +3105,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 if (null == id)
                                 {
-                                    id = m_scanner.GetIdentifier();
+                                    id = m_scanner.Identifier;
                                 }
 
                                 Context paramCtx = m_currentToken.Clone();
@@ -3058,7 +3164,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // parse the block locally to get the exact end of function
                     body = new Block(m_currentToken.Clone(), this);
-                    body.BraceOnNewLine = m_scanner.GotEndOfLine;
+                    body.BraceOnNewLine = m_foundEndOfLine;
                     GetNextToken();
 
                     var possibleDirectivePrologue = true;
@@ -3507,7 +3613,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // /*@cc_on -- check for @IDENT@*/ or !@*/
                         GetNextToken();
-                        if (m_currentToken.Token == JSToken.PreprocessorConstant)
+                        if (m_currentToken.Token == JSToken.ConditionalCompilationVariable)
                         {
                             // /*@cc_on@IDENT -- check for @*/
                             ast = new ConstantWrapperPP(m_currentToken.Code, true, m_currentToken.Clone(), this);
@@ -3577,7 +3683,7 @@ namespace Microsoft.Ajax.Utilities
                             goto TryItAgain;
                         }
                     }
-                    else if (m_currentToken.Token == JSToken.PreprocessorConstant)
+                    else if (m_currentToken.Token == JSToken.ConditionalCompilationVariable)
                     {
                         // @IDENT -- check for @*/
                         ast = new ConstantWrapperPP(m_currentToken.Code, true, m_currentToken.Clone(), this);
@@ -3666,7 +3772,7 @@ namespace Microsoft.Ajax.Utilities
             Context exprCtx = null;
             if (null != ast)
             {
-                if (!m_scanner.GotEndOfLine)
+                if (!m_foundEndOfLine)
                 {
                     if (JSToken.Increment == m_currentToken.Token)
                     {
@@ -3731,13 +3837,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 // primary expression
                 case JSToken.Identifier:
-                    ast = new Lookup(m_scanner.GetIdentifier(), m_currentToken.Clone(), this);
+                    ast = new Lookup(m_scanner.Identifier, m_currentToken.Clone(), this);
                     break;
 
                 case JSToken.ConditionalCommentStart:
                     // skip past the start to the next token
                     GetNextToken();
-                    if (m_currentToken.Token == JSToken.PreprocessorConstant)
+                    if (m_currentToken.Token == JSToken.ConditionalCompilationVariable)
                     {
                         // we have /*@id
                         ast = new ConstantWrapperPP(m_currentToken.Code, true, m_currentToken.Clone(), this);
@@ -3786,7 +3892,10 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case JSToken.StringLiteral:
-                    ast = new ConstantWrapper(m_scanner.EscapedString, PrimitiveType.String, m_currentToken.Clone(), this);
+                    ast = new ConstantWrapper(m_scanner.StringLiteralValue, PrimitiveType.String, m_currentToken.Clone(), this)
+                        {
+                            MayHaveIssues = m_scanner.LiteralHasIssues
+                        };
                     break;
 
                 case JSToken.IntegerLiteral:
@@ -3798,6 +3907,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // conversion worked fine
                             // check for some boundary conditions
+                            var mayHaveIssues = m_scanner.LiteralHasIssues;
                             if (doubleValue == double.MaxValue)
                             {
                                 ReportError(JSError.NumericMaximum, numericContext, true);
@@ -3808,7 +3918,10 @@ namespace Microsoft.Ajax.Utilities
                             }
 
                             // create the constant wrapper from the value
-                            ast = new ConstantWrapper(doubleValue, PrimitiveType.Number, numericContext, this);
+                            ast = new ConstantWrapper(doubleValue, PrimitiveType.Number, numericContext, this)
+                                {
+                                    MayHaveIssues = mayHaveIssues
+                                };
                         }
                         else
                         {
@@ -3820,7 +3933,10 @@ namespace Microsoft.Ajax.Utilities
 
                             // regardless, we're going to create a special constant wrapper
                             // that simply echos the input as-is
-                            ast = new ConstantWrapper(m_currentToken.Code, PrimitiveType.Other, numericContext, this);
+                            ast = new ConstantWrapper(m_currentToken.Code, PrimitiveType.Other, numericContext, this)
+                            {
+                                MayHaveIssues = true
+                            };
                         }
                         break;
                     }
@@ -3837,7 +3953,7 @@ namespace Microsoft.Ajax.Utilities
                     ast = new ConstantWrapper(null, PrimitiveType.Null, m_currentToken.Clone(), this);
                     break;
 
-                case JSToken.PreprocessorConstant:
+                case JSToken.ConditionalCompilationVariable:
                     ast = new ConstantWrapperPP(m_currentToken.Code, false, m_currentToken.Clone(), this);
                     break;
 
@@ -3998,11 +4114,14 @@ namespace Microsoft.Ajax.Utilities
                             switch (m_currentToken.Token)
                             {
                                 case JSToken.Identifier:
-                                    field = new ObjectLiteralField(m_scanner.GetIdentifier(), PrimitiveType.String, m_currentToken.Clone(), this);
+                                    field = new ObjectLiteralField(m_scanner.Identifier, PrimitiveType.String, m_currentToken.Clone(), this);
                                     break;
 
                                 case JSToken.StringLiteral:
-                                    field = new ObjectLiteralField(m_scanner.EscapedString, PrimitiveType.String, m_currentToken.Clone(), this);
+                                    field = new ObjectLiteralField(m_scanner.StringLiteralValue, PrimitiveType.String, m_currentToken.Clone(), this)
+                                        {
+                                            MayHaveIssues = m_scanner.LiteralHasIssues
+                                        };
                                     break;
 
                                 case JSToken.IntegerLiteral:
@@ -4040,7 +4159,7 @@ namespace Microsoft.Ajax.Utilities
 
                                 case JSToken.Get:
                                 case JSToken.Set:
-                                    if (m_scanner.PeekToken() == JSToken.Colon)
+                                    if (PeekToken() == JSToken.Colon)
                                     {
                                         // the field is either "get" or "set" and isn't the special Mozilla getter/setter
                                         field = new ObjectLiteralField(m_currentToken.Code, PrimitiveType.String, m_currentToken.Clone(), this);
@@ -4075,7 +4194,7 @@ namespace Microsoft.Ajax.Utilities
                                 default:
                                     // NOT: identifier token, string, number, or getter/setter.
                                     // see if it's a token that COULD be an identifierName.
-                                    ident = m_scanner.GetIdentifier();
+                                    ident = m_scanner.Identifier;
                                     if (JSScanner.IsValidIdentifier(ident))
                                     {
                                         // BY THE SPEC, if it's a valid identifierName -- which includes reserved words -- then it's
@@ -4144,7 +4263,7 @@ namespace Microsoft.Ajax.Utilities
                                         }
                                         else
                                         {
-                                            if (m_scanner.GotEndOfLine)
+                                            if (m_foundEndOfLine)
                                             {
                                                 ReportError(JSError.NoRightCurly);
                                             }
@@ -4244,6 +4363,30 @@ namespace Microsoft.Ajax.Utilities
 
                             // parse the number as a hex integer, converted to a double
                             doubleValue = (double)System.Convert.ToInt64(str, 16);
+                        }
+                        else if (str[1] == 'o' || str[1] == 'O')
+                        {
+                            if (str.Length == 2)
+                            {
+                                // 0o???? must be a parse error. Just return zero
+                                doubleValue = 0;
+                                return false;
+                            }
+
+                            // parse the number as an octal integer without the prefix, converted to a double
+                            doubleValue = (double)System.Convert.ToInt64(str.Substring(2), 8);
+                        }
+                        else if (str[1] == 'b' || str[1] == 'B')
+                        {
+                            if (str.Length == 2)
+                            {
+                                // 0b???? must be a parse error. Just return zero
+                                doubleValue = 0;
+                                return false;
+                            }
+
+                            // parse the number as a binary integer without the prefix, converted to a double
+                            doubleValue = (double)System.Convert.ToInt64(str.Substring(2), 2);
                         }
                         else
                         {
@@ -4455,10 +4598,10 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else if (JSScanner.IsValidIdentifier(m_currentToken.Code))
                                 {
-                                    // it must be a keyword, because it can't technically be an indentifier,
-                                    // but it IS a valid identifier format. Throw the error but still
+                                    // it must be a keyword, because it can't technically be an identifier,
+                                    // but it IS a valid identifier format. Throw a warning but still
                                     // create the constant wrapper so we can output it as-is
-                                    ReportError(JSError.NoIdentifier, m_currentToken.Clone(), true);
+                                    ReportError(JSError.KeywordUsedAsIdentifier, m_currentToken.Clone(), true);
                                     id = new ConstantWrapper(m_currentToken.Code, PrimitiveType.String, m_currentToken.Clone(), this);
                                 }
                                 else
@@ -4469,7 +4612,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                             else
                             {
-                                id = new ConstantWrapper(m_scanner.GetIdentifier(), PrimitiveType.String, m_currentToken.Clone(), this);
+                                id = new ConstantWrapper(m_scanner.Identifier, PrimitiveType.String, m_currentToken.Clone(), this);
                             }
                             GetNextToken();
                             expression = new Member(expression.Context.CombineWith(id.Context), this, expression, id.Context.Code, id.Context);
@@ -4551,7 +4694,7 @@ namespace Microsoft.Ajax.Utilities
                                     //  (ie. Response.Write()), so make a special check here
                                     if (JSToken.Semicolon == m_currentToken.Token)
                                     {
-                                        if (JSToken.RightParenthesis == m_scanner.PeekToken())
+                                        if (JSToken.RightParenthesis == PeekToken())
                                         {
                                             ReportError(JSError.UnexpectedSemicolon, true);
                                             GetNextToken();
@@ -4669,7 +4812,7 @@ namespace Microsoft.Ajax.Utilities
                     m_useCurrentForNext = false;
                     if (m_breakRecursion++ > 10)
                     {
-                        m_currentToken = m_scanner.ScanNextToken();
+                        m_currentToken = ScanNextToken();
                     }
                 }
                 else
@@ -4679,7 +4822,7 @@ namespace Microsoft.Ajax.Utilities
 
                     // the scanner reuses the same context object for performance,
                     // so if we ever mean to hold onto it later, we need to clone it.
-                    m_currentToken = m_scanner.ScanNextToken();
+                    m_currentToken = ScanNextToken();
                 }
             }
             catch (ScannerException e)
@@ -4695,6 +4838,70 @@ namespace Microsoft.Ajax.Utilities
                     m_currentToken.HandleError(JSError.NoCommentEnd);
                 }
             }
+        }
+
+        private Context ScanNextToken()
+        {
+            m_foundEndOfLine = false;
+            m_importantComments.Clear();
+
+            var nextToken = m_scanner.ScanNextToken(false);
+            while (nextToken.Token == JSToken.WhiteSpace
+                || nextToken.Token == JSToken.EndOfLine
+                || nextToken.Token == JSToken.SingleLineComment
+                || nextToken.Token == JSToken.MultipleLineComment
+                || nextToken.Token == JSToken.Error
+                || nextToken.Token == JSToken.PreprocessorDirective)
+            {
+                if (nextToken.Token == JSToken.EndOfLine)
+                {
+                    m_foundEndOfLine = true;
+                }
+                else if (nextToken.Token == JSToken.MultipleLineComment || nextToken.Token == JSToken.SingleLineComment)
+                {
+                    if (nextToken.HasCode && nextToken.Code.Length > 2 && nextToken.Code[2] == '!')
+                    {
+                        // this is an important comment -- save it for later
+                        m_importantComments.Add(nextToken.Clone());
+                    }
+                }
+
+                nextToken = m_scanner.ScanNextToken(false);
+            }
+
+            return nextToken;
+        }
+
+        private JSToken PeekToken()
+        {
+            // clone the scanner and get the next token
+            var clonedScanner = m_scanner.Clone();
+            var peekToken = clonedScanner.ScanNextToken(false);
+
+            // there are some tokens we really don't care about when we peek
+            // for the next token
+            while (peekToken.Token == JSToken.WhiteSpace
+                || peekToken.Token == JSToken.EndOfLine
+                || peekToken.Token == JSToken.Error
+                || peekToken.Token == JSToken.SingleLineComment
+                || peekToken.Token == JSToken.MultipleLineComment
+                || peekToken.Token == JSToken.PreprocessorDirective
+                || peekToken.Token == JSToken.ConditionalCommentEnd
+                || peekToken.Token == JSToken.ConditionalCommentStart
+                || peekToken.Token == JSToken.ConditionalCompilationElse
+                || peekToken.Token == JSToken.ConditionalCompilationElseIf
+                || peekToken.Token == JSToken.ConditionalCompilationEnd
+                || peekToken.Token == JSToken.ConditionalCompilationIf
+                || peekToken.Token == JSToken.ConditionalCompilationOn
+                || peekToken.Token == JSToken.ConditionalCompilationSet
+                || peekToken.Token == JSToken.ConditionalCompilationVariable
+                || peekToken.Token == JSToken.ConditionalIf)
+            {
+                peekToken = clonedScanner.ScanNextToken(false);
+            }
+
+            // return the token type
+            return peekToken.Token;
         }
 
         private Context CurrentPositionContext()
@@ -4824,7 +5031,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (checkForEndOfLine)
                 {
-                    if (m_scanner.GotEndOfLine)
+                    if (m_foundEndOfLine)
                     {
                         m_useCurrentForNext = true;
                         throw new RecoveryTokenException(JSToken.EndOfLine, partialAST);

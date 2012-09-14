@@ -152,5 +152,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Octal()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
