@@ -761,8 +761,19 @@ namespace JSUnitTest
                 {
                     errorList.Add(e);
                 };
-            var block = parser.Parse(switchParser.JSSettings);
-            var crunchedCode = block.ToCode();
+
+            string crunchedCode;
+            if (settingsSwitches != null && settingsSwitches.IndexOf("-pponly", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // we want a pre-process only run
+                crunchedCode = parser.PreprocessOnly(switchParser.JSSettings);
+            }
+            else
+            {
+                // normal -- just run it through the parser
+                var block = parser.Parse(switchParser.JSSettings);
+                crunchedCode = block.ToCode();
+            }
 
             // output the crunched code using the proper output encoding
             using (var outputStream = new StreamWriter(outputPath, false, MainClass.GetJSEncoding(switchParser.EncodingOutputName)))

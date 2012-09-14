@@ -157,6 +157,7 @@
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef_h.js" />
     <Content Include="TestData\JS\Expected\CommandLine\Globals.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\PreprocessOnly.js" />
     <Content Include="TestData\JS\Expected\CommandLine\TermSemi1.js" />
     <Content Include="TestData\JS\Expected\CommandLine\TermSemi2.js" />
     <Content Include="TestData\JS\Expected\Comments\Comment.js" />
@@ -573,6 +574,7 @@
     <Content Include="TestData\JS\Input\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Input\Switch\NoDefaultEmptyCases.js" />
+    <Content Include="TestData\JS\Input\CommandLine\PreprocessOnly.js" />
     <Content Include="TestData\JS\Input\Switch\PrettyPrint.js" />
     <Content Include="TestData\JS\Input\Switch\PromoteBreak.js" />
     <Content Include="TestData\JS\Input\Switch\SwitchLabels.js" />

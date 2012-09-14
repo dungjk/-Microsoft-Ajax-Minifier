@@ -313,8 +313,12 @@ namespace Microsoft.Ajax.Utilities
                 int lastEndPosition = tokenContext.EndPosition;
                 while (tokenContext.Token != JSToken.EndOfFile)
                 {
-                    // just output the token and grab the next one
-                    outputStream.Write(tokenContext.Code);
+                    // just output the token and grab the next one.
+                    // but skip preprocessor directives!
+                    if (tokenContext.Token != JSToken.PreprocessorDirective)
+                    {
+                        outputStream.Write(tokenContext.Code);
+                    }
 
                     // if this the kind of token we want to know about the next time, then save it
                     switch (tokenContext.Token)

@@ -55,5 +55,12 @@ namespace JSUnitTest
     {
       TestHelper.Instance.RunTest("-global:foobar,foo -global:bar");
     }
+
+    [TestMethod]
+    public void PreprocessOnly()
+    {
+        // there shouldn't be any errors
+        TestHelper.Instance.RunErrorTest("-pponly -debug");
+    }
   }
 }

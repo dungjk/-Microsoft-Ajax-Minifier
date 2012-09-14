@@ -1,13 +1,12 @@
-function Func(p1)
+﻿function Func(p1)
 {
     //Single-line Comment:
 
     // turn on the conditional-compilation code
     //@cc_on
 
-    /*
-    Multiline Comment:
-    */
+    // the next line-feeds are \u2028 and \u2029!      /*
+    Multiline Comment using \u2028 and \u2029!      */
 
     /**********************************************************************
       multi-line comment with lines ending in asterisks

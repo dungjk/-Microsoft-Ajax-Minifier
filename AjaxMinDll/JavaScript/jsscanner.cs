@@ -540,7 +540,7 @@ namespace Microsoft.Ajax.Utilities
                         token = token == JSToken.GreaterThan ? JSToken.GreaterThanEqual
                             : token == JSToken.RightShift ? JSToken.RightShiftAssign
                             : token == JSToken.UnsignedRightShift ? JSToken.UnsignedRightShiftAssign
-                            : token;
+                            : JSToken.Error;
                     }
 
                     break;
