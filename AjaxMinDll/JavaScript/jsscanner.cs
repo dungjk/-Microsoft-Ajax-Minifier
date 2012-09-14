@@ -953,6 +953,30 @@ namespace Microsoft.Ajax.Utilities
 
                 m_currentLine++;
                 m_startLinePosition = m_currentPosition;
+
+                // keep multiple line terminators together in a single token.
+                // so get the current character after this last line terminator
+                // and then keep looping until we hit something that isn't one.
+                while ((ch = GetChar(m_currentPosition)) == '\r' || ch == '\n' || ch == '\u2028' || ch == '\u2029')
+                {
+                    if (ch == '\r')
+                    {
+                        // skip over the \r and if the next one is an \n skip over it, too
+                        if (GetChar(++m_currentPosition) == '\n')
+                        {
+                            ++m_currentPosition;
+                        }
+                    }
+                    else
+                    {
+                        // skip over any other non-\r character
+                        ++m_currentPosition;
+                    }
+
+                    // increment the line number and reset the start position
+                    m_currentLine++;
+                    m_startLinePosition = m_currentPosition;
+                }
             }
 
             // if we WERE in a single-line comment, we aren't anymore!
