@@ -43,6 +43,12 @@ namespace Microsoft.Ajax.Utilities
 
     public class SwitchParser
     {
+        #region private fields
+
+        private bool m_isMono;
+
+        #endregion
+
         #region properties
 
         /// <summary>
@@ -107,6 +113,9 @@ namespace Microsoft.Ajax.Utilities
             // initialize with default values
             JSSettings = new CodeSettings();
             CssSettings = new CssSettings();
+
+            // see if this is running under the Mono runtime (on UNIX)
+            m_isMono = Type.GetType("Mono.Runtime") != null;
         }
 
         public SwitchParser(CodeSettings jsSettings, CssSettings cssSettings)
@@ -313,10 +322,13 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // parameter switch
                     var thisArg = args[ndx];
+
+                    // don't use the forward-slash for switches if this is running under the Mono runtime. 
+                    // Mono is a .NET for UNIX implementation, and the UNIX OS uses forward slashes as the directory separator.
                     if (thisArg.Length > 1
                       && (thisArg.StartsWith("-", StringComparison.Ordinal) // this is a normal hyphen (minus character)
                       || thisArg.StartsWith("–", StringComparison.Ordinal) // this character is what Word will convert a hyphen to
-                      || thisArg.StartsWith("/", StringComparison.Ordinal)))
+                      || (!m_isMono && thisArg.StartsWith("/", StringComparison.Ordinal))))
                     {
                         // general switch syntax is -switch:param
                         var parts = thisArg.Substring(1).Split(':');
