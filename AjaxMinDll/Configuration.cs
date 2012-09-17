@@ -200,16 +200,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
                 && JSScanner.IsValidIdentifier(fromIdentifier)
                 && JSScanner.IsValidIdentifier(toIdentifier))
             {
-                if (renameIdentifiers.ContainsKey(fromIdentifier))
-                {
-                    // already exists -- replace the "to" identifier
-                    renameIdentifiers[fromIdentifier] = toIdentifier;
-                }
-                else
-                {
-                    // add it new
-                    renameIdentifiers.Add(fromIdentifier, toIdentifier);
-                }
+                renameIdentifiers[fromIdentifier] = toIdentifier;
             }
 
             reader.Close();

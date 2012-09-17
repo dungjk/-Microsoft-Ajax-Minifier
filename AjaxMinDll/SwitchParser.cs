@@ -588,26 +588,10 @@ namespace Microsoft.Ajax.Utilities
                                         else
                                         {
                                             // JS Settings
-                                            if (!JSSettings.PreprocessorValues.ContainsKey(trimmedName))
-                                            {
-                                                JSSettings.PreprocessorValues.Add(trimmedName, value);
-                                            }
-                                            else
-                                            {
-                                                // we want the latest value
-                                                JSSettings.PreprocessorValues[trimmedName] = value;
-                                            }
+                                            JSSettings.PreprocessorValues[trimmedName] = value;
 
                                             // CSS settings
-                                            if (!CssSettings.PreprocessorValues.ContainsKey(trimmedName))
-                                            {
-                                                CssSettings.PreprocessorValues.Add(trimmedName, value);
-                                            }
-                                            else
-                                            {
-                                                // we want the latest value
-                                                CssSettings.PreprocessorValues[trimmedName] = value;
-                                            }
+                                            CssSettings.PreprocessorValues[trimmedName] = value;
                                         }
 
                                         // if we're defining the DEBUG name, set the strip-debug-statements flag to false
