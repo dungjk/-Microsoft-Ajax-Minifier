@@ -181,7 +181,7 @@ namespace Microsoft.Ajax.Utilities
             m_currentToken.StartLineNumber = m_currentLine;
             m_currentToken.StartLinePosition = m_startLinePosition;
 
-            m_identifier.Clear();
+            m_identifier.Length = 0;
 
             // our case switch should be pretty efficient -- it's 9-13 and 32-126. Thsose are the most common characters 
             // we will find in the code for the start of tokens.
@@ -2475,10 +2475,15 @@ namespace Microsoft.Ajax.Utilities
                                 // not something we're looking for -- but is it a simple ///#END?
                                 if (CheckCaseInsensitiveSubstring("#END"))
                                 {
-                                    // it is! Well, we were expecting either #ENDIF or #ENDDEBUG, but we found just an #END.
-                                    // that's not how the syntax is SUPPOSED to go. But let's let it fly.
-                                    // the ending token is always the first one.
-                                    return 0;
+                                    // if the current character is not whitespace, then it's not a simple "#END"
+                                    c = GetChar(m_currentPosition);
+                                    if (IsBlankSpace(c) || IsAtEndOfLine)
+                                    {
+                                        // it is! Well, we were expecting either #ENDIF or #ENDDEBUG, but we found just an #END.
+                                        // that's not how the syntax is SUPPOSED to go. But let's let it fly.
+                                        // the ending token is always the first one.
+                                        return 0;
+                                    }
                                 }
                             }
                         }

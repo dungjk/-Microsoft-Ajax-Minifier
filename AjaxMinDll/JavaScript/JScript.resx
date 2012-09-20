@@ -238,7 +238,7 @@
     <value>Unexpected ';'</value>
   </data>
   <data name="TooManyTokensSkipped" xml:space="preserve">
-    <value>Too many errors. The file might not be a JScript .NET file</value>
+    <value>Too many errors. The file might not be a JavaScript file</value>
   </data>
   <data name="SuspectAssignment" xml:space="preserve">
     <value>Did you intend to write an assignment here?</value>
