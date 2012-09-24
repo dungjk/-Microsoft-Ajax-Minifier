@@ -2514,7 +2514,7 @@ namespace Microsoft.Ajax.Utilities
 
         private static string GetRoot(string text)
         {
-            if (text.StartsWith("-"))
+            if (text.StartsWith("-", StringComparison.Ordinal))
             {
                 var match = s_vendorSpecific.Match(text);
                 if (match.Success)
