@@ -12,5 +12,7 @@ blockquote { font-size: max(30px, 3em) }
 .bar
 {
     margin: calc(5 * min( 10px , 2em ) ) calc(10 + max( 5px, min(10 - 3em, 2in)) );
+    margin: -moz-calc(5 * min( 10px , 2em ) ) -moz-calc(10 + max( 5px, min(10 - 3em, 2in)) );
+    margin: -webkit-calc(5 * min( 10px , 2em ) ) -webkit-calc(10 + max( 5px, min(10 - 3em, 2in)) );
     padding-top: calc( 5 * (2em + -1px));
 }

@@ -66,6 +66,14 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
+        private static Regex s_vendorSpecific = new Regex(
+            @"^(\-(?<vendor>[^\-]+)\-)?(?<root>.+)$", 
+            RegexOptions.IgnoreCase | RegexOptions.Singleline
+#if !SILVERLIGHT
+            | RegexOptions.Compiled
+#endif
+            );
+
         #region Comment-related fields
 
         /// <summary>
@@ -2504,13 +2512,29 @@ namespace Microsoft.Ajax.Utilities
             return parsed;
         }
 
+        private static string GetRoot(string text)
+        {
+            if (text.StartsWith("-"))
+            {
+                var match = s_vendorSpecific.Match(text);
+                if (match.Success)
+                {
+                    text = match.Result("${root}");
+                }
+            }
+
+            return text;
+        }
+
         private Parsed ParseFunction()
         {
             Parsed parsed = Parsed.False;
             if (CurrentTokenType == TokenType.Function)
             {
-                bool crunchedRGB = false;
-                if (string.Compare(CurrentTokenText, "rgb(", StringComparison.OrdinalIgnoreCase) == 0)
+                var crunchedRGB = false;
+                var functionText = GetRoot(CurrentTokenText);
+
+                if (string.Compare(functionText, "rgb(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     // rgb function parsing
                     bool useRGB = false;
@@ -2520,7 +2544,7 @@ namespace Microsoft.Ajax.Utilities
 
                     // we're going to be building up the rgb function just in case we need it
                     StringBuilder sbRGB = new StringBuilder();
-                    sbRGB.Append("rgb(");
+                    sbRGB.Append(CurrentTokenText.ToLowerInvariant());
 
                     string comments = NextSignificantToken();
                     if (comments.Length > 0)
@@ -2685,9 +2709,9 @@ namespace Microsoft.Ajax.Utilities
                         crunchedRGB = true;
                     }
                 }
-                else if (string.Compare(CurrentTokenText, "expression(", StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(functionText, "expression(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    Append("expression(");
+                    Append(CurrentTokenText.ToLowerInvariant());
                     NextToken();
 
                     // for now, just echo out everything up to the matching closing paren, 
@@ -2772,16 +2796,16 @@ namespace Microsoft.Ajax.Utilities
                         Append(expressionCode);
                     }
                 }
-                else if (string.Compare(CurrentTokenText, "calc(", StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(functionText, "calc(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    Append("calc(");
+                    Append(CurrentTokenText.ToLowerInvariant());
                     SkipSpace();
 
                     // one sum
                     parsed = ParseSum();
                 }
-                else if (string.Compare(CurrentTokenText, "min(", StringComparison.OrdinalIgnoreCase) == 0
-                    || string.Compare(CurrentTokenText, "max(", StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(functionText, "min(", StringComparison.OrdinalIgnoreCase) == 0
+                    || string.Compare(functionText, "max(", StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     Append(CurrentTokenText.ToLowerInvariant());
                     SkipSpace();
