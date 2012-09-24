@@ -4790,6 +4790,11 @@ namespace Microsoft.Ajax.Utilities
                 nextToken = m_scanner.ScanNextToken(false);
             }
 
+            if (nextToken.Token == JSToken.EndOfFile)
+            {
+                m_foundEndOfLine = true;
+            }
+
             return nextToken;
         }
 

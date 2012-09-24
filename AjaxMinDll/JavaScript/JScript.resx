@@ -165,8 +165,8 @@
   <data name="BadContinue" xml:space="preserve">
     <value>Can't have 'continue' outside of loop</value>
   </data>
-  <data name="BadHexDigit" xml:space="preserve">
-    <value>Expected hexadecimal digit</value>
+  <data name="BadHexEscapeSequence" xml:space="preserve">
+    <value>Invalid hexadecimal escape sequence</value>
   </data>
   <data name="NoWhile" xml:space="preserve">
     <value>Expected 'while'</value>
@@ -398,5 +398,8 @@
   </data>
   <data name="ApplicationError" xml:space="preserve">
     <value>Application failed. Please report this issue.</value>
+  </data>
+  <data name="BadNumericLiteral" xml:space="preserve">
+    <value>Invalid numeric literal</value>
   </data>
 </root>

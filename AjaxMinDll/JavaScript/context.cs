@@ -30,8 +30,6 @@ namespace Microsoft.Ajax.Utilities
         public int EndPosition { get; internal set; }
         public JSToken Token { get; internal set; }
 
-        private int m_errorReported;
-
         public Context(JSParser parser)
             : this(new DocumentContext(parser))
         {
@@ -51,7 +49,6 @@ namespace Microsoft.Ajax.Utilities
             EndPosition = (Document.Source == null) ? -1 : Document.Source.Length;
 
             Token = JSToken.None;
-            m_errorReported = 1000000;
         }
 
         public Context Clone()
@@ -65,7 +62,6 @@ namespace Microsoft.Ajax.Utilities
                 EndLinePosition = this.EndLinePosition, 
                 EndPosition = this.EndPosition, 
                 Token = this.Token,
-                m_errorReported = this.m_errorReported
             };
         }
 
@@ -141,31 +137,25 @@ namespace Microsoft.Ajax.Utilities
 
         internal void HandleError(JSError errorId)
         {
-            HandleError(errorId, null, false);
+            HandleError(errorId, false);
         }
 
-        internal void HandleError(JSError errorId, bool treatAsError)
-        {
-            HandleError(errorId, null, treatAsError);
-        }
-
-        internal void HandleError(JSError errorId, String message, bool treatAsError)
+        internal void HandleError(JSError errorId, bool forceToError)
         {
             if ((errorId != JSError.UndeclaredVariable && errorId != JSError.UndeclaredFunction) || !Document.HasAlreadySeenErrorFor(Code))
             {
                 var error = new JScriptException(errorId, this);
-                if (message != null)
-                    error.Value = message;
 
-                if (treatAsError)
-                    error.IsError = treatAsError;
-
-                int sev = error.Severity;
-                if (sev < m_errorReported)
+                if (forceToError)
                 {
-                    Document.HandleError(error);
-                    m_errorReported = sev;
+                    error.IsError = true;
                 }
+                else
+                {
+                    error.IsError = error.Severity < 2;
+                }
+
+                Document.HandleError(error);
             }
         }
 

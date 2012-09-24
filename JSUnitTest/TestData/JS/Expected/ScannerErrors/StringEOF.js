@@ -1,1 +1,1 @@
-﻿var str="now is the time"
+﻿var str="now is the time

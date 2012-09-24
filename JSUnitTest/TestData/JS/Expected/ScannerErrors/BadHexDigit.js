@@ -1,1 +1,1 @@
-﻿var badHex=0;xRT
+﻿var badHex=0xRT

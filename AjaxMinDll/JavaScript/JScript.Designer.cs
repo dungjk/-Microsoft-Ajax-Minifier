@@ -124,11 +124,11 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected hexadecimal digit.
+        ///   Looks up a localized string similar to Invalid hexadecimal escape sequence.
         /// </summary>
-        internal static string BadHexDigit {
+        internal static string BadHexEscapeSequence {
             get {
-                return ResourceManager.GetString("BadHexDigit", resourceCulture);
+                return ResourceManager.GetString("BadHexEscapeSequence", resourceCulture);
             }
         }
         
@@ -138,6 +138,15 @@ namespace Microsoft.Ajax.Utilities {
         internal static string BadLabel {
             get {
                 return ResourceManager.GetString("BadLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid numeric literal.
+        /// </summary>
+        internal static string BadNumericLiteral {
+            get {
+                return ResourceManager.GetString("BadNumericLiteral", resourceCulture);
             }
         }
         

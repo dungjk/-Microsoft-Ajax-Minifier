@@ -2150,7 +2150,7 @@ namespace Microsoft.Ajax.Utilities
                 // check the name of the member for reserved words that aren't allowed
                 if (JSScanner.IsKeyword(node.Name, m_scopeStack.Peek().UseStrict))
                 {
-                    node.NameContext.HandleError(JSError.KeywordUsedAsIdentifier, true);
+                    node.NameContext.HandleError(JSError.KeywordUsedAsIdentifier);
                 }
 
                 // recurse

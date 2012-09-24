@@ -39,7 +39,7 @@ namespace Microsoft.Ajax.Utilities
         BadReturn = 1018, // "'return' statement outside of function"
         BadBreak = 1019, // "Can't have 'break' outside of loop"
         BadContinue = 1020, // "Can't have 'continue' outside of loop"
-        BadHexDigit = 1023, // "Expected hexadecimal digit"
+        BadHexEscapeSequence = 1023, // "Expected hexadecimal digit"
         NoWhile = 1024, // "Expected 'while'"
         BadLabel = 1025, // "Label redefined"
         NoLabel = 1026, // "Label not found"
@@ -105,6 +105,7 @@ namespace Microsoft.Ajax.Utilities
         ObjectLiteralReservedWord = 1303, // reserved word used as object literal property name
         NoEndIfDirective = 1304, // expected #ENDIF directive
         NoEndDebugDirective = 1305, // expected #ENDDEBUG directive
+        BadNumericLiteral = 1306, // bad numeric literal
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

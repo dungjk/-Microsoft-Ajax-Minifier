@@ -25,7 +25,7 @@ namespace JSUnitTest
     [TestMethod()]
     public void BadHexDigit()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.BadHexDigit);
+      TestHelper.Instance.RunErrorTest(null, JSError.BadNumericLiteral);
     }
 
     [TestMethod()]
