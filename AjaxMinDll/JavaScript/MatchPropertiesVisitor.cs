@@ -118,7 +118,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // see if the name matches; and if there is a field, it should be a global
                 if (string.CompareOrdinal(node.Name, m_parts[0]) == 0
-                    && (node.VariableField == null || node.VariableField.FieldType == FieldType.Global))
+                    && (node.VariableField == null || node.VariableField.FieldType == FieldType.UndefinedGlobal))
                 {
                     // match!
                     m_isMatch = true;
@@ -279,6 +279,11 @@ namespace Microsoft.Ajax.Utilities
         }
 
         public void Visit(ObjectLiteralField node)
+        {
+            // not applicable; terminate
+        }
+
+        public void Visit(ParameterDeclaration node)
         {
             // not applicable; terminate
         }

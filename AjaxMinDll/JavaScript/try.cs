@@ -25,29 +25,41 @@ namespace Microsoft.Ajax.Utilities
 		public Block CatchBlock { get; private set; }
 		public Block FinallyBlock { get; private set; }
 
-        public string CatchVarName { get; private set; }
-        public Context CatchVarContext { get; private set; }
+        public ParameterDeclaration CatchParameter { get; private set; }
+        public string CatchVarName
+        {
+            get
+            {
+                return CatchParameter.IfNotNull(v => v.Name);
+            }
+        }
+        public Context CatchVarContext
+        {
+            get
+            {
+                return CatchParameter.IfNotNull(v => v.Context);
+            }
+        }
 
-        private JSVariableField m_catchVariable;
-        public JSVariableField CatchVariable { get { return m_catchVariable; } }
-
-        public TryNode(Context context, JSParser parser, AstNode tryBlock, string catchVarName, Context catchVarContext, AstNode catchBlock, AstNode finallyBlock)
+        public TryNode(Context context, JSParser parser, AstNode tryBlock, ParameterDeclaration catchParameter, AstNode catchBlock, AstNode finallyBlock)
             : base(context, parser)
         {
-            CatchVarName = catchVarName;
-            TryBlock = ForceToBlock(tryBlock);
-            CatchBlock = ForceToBlock(catchBlock);
-            FinallyBlock = ForceToBlock(finallyBlock);
-            if (TryBlock != null) { TryBlock.Parent = this; }
-            if (CatchBlock != null) { CatchBlock.Parent = this; }
-            if (FinallyBlock != null) { FinallyBlock.Parent = this; }
+            CatchParameter = catchParameter;
+            if (CatchParameter != null) { CatchParameter.Parent = this; }
 
-            CatchVarContext = catchVarContext;
+            TryBlock = ForceToBlock(tryBlock);
+            if (TryBlock != null) { TryBlock.Parent = this; }
+
+            CatchBlock = ForceToBlock(catchBlock);
+            if (CatchBlock != null) { CatchBlock.Parent = this; }
+
+            FinallyBlock = ForceToBlock(finallyBlock);
+            if (FinallyBlock != null) { FinallyBlock.Parent = this; }
         }
 
         public void SetCatchVariable(JSVariableField field)
         {
-            m_catchVariable = field;
+            CatchParameter.Field = field;
         }
 
         public override void Accept(IVisitor visitor)
@@ -62,7 +74,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(TryBlock, CatchBlock, FinallyBlock);
+                return EnumerateNonNullNodes(TryBlock, CatchParameter, CatchBlock, FinallyBlock);
             }
         }
 
@@ -72,6 +84,12 @@ namespace Microsoft.Ajax.Utilities
             {
                 TryBlock = ForceToBlock(newNode);
                 if (TryBlock != null) { TryBlock.Parent = this; }
+                return true;
+            }
+            if (CatchParameter == oldNode)
+            {
+                CatchParameter = newNode as ParameterDeclaration;
+                if (CatchParameter != null) { CatchParameter.Parent = this; }
                 return true;
             }
             if (CatchBlock == oldNode)

@@ -384,9 +384,6 @@
   <data name="UnclosedFunction" xml:space="preserve">
     <value>End of file encountered before function is properly closed</value>
   </data>
-  <data name="AmbiguousVariable" xml:space="preserve">
-    <value>Ambiguous variable name '{0}'. Cross-browser behavior difference.</value>
-  </data>
   <data name="FallbackEncodingFailed" xml:space="preserve">
     <value>Fallback character encoding failed</value>
   </data>

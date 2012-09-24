@@ -58,11 +58,14 @@ namespace Microsoft.Ajax.Utilities
                 {
                     owningScope = owningScope.Parent;
                 }
+
                 // create the variable in that scope
                 variableField = owningScope.DeclareField(name, value, attributes);
+
                 // and create an inner-reference in our scope
                 variableField = CreateInnerField(variableField);
             }
+
             return variableField;
         }
     }

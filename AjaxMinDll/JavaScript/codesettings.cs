@@ -87,6 +87,7 @@ namespace Microsoft.Ajax.Utilities
             this.MinifyCode = true;
             this.PreserveFunctionNames = false;
             this.PreserveImportantComments = true;
+            this.QuoteObjectLiteralProperties = false;
             this.ReorderScopeDeclarations = true;
             this.RemoveFunctionExpressionNames = true;
             this.RemoveUnneededCode = true;
@@ -143,6 +144,7 @@ namespace Microsoft.Ajax.Utilities
                 PreprocessorDefineList = this.PreprocessorDefineList,
                 PreserveFunctionNames = this.PreserveFunctionNames,
                 PreserveImportantComments = this.PreserveImportantComments,
+                QuoteObjectLiteralProperties = this.QuoteObjectLiteralProperties,
                 RemoveFunctionExpressionNames = this.RemoveFunctionExpressionNames,
                 RemoveUnneededCode = this.RemoveUnneededCode,
                 RenamePairs = this.RenamePairs,
@@ -751,6 +753,15 @@ namespace Microsoft.Ajax.Utilities
         /// mark as the very first in-comment character (//! or /*!).
         /// </summary>
         public bool PreserveImportantComments
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to always quote object literal property names.
+        /// Default is false.
+        /// </summary>
+        public bool QuoteObjectLiteralProperties
         {
             get; set;
         }

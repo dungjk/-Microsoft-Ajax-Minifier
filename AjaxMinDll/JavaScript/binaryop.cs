@@ -304,6 +304,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                return Operand1.IfNotNull(o => o.IsConstant) && Operand2.IfNotNull(o => o.IsConstant);
+            }
+        }
+
         public override string ToString()
         {
             return (Operand1 == null ? "<null>" : Operand1.ToString())

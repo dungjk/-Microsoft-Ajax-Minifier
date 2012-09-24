@@ -122,6 +122,14 @@ namespace Microsoft.Ajax.Utilities
                 && Operand.IsEquivalentTo(otherUnary.Operand);
         }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                return Operand.IfNotNull(o => o.IsConstant);
+            }
+        }
+
         public override string ToString()
         {
             return OutputVisitor.OperatorString(OperatorToken)

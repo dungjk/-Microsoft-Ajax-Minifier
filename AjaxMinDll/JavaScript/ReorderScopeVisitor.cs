@@ -192,9 +192,10 @@ namespace Microsoft.Ajax.Utilities
                                         varDecl.Parser,
                                         varDecl.Identifier,
                                         varDecl.Field.OriginalContext,
-                                        null,
-                                        0,
-                                        true);
+                                        null)
+                                        {
+                                            Field = varDecl.Field
+                                        };
 
                                     // replace the special vardecl with the copy
                                     varStatement.ReplaceChild(varDecl, copyDecl);
@@ -215,7 +216,10 @@ namespace Microsoft.Ajax.Utilities
                                     assignments.Add(new BinaryOperator(
                                         varDecl.Context,
                                         varDecl.Parser,
-                                        new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varDecl.Parser),
+                                        new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varDecl.Parser) 
+                                        { 
+                                            VariableField = varDecl.Field
+                                        },
                                         initializer,
                                         JSToken.Assign));
                                 }
@@ -255,7 +259,7 @@ namespace Microsoft.Ajax.Utilities
                                 var varDecl = varStatement[0];
                                 varStatement.Parent.ReplaceChild(
                                     varStatement,
-                                    new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varStatement.Parser));
+                                    new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varStatement.Parser) { VariableField = varDecl.Field });
                             }
                             else
                             {

@@ -1134,6 +1134,25 @@ namespace Microsoft.Ajax.Utilities
                                 OnJSOnlyParameter();
                                 break;
 
+                            case "OBJ":
+                                // two options: MINify or QUOTE
+                                if (paramPartUpper == "MIN")
+                                {
+                                    JSSettings.QuoteObjectLiteralProperties = false;
+                                }
+                                else if (paramPartUpper == "QUOTE")
+                                {
+                                    JSSettings.QuoteObjectLiteralProperties = true;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
                             case "PRETTY":
                             case "P": // <-- old style
                                 // doesn't take a flag -- just set to pretty

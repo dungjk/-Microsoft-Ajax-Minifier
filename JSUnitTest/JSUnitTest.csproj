@@ -261,6 +261,7 @@
     <Content Include="TestData\JS\Expected\Literals\NullCharacter.js" />
     <Content Include="TestData\JS\Expected\Literals\Number.js" />
     <Content Include="TestData\JS\Expected\Literals\ObjectLiteral.js" />
+    <Content Include="TestData\JS\Expected\Literals\ObjectLiteral_quote.js" />
     <Content Include="TestData\JS\Expected\Literals\Octal.js" />
     <Content Include="TestData\JS\Expected\Literals\StrictEncoding.js" />
     <Content Include="TestData\JS\Expected\Literals\Strings.js" />

@@ -177,10 +177,10 @@
     <Compile Include="JavaScript\functionobject.cs" />
     <Compile Include="JavaScript\functionscope.cs" />
     <Compile Include="JavaScript\gettersetter.cs" />
-    <Compile Include="JavaScript\globalobject.cs" />
     <Compile Include="JavaScript\globalscope.cs" />
     <Compile Include="JavaScript\if.cs" />
     <Compile Include="JavaScript\importantcomment.cs" />
+    <Compile Include="JavaScript\INameReference.cs" />
     <Compile Include="JavaScript\ISourceMap.cs" />
     <Compile Include="JavaScript\IVisitor.cs" />
     <Compile Include="JavaScript\JavaScriptSymbol.cs" />
@@ -202,6 +202,7 @@
     <Compile Include="JavaScript\MatchPropertiesVisitor.cs" />
     <Compile Include="JavaScript\member.cs" />
     <Compile Include="JavaScript\missing.cs" />
+    <Compile Include="JavaScript\INameDeclaration.cs" />
     <Compile Include="JavaScript\NewParensVisitor.cs" />
     <Compile Include="JavaScript\objectliteral.cs" />
     <Compile Include="JavaScript\objectliteralfield.cs" />
@@ -210,6 +211,7 @@
     <Compile Include="JavaScript\parameterdeclaration.cs" />
     <Compile Include="JavaScript\regexpliteral.cs" />
     <Compile Include="JavaScript\ReorderScopeVisitor.cs" />
+    <Compile Include="JavaScript\ResolutionVisitor.cs" />
     <Compile Include="JavaScript\return.cs" />
     <Compile Include="JavaScript\scannerexception.cs" />
     <Compile Include="JavaScript\ScriptSharpSourceMap.cs" />

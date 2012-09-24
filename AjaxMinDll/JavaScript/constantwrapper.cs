@@ -56,6 +56,15 @@ namespace Microsoft.Ajax.Utilities
             set;
         }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                // this is a constant
+                return true;
+            }
+        }
+
         public override bool IsEquivalentTo(AstNode otherNode)
         {
             var otherConstant = otherNode as ConstantWrapper;

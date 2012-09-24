@@ -89,5 +89,13 @@ namespace Microsoft.Ajax.Utilities
             // didn't find it
             return string.Empty;
         }
+
+        public override bool IsConstant
+        {
+            get
+            {
+                return Elements == null ? true : Elements.IsConstant;
+            }
+        }
     }
 }

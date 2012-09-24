@@ -16,9 +16,9 @@
 
 namespace Microsoft.Ajax.Utilities
 {
-    public sealed class ParameterDeclaration
+    public sealed class ParameterDeclaration : AstNode, INameDeclaration
     {
-        public JSVariableField Field { get; private set; }
+        private string m_name;
 
         public string Name
         {
@@ -32,34 +32,23 @@ namespace Microsoft.Ajax.Utilities
         {
             get { return m_name; }
         }
-        private string m_name;
 
-        public Context Context { get { return m_context; } }
-        private Context m_context;
+        public int Position { get; private set; }
+
+        public JSVariableField Field { get; set; }
 
         public ParameterDeclaration(Context context, JSParser parser, string identifier, int position)
+            : base(context, parser)
         {
             m_name = identifier;
-            m_context = (context != null ? context : new Context(parser));
+            Position = position;
+        }
 
-            FunctionScope functionScope = parser != null ? parser.ScopeStack.Peek() as FunctionScope : null;
-            if (functionScope != null)
+        public override void Accept(IVisitor visitor)
+        {
+            if (visitor != null)
             {
-                if (!functionScope.NameTable.ContainsKey(m_name))
-                {
-                    Field = functionScope.AddNewArgumentField(m_name);
-                    Field.OriginalContext = m_context;
-                    Field.Position = position;
-                }
-            }
-            else
-            {
-                // parameters should only be under a function scope
-                m_context.HandleError(
-                  JSError.DuplicateName,
-                  m_name,
-                  true
-                  );
+                visitor.Visit(this);
             }
         }
     }

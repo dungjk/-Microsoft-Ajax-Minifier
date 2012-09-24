@@ -149,9 +149,10 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // get all the fields in the scope
-            JSVariableField[] scopeFields = scope.GetFields();
+            List<JSVariableField> scopeFields = new List<JSVariableField>(scope.FieldTable);
+
             // sort the fields
-            Array.Sort(scopeFields, FieldComparer.Instance);
+            scopeFields.Sort(FieldComparer.Instance);
 
             // iterate over all the fields
             foreach (JSVariableField variableField in scopeFields)
@@ -212,7 +213,7 @@ namespace Microsoft.Ajax.Utilities
                 // if this is a named function expression, we still want to know if it's
                 // referenced by anyone
                 if (funcObj.FunctionType == FunctionType.Expression
-                    && !string.IsNullOrEmpty(funcObj.Name))
+                    && funcObj.Identifier != null)
                 {
                     // output a comma separator if not the first item, otherwise 
                     // open the square bracket
@@ -229,7 +230,7 @@ namespace Microsoft.Ajax.Utilities
                         ));
                 }
             }
-            else if (!funcObj.FunctionScope.IsReferenced(null) && m_useReferenceCounts)
+            else if (!funcObj.IsReferenced && m_useReferenceCounts)
             {
                 // local function that isn't referenced -- unreachable!
                 // output a comma separator if not the first item, otherwise 
@@ -289,152 +290,162 @@ namespace Microsoft.Ajax.Utilities
         // TYPE: var, function, argument, arguments array, possibly undefined
         private void WriteMemberReport(JSVariableField variableField, ActivationObject immediateScope)
         {
-            string scope = string.Empty;
-            string type = string.Empty;
-            string crunched = string.Empty;
-            string name = variableField.Name;
-            if (variableField.IsLiteral)
+            // don't report arguments fields that aren't referenced because
+            // we add those fields to the function scopes automatically
+            if (variableField.FieldType != FieldType.Arguments || variableField.RefCount > 0)
             {
-                name = variableField.FieldValue.ToString();
-            }
+                string scope = string.Empty;
+                string type = string.Empty;
+                string crunched = string.Empty;
+                string name = variableField.Name;
+                if (variableField.IsLiteral)
+                {
+                    name = variableField.FieldValue.ToString();
+                }
 
-            // calculate the crunched label
-            if (variableField.CrunchedName != null)
-            {
-                crunched = AjaxMin.CrunchedTo.FormatInvariant(variableField.CrunchedName, variableField.RefCount);
-            }
+                // calculate the crunched label
+                if (variableField.CrunchedName != null)
+                {
+                    crunched = AjaxMin.CrunchedTo.FormatInvariant(variableField.CrunchedName, variableField.RefCount);
+                }
+                else
+                {
+                    crunched = AjaxMin.MemberInfoReferences.FormatInvariant(variableField.RefCount);
+                }
 
-            // get the field's default scope and type
-            GetFieldScopeType(variableField, immediateScope, out scope, out type);
-            if (variableField.FieldType == FieldType.WithField)
-            {
-                // if the field is a with field, we won't be using the crunched field (since
-                // those fields can't be crunched), so let's overload it with what the field
-                // could POSSIBLY be if the with object doesn't have a property of that name
-                string outerScope;
-                string outerType;
-                GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
-                crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
-            }
+                // get the field's default scope and type
+                GetFieldScopeType(variableField, immediateScope, out scope, out type);
+                if (variableField.FieldType == FieldType.WithField)
+                {
+                    // if the field is a with field, we won't be using the crunched field (since
+                    // those fields can't be crunched), so let's overload it with what the field
+                    // could POSSIBLY be if the with object doesn't have a property of that name
+                    string outerScope;
+                    string outerType;
+                    GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
+                    crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
+                }
 
-            var definedLocation = string.Empty;
-            var definedContext = (variableField.OuterField ?? variableField).OriginalContext;
-            if (definedContext != null)
-            {
-                definedLocation = AjaxMin.MemberInfoDefinedLocation.FormatInvariant(definedContext.StartLineNumber, definedContext.StartColumn + 1);
-            }
+                var definedLocation = string.Empty;
+                var definedContext = (variableField.OuterField ?? variableField).OriginalContext;
+                if (definedContext != null)
+                {
+                    definedLocation = AjaxMin.MemberInfoDefinedLocation.FormatInvariant(definedContext.StartLineNumber, definedContext.StartColumn + 1);
+                }
 
-            // format the entire string
-            WriteProgress(AjaxMin.MemberInfoFormat.FormatInvariant(
-                name,
-                scope,
-                type,
-                crunched,
-                definedLocation
-                ));
+                // format the entire string
+                WriteProgress(AjaxMin.MemberInfoFormat.FormatInvariant(
+                    name,
+                    scope,
+                    type,
+                    crunched,
+                    definedLocation
+                    ));
+            }
         }
 
         private static void GetFieldScopeType(JSVariableField variableField, ActivationObject immediateScope, out string scope, out string type)
         {
             // default scope is blank
             scope = string.Empty;
+            switch (variableField.FieldType)
+            {
+                case FieldType.Argument:
+                    type = AjaxMin.MemberInfoTypeArgument;
+                    break;
 
-            if (variableField.FieldType == FieldType.Argument)
-            {
-                type = AjaxMin.MemberInfoTypeArgument;
-            }
-            else if (variableField.FieldType == FieldType.Arguments)
-            {
-                type = AjaxMin.MemberInfoTypeArguments;
-            }
-            else if (variableField.FieldType == FieldType.Predefined)
-            {
-                scope = AjaxMin.MemberInfoScopeGlobalObject;
-                type = variableField.IsFunction
-                    ? AjaxMin.MemberInfoBuiltInMethod
-                    : AjaxMin.MemberInfoBuiltInProperty;
-            }
-            else if (variableField.FieldType == FieldType.Global)
-            {
-                if ((variableField.Attributes & FieldAttributes.RTSpecialName) == FieldAttributes.RTSpecialName)
-                {
-                    // this is a special "global." It might not be a global, but something referenced
-                    // in a with scope somewhere down the line.
-                    type = AjaxMin.MemberInfoPossiblyUndefined;
-                }
-                else if (variableField.FieldValue is FunctionObject)
-                {
-                    if (variableField.NamedFunctionExpression == null)
+                case FieldType.Arguments:
+                    type = AjaxMin.MemberInfoTypeArguments;
+                    break;
+
+                case FieldType.GhostCatch:
+                case FieldType.GhostFunctionExpression:
+                default:
+                    // ghost fields -- ignore
+                    type = string.Empty;
+                    break;
+
+                case FieldType.Global:
+                case FieldType.UndefinedGlobal:
+                    if ((variableField.Attributes & FieldAttributes.RTSpecialName) == FieldAttributes.RTSpecialName)
                     {
-                        type = AjaxMin.MemberInfoGlobalFunction;
+                        // this is a special "global." It might not be a global, but something referenced
+                        // in a with scope somewhere down the line.
+                        type = AjaxMin.MemberInfoPossiblyUndefined;
+                    }
+                    else if (variableField.FieldValue is FunctionObject)
+                    {
+                        if (variableField.GhostedField == null)
+                        {
+                            type = AjaxMin.MemberInfoGlobalFunction;
+                        }
+                        else
+                        {
+                            type = AjaxMin.MemberInfoFunctionExpression;
+                        }
+                    }
+                    else if (variableField.InitializationOnly)
+                    {
+                        type = AjaxMin.MemberInfoGlobalConst;
                     }
                     else
                     {
-                        type = AjaxMin.MemberInfoFunctionExpression;
+                        type = AjaxMin.MemberInfoGlobalVar;
                     }
-                }
-                else if (variableField.InitializationOnly)
-                {
-                    type = AjaxMin.MemberInfoGlobalConst;
-                }
-                else
-                {
-                    type = AjaxMin.MemberInfoGlobalVar;
-                }
-            }
-            else if (variableField.FieldType == FieldType.WithField)
-            {
-                type = AjaxMin.MemberInfoWithField;
-            }
-            else if (variableField.FieldType == FieldType.NamedFunctionExpression)
-            {
-                type = AjaxMin.MemberInfoSelfFuncExpr;
-            }
-            else if (variableField.FieldType == FieldType.Local)
-            {
-                // type string
-                if (variableField.FieldValue is FunctionObject)
-                {
-                    if (variableField.NamedFunctionExpression == null)
+                    break;
+
+                case FieldType.Local:
+                    // type string
+                    if (variableField.FieldValue is FunctionObject)
                     {
-                        type = AjaxMin.MemberInfoLocalFunction;
+                        if (variableField.GhostedField == null)
+                        {
+                            type = AjaxMin.MemberInfoLocalFunction;
+                        }
+                        else
+                        {
+                            type = AjaxMin.MemberInfoFunctionExpression;
+                        }
+                    }
+                    else if (variableField.IsLiteral)
+                    {
+                        type = AjaxMin.MemberInfoLocalLiteral;
+                    }
+                    else if (variableField.InitializationOnly)
+                    {
+                        type = AjaxMin.MemberInfoLocalConst;
                     }
                     else
                     {
-                        type = AjaxMin.MemberInfoFunctionExpression;
+                        type = AjaxMin.MemberInfoLocalVar;
                     }
-                }
-                else if (variableField.IsLiteral)
-                {
-                    type = AjaxMin.MemberInfoLocalLiteral;
-                }
-                else if (variableField.InitializationOnly)
-                {
-                    type = AjaxMin.MemberInfoLocalConst;
-                }
-                else
-                {
-                    type = AjaxMin.MemberInfoLocalVar;
-                }
 
-                // scope string
-                // this is a local variable, so there MUST be a non-null function scope passed
-                // to us. That function scope will be the scope we are expecting local variables
-                // to be defined in. If the field is defined in that scope, it's local -- otherwise
-                // it must be an outer variable.
-                JSVariableField scopeField = immediateScope[variableField.Name];
-                if (scopeField == null || scopeField.OuterField != null)
-                {
-                    scope = AjaxMin.MemberInfoScopeOuter;
-                }
-                else
-                {
-                    scope = AjaxMin.MemberInfoScopeLocal;
-                }
-            }
-            else
-            {
-                type = AjaxMin.MemberInfoBuiltInObject;
+                    // scope string
+                    // this is a local variable, so there MUST be a non-null function scope passed
+                    // to us. That function scope will be the scope we are expecting local variables
+                    // to be defined in. If the field is defined in that scope, it's local -- otherwise
+                    // it must be an outer variable.
+                    JSVariableField scopeField = immediateScope[variableField.Name];
+                    if (scopeField == null || scopeField.OuterField != null)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
+                    else
+                    {
+                        scope = AjaxMin.MemberInfoScopeLocal;
+                    }
+                    break;
+
+                case FieldType.Predefined:
+                    scope = AjaxMin.MemberInfoScopeGlobalObject;
+                    type = variableField.IsFunction
+                        ? AjaxMin.MemberInfoBuiltInMethod
+                        : AjaxMin.MemberInfoBuiltInProperty;
+                    break;
+
+                case FieldType.WithField:
+                    type = AjaxMin.MemberInfoWithField;
+                    break;
             }
         }
 

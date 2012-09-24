@@ -26,7 +26,7 @@ namespace Microsoft.Ajax.Utilities
     }
 
 
-    public sealed class Lookup : Expression
+    public sealed class Lookup : Expression, INameReference
     {
         public JSVariableField VariableField { get; internal set; }
 
@@ -179,5 +179,26 @@ namespace Microsoft.Ajax.Utilities
         {
             return m_name;
         }
+
+        #region INameReference Members
+
+        public ActivationObject VariableScope
+        {
+            get
+            {
+                // get the enclosing scope from the node, but that might be 
+                // a block scope -- we only want variable scopes: functions or global.
+                // so walk up until we find one.
+                var enclosingScope = this.EnclosingScope;
+                while (enclosingScope is BlockScope)
+                {
+                    enclosingScope = enclosingScope.Parent;
+                }
+
+                return enclosingScope;
+            }
+        }
+
+        #endregion
     }
 }

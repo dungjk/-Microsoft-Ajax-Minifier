@@ -28,8 +28,7 @@ namespace Microsoft.Ajax.Utilities
         private uint m_uniqueNumber;// = 0;
         private bool m_encounteredCCOn;// = false;
         private MatchPropertiesVisitor m_matchVisitor;// == null;
-
-        private Stack<ActivationObject> ScopeStack { get { return m_parser.ScopeStack; } }
+        private Stack<ActivationObject> m_scopeStack;
 
         private uint UniqueNumber
         {
@@ -50,6 +49,8 @@ namespace Microsoft.Ajax.Utilities
         public AnalyzeNodeVisitor(JSParser parser)
         {
             m_parser = parser;
+            m_scopeStack = new Stack<ActivationObject>();
+            m_scopeStack.Push(parser.GlobalScope);
         }
 
         public override void Visit(BinaryOperator node)
@@ -115,9 +116,9 @@ namespace Microsoft.Ajax.Utilities
                             // the field is an initialization-only field -- we should NOT be assigning to it
                             lookup.Context.HandleError(JSError.AssignmentToConstant, true);
                         }
-                        else if (ScopeStack.Peek().UseStrict)
+                        else if (m_scopeStack.Peek().UseStrict)
                         {
-                            if (lookup.VariableField == null)
+                            if (lookup.VariableField == null || lookup.VariableField.FieldType == FieldType.UndefinedGlobal)
                             {
                                 // strict mode cannot assign to undefined fields
                                 node.Operand1.Context.HandleError(JSError.StrictModeUndefinedVariable, true);
@@ -318,7 +319,7 @@ namespace Microsoft.Ajax.Utilities
                 // analyze all the statements in our block and recurse them
                 if (node.BlockScope != null)
                 {
-                    ScopeStack.Push(node.BlockScope);
+                    m_scopeStack.Push(node.BlockScope);
                 }
                 try
                 {
@@ -329,7 +330,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (node.BlockScope != null)
                     {
-                        ScopeStack.Pop();
+                        m_scopeStack.Pop();
                     }
                 }
 
@@ -1106,8 +1107,31 @@ namespace Microsoft.Ajax.Utilities
                     // if this is a member, and it's a debugger object, and it's a constructor....
                     if (member != null && member.IsDebuggerStatement && node.IsConstructor)
                     {
-                        // we need to replace our debugger object with a generic Object
-                        node.ReplaceChild(node.Function, new Lookup("Object", node.Function.Context, m_parser));
+                        // see if the name "Object" resolves to the global predefined
+                        AstNode replacementFunction;
+                        var objectField = node.EnclosingScope.FindReference("Object");
+                        if (objectField.FieldType == FieldType.Predefined)
+                        {
+                            // we need to replace our debugger object with a generic Object
+                            replacementFunction = new Lookup("Object", node.Function.Context, m_parser) 
+                            { 
+                                VariableField = objectField
+                            };
+                        }
+                        else
+                        {
+                            // they've redefined the Object name! Okay, let's just put a function expression in there.
+                            // not as compact, but will always work. Nothing to resolve inside the scope because the body is empty
+                            // and it's not a named function expression.
+                            var functionExpression = new FunctionObject(null, node.Parser, FunctionType.Expression, null, null, node.Function.Context);
+                            functionExpression.FunctionScope = new FunctionScope(node.EnclosingScope, true, node.Parser)
+                                    {
+                                        FunctionObject = functionExpression
+                                    };
+                            replacementFunction = functionExpression;
+                        }
+
+                        node.ReplaceChild(node.Function, replacementFunction);
 
                         // and make sure the node list is empty
                         if (node.Arguments != null && node.Arguments.Count > 0)
@@ -1413,7 +1437,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // mark this scope as unknown so we don't crunch out locals 
                             // we might reference in the eval at runtime
-                            ScopeStack.Peek().IsKnownAtCompileTime = false;
+                            m_scopeStack.Peek().IsKnownAtCompileTime = false;
                         }
                     }
                 }
@@ -1686,7 +1710,7 @@ namespace Microsoft.Ajax.Utilities
                 // and we don't need to analyze the parameters because they were fielded-up
                 // back when the function object was created, too
 
-                if (ScopeStack.Peek().UseStrict)
+                if (m_scopeStack.Peek().UseStrict)
                 {
                     // if this is a function delcaration, it better be a source element.
                     // if not, we want to throw a warning that different browsers will treat this function declaration
@@ -1721,26 +1745,24 @@ namespace Microsoft.Ajax.Utilities
                     if (node.ParameterDeclarations != null
                         && node.ParameterDeclarations.Count > 0)
                     {
-                        var parameterMap = new Dictionary<string, string>(node.ParameterDeclarations.Count);
+                        var parameterMap = new HashSet<string>();
                         foreach (var parameter in node.ParameterDeclarations)
                         {
                             // if it already exists in the map, then it's a dup
-                            if (parameterMap.ContainsKey(parameter.Name))
+                            var parameterName = (parameter as ParameterDeclaration).IfNotNull(p => p.Name);
+                            if (parameterMap.Add(parameterName))
                             {
-                                // already exists -- throw an error
-                                parameter.Context.HandleError(JSError.StrictModeDuplicateArgument, true);
-                            }
-                            else
-                            {
-                                // not in there, add it now
-                                parameterMap.Add(parameter.Name, parameter.Name);
-
                                 // now check to see if it's one of the two forbidden names
-                                if (string.CompareOrdinal(parameter.Name, "eval") == 0
-                                    || string.CompareOrdinal(parameter.Name, "arguments") == 0)
+                                if (string.CompareOrdinal(parameterName, "eval") == 0
+                                    || string.CompareOrdinal(parameterName, "arguments") == 0)
                                 {
                                     parameter.Context.HandleError(JSError.StrictModeArgumentName, true);
                                 }
+                            }
+                            else
+                            {
+                                // already exists -- throw an error
+                                parameter.Context.HandleError(JSError.StrictModeDuplicateArgument, true);
                             }
                         }
                     }
@@ -1750,33 +1772,32 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // not strict
                     // if there are duplicate parameter names, throw a warning
-                    var parameterMap = new Dictionary<string, string>(node.ParameterDeclarations.Count);
+                    var parameterMap = new HashSet<string>();
                     foreach (var parameter in node.ParameterDeclarations)
                     {
                         // if it already exists in the map, then it's a dup
-                        if (parameterMap.ContainsKey(parameter.Name))
+                        var parameterName = (parameter as ParameterDeclaration).IfNotNull(p => p.Name);
+                        if (!parameterMap.Add(parameterName))
                         {
                             // already exists -- throw an error
                             parameter.Context.HandleError(JSError.DuplicateName, false);
                         }
-                        else
-                        {
-                            // not in there, add it now
-                            parameterMap.Add(parameter.Name, parameter.Name);
-                        }
                     }
                 }
 
-                // push the stack and analyze the body
-                ScopeStack.Push(node.FunctionScope);
-                try
+                if (node.Body != null)
                 {
-                    // recurse the body
-                    node.Body.Accept(this);
-                }
-                finally
-                {
-                    ScopeStack.Pop();
+                    // push the stack and analyze the body
+                    m_scopeStack.Push(node.FunctionScope);
+                    try
+                    {
+                        // recurse the body
+                        node.Body.Accept(this);
+                    }
+                    finally
+                    {
+                        m_scopeStack.Pop();
+                    }
                 }
             }
         }
@@ -2042,106 +2063,29 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // check the name of the variable for reserved words that aren't allowed
-                ActivationObject scope = ScopeStack.Peek();
+                ActivationObject scope = m_scopeStack.Peek();
                 if (JSScanner.IsKeyword(node.Name, scope.UseStrict))
                 {
                     node.Context.HandleError(JSError.KeywordUsedAsIdentifier, true);
                 }
 
-                node.VariableField = scope.FindReference(node.Name);
-                if (node.VariableField == null)
+                // no variable field means ignore it
+                if (node.VariableField != null && node.VariableField.FieldType == FieldType.Predefined)
                 {
-                    // this must be a global. if it isn't in the global space, throw an error
-                    // this name is not in the global space.
-                    // if it isn't generated, then we want to throw an error
-                    // we also don't want to report an undefined variable if it is the object
-                    // of a typeof operator
-                    UnaryOperator unaryOperator;
-                    if (!node.IsGenerated
-                        && ((unaryOperator = node.Parent as UnaryOperator) == null || unaryOperator.OperatorToken != JSToken.TypeOf))
+                    // this is a predefined field. If it's Nan or Infinity, we should
+                    // replace it with the numeric value in case we need to later combine
+                    // some literal expressions.
+                    if (string.CompareOrdinal(node.Name, "NaN") == 0)
                     {
-                        // report this undefined reference
-                        node.Context.ReportUndefined(node);
-
-                        // possibly undefined global (but definitely not local)
-                        var isFunction = node.Parent is CallNode && ((CallNode)(node.Parent)).Function == node;
-                        node.Context.HandleError(
-                          (isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable),
-                          false);
+                        // don't analyze the new ConstantWrapper -- we don't want it to take part in the
+                        // duplicate constant combination logic should it be turned on.
+                        node.Parent.ReplaceChild(node, new ConstantWrapper(double.NaN, PrimitiveType.Number, node.Context, m_parser));
                     }
-
-                    if (!(scope is GlobalScope))
+                    else if (string.CompareOrdinal(node.Name, "Infinity") == 0)
                     {
-                        // add it to the scope so we know this scope references the global
-                        scope.AddField(new JSVariableField(
-                            FieldType.Global,
-                            node.Name,
-                            0,
-                            Missing.Value));
-                    }
-                }
-                else
-                {
-                    // BUT if this field is a place-holder in the containing scope of a named
-                    // function expression, then we need to throw an ambiguous named function expression
-                    // error because this could cause problems.
-                    // OR if the field is already marked as ambiguous, throw the error
-                    if (node.VariableField.IsAmbiguous)
-                    {
-                        // throw an error
-                        node.Context.HandleError(JSError.AmbiguousNamedFunctionExpression, false);
-
-                        // if we are preserving function names, then we need to mark this field
-                        // as not crunchable
-                        if (m_parser.Settings.PreserveFunctionNames)
-                        {
-                            node.VariableField.CanCrunch = false;
-                        }
-                    }
-                    else if (node.VariableField.NamedFunctionExpression != null)
-                    {
-                        // the field for this lookup is tied to a named function expression!
-                        // we really only care if this variable is being assigned something
-                        // OTHER than a function expression with the same name (which should
-                        // be the NamedFunctionExpression property.
-                        var binaryOperator = node.Parent as BinaryOperator;
-                        if (binaryOperator != null && binaryOperator.IsAssign)
-                        {
-                            // this is ambiguous cross-browser
-                            node.VariableField.IsAmbiguous = true;
-
-                            // throw an error
-                            node.Context.HandleError(JSError.AmbiguousNamedFunctionExpression, false);
-                        }
-                    }
-
-                    // see if this scope already points to this name
-                    if (scope[node.Name] == null)
-                    {
-                        // create an inner reference so we don't keep walking up the scope chain for this name
-                        node.VariableField = scope.CreateInnerField(node.VariableField);
-                    }
-
-                    // add the reference
-                    node.VariableField.AddReference(scope);
-
-                    if (node.VariableField.FieldType == FieldType.Predefined)
-                    {
-                        // this is a predefined field. If it's Nan or Infinity, we should
-                        // replace it with the numeric value in case we need to later combine
-                        // some literal expressions.
-                        if (string.CompareOrdinal(node.Name, "NaN") == 0)
-                        {
-                            // don't analyze the new ConstantWrapper -- we don't want it to take part in the
-                            // duplicate constant combination logic should it be turned on.
-                            node.Parent.ReplaceChild(node, new ConstantWrapper(double.NaN, PrimitiveType.Number, node.Context, m_parser));
-                        }
-                        else if (string.CompareOrdinal(node.Name, "Infinity") == 0)
-                        {
-                            // don't analyze the new ConstantWrapper -- we don't want it to take part in the
-                            // duplicate constant combination logic should it be turned on.
-                            node.Parent.ReplaceChild(node, new ConstantWrapper(double.PositiveInfinity, PrimitiveType.Number, node.Context, m_parser));
-                        }
+                        // don't analyze the new ConstantWrapper -- we don't want it to take part in the
+                        // duplicate constant combination logic should it be turned on.
+                        node.Parent.ReplaceChild(node, new ConstantWrapper(double.PositiveInfinity, PrimitiveType.Number, node.Context, m_parser));
                     }
                 }
             }
@@ -2204,7 +2148,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // check the name of the member for reserved words that aren't allowed
-                if (JSScanner.IsKeyword(node.Name, ScopeStack.Peek().UseStrict))
+                if (JSScanner.IsKeyword(node.Name, m_scopeStack.Peek().UseStrict))
                 {
                     node.NameContext.HandleError(JSError.KeywordUsedAsIdentifier, true);
                 }
@@ -2221,7 +2165,7 @@ namespace Microsoft.Ajax.Utilities
                 // recurse
                 base.Visit(node);
 
-                if (ScopeStack.Peek().UseStrict)
+                if (m_scopeStack.Peek().UseStrict)
                 {
                     // now strict-mode checks
                     // go through all property names and make sure there are no duplicates.
@@ -2352,7 +2296,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // first we want to make sure that we are indeed within a function scope.
                 // it makes no sense to have a return outside of a function
-                ActivationObject scope = ScopeStack.Peek();
+                ActivationObject scope = m_scopeStack.Peek();
                 while (scope != null && !(scope is FunctionScope))
                 {
                     scope = scope.Parent;
@@ -2565,12 +2509,6 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // get the field -- it should have been generated when the scope was analyzed
-                if (node.CatchBlock != null && !string.IsNullOrEmpty(node.CatchVarName))
-                {
-                    node.SetCatchVariable(node.CatchBlock.BlockScope[node.CatchVarName]);
-                }
-
                 // anaylze the blocks
                 base.Visit(node);
 
@@ -2588,7 +2526,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // check strict-mode restrictions
-                if (ScopeStack.Peek().UseStrict && !string.IsNullOrEmpty(node.CatchVarName))
+                if (m_scopeStack.Peek().UseStrict && !string.IsNullOrEmpty(node.CatchVarName))
                 {
                     // catch variable cannot be named "eval" or "arguments"
                     if (string.CompareOrdinal(node.CatchVarName, "eval") == 0
@@ -2609,7 +2547,7 @@ namespace Microsoft.Ajax.Utilities
                 // strict mode has some restrictions
                 if (node.OperatorToken == JSToken.Delete)
                 {
-                    if (ScopeStack.Peek().UseStrict)
+                    if (m_scopeStack.Peek().UseStrict)
                     {
                         // operand of a delete operator cannot be a variable name, argument name, or function name
                         // which means it can't be a lookup
@@ -2622,16 +2560,15 @@ namespace Microsoft.Ajax.Utilities
                 else if (node.OperatorToken == JSToken.Increment || node.OperatorToken == JSToken.Decrement)
                 {
                     // strict mode has some restrictions we want to check now
-                    if (ScopeStack.Peek().UseStrict)
+                    if (m_scopeStack.Peek().UseStrict)
                     {
                         // the operator cannot be the eval function or arguments object.
                         // that means the operator is a lookup, and the field for that lookup
                         // is the arguments object or the predefined "eval" object.
-                        // could probably just check the names, since we can't create local variables
-                        // with those names anyways.
                         var lookup = node.Operand as Lookup;
                         if (lookup != null
                             && (lookup.VariableField == null
+                            || lookup.VariableField.FieldType == FieldType.UndefinedGlobal
                             || lookup.VariableField.FieldType == FieldType.Arguments
                             || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0)))
                         {
@@ -2741,11 +2678,11 @@ namespace Microsoft.Ajax.Utilities
                 base.Visit(node);
 
                 // check the name of the variable for reserved words that aren't allowed
-                if (JSScanner.IsKeyword(node.Identifier, ScopeStack.Peek().UseStrict))
+                if (JSScanner.IsKeyword(node.Identifier, m_scopeStack.Peek().UseStrict))
                 {
                     node.Context.HandleError(JSError.KeywordUsedAsIdentifier, true);
                 }
-                else if (ScopeStack.Peek().UseStrict 
+                else if (m_scopeStack.Peek().UseStrict 
                     && (string.CompareOrdinal(node.Identifier, "eval") == 0
                     || string.CompareOrdinal(node.Identifier, "arguments") == 0))
                 {
@@ -2791,7 +2728,7 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 // throw a warning discouraging the use of this statement
-                if (ScopeStack.Peek().UseStrict)
+                if (m_scopeStack.Peek().UseStrict)
                 {
                     // with-statements not allowed in strict code at all
                     node.Context.HandleError(JSError.StrictModeNoWith, true);
@@ -2914,14 +2851,16 @@ namespace Microsoft.Ajax.Utilities
                     Lookup lookup = binaryOp.Operand1 as Lookup;
                     if (lookup != null)
                     {
-                        varDecls.Add(new VariableDeclaration(
+                        var varDecl = new VariableDeclaration(
                             binaryOp.Context.Clone(),
                             parser,
                             lookup.Name,
                             lookup.Context.Clone(),
-                            binaryOp.Operand2,
-                            0,
-                            true));
+                            binaryOp.Operand2)
+                            {
+                                Field = lookup.VariableField
+                            };
+                        varDecls.Add(varDecl);
                     }
                 }
                 else if (binaryOp.OperatorToken == JSToken.Comma)

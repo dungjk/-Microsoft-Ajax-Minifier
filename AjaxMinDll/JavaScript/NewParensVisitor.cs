@@ -186,6 +186,11 @@ namespace Microsoft.Ajax.Utilities
             // we're good
         }
 
+        public void Visit(ParameterDeclaration node)
+        {
+            // we're good
+        }
+
         public void Visit(RegExpLiteral node)
         {
             // we're good

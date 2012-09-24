@@ -20,8 +20,8 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-
-    public sealed class AstNodeList : AstNode
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public sealed class AstNodeList : AstNode, IEnumerable<AstNode>
     {
         private List<AstNode> m_list;
 
@@ -202,6 +202,25 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                foreach (var item in m_list)
+                {
+                    if (item != null)
+                    {
+                        if (!item.IsConstant)
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -218,5 +237,23 @@ namespace Microsoft.Ajax.Utilities
 
             return sb.ToString();
         }
+
+        #region IEnumerable<AstNode> Members
+
+        public IEnumerator<AstNode> GetEnumerator()
+        {
+            return m_list.GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return m_list.GetEnumerator();
+        }
+
+        #endregion
     }
 }

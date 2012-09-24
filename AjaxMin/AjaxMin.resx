@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Error" xml:space="preserve">
     <value>Error</value>
@@ -412,6 +412,8 @@ Valid JSOPTS are zero or more of:
         Default is True.
   -new:(keep|collapse) &gt; whether to collapse certain constructors with known
         literals. Default is collapse.
+  -obj:(min|quote) &gt; whether to minify object literal property names or to
+        always quote them. Default is to minify.
   -norename:IDENT(,IDENT)* &gt; specify one or more comma-separated identifiers
         that should not be automatically renamed. May be repeated as necessary.
   -rename:(all|localization|none) &gt; automatic local variable and function 
@@ -601,5 +603,8 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   </data>
   <data name="InternalCompilerError" xml:space="preserve">
     <value>Internal Compiler Error</value>
+  </data>
+  <data name="MemberInfoReferences" xml:space="preserve">
+    <value>[{0} references]</value>
   </data>
 </root>

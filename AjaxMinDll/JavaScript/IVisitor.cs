@@ -52,6 +52,7 @@ namespace Microsoft.Ajax.Utilities
         void Visit(Member node);
         void Visit(ObjectLiteral node);
         void Visit(ObjectLiteralField node);
+        void Visit(ParameterDeclaration node);
         void Visit(RegExpLiteral node);
         void Visit(ReturnNode node);
         void Visit(Switch node);

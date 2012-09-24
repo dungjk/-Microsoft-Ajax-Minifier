@@ -1572,10 +1572,28 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
 
-                // call the base to format the value
-                // determine whether we need quotes or not
-                if (node.PrimitiveType == PrimitiveType.String)
+                if (Settings.QuoteObjectLiteralProperties)
                 {
+                    // we always want to quote object literal property names, no matter whether
+                    // they are valid JS identifiers, numbers, or whatever. Typically this is done
+                    // because we're generating JSON output, which requires quotes.
+                    if (node.PrimitiveType == PrimitiveType.String)
+                    {
+                        // strings are always quoted anyway
+                        Visit(node as ConstantWrapper);
+                    }
+                    else
+                    {
+                        // output quotes around it
+                        Output('"');
+                        Visit(node as ConstantWrapper);
+                        Output('"');
+                    }
+                }
+                else if (node.PrimitiveType == PrimitiveType.String)
+                {
+                    // call the base to format the value
+                    // determine whether we need quotes or not
                     var propertyName = node.ToString();
                     if (!string.IsNullOrEmpty(propertyName)
                         && JSScanner.IsSafeIdentifier(propertyName)
@@ -1602,6 +1620,15 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 EndSymbol(symbol);
+            }
+        }
+
+        public void Visit(ParameterDeclaration node)
+        {
+            if (node != null)
+            {
+                // just output the node's name
+                Output(node.Name);
             }
         }
 
@@ -1842,7 +1869,11 @@ namespace Microsoft.Ajax.Utilities
         {
             NewLine();
             Output("catch(");
-            Output(node.CatchVariable != null ? node.CatchVariable.ToString() : node.CatchVarName);
+            if (node.CatchParameter != null)
+            {
+                node.CatchParameter.Accept(this);
+            }
+
             OutputPossibleLineBreak(')');
 
             if (node.CatchBlock == null || node.CatchBlock.Count == 0)
@@ -2526,7 +2557,7 @@ namespace Microsoft.Ajax.Utilities
                             // we want to loop backwards until we either find a parameter that is referenced.
                             // at that point, lastRef will be the index of the last referenced parameter so
                             // we can output from 0 to lastRef
-                            var argumentField = node.ParameterDeclarations[lastRef].Field;
+                            var argumentField = (node.ParameterDeclarations[lastRef] as ParameterDeclaration).IfNotNull(p => p.Field);
                             if (argumentField != null && !argumentField.IsReferenced)
                             {
                                 --lastRef;
@@ -2553,9 +2584,10 @@ namespace Microsoft.Ajax.Utilities
                         var paramDecl = node.ParameterDeclarations[ndx];
                         if (paramDecl != null)
                         {
-                            Output(paramDecl.Name);
+                            paramDecl.Accept(this);
                         }
                     }
+
                     Unindent();
                     OutputPossibleLineBreak(')');
                 }

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -31,27 +32,68 @@ namespace Microsoft.Ajax.Utilities
         Arguments,
         Argument,
         WithField,
-        NamedFunctionExpression,
+        GhostCatch,
+        GhostFunctionExpression,
+        UndefinedGlobal,
     }
 
     public class JSVariableField
     {
+        private ActivationObject m_owningScope; 
+        private HashSet<INameReference> m_referenceTable;
+        private bool m_canCrunch;// = false;
+        private bool m_isDeclared; //= false;
+        private bool m_isGenerated;
+        private string m_crunchedName;// = null;
+
         // never update this context object. It is shared
         public Context OriginalContext { get; set; }
 
         public string Name { get; private set; }
-        public FieldType FieldType { get; private set; }
-        public bool IsFunction { get; internal set; }
+        public FieldType FieldType { get; set; }
+        public FieldAttributes Attributes { get; set; }
+        public Object FieldValue { get; set; }
 
-        public JSVariableField NamedFunctionExpression { get; set; }
+        public bool IsFunction { get; internal set; }
         public bool IsAmbiguous { get; set; }
         public bool IsPlaceholder { get; set; }
-        public int RefCount { get; private set; }
-        public JSVariableField OuterField { get; set; }
-        public Object FieldValue { get; set; }
-        public FieldAttributes Attributes { get; set; }
-        public int Position { get; set; }
+
         public bool InitializationOnly { get; set; }
+        public int Position { get; set; }
+
+        public JSVariableField OuterField { get; set; }
+
+        public ActivationObject OwningScope 
+        {
+            get
+            {
+                // but the get -- if we are an inner field, we always
+                // want to get the owning scope of the outer field
+                return OuterField == null ? m_owningScope : OuterField.OwningScope;
+            }
+            set
+            {
+                // simple set -- should always point to the scope in whose
+                // name table this field has been added, which isn't necessarily
+                // the owning scope, because this may be an inner field. But keep
+                // this value in case we ever break the link to the outer field.
+                m_owningScope = value;
+            }
+        }
+
+        public JSVariableField GhostedField { get; set; }
+
+        public int RefCount
+        {
+            get
+            {
+                return m_referenceTable.Count;
+            }
+        }
+        public ICollection<INameReference> References
+        {
+            get { return m_referenceTable; }
+        }
 
         public bool IsLiteral
         {
@@ -61,7 +103,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool m_canCrunch;// = false;
         public bool CanCrunch
         {
             get { return m_canCrunch; }
@@ -80,7 +121,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool m_isDeclared; //= false;
         public bool IsDeclared
         {
             get { return m_isDeclared; }
@@ -94,7 +134,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool m_isGenerated;
         public bool IsGenerated
         {
             get
@@ -117,7 +156,6 @@ namespace Microsoft.Ajax.Utilities
 
         // we'll set this after analyzing all the variables in the
         // script in order to shrink it down even further
-        private string m_crunchedName;// = null;
         public string CrunchedName
         {
             get
@@ -158,8 +196,7 @@ namespace Microsoft.Ajax.Utilities
                 if (funcObj != null)
                 {
                     // ask the function object if it's referenced. 
-                    // Pass the field refcount because it would be useful for func declarations
-                    return funcObj.IsReferenced(RefCount);
+                    return funcObj.IsReferenced;
                 }
                 return RefCount > 0;
             }
@@ -167,6 +204,8 @@ namespace Microsoft.Ajax.Utilities
 
         public JSVariableField(FieldType fieldType, string name, FieldAttributes fieldAttributes, object value)
         {
+            m_referenceTable = new HashSet<INameReference>();
+
             Name = name;
             Attributes = fieldAttributes;
             FieldValue = value;
@@ -175,9 +214,16 @@ namespace Microsoft.Ajax.Utilities
 
         internal JSVariableField(FieldType fieldType, JSVariableField outerField)
         {
+            if (outerField == null)
+            {
+                throw new ArgumentNullException("outerField");
+            }
+
+            m_referenceTable = new HashSet<INameReference>();
+
             // set values based on the outer field
-            Debug.Assert(outerField != null, "Parameter outerField cannot be null");
             OuterField = outerField;
+
             Name = outerField.Name;
             Attributes = outerField.Attributes;
             FieldValue = outerField.FieldValue;
@@ -198,6 +244,7 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case FieldType.Arguments:
+                    IsDeclared = false;
                     CanCrunch = false;
                     break;
 
@@ -209,16 +256,27 @@ namespace Microsoft.Ajax.Utilities
                     CanCrunch = true;
                     break;
 
-                case FieldType.NamedFunctionExpression:
-                    CanCrunch = OuterField == null ? true : OuterField.CanCrunch;
-                    IsFunction = true;
-                    break;
-
                 case FieldType.Predefined:
+                    IsDeclared = false;
                     CanCrunch = false;
                     break;
 
                 case FieldType.WithField:
+                    CanCrunch = false;
+                    break;
+
+                case FieldType.GhostCatch:
+                    CanCrunch = true;
+                    IsPlaceholder = true;
+                    break;
+
+                case FieldType.GhostFunctionExpression:
+                    CanCrunch = OuterField == null ? true : OuterField.CanCrunch;
+                    IsFunction = true;
+                    IsPlaceholder = true;
+                    break;
+
+                case FieldType.UndefinedGlobal:
                     CanCrunch = false;
                     break;
 
@@ -228,25 +286,27 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void AddReference(ActivationObject scope)
+        public void AddReference(INameReference reference)
         {
-            // if we have an outer field, add the reference to it
-            if (OuterField != null)
+            if (reference != null)
             {
-                OuterField.AddReference(scope);
-            }
+                m_referenceTable.Add(reference);
 
-            ++RefCount;
-            if (FieldValue is FunctionObject)
-            {
-                // add the reference to the scope
-                ((FunctionObject)FieldValue).FunctionScope.AddReference(scope);
+                if (this.OuterField != null)
+                {
+                    this.OuterField.AddReference(reference);
+                }
             }
+        }
 
-            // no longer a placeholder if we are referenced
-            if (IsPlaceholder)
+        public void AddReferences(IEnumerable<INameReference> references)
+        {
+            if (references != null)
             {
-                IsPlaceholder = false;
+                foreach (var reference in references)
+                {
+                    AddReference(reference);
+                }
             }
         }
 

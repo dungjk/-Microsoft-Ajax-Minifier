@@ -220,9 +220,6 @@
     <Compile Include="..\AjaxMinDll\JavaScript\gettersetter.cs">
       <Link>JavaScript\gettersetter.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMinDll\JavaScript\globalobject.cs">
-      <Link>JavaScript\globalobject.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\globalscope.cs">
       <Link>JavaScript\globalscope.cs</Link>
     </Compile>
@@ -231,6 +228,12 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\importantcomment.cs">
       <Link>JavaScript\importantcomment.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\INameDeclaration.cs">
+      <Link>JavaScript\INameDeclaration.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\INameReference.cs">
+      <Link>JavaScript\INameReference.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\ISourceMap.cs">
       <Link>JavaScript\ISourceMap.cs</Link>
@@ -309,6 +312,9 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\ReorderScopeVisitor.cs">
       <Link>JavaScript\ReorderScopeVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ResolutionVisitor.cs">
+      <Link>JavaScript\ResolutionVisitor.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\return.cs">
       <Link>JavaScript\return.cs</Link>

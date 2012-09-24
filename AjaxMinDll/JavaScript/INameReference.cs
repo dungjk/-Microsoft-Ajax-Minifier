@@ -1,4 +1,4 @@
-// catchscope.cs
+﻿// INameReference.cs
 //
 // Copyright 2010 Microsoft Corporation
 //
@@ -14,24 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
+using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-
-    public sealed class CatchScope : BlockScope
+    public interface INameReference
     {
-        public JSVariableField CatchField { get; set; }
-
-        internal CatchScope(ActivationObject parent, Context catchContext, JSParser parser)
-            : base(parent, catchContext, parser)
-        {
-        }
-
-        public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)
-        {
-            return new JSVariableField(FieldType.Local, name, attributes, value);
-        }
+        ActivationObject VariableScope { get; }
     }
 }

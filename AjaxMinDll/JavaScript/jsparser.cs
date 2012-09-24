@@ -110,21 +110,6 @@ namespace Microsoft.Ajax.Utilities
         }
         private GlobalScope m_globalScope;
 
-        internal Stack<ActivationObject> ScopeStack
-        {
-            get
-            {
-                if (m_scopeStack == null)
-                {
-                    // create the initial scope stack
-                    m_scopeStack = new Stack<ActivationObject>();
-                    m_scopeStack.Push(GlobalScope);
-                }
-                return m_scopeStack;
-            }
-        }
-        private Stack<ActivationObject> m_scopeStack;// = null;
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.ContextError.#ctor(System.Boolean,System.Int32,System.String,System.String,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Int32,System.String)")]
         internal bool OnCompilerError(JScriptException se)
         {
@@ -295,6 +280,8 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        #region pre-process only
+
         public void PreprocessOnly(CodeSettings settings, TextWriter outputStream)
         {
             if (outputStream != null)
@@ -427,6 +414,8 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        #endregion
+
         //---------------------------------------------------------------------------------------
         // Parse
         //
@@ -447,13 +436,9 @@ namespace Microsoft.Ajax.Utilities
             // make sure the global scope knows about our known global names
             GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalCollection, m_settings.DebugLookupCollection);
 
-            // parse a block of statements
-            Block scriptBlock = ParseStatements();
-
-            //foreach (var token in m_scanner.TokenCounts.Keys)
-            //{
-            //    Debug.WriteLine("Token {0}: {1} instances".FormatInvariant(token.ToString(), m_scanner.TokenCounts[token]));
-            //}
+            // parse a block of statements and resolve everything
+            var scriptBlock = ParseStatements();
+            ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
 
             if (scriptBlock != null && Settings.MinifyCode)
             {
@@ -470,14 +455,6 @@ namespace Microsoft.Ajax.Utilities
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
 
-                // then do a depth-first traversal of the scope tree. When we come to a global
-                // field referenced by the scope, add it to the verboten set for this scope
-                // and all its parent scopes, all the way up the chain. If we come across an
-                // outer-scope local field, add it to the verboten field of this scope and
-                // all scopes up to but not including the scope where it is actually defined.
-                // leaf to root (bottom up)
-                m_globalScope.ReserveFields();
-
                 // if we want to crunch any names....
                 if (m_settings.LocalRenaming != LocalRenaming.KeepAll
                     && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
@@ -485,7 +462,7 @@ namespace Microsoft.Ajax.Utilities
                     // then do a top-down traversal of the scope tree. For each field that had not
                     // already been crunched (globals and outers will already be crunched), crunch
                     // the name with a crunch iterator that does not use any names in the verboten set.
-                    m_globalScope.HyperCrunch();
+                    m_globalScope.AutoRenameFields();
                 }
 
                 // if we want to evaluate literal expressions, do so now
@@ -508,6 +485,7 @@ namespace Microsoft.Ajax.Utilities
                 // variable names that don't collide with any existing variables.
                 m_globalScope.ValidateGeneratedNames();
             }
+
             return scriptBlock;
         }
 
@@ -545,6 +523,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 block = new Block(expression.Context.Clone(), this);
                 block.Append(expression);
+                ResolutionVisitor.Apply(block, GlobalScope, m_settings);
             }
             
             if (block != null && Settings.MinifyCode)
@@ -562,14 +541,6 @@ namespace Microsoft.Ajax.Utilities
                 // root to leaf (top down)
                 m_globalScope.AnalyzeScope();
 
-                // then do a depth-first traversal of the scope tree. When we come to a global
-                // field referenced by the scope, add it to the verboten set for this scope
-                // and all its parent scopes, all the way up the chain. If we come across an
-                // outer-scope local field, add it to the verboten field of this scope and
-                // all scopes up to but not including the scope where it is actually defined.
-                // leaf to root (bottom up)
-                m_globalScope.ReserveFields();
-
                 // if we want to crunch any names....
                 if (m_settings.LocalRenaming != LocalRenaming.KeepAll
                     && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
@@ -577,7 +548,7 @@ namespace Microsoft.Ajax.Utilities
                     // then do a top-down traversal of the scope tree. For each field that had not
                     // already been crunched (globals and outers will already be crunched), crunch
                     // the name with a crunch iterator that does not use any names in the verboten set.
-                    m_globalScope.HyperCrunch();
+                    m_globalScope.AutoRenameFields();
                 }
 
                 // if we want to evaluate literal expressions, do so now
@@ -1236,16 +1207,13 @@ namespace Microsoft.Ajax.Utilities
         {
             // create the appropriate statement: var- or const-statement
             Declaration varList;
-            FieldAttributes visibility;
             if (m_currentToken.Token == JSToken.Var)
             {
                 varList = new Var(m_currentToken.Clone(), this);
-                visibility = (FieldAttributes)0;
             }
             else if (m_currentToken.Token == JSToken.Const)
             {
                 varList = new ConstStatement(m_currentToken.Clone(), this);
-                visibility = FieldAttributes.InitOnly;
             }
             else
             {
@@ -1262,7 +1230,7 @@ namespace Microsoft.Ajax.Utilities
                 m_noSkipTokenSet.Add(NoSkipTokenSet.s_EndOfLineToken);
                 try
                 {
-                    identInit = ParseIdentifierInitializer(JSToken.None, visibility);
+                    identInit = ParseIdentifierInitializer(JSToken.None);
                 }
                 catch (RecoveryTokenException exc)
                 {
@@ -1336,7 +1304,7 @@ namespace Microsoft.Ajax.Utilities
         //  inToken is JSToken.In whenever the potential expression that initialize a variable
         //  cannot contain an 'in', as in the for statement. inToken is JSToken.None otherwise
         //---------------------------------------------------------------------------------------
-        private AstNode ParseIdentifierInitializer(JSToken inToken, FieldAttributes visibility)
+        private AstNode ParseIdentifierInitializer(JSToken inToken)
         {
             string variableName = null;
             AstNode assignmentExpr = null;
@@ -1489,7 +1457,7 @@ namespace Microsoft.Ajax.Utilities
                 m_noSkipTokenSet.Remove(NoSkipTokenSet.s_VariableDeclNoSkipTokenSet);
             }
 
-            VariableDeclaration result = new VariableDeclaration(context, this, variableName, idContext, assignmentExpr, visibility);
+            VariableDeclaration result = new VariableDeclaration(context, this, variableName, idContext, assignmentExpr);
 
             result.IsCCSpecialCase = ccSpecialCase;
             if (ccSpecialCase)
@@ -1697,13 +1665,13 @@ namespace Microsoft.Ajax.Utilities
                     {
                         isForIn = true;
                         Var varList = new Var(m_currentToken.Clone(), this);
-                        varList.Append(ParseIdentifierInitializer(JSToken.In, (FieldAttributes)0));
+                        varList.Append(ParseIdentifierInitializer(JSToken.In));
 
                         // a list of variable initializers is allowed only in a for(;;)
                         while (JSToken.Comma == m_currentToken.Token)
                         {
                             isForIn = false;
-                            varList.Append(ParseIdentifierInitializer(JSToken.In, (FieldAttributes)0));
+                            varList.Append(ParseIdentifierInitializer(JSToken.In));
                             //initializer = new Comma(initializer.context.CombineWith(var.context), initializer, var);
                         }
 
@@ -2401,8 +2369,6 @@ namespace Microsoft.Ajax.Utilities
                     ReportError(JSError.StatementBlockExpected, withCtx, true);
                 }
 
-                WithScope withScope = new WithScope(ScopeStack.Peek(), withCtx, this);
-                ScopeStack.Push(withScope);
                 try
                 {
                     // parse a Statement, not a SourceElement
@@ -2431,17 +2397,8 @@ namespace Microsoft.Ajax.Utilities
                             block.Append(exc._partiallyComputedNode);
                         }
                     }
-                    block.BlockScope = withScope;
                     exc._partiallyComputedNode = new WithNode(withCtx, this, obj, block);
                     throw;
-                }
-                finally
-                {
-                    // pop off the with-scope
-                    ScopeStack.Pop();
-
-                    // save the with-scope on the block
-                    block.BlockScope = withScope;
                 }
             }
             finally
@@ -2761,7 +2718,6 @@ namespace Microsoft.Ajax.Utilities
             Block body = null;
             Context idContext = null;
             Block handler = null;
-            CatchScope catchScope = null;
             Block finally_block = null;
             RecoveryTokenException excInFinally = null;
             m_blockType.Add(BlockType.Block);
@@ -2865,20 +2821,8 @@ namespace Microsoft.Ajax.Utilities
                             ReportError(JSError.NoLeftCurly);
                         }
 
-                        // create the catch-scope and push it onto the stack
-                        catchScope = new CatchScope(ScopeStack.Peek(), idContext, this);
-                        ScopeStack.Push(catchScope);
-
-                        try
-                        {
-                            // parse the block
-                            handler = ParseBlock();
-                        }
-                        finally
-                        {
-                            // pop off the catch scope and assign it to the block
-                            ScopeStack.Pop();
-                        }
+                        // parse the block
+                        handler = ParseBlock();
 
                         tryCtx.UpdateWith(handler.Context);
                     }
@@ -2897,7 +2841,6 @@ namespace Microsoft.Ajax.Utilities
                                 handler.Append(exc._partiallyComputedNode);
                             }
                         }
-                        handler.BlockScope = catchScope;
                         if (IndexOfToken(NoSkipTokenSet.s_NoTrySkipTokenSet, exc) == -1)
                         {
                             throw;
@@ -2941,19 +2884,20 @@ namespace Microsoft.Ajax.Utilities
             finally
             {
                 m_blockType.RemoveAt(m_blockType.Count - 1);
-                if (handler != null)
-                {
-                    handler.BlockScope = catchScope;
-                }
             }
 
-            string catchVariableName = idContext == null ? null : idContext.Code;
+            ParameterDeclaration catchParameter = null;
+            if (idContext != null)
+            {
+                catchParameter = new ParameterDeclaration(idContext, this, idContext.Code, 0);
+            }
+
             if (excInFinally != null)
             {
-                excInFinally._partiallyComputedNode = new TryNode(tryCtx, this, body, catchVariableName, idContext, handler, finally_block);
+                excInFinally._partiallyComputedNode = new TryNode(tryCtx, this, body, catchParameter, handler, finally_block);
                 throw excInFinally;
             }
-            return new TryNode(tryCtx, this, body, catchVariableName, idContext, handler, finally_block);
+            return new TryNode(tryCtx, this, body, catchParameter, handler, finally_block);
         }
 
         //---------------------------------------------------------------------------------------
@@ -2974,7 +2918,7 @@ namespace Microsoft.Ajax.Utilities
         private FunctionObject ParseFunction(FunctionType functionType, Context fncCtx)
         {
             Lookup name = null;
-            List<ParameterDeclaration> formalParameters = null;
+            AstNodeList formalParameters = null;
             Block body = null;
             bool inExpression = (functionType == FunctionType.Expression);
 
@@ -3021,14 +2965,6 @@ namespace Microsoft.Ajax.Utilities
             Dictionary<string, LabelInfo> labelTable = m_labelTable;
             m_labelTable = new Dictionary<string, LabelInfo>();
 
-            // create the function scope and stick it onto the scope stack
-            FunctionScope functionScope = new FunctionScope(
-              ScopeStack.Peek(),
-              (functionType != FunctionType.Declaration),
-              this
-              );
-            ScopeStack.Push(functionScope);
-
             try
             {
                 // get the formal parameters
@@ -3067,20 +3003,15 @@ namespace Microsoft.Ajax.Utilities
 
                 if (m_currentToken.Token == JSToken.LeftParenthesis)
                 {
+                    // create the parameter list
+                    formalParameters = new AstNodeList(m_currentToken.Clone(), this);
+
                     // skip the open paren
                     GetNextToken();
-
-                    Context paramArrayContext = null;
-                    formalParameters = new List<ParameterDeclaration>();
 
                     // create the list of arguments and update the context
                     while (JSToken.RightParenthesis != m_currentToken.Token)
                     {
-                        if (paramArrayContext != null)
-                        {
-                            ReportError(JSError.ParameterListNotLast, paramArrayContext, true);
-                            paramArrayContext = null;
-                        }
                         String id = null;
                         m_noSkipTokenSet.Add(NoSkipTokenSet.s_FunctionDeclNoSkipTokenSet);
                         try
@@ -3112,15 +3043,15 @@ namespace Microsoft.Ajax.Utilities
                                     id = m_scanner.Identifier;
                                 }
 
-                                Context paramCtx = m_currentToken.Clone();
+                                formalParameters.Append(new ParameterDeclaration(m_currentToken.Clone(), this, id, formalParameters.Count));
                                 GetNextToken();
-
-                                formalParameters.Add(new ParameterDeclaration(paramCtx, this, id, formalParameters.Count));
                             }
 
                             // got an arg, it should be either a ',' or ')'
                             if (JSToken.RightParenthesis == m_currentToken.Token)
+                            {
                                 break;
+                            }
                             else if (JSToken.Comma != m_currentToken.Token)
                             {
                                 // deal with error in some "intelligent" way
@@ -3140,6 +3071,7 @@ namespace Microsoft.Ajax.Utilities
                                         ReportError(JSError.NoComma);
                                 }
                             }
+
                             GetNextToken();
                         }
                         catch (RecoveryTokenException exc)
@@ -3183,27 +3115,18 @@ namespace Microsoft.Ajax.Utilities
                                 var constantWrapper = statement as ConstantWrapper;
                                 if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
                                 {
-                                    var directive = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
-                                    if (directive.UseStrict)
-                                    {
-                                        // mark the function's scope as strict
-                                        functionScope.UseStrict = true;
-                                    }
-
-                                    body.Append(directive);
+                                    // make hte statement a directive prologue instead of a constant wrapper
+                                    statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
                                 }
                                 else
                                 {
                                     // no longer considering constant wrappers
                                     possibleDirectivePrologue = false;
-                                    body.Append(statement);
                                 }
                             }
-                            else
-                            {
-                                // just slap it in
-                                body.Append(statement);
-                            }
+
+                            // add it to the body
+                            body.Append(statement);
                         }
                         catch (RecoveryTokenException exc)
                         {
@@ -3232,11 +3155,9 @@ namespace Microsoft.Ajax.Utilities
                           name,
                           this,
                           (inExpression ? FunctionType.Expression : FunctionType.Declaration),
-                          formalParameters == null ? null : formalParameters.ToArray(),
+                          formalParameters,
                           body,
-                          fncCtx,
-                          functionScope
-                          );
+                          fncCtx);
                         throw;
                     }
                 }
@@ -3251,9 +3172,6 @@ namespace Microsoft.Ajax.Utilities
             }
             finally
             {
-                // pop the scope off the stack
-                ScopeStack.Pop();
-
                 // restore state
                 m_blockType = blockType;
                 m_labelTable = labelTable;
@@ -3263,10 +3181,9 @@ namespace Microsoft.Ajax.Utilities
                 name,
                 this,
                 functionType,
-                formalParameters == null ? null : formalParameters.ToArray(),
+                formalParameters,
                 body,
-                fncCtx,
-                functionScope);
+                fncCtx);
         }
 
         //---------------------------------------------------------------------------------------

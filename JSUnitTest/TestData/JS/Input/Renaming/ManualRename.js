@@ -27,12 +27,14 @@ function globalFunction(oneParam, twoParam)
     {
         try
         {
-            // this defines a local variable named arguments, not the arguments object
             // oneParam is local; others references are outer
+            // even though we are VARing an "arguments" variable, it's still the
+            // arguments field. We just clobber it's value when we assign to it.
+            // so because we might still be able to use the arguments object's contents
+            // before we assign to it, we should not rename it. 
             var arguments = oneParam + twoParam + threeGlobal + threeLocal;
 
             // isNaN is a predefined name -- never rename it
-            // arguments here is the local variable, not the arguments object
             return isNaN(anotherParam) ? arguments : anotherParam;
         }
         catch(e)

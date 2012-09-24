@@ -92,6 +92,12 @@ namespace JSUnitTest
         }
 
         [TestMethod]
+        public void ObjectLiteral_quote()
+        {
+            TestHelper.Instance.RunTest("-obj:quote");
+        }
+
+        [TestMethod]
         public void InlineSafe()
         {
             TestHelper.Instance.RunTest();

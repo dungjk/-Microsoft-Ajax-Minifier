@@ -152,24 +152,29 @@ namespace Microsoft.Ajax.Utilities
                     m_writer.WriteStartElement("arguments");
                     if (functionObject.ParameterDeclarations != null)
                     {
-                        foreach (var parameter in functionObject.ParameterDeclarations)
+                        foreach (var item in functionObject.ParameterDeclarations)
                         {
                             m_writer.WriteStartElement("argument");
-                            m_writer.WriteAttributeString("src", parameter.OriginalName);
-                            if (parameter.Field.CrunchedName != null)
+                            if (item.Context != null)
                             {
-                                m_writer.WriteAttributeString("min", parameter.Name);
+                                m_writer.WriteAttributeString("srcLine", item.Context.StartLineNumber.ToStringInvariant());
+                                m_writer.WriteAttributeString("srcCol", (item.Context.StartColumn + 1).ToStringInvariant());
                             }
 
-                            if (parameter.Context != null)
+                            var parameter = item as ParameterDeclaration;
+                            if (parameter != null)
                             {
-                                m_writer.WriteAttributeString("srcLine", parameter.Context.StartLineNumber.ToStringInvariant());
-                                m_writer.WriteAttributeString("srcCol", (parameter.Context.StartColumn + 1).ToStringInvariant());
-                            }
+                                m_writer.WriteAttributeString("src", parameter.OriginalName);
+                                if (parameter.Field.CrunchedName != null)
+                                {
+                                    m_writer.WriteAttributeString("min", parameter.Name);
+                                }
 
-                            if (m_useReferenceCounts && parameter.Field != null)
-                            {
-                                m_writer.WriteAttributeString("refcount", parameter.Field.RefCount.ToStringInvariant());
+                                if (m_useReferenceCounts && parameter.Field != null)
+                                {
+                                    m_writer.WriteAttributeString("refcount", parameter.Field.RefCount.ToStringInvariant());
+                                }
+
                             }
 
                             m_writer.WriteEndElement();
@@ -262,7 +267,6 @@ namespace Microsoft.Ajax.Utilities
                             break;
 
                         case FieldType.Local:
-                        case FieldType.NamedFunctionExpression:
                             // defined within this scope
                             definedFields.Add(field);
                             break;
@@ -271,10 +275,22 @@ namespace Microsoft.Ajax.Utilities
                             // ignore the scope's arguments because we handle them separately
                             break;
 
-                        case FieldType.Predefined:
                         case FieldType.Arguments:
+                            if (field.RefCount > 0)
+                            {
+                                referencedFields.Add(field);
+                            }
+                            break;
+
+                        case FieldType.UndefinedGlobal:
+                        case FieldType.Predefined:
                         case FieldType.WithField:
                             referencedFields.Add(field);
+                            break;
+
+                        case FieldType.GhostFunctionExpression:
+                        case FieldType.GhostCatch:
+                            // ignore the ghost fields when reporting
                             break;
                     }
                 }
@@ -343,7 +359,6 @@ namespace Microsoft.Ajax.Utilities
             switch (field.FieldType)
             {
                 case FieldType.Argument:
-                case FieldType.NamedFunctionExpression:
                 case FieldType.WithField:
                     if (isOuter)
                     {
@@ -377,6 +392,9 @@ namespace Microsoft.Ajax.Utilities
 
                 case FieldType.Arguments:
                 case FieldType.Global:
+                case FieldType.UndefinedGlobal:
+                case FieldType.GhostCatch:
+                case FieldType.GhostFunctionExpression:
                 case FieldType.Predefined:
                     break;
             }

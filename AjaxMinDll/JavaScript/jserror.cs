@@ -102,7 +102,6 @@ namespace Microsoft.Ajax.Utilities
         StringNotInlineSafe = 1299, // string literal is not inline safe
         StrictModeUndefinedVariable = 1300, // undefined variable in strict mode
         UnclosedFunction = 1301, // end of file encountered before function is properly closed
-        AmbiguousVariable = 1302, // variable name is ambiguous in certain browsers
         ObjectLiteralReservedWord = 1303, // reserved word used as object literal property name
         NoEndIfDirective = 1304, // expected #ENDIF directive
         NoEndDebugDirective = 1305, // expected #ENDDEBUG directive

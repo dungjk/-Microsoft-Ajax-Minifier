@@ -378,6 +378,11 @@ namespace Microsoft.Ajax.Utilities
             // no children
         }
 
+        public virtual void Visit(ParameterDeclaration node)
+        {
+            // no children
+        }
+
         public virtual void Visit(RegExpLiteral node)
         {
             // no children
