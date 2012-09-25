@@ -323,8 +323,12 @@ namespace Microsoft.Ajax.Utilities
                 }
                 try
                 {
-                    // call the base class to recurse
-                    base.Visit(node);
+                    // don't call the base class to recurse -- let's walk the block
+                    // backwards in case any of the children opt to delete themselves.
+                    for (var ndx = node.Count - 1; ndx >= 0; --ndx)
+                    {
+                        node[ndx].Accept(this);
+                    }
                 }
                 finally
                 {
@@ -1979,22 +1983,27 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // NEITHER branches have anything now!
 
-                    // something we can do in the future: as long as the condition doesn't
+                    // as long as the condition doesn't
                     // contain calls or assignments, we should be able to completely delete
                     // the statement altogether rather than changing it to an expression
                     // statement on the condition.
-
-                    // I'm just not doing it yet because I don't
-                    // know what the effect will be on the iteration of block statements.
-                    // if we're on item, 5, for instance, and we delete it, will the next
-                    // item be item 6, or will it return the NEW item 5 (since the old item
-                    // 5 was deleted and everything shifted up)?
-
-                    // We don't know what it is and what the side-effects may be, so
-                    // just change this statement into an expression statement by replacing us with 
-                    // the expression
-                    node.Parent.ReplaceChild(node, node.Condition);
-                    // no need to analyze -- we already recursed
+                    // but how do we KNOW there are no side-effects?
+                    // if the condition is a constant or operations on constants, delete it.
+                    // or if the condition itself is a debugger statement -- a call, lookup, or member.
+                    var remove = node.Condition.IsConstant || node.Condition.IsDebuggerStatement;
+                    if (remove)
+                    {
+                        // we're pretty sure there are no side-effects; remove it altogether
+                        node.Parent.ReplaceChild(node, null);
+                    }
+                    else
+                    {
+                        // We don't know what it is and what the side-effects may be, so
+                        // just change this statement into an expression statement by replacing us with 
+                        // the expression
+                        // no need to analyze -- we already recursed
+                        node.Parent.ReplaceChild(node, node.Condition);
+                    }
                 }
 
                 if (node.FalseBlock == null

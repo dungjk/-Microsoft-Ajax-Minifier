@@ -219,6 +219,7 @@
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_debug.js" />
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_release.js" />
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugNamespaceDirective.js" />
+    <Content Include="TestData\JS\Expected\DebugNamespaces\EmptyIf.js" />
     <Content Include="TestData\JS\Expected\Declarations\Const.js" />
     <Content Include="TestData\JS\Expected\Declarations\Function.js" />
     <Content Include="TestData\JS\Expected\Declarations\Identifiers.js" />
@@ -475,6 +476,7 @@
     <Content Include="TestData\JS\Input\ControlFlow\While.js" />
     <Content Include="TestData\JS\Input\DebugNamespaces\DebugAsKnownGlobal.js" />
     <Content Include="TestData\JS\Input\DebugNamespaces\DebugNamespaceDirective.js" />
+    <Content Include="TestData\JS\Input\DebugNamespaces\EmptyIf.js" />
     <Content Include="TestData\JS\Input\Declarations\Const.js" />
     <Content Include="TestData\JS\Input\Declarations\Function.js" />
     <Content Include="TestData\JS\Input\Declarations\Identifiers.js" />
