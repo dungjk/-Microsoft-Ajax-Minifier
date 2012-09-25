@@ -23,7 +23,9 @@ using System.Text;
 namespace Microsoft.Ajax.Utilities
 {
     /// <summary>
-    /// Summary description for MainClass.
+    /// Minifier class for quick minification of JavaScript or Stylesheet code without needing to
+    /// access or modify any abstract syntax tree nodes. Just put in source code and get our minified
+    /// code as strings.
     /// </summary>
     public class Minifier
     {
@@ -95,14 +97,14 @@ namespace Microsoft.Ajax.Utilities
         public string MinifyJavaScript(string source, CodeSettings codeSettings)
         {
             // default is an empty string
-            string crunched = string.Empty;
+            var crunched = string.Empty;
 
             // reset the errors builder
             m_errorList = new List<ContextError>();
 
             // create the parser from the source string.
             // pass null for the assumed globals array
-            JSParser parser = new JSParser(source);
+            var parser = new JSParser(source);
 
             // file context is a property on the parser
             parser.FileContext = FileName;
@@ -112,12 +114,20 @@ namespace Microsoft.Ajax.Utilities
 
             try
             {
-                // parse the input
-                Block scriptBlock = parser.Parse(codeSettings);
-                if (scriptBlock != null)
+                if (codeSettings != null && codeSettings.PreprocessOnly)
                 {
-                    // we'll return the crunched code
-                    crunched = scriptBlock.ToCode();
+                    // just run through the preprocessor only
+                    crunched = parser.PreprocessOnly(codeSettings);
+                }
+                else
+                {
+                    // parse the input
+                    var scriptBlock = parser.Parse(codeSettings);
+                    if (scriptBlock != null)
+                    {
+                        // we'll return the crunched code
+                        crunched = scriptBlock.ToCode();
+                    }
                 }
             }
             catch (Exception e)

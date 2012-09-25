@@ -25,6 +25,11 @@ namespace Microsoft.Ajax.Utilities
     {
         private List<AstNode> m_list;
 
+        /// <summary>
+        /// Gets a particular statement in the list of statements making up this block
+        /// </summary>
+        /// <param name="index">zero-based index of the desired statement</param>
+        /// <returns>abstract syntax tree node</returns>
         public AstNode this[int index]
         {
             get { return m_list[index]; }
@@ -45,6 +50,9 @@ namespace Microsoft.Ajax.Utilities
             set { m_blockScope = value; }
         }
 
+        /// <summary>
+        /// Returns the enclosing scope of this block
+        /// </summary>
         public override ActivationObject EnclosingScope
         {
             get
@@ -53,6 +61,10 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether the brace for this block (if there was one) started
+        /// on a newline (true) or the same line as the statement to which it belongs (false)
+        /// </summary>
         public bool BraceOnNewLine { get; set; }
 
         public Block(Context context, JSParser parser)
@@ -119,6 +131,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Returns false unless the block constains only a single statement that is itself an expression.
+        /// </summary>
         public override bool IsExpression
         {
             get
@@ -132,11 +147,17 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets the count of statements making up this block
+        /// </summary>
         public int Count
         {
             get { return m_list.Count; }
         }
 
+        /// <summary>
+        /// Gets an enumerator for the syntax tree nodes making up this block
+        /// </summary>
         public override IEnumerable<AstNode> Children
         {
             get
@@ -145,20 +166,12 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public int StatementIndex(AstNode childNode)
-        {
-            // find childNode in our collection of statements
-            for (var ndx = 0; ndx < m_list.Count; ++ndx)
-            {
-                if (m_list[ndx] == childNode)
-                {
-                    return ndx;
-                }
-            }
-            // if we got here, then childNode is not a statement in our collection!
-            return -1;
-        }
-
+        /// <summary>
+        /// Replace the existing direct child node of the block with a new node.
+        /// </summary>
+        /// <param name="oldNode">existing statement node to replace.</param>
+        /// <param name="newNode">node with which to replace the existing node.</param>
+        /// <returns>true if the replacement was a succeess; false otherwise</returns>
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
             for (int ndx = m_list.Count - 1; ndx >= 0; --ndx)
@@ -193,6 +206,10 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
+        /// <summary>
+        /// Append the given statement node to the end of the block
+        /// </summary>
+        /// <param name="element">node to add to the block</param>
         public void Append(AstNode element)
         {
             Block block = element as Block;
@@ -210,11 +227,21 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets the zero-based index of the given syntax tree node within the block, or -1 if the node is not a direct child of the block
+        /// </summary>
+        /// <param name="child">node to find</param>
+        /// <returns>zero-based index of the node in the block, or -1 if the node is not a direct child of the block</returns>
         public int IndexOf(AstNode child)
         {
             return m_list.IndexOf(child);
         }
 
+        /// <summary>
+        /// Insert the given statement node after an existing node in the block.
+        /// </summary>
+        /// <param name="after">exisitng child node of the block</param>
+        /// <param name="item">node to insert after the existing node</param>
         public void InsertAfter(AstNode after, AstNode item)
         {
             if (item != null)
@@ -238,6 +265,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Insert a new node into the given position index within the block
+        /// </summary>
+        /// <param name="position">zero-based index into which the new node will be inserted</param>
+        /// <param name="item">new node to insert into the block</param>
         public void Insert(int position, AstNode item)
         {
             if (item != null)
@@ -255,11 +287,18 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Remove the last node in the block
+        /// </summary>
         public void RemoveLast()
         {
             m_list.RemoveAt(m_list.Count - 1);
         }
 
+        /// <summary>
+        /// Remove the node at the given position index.
+        /// </summary>
+        /// <param name="index">Zero-based position index</param>
         public void RemoveAt(int index)
         {
             if (0 <= index && index < m_list.Count)
@@ -268,6 +307,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Insert a set of nodes into the block at the given position
+        /// </summary>
+        /// <param name="index">Zero-based position into which the new nodes will be inserted.</param>
+        /// <param name="newItems">Collection of statements to insert</param>
         public void InsertRange(int index, IEnumerable<AstNode> newItems)
         {
             if (newItems != null)
@@ -280,6 +324,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Remove all statements from the Block
+        /// </summary>
         public void Clear()
         {
             m_list.Clear();

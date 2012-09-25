@@ -1153,6 +1153,26 @@ namespace Microsoft.Ajax.Utilities
                                 OnJSOnlyParameter();
                                 break;
 
+                            case "PPONLY":
+                                // just putting the pponly switch on the command line without any arguments
+                                // is the same as putting -pponly:true and perfectly valid.
+                                if (paramPart == null)
+                                {
+                                    JSSettings.PreprocessOnly = true;
+                                }
+                                else if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    JSSettings.PreprocessOnly = parameterFlag;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
                             case "PRETTY":
                             case "P": // <-- old style
                                 // doesn't take a flag -- just set to pretty

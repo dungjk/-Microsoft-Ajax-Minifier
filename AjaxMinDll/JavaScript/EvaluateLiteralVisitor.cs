@@ -2343,7 +2343,7 @@ namespace Microsoft.Ajax.Utilities
                                     Block parentBlock = node.Parent as Block;
                                     if (parentBlock != null)
                                     {
-                                        int whileIndex = parentBlock.StatementIndex(node);
+                                        int whileIndex = parentBlock.IndexOf(node);
                                         if (whileIndex > 0)
                                         {
                                             Var previousVar = parentBlock[whileIndex - 1] as Var;

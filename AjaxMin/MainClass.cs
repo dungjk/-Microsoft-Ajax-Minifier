@@ -384,22 +384,6 @@ namespace Microsoft.Ajax.Utilities
                         m_symbolsMapFile = ea.Arguments[++ea.Index];
                         break;
 
-                    case "PPONLY":
-                        // just putting the pponly switch on the command line without any arguments
-                        // is the same as putting -pponly:true and perfectly valid.
-                        if (ea.ParameterPart == null)
-                        {
-                            m_preprocessOnly = true;
-                        }
-                        else if (!SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out m_preprocessOnly))
-                        {
-                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
-                        }
-
-                        // this is a JS-only switch
-                        InputTypeHint(InputType.JavaScript);
-                        break;
-
                     case "RENAME":
                         if (ea.ParameterPart == null)
                         {
@@ -1019,7 +1003,7 @@ namespace Microsoft.Ajax.Utilities
 
                     try
                     {
-                        if (m_preprocessOnly)
+                        if (m_switchParser.JSSettings.PreprocessOnly)
                         {
                             // see how many input files there are
                             if (crunchGroup.Count == 0)

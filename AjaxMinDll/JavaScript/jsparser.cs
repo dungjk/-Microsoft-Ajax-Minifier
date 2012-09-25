@@ -26,12 +26,9 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-
-    //***************************************************************************************
-    // JSParser
-    //
-    //  The JScript Parser.
-    //***************************************************************************************
+    /// <summary>
+    /// Class used to parse JavaScript source code into an abstract syntax tree.
+    /// </summary>
     public class JSParser
     {
         private const int c_MaxSkippedTokenNumber = 50;
@@ -189,12 +186,10 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        //---------------------------------------------------------------------------------------
-        // JSParser
-        //
-        // create a parser with a context. The context is the code that has to be compiled.
-        // Typically used by the runtime
-        //---------------------------------------------------------------------------------------
+        /// <summary>
+        /// Creates an instance of the JSParser class that can be used to parse the given source code.
+        /// </summary>
+        /// <param name="source">Source code to parse.</param>
         public JSParser(string source)
         {
             m_severity = 5;
@@ -220,6 +215,9 @@ namespace Microsoft.Ajax.Utilities
                 };
         }
 
+        /// <summary>
+        /// Gets or sets the file context for the given source code. This context will be used when generating any error messages.
+        /// </summary>
         public string FileContext
         {
             get 
@@ -262,8 +260,10 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        #region pre-process only
+
         /// <summary>
-        /// Preprocess the input only - don't generate an AST tree or do any other code analysis. 
+        /// Preprocess the input only - don't generate an AST tree or do any other code analysis, just return the processed code as a string. 
         /// </summary>
         /// <param name="settings">settings to use in the scanner</param>
         /// <returns>the source as processed by the preprocessor</returns>
@@ -280,8 +280,12 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        #region pre-process only
-
+        /// <summary>
+        /// Preprocess the input only - don't generate a syntax tree or do any other code analysis. Just write the processed
+        /// code to the provided text stream.
+        /// </summary>
+        /// <param name="settings">settings to use in the scanner</param>
+        /// <param name="outputStream">output stream to which to write the processed source</param>
         public void PreprocessOnly(CodeSettings settings, TextWriter outputStream)
         {
             if (outputStream != null)
@@ -416,11 +420,12 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
-        //---------------------------------------------------------------------------------------
-        // Parse
-        //
-        // Parser main entry point. Parse all the source code and return the root of the AST
-        //---------------------------------------------------------------------------------------
+        /// <summary>
+        /// Parse the source code using the given settings, getting back an abstract syntax tree Block node as the root
+        /// representing the list of statements in the source code.
+        /// </summary>
+        /// <param name="settings">code settings to use to process the source code</param>
+        /// <returns>root Block node representing the top-level statements</returns>
         public Block Parse(CodeSettings settings)
         {
             // initialize the scanner with our settings
@@ -492,7 +497,7 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// Parse an expression from the source code and return a block node containing just that expression.
         /// The block node is needed because we might perform optimization on the expression that creates
-        /// a new expression, and we need a parent to hold it.
+        /// a new expression, and we need a parent to contain it.
         /// </summary>
         /// <param name="codeSettings">settings to use</param>
         /// <returns>a block node containing the parsed expression as its only child</returns>
@@ -5015,7 +5020,7 @@ namespace Microsoft.Ajax.Utilities
         }
     }
 
-    // helper classesoi8
+    // helper classes
     //***************************************************************************************
     //
     //***************************************************************************************

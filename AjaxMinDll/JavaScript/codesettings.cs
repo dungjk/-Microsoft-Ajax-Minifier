@@ -141,6 +141,7 @@ namespace Microsoft.Ajax.Utilities
                 MinifyCode = this.MinifyCode,
                 NoAutoRenameList = this.NoAutoRenameList,
                 OutputMode = this.OutputMode,
+                PreprocessOnly = this.PreprocessOnly,
                 PreprocessorDefineList = this.PreprocessorDefineList,
                 PreserveFunctionNames = this.PreserveFunctionNames,
                 PreserveImportantComments = this.PreserveImportantComments,
@@ -736,6 +737,15 @@ namespace Microsoft.Ajax.Utilities
         public bool ManualRenamesProperties
         {
             get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets a boolean value indicating whether or not the input files should be preprocessed only (default is false)
+        /// </summary>
+        public bool PreprocessOnly 
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>

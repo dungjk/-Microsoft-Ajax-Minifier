@@ -30,13 +30,6 @@ namespace Microsoft.Ajax.Utilities
 
     public partial class MainClass
     {
-        #region JS-only settings
-
-        // whether to only preprocess (true), or to completely parse and analyze code (false)
-        private bool m_preprocessOnly; // = false;
-
-        #endregion
-
         #region file processing
 
         private int PreprocessJSFile(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
