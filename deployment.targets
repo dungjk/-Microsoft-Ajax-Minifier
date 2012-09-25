@@ -57,6 +57,8 @@
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinStub\bin\$(Configuration)\AjaxMin.exe" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)JavaScriptOnlyDll\bin\$(Configuration)\AjaxMinJavaScriptLibrary.dll" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)JavaScriptOnlyDll\bin\$(Configuration)\AjaxMinJavaScriptLibrary.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
 
         <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\$(Configuration)\AjaxMin.dll" DestinationFolder="$(TargetDir)Drop\net35" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinDll2008\bin\$(Configuration)\AjaxMin.pdb" DestinationFolder="$(TargetDir)Drop\net35" />

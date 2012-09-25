@@ -143,6 +143,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region CSS methods
 
+#if !JSONLY
         /// <summary>
         /// MinifyJavaScript CSS string passed to it using default code minification settings.
         /// The ErrorList property will be set with any errors found during the minification process.
@@ -203,11 +204,12 @@ namespace Microsoft.Ajax.Utilities
             }
             return minifiedResults;
         }
-
+#endif
         #endregion
 
         #region Error-handling Members
 
+#if !JSONLY
         private void OnCssError(object sender, CssErrorEventArgs e)
         {
             ContextError error = e.Error;
@@ -216,6 +218,7 @@ namespace Microsoft.Ajax.Utilities
                 m_errorList.Add(error);
             }
         }
+#endif
 
         private void OnJavaScriptError(object sender, JScriptExceptionEventArgs e)
         {
