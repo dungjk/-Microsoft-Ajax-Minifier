@@ -23,8 +23,8 @@
         <file src="AjaxMinDll\bin\$Configuration$\AjaxMin.pdb" target="lib/net40"/>
 
         <!-- task stuff in the tools folder -->
-        <file src="AjaxMinTask\install.ps1" target="tools"/>
-        <file src="AjaxMinTask\uninstall.ps1" target="tools"/>
+        <!--<file src="AjaxMinTask\install.ps1" target="tools"/>
+        <file src="AjaxMinTask\uninstall.ps1" target="tools"/>-->
         
         <file src="AjaxMinTask\AjaxMin.tasks" target="tools/net40"/>
         <file src="AjaxMinTask\AjaxMinTask.targets" target="tools/net40"/>
