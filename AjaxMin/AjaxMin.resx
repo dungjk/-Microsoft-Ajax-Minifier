@@ -446,7 +446,7 @@ Valid CSSOPTS are zero or more of:
   -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw),
         or minify them as JavaScript expressions (minify). Default is minify.
 
-CSSTYP can be full (full stylesheet) or decls (just a declaration list).
+CSSTYP can be full (full style sheet) or decls (just a declaration list).
         Default is full.
 BOOL can be (true|false|t|f|yes|no|y|n|1|0); case-insensitive.
 N is a valid non-negative integer: (0|1|2|3|4|5|6|7|8|9)+. 
@@ -466,7 +466,7 @@ ODIR is a valid path to an output folder.
 RFILE is a valid path to an existing .RESX or .RESOURCES file.
 NFILE is a valid path to an existing XML input file.
 MFILE is a valid path to a writable output source map file. 
-CSSTYP can be full (default; expects full stylesheet), or decls (only list
+CSSTYP can be full (default; expects full style sheet), or decls (only list
         of declarations, as in the style attribute of an HTML element). 
 AOPTS is a comma-separated list of analyze options. Currently the only
         two tokens supported are XML and OUT. By default, analyze output is
@@ -606,5 +606,17 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   </data>
   <data name="MemberInfoReferences" xml:space="preserve">
     <value>[{0} references]</value>
+  </data>
+  <data name="BlockTypeLexical" xml:space="preserve">
+    <value>Lexical</value>
+  </data>
+  <data name="MemberInfoWithLexDecl" xml:space="preserve">
+    <value>[or lexical declaration]</value>
+  </data>
+  <data name="MemberInfoWithLexFunc" xml:space="preserve">
+    <value>[or lexical function]</value>
+  </data>
+  <data name="MemberInfoTypeCatchEror" xml:space="preserve">
+    <value>catch error</value>
   </data>
 </root>

@@ -29,6 +29,10 @@ namespace Microsoft.Ajax.Utilities
 
         public FunctionType FunctionType { get; private set; }
 
+        public bool HasInitializer { get { return false; } }
+
+        public Context NameContext { get { return IdContext; } }
+
         private bool m_leftHandFunction;// = false;
         public bool LeftHandFunctionExpression
         {
@@ -257,7 +261,7 @@ namespace Microsoft.Ajax.Utilities
                 for (int index = ParameterDeclarations.Count - 1; index >= 0; --index)
                 {
                     // better be a parameter declaration
-                    argumentField = (ParameterDeclarations[index] as ParameterDeclaration).IfNotNull(p => p.Field);
+                    argumentField = (ParameterDeclarations[index] as ParameterDeclaration).IfNotNull(p => p.VariableField);
                     if (argumentField != null
                         && (argumentField == targetArgumentField || argumentField.IsReferenced))
                     {

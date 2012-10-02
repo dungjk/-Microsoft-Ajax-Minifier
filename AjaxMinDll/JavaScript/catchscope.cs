@@ -22,11 +22,12 @@ namespace Microsoft.Ajax.Utilities
 
     public sealed class CatchScope : BlockScope
     {
-        public JSVariableField CatchField { get; set; }
+        public ParameterDeclaration CatchParameter { get; private set; }
 
-        internal CatchScope(ActivationObject parent, Context catchContext, JSParser parser)
-            : base(parent, catchContext, parser)
+        internal CatchScope(ActivationObject parent, Context catchContext, CodeSettings settings, ParameterDeclaration catchParameter)
+            : base(parent, catchContext, settings)
         {
+            CatchParameter = catchParameter;
         }
 
         public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)

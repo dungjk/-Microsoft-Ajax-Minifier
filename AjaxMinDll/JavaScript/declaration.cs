@@ -20,7 +20,8 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public abstract class Declaration : AstNode
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "AST statement")]
+    public abstract class Declaration : AstNode, IEnumerable<VariableDeclaration>
     {
         private List<VariableDeclaration> m_list;
 
@@ -33,6 +34,8 @@ namespace Microsoft.Ajax.Utilities
         {
             get { return m_list[index]; }
         }
+
+        public ActivationObject Scope { get; set; }
 
         protected Declaration(Context context, JSParser parser)
             : base(context, parser)
@@ -218,5 +221,23 @@ namespace Microsoft.Ajax.Utilities
                 return false;
             }
         }
+
+        #region IEnumerable<VariableDeclaration> Members
+
+        public IEnumerator<VariableDeclaration> GetEnumerator()
+        {
+            return m_list.GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return m_list.GetEnumerator();
+        }
+
+        #endregion
     }
 }

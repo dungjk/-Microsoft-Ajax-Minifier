@@ -23,7 +23,16 @@ namespace Microsoft.Ajax.Utilities
 {
     public abstract class ActivationObject
     {
+        #region private fields
+
         private bool m_useStrict;//= false;
+        private bool m_isKnownAtCompileTime;
+        private CodeSettings m_settings;
+
+        #endregion
+
+        #region public properties
+
         public bool UseStrict
         {
             get
@@ -47,7 +56,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool m_isKnownAtCompileTime;
         public bool IsKnownAtCompileTime
         {
             get { return m_isKnownAtCompileTime; }
@@ -55,7 +63,7 @@ namespace Microsoft.Ajax.Utilities
             { 
                 m_isKnownAtCompileTime = value;
                 if (!value 
-                    && Parser.Settings.EvalTreatment == EvalTreatment.MakeAllSafe)
+                    && m_settings.EvalTreatment == EvalTreatment.MakeAllSafe)
                 {
                     // are we a function scope?
                     var funcScope = this as FunctionScope;
@@ -78,30 +86,31 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public Dictionary<string, JSVariableField> NameTable { get; private set; }
-        public IEnumerable<JSVariableField> FieldTable { get { return NameTable.Values; } }
-
-        protected JSParser Parser { get; private set; }
         public ActivationObject Parent { get; private set; }
+        public bool IsInWithScope { get; set; }
+
+        public IDictionary<string, JSVariableField> NameTable { get; private set; }
+
         public IList<ActivationObject> ChildScopes { get; private set; }
 
-        public IList<Lookup> ScopeLookups { get; private set; }
-        public IList<VariableDeclaration> VariableDeclarations { get; private set; }
-        public IList<FunctionObject> FunctionDeclarations { get; private set; }
+        public ICollection<Lookup> ScopeLookups { get; private set; }
+        public ICollection<INameDeclaration> VarDeclaredNames { get; private set; }
+        public ICollection<INameDeclaration> LexicallyDeclaredNames { get; private set; }
 
-        protected ActivationObject(ActivationObject parent, JSParser parser)
+        public ICollection<ParameterDeclaration> GhostedCatchParameters { get; private set; }
+        public ICollection<FunctionObject> GhostedNamedFunctionExpressions { get; private set; }
+
+        #endregion
+
+        protected ActivationObject(ActivationObject parent, CodeSettings codeSettings)
         {
             m_isKnownAtCompileTime = true;
             m_useStrict = false;
+            m_settings = codeSettings;
 
             Parent = parent;
             NameTable = new Dictionary<string, JSVariableField>();
             ChildScopes = new List<ActivationObject>();
-            Parser = parser;
-
-            ScopeLookups = new List<Lookup>();
-            VariableDeclarations = new List<VariableDeclaration>();
-            FunctionDeclarations = new List<FunctionObject>();
 
             // if our parent is a scope....
             if (parent != null)
@@ -112,87 +121,205 @@ namespace Microsoft.Ajax.Utilities
                 // if the parent is strict, so are we
                 UseStrict = parent.UseStrict;
             }
+
+            // create the two lists of declared items for this scope
+            ScopeLookups = new HashSet<Lookup>();
+            VarDeclaredNames = new HashSet<INameDeclaration>();
+            LexicallyDeclaredNames = new HashSet<INameDeclaration>();
+
+            GhostedCatchParameters = new HashSet<ParameterDeclaration>();
+            GhostedNamedFunctionExpressions = new HashSet<FunctionObject>();
         }
+
+        #region scope setup methods
+
+        /// <summary>
+        /// Set up this scope's fields from the declarations it contains
+        /// </summary>
+        public abstract void DeclareScope();
+
+        protected void DefineLexicalDeclarations()
+        {
+            foreach (var lexDecl in LexicallyDeclaredNames)
+            {
+                // use the function as the field value if it's a function
+                DefineField(lexDecl, lexDecl as FunctionObject);
+            }
+        }
+
+        protected void DefineVarDeclarations()
+        {
+            foreach (var varDecl in VarDeclaredNames)
+            {
+                // var-decls are always initialized to null
+                DefineField(varDecl, null);
+            }
+        }
+
+        private void DefineField(INameDeclaration nameDecl, FunctionObject fieldValue)
+        {
+            var field = this[nameDecl.Name];
+            if (nameDecl is ParameterDeclaration)
+            {
+                // function parameters are handled separately, so if this is a parameter declaration,
+                // then it must be a catch variable. 
+                if (field == null)
+                {
+                    // no collision - create the catch-error field
+                    field = new JSVariableField(FieldType.CatchError, nameDecl.Name, 0, null);
+                    field.OriginalContext = nameDecl.NameContext.Clone();
+                    field.IsDeclared = true;
+                    this.AddField(field);
+                }
+                else
+                {
+                    // it's an error to declare anything in the catch scope with the same name as the
+                    // error variable
+                    field.OriginalContext.HandleError(JSError.DuplicateCatch, true);
+                }
+            }
+            else
+            {
+                if (field == null)
+                {
+                    // could be global or local depending on the scope, so let the scope create it.
+                    field = this.CreateField(nameDecl.Name, null, 0);
+                    field.OriginalContext = nameDecl.NameContext.Clone();
+                    field.IsDeclared = true;
+                    field.IsFunction = (nameDecl is FunctionObject);
+                    field.FieldValue = fieldValue;
+
+                    // if this field is a constant, mark it now
+                    var lexDeclaration = nameDecl.Parent as LexicalDeclaration;
+                    field.InitializationOnly = nameDecl.Parent is ConstStatement
+                        || (lexDeclaration != null && lexDeclaration.StatementToken == JSToken.Const);
+
+                    this.AddField(field);
+                }
+                else
+                {
+                    // already defined! 
+                    // if this is a lexical declaration, then it's an error because we have two
+                    // lexical declarations with the same name in the same scope.
+                    if (nameDecl.Parent is LexicalDeclaration)
+                    {
+                        nameDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, true);
+                    }
+
+                    if (nameDecl.HasInitializer)
+                    {
+                        // if this is an initialized declaration, then the var part is
+                        // superfluous and the "initializer" is really a lookup assignment. 
+                        // So bump up the ref-count for those cases.
+                        var nameReference = nameDecl as INameReference;
+                        if (nameReference != null)
+                        {
+                            field.AddReference(nameReference);
+                        }
+                    }
+
+                    // don't clobber an existing field value with null. For instance, the last 
+                    // function declaration is the winner, so always set the value if we have something,
+                    // but a var following a function shouldn't reset it to null.
+                    if (fieldValue != null)
+                    {
+                        field.FieldValue = fieldValue;
+                    }
+                }
+            }
+
+            nameDecl.VariableField = field;
+
+            // if this scope is within a with-statement, then mark the field as not crunchable
+            if (IsInWithScope)
+            {
+                field.CanCrunch = false;
+            }
+        }
+
+        #endregion
+
+        #region AnalyzeScope functionality
 
         internal void AnalyzeScope()
         {
-            // check for unused local fields or arguments if this isn't the global scope
+            // check for unused local fields or arguments if this isn't the global scope.
+            // also remove unused lexical function declaration in with-scopes.
             if (!(this is GlobalScope))
             {
                 foreach (var variableField in NameTable.Values)
                 {
-                    if ((variableField.FieldType == FieldType.Local || variableField.FieldType == FieldType.Argument)
-                        && !variableField.IsReferenced
+                    // not referenced, not generated, and has an original context so not added after the fact.
+                    // and we don't care if catch-error fields are unreferenced.
+                    if (!variableField.IsReferenced 
+                        && !variableField.IsGenerated
+                        && variableField.OuterField == null
+                        && variableField.FieldType != FieldType.CatchError
+                        && variableField.FieldType != FieldType.GhostCatch
                         && variableField.OriginalContext != null)
                     {
-                        var funcObject = variableField.FieldValue as FunctionObject;
-                        if (funcObject != null)
+                        // see if the value is a function
+                        var functionObject = variableField.FieldValue as FunctionObject;
+                        if (functionObject != null)
                         {
-                            // if there's no function name, do nothing
-                            if (funcObject.Name != null)
+                            // if there is no name, then ignore this declaration because it's malformed.
+                            // (won't be a function expression because those are automatically refernced)
+                            if (functionObject.Name != null)
                             {
                                 // if the function name isn't a simple identifier, then leave it there and mark it as
                                 // not renamable because it's probably one of those darn IE-extension event handlers or something.
-                                if (JSScanner.IsValidIdentifier(funcObject.Name))
+                                if (JSScanner.IsValidIdentifier(functionObject.Name))
                                 {
-                                    // unreferenced function declaration.
-                                    // hide it from the output if our settings say we can
-                                    if (IsKnownAtCompileTime
-                                        && funcObject.Parser.Settings.MinifyCode
-                                        && funcObject.Parser.Settings.RemoveUnneededCode)
-                                    {
-                                        funcObject.HideFromOutput = true;
-                                    }
-
-                                    // and fire an error
-                                    Context ctx = funcObject.IdContext;
-                                    if (ctx == null) { ctx = variableField.OriginalContext; }
+                                    // unreferenced function declaration. fire a warning.
+                                    var ctx = functionObject.IdContext ?? variableField.OriginalContext;
                                     ctx.HandleError(JSError.FunctionNotReferenced, false);
+
+                                    // hide it from the output if our settings say we can.
+                                    // we don't want to delete it, per se, because we still want it to 
+                                    // show up in the scope report so the user can see that it was unreachable
+                                    // in case they are wondering where it went.
+                                    // ES6 has the notion of block-scoped function declarations. ES5 says functions can't
+                                    // be defined inside blocks -- only at the root level of the global scope or function scopes.
+                                    // so if this is a block scope, don't hide the function, even if it is unreferenced because
+                                    // of the cross-browser difference.
+                                    if (this.IsKnownAtCompileTime
+                                        && functionObject.Parser.Settings.MinifyCode
+                                        && functionObject.Parser.Settings.RemoveUnneededCode
+                                        && !(this is BlockScope))
+                                    {
+                                        functionObject.HideFromOutput = true;
+                                    }
                                 }
                                 else
                                 {
-                                    // not a valid identifier name for this function. Don't rename it.
+                                    // not a valid identifier name for this function. Don't rename it because it's
+                                    // malformed and we don't want to mess up the developer's intent.
                                     variableField.CanCrunch = false;
                                 }
                             }
                         }
-                        else if (!variableField.IsGenerated)
+                        else if (variableField.FieldType == FieldType.Argument)
                         {
-                            if (variableField.FieldType == FieldType.Argument)
+                            // unreferenced argument. We only want to throw a warning if there are no referenced arguments
+                            // AFTER this unreferenced argument. Also, we're assuming that if this is an argument field,
+                            // this scope MUST be a function scope.
+                            var functionScope = this as FunctionScope;
+                            if (functionScope != null)
                             {
-                                // we only want to throw this error if it's possible to remove it
-                                // from the argument list. And that will only happen if there are
-                                // no REFERENCED arguments after this one in the formal parameter list.
-                                // Assertion: because this is an argument, this should be a function scope,
-                                // let's walk up to the first function scope we find, just in case.
-                                FunctionScope functionScope = this as FunctionScope;
-                                if (functionScope == null)
-                                {
-                                    ActivationObject scope = this.Parent;
-                                    while (scope != null)
-                                    {
-                                        functionScope = scope as FunctionScope;
-                                        if (scope != null)
-                                        {
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (functionScope == null || functionScope.IsArgumentTrimmable(variableField))
+                                if (functionScope.FunctionObject.IfNotNull(func => func.IsArgumentTrimmable(variableField)))
                                 {
                                     variableField.OriginalContext.HandleError(
-                                      JSError.ArgumentNotReferenced,
-                                      false
-                                      );
+                                        JSError.ArgumentNotReferenced,
+                                        false);
                                 }
                             }
-                            else if (variableField.OuterField == null || !variableField.OuterField.IsReferenced)
-                            {
-                                variableField.OriginalContext.HandleError(
-                                  JSError.VariableDefinedNotReferenced,
-                                  false
-                                  );
-                            }
+                        }
+                        else
+                        {
+                            // not referenced -- throw a warning.
+                            variableField.OriginalContext.HandleError(
+                                JSError.VariableDefinedNotReferenced,
+                                false);
                         }
                     }
                 }
@@ -211,11 +338,11 @@ namespace Microsoft.Ajax.Utilities
         private void ManualRenameFields()
         {
             // if the local-renaming kill switch is on, we won't be renaming ANYTHING, so we'll have nothing to do.
-            if (Parser.Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
+            if (m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
             {
                 // if the parser settings has a list of rename pairs, we will want to go through and rename
                 // any matches
-                if (Parser.Settings.HasRenamePairs)
+                if (m_settings.HasRenamePairs)
                 {
                     // go through the list of fields in this scope. Anything defined in the script that
                     // is in the parser rename map should be renamed and the auto-rename flag reset so
@@ -229,7 +356,7 @@ namespace Microsoft.Ajax.Utilities
                             && (varField.FieldType != FieldType.Arguments && varField.FieldType != FieldType.Predefined))
                         {
                             // see if the name is in the parser's rename map
-                            string newName = Parser.Settings.GetNewName(varField.Name);
+                            string newName = m_settings.GetNewName(varField.Name);
                             if (!string.IsNullOrEmpty(newName))
                             {
                                 // it is! Change the name of the field, but make sure we reset the CanCrunch flag
@@ -251,9 +378,9 @@ namespace Microsoft.Ajax.Utilities
                 // fields that match and are still slated to rename as uncrunchable so they won't get renamed.
                 // if the settings say we're not going to renaming anything automatically (KeepAll), then we 
                 // have nothing to do.
-                if (Parser.Settings.LocalRenaming != LocalRenaming.KeepAll)
+                if (m_settings.LocalRenaming != LocalRenaming.KeepAll)
                 {
-                    foreach (var noRename in Parser.Settings.NoAutoRenameCollection)
+                    foreach (var noRename in m_settings.NoAutoRenameCollection)
                     {
                         // don't rename outer fields (only actual fields), 
                         // and we're only concerned with fields that can still
@@ -271,6 +398,8 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+
+        #endregion
 
         #region crunching methods
 
@@ -379,7 +508,7 @@ namespace Microsoft.Ajax.Utilities
                         // we also always want to crunch "placeholder" fields.
                         if (localField.CanCrunch
                             && (localField.RefCount > 0 || localField.IsDeclared || localField.IsPlaceholder
-                            || !(Parser.Settings.RemoveFunctionExpressionNames && Parser.Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))))
+                            || !(m_settings.RemoveFunctionExpressionNames && m_settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))))
                         {
                             localField.CrunchedName = crunchEnum.NextName();
                         }
@@ -413,9 +542,9 @@ namespace Microsoft.Ajax.Utilities
                     // The second clause is only computed IF we already think we're good to go.
                     // IF we aren't preserving function names, then we're good. BUT if we are, we're
                     // only good to go if this field doesn't represent a function object.
-                    if ((Parser.Settings.LocalRenaming == LocalRenaming.CrunchAll
+                    if ((m_settings.LocalRenaming == LocalRenaming.CrunchAll
                         || !variableField.Name.StartsWith("L_", StringComparison.Ordinal))
-                        && !(Parser.Settings.PreserveFunctionNames && variableField.IsFunction))
+                        && !(m_settings.PreserveFunctionNames && variableField.IsFunction))
                     {
                         // don't add to our list if it's a function that's going to be hidden anyway
                         FunctionObject funcObject;
@@ -512,21 +641,8 @@ namespace Microsoft.Ajax.Utilities
             JSVariableField innerField = null;
             if (outerField != null)
             {
-                if (outerField.FieldType == FieldType.Global 
-                    || outerField.FieldType == FieldType.Predefined
-                    || outerField.FieldType == FieldType.UndefinedGlobal)
-                {
-                    // if this is a global (defined or undefined) or predefined field, then just add the field itself
-                    // to the local scope. We don't want to create a local reference.
-                    innerField = outerField;
-                }
-                else
-                {
-                    // create a new inner field to be added to our scope
-                    innerField = CreateField(outerField);
-                }
-
-                // add the field to our scope and return it
+                // create a new inner field to be added to our scope
+                innerField = CreateField(outerField);
                 AddField(innerField);
             }
 
@@ -542,6 +658,38 @@ namespace Microsoft.Ajax.Utilities
             // owning scope if this is an inner field
             variableField.OwningScope = variableField.OuterField == null ? this : variableField.OuterField.OwningScope;
             return variableField;
+        }
+
+        public INameDeclaration VarDeclaredName(string name)
+        {
+            // check each var-decl name from inside this scope
+            foreach (var varDecl in this.VarDeclaredNames)
+            {
+                // if the name matches, return the field
+                if (string.CompareOrdinal(varDecl.Name, name) == 0)
+                {
+                    return varDecl;
+                }
+            }
+
+            // if we get here, we didn't find a match
+            return null;
+        }
+
+        public INameDeclaration LexicallyDeclaredName(string name)
+        {
+            // check each var-decl name from inside this scope
+            foreach (var lexDecl in this.LexicallyDeclaredNames)
+            {
+                // if the name matches, return the field
+                if (string.CompareOrdinal(lexDecl.Name, name) == 0)
+                {
+                    return lexDecl;
+                }
+            }
+
+            // if we get here, we didn't find a match
+            return null;
         }
 
         #endregion

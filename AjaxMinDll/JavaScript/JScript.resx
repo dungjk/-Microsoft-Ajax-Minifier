@@ -214,13 +214,13 @@
     <value>Expecting more source characters</value>
   </data>
   <data name="DuplicateName" xml:space="preserve">
-    <value>'{0}' is already defined</value>
+    <value>Name is already defined</value>
   </data>
   <data name="UndeclaredVariable" xml:space="preserve">
-    <value>Variable '{0}' has not been declared</value>
+    <value>Variable has not been declared</value>
   </data>
   <data name="KeywordUsedAsIdentifier" xml:space="preserve">
-    <value>'{0}' is a new reserved word and should not be used as an identifier</value>
+    <value>Reserved words and should not be used as an identifier; cross-browser differences</value>
   </data>
   <data name="NoCommaOrTypeDefinitionError" xml:space="preserve">
     <value>Expected ','. Write 'identifier : Type' rather than 'Type identifier' to declare a typed parameter</value>
@@ -265,22 +265,22 @@
     <value>Always use full statement blocks</value>
   </data>
   <data name="UndeclaredFunction" xml:space="preserve">
-    <value>Function '{0}' has not been defined</value>
+    <value>Function has not been defined</value>
   </data>
   <data name="VariableDefinedNotReferenced" xml:space="preserve">
-    <value>Variable '{0}' defined but not referenced</value>
+    <value>Variable defined but not referenced</value>
   </data>
   <data name="ArgumentNotReferenced" xml:space="preserve">
-    <value>Argument '{0}' defined but not referenced</value>
+    <value>Argument defined but not referenced</value>
   </data>
   <data name="WithNotRecommended" xml:space="preserve">
     <value>'with' statement not recommended</value>
   </data>
   <data name="FunctionNotReferenced" xml:space="preserve">
-    <value>Function '{0}' defined but not referenced</value>
+    <value>Function defined but not referenced</value>
   </data>
   <data name="AmbiguousCatchVar" xml:space="preserve">
-    <value>Ambiguous catch identifier '{0}'. Cross-browser behavior difference. </value>
+    <value>Ambiguous catch identifier. Cross-browser behavior difference. </value>
   </data>
   <data name="FunctionExpressionExpected" xml:space="preserve">
     <value>Function expression expected</value>
@@ -376,10 +376,10 @@
     <value>Assignment to constant</value>
   </data>
   <data name="StringNotInlineSafe" xml:space="preserve">
-    <value>String literal is not safe for inline: '{0}'</value>
+    <value>String literal is not safe for inline</value>
   </data>
   <data name="StrictModeUndefinedVariable" xml:space="preserve">
-    <value>Strict-mode does not allow assignment to undefined variables: '{0}'</value>
+    <value>Strict-mode does not allow assignment to undefined variables</value>
   </data>
   <data name="UnclosedFunction" xml:space="preserve">
     <value>End of file encountered before function is properly closed</value>
@@ -387,7 +387,7 @@
   <data name="FallbackEncodingFailed" xml:space="preserve">
     <value>Fallback character encoding failed</value>
   </data>
-  <data name="ObjectLiteralReservedWord" xml:space="preserve">
+  <data name="ObjectLiteralKeyword" xml:space="preserve">
     <value>Reserved word used as object literal property name; cross-browser issue.</value>
   </data>
   <data name="NoEndDebugDirective" xml:space="preserve">
@@ -401,5 +401,11 @@
   </data>
   <data name="BadNumericLiteral" xml:space="preserve">
     <value>Invalid numeric literal</value>
+  </data>
+  <data name="DuplicateLexicalDeclaration" xml:space="preserve">
+    <value>Duplicate lexical declaration; cannot redefine let or const variables</value>
+  </data>
+  <data name="DuplicateCatch" xml:space="preserve">
+    <value>Variable or function declaration redefines the catch error name</value>
   </data>
 </root>

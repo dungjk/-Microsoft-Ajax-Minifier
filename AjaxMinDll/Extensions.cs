@@ -160,5 +160,21 @@ namespace Microsoft.Ajax.Utilities
 
             return obj == null ? default(TResult) : action(obj);
         }
+
+        public static void CopyItemsTo<TSource>(this ICollection<TSource> fromSet, ICollection<TSource> toSet)
+        {
+            if (toSet == null)
+            {
+                throw new ArgumentNullException("toSet");
+            }
+
+            if (fromSet != null)
+            {
+                foreach (var item in fromSet)
+                {
+                    toSet.Add(item);
+                }
+            }
+        }
     }
 }

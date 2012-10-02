@@ -85,9 +85,6 @@
     <Compile Include="..\AjaxMinDll\Extensions.cs">
       <Link>Extensions.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMinDll\GlobalSuppressions.cs">
-      <Link>GlobalSuppressions.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMinDll\Helpers.cs">
       <Link>Helpers.cs</Link>
     </Compile>
@@ -238,6 +235,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\ISourceMap.cs">
       <Link>JavaScript\ISourceMap.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\IterationStatement.cs">
+      <Link>JavaScript\IterationStatement.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\IVisitor.cs">
       <Link>JavaScript\IVisitor.cs</Link>
     </Compile>
@@ -273,6 +273,9 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\labeledstatement.cs">
       <Link>JavaScript\labeledstatement.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\LexicalDeclaration.cs">
+      <Link>JavaScript\LexicalDeclaration.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\LogicalNotVisitor.cs">
       <Link>JavaScript\LogicalNotVisitor.cs</Link>
@@ -392,6 +395,11 @@
       <LastGenOutput>JScript.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
+      <Link>CustomDictionary.xml</Link>
+    </CodeAnalysisDictionary>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

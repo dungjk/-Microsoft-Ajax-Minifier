@@ -24,6 +24,7 @@ namespace Microsoft.Ajax.Utilities
         public AstNode Expression { get; private set; }
         public AstNodeList Cases { get; private set; }
         public bool BraceOnNewLine { get; set; }
+        public ActivationObject BlockScope { get; set; }
 
         public Switch(Context context, JSParser parser, AstNode expression, AstNodeList cases, bool braceOnNewLine)
             : base(context, parser)

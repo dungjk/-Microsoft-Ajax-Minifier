@@ -1,6 +1,6 @@
-﻿// AnalyzeNodeVisitor.cs
+﻿// ResolutionVisitor.cs
 //
-// Copyright 2011 Microsoft Corporation
+// Copyright 2012 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,44 +16,44 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// Traverse the tree to build up scope lexically-declared names, var-declared names,
+    /// and lookups, then resolve everything.
+    /// </summary>
     public class ResolutionVisitor : IVisitor
     {
-        #region private fields 
+        #region private fields
 
-        // index to use for ordering the statements in this scope
+        /// <summary>index to use for ordering the statements in this scope</summary>
         private long m_orderIndex;
 
-        // flag indicating that the current block has had a terminating statement
-        // and that all following statements are unreachable.
+        /// <summary>flag indicating whether we've encountered some unreachable code</summary>
         private bool m_isUnreachable;
 
-        // there is only one variable scope for this run
-        private ActivationObject m_variableScope;
-
-        // but we might have a stack of lexical scopes to keep track of which one is currently active
-        private Stack<ActivationObject> m_lexicalStack;
-
-        // list of child functions that we need to process
-        private IList<FunctionObject> m_childFunctions;
-
-        private IList<ParameterDeclaration> m_catchParameters;
-
-        private HashSet<VariableDeclaration> m_vardeclsInsideWith;
-
+        /// <summary>depth level of with-statements, needed so we can treat decls within with-scopes specially</summary>
         private int m_withDepth;
 
+        /// <summary>stack to maintain the current lexical scope as we traverse the tree</summary>
+        private Stack<ActivationObject> m_lexicalStack;
+
+        /// <summary>stack to maintain the current variable scope as we traverse the tree</summary>
+        private Stack<ActivationObject> m_variableStack;
+
+        /// <summary>code setings</summary>
         private CodeSettings m_settings;
 
         #endregion
 
         #region private properties
 
+        /// <summary>Current lexical scope</summary>
         private ActivationObject CurrentLexicalScope
         {
             get
@@ -62,6 +62,16 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>current variable scope</summary>
+        private ActivationObject CurrentVariableScope
+        {
+            get
+            {
+                return m_variableStack.Peek();
+            }
+        }
+
+        /// <summary>retrieve the next order index</summary>
         private long NextOrderIndex
         {
             get
@@ -72,483 +82,295 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
-        #region constructor
+        #region private constructor
 
-        private ResolutionVisitor(ActivationObject variableScope, CodeSettings settings)
+        private ResolutionVisitor(ActivationObject rootScope, CodeSettings settings)
         {
-            m_settings = settings;
-            m_variableScope = variableScope;
-
+            // create the lexical and variable scope stacks and push the root scope onto them
             m_lexicalStack = new Stack<ActivationObject>();
-            m_lexicalStack.Push(variableScope);
+            m_lexicalStack.Push(rootScope);
 
-            // list of child functions we will want to process later
-            m_childFunctions = new List<FunctionObject>();
+            m_variableStack = new Stack<ActivationObject>();
+            m_variableStack.Push(rootScope);
 
-            // list of catch parameters we will need to check for possible IE collisions
-            m_catchParameters = new List<ParameterDeclaration>();
-
-            // for any vardecls inside a with statement with an initializer we need to
-            // make sure the field we generate isn't automatically renamed.
-            m_vardeclsInsideWith = new HashSet<VariableDeclaration>();
+            m_settings = settings;
         }
+
+        #endregion
 
         public static void Apply(AstNode node, ActivationObject scope, CodeSettings settings)
         {
-            if (node != null)
+            if (node != null && scope != null)
             {
-                // check the two possible declarations we might have here, and if 
-                // the node is one of them, we'll need to declare them in the scope before
-                // we start to process them.
-                var funcObject = node as FunctionObject;
-                if (funcObject != null)
-                {
-                    DeclareFunction(funcObject, scope);
-                }
-                else
-                {
-                    var varDecl = node as VariableDeclaration;
-                    if (varDecl != null)
-                    {
-                        DeclareVariable(varDecl, scope, false);
-                    }
-                }
+                // create the visitor and run it. This will create all the child
+                // scopes and populate all the scopes with the var-decl, lex-decl,
+                // and lookup references within them.
+                var visitor = new ResolutionVisitor(scope, settings);
+                node.Accept(visitor);
 
-                // start the process
-                BuildScope(node, scope, null, settings);
+                // now that all the scopes are created and they all know what decls
+                // they contains, create all the fields
+                CreateFields(scope);
+
+                // now that all the fields have been created in all the scopes,
+                // let's go through and resolve all the references
+                ResolveLookups(scope, settings);
+
+                // now that everything is declared and resolved as per the language specs,
+                // we need to go back and add ghosted fields for older versions of IE that
+                // incorrectly implement catch-variables and named function expressions.
+                AddGhostedFields(scope);
             }
         }
-
-        #endregion
 
         #region private static methods
 
-        private static void DeclareFunction(FunctionObject funcDecl, ActivationObject scope)
+        private static void CollapseBlockScope(ActivationObject blockScope)
         {
-            // add it if it isn't there already
-            var funcField = scope[funcDecl.Name];
-            if (funcField == null)
-            {
-                // could be global or local function, depending on the scope
-                funcField = scope.CreateField(funcDecl.Name, null, 0);
-                scope.AddField(funcField);
-            }
+            // copy over the stuff we want to carry over to the parent
+            blockScope.ScopeLookups.CopyItemsTo(blockScope.Parent.ScopeLookups);
+            blockScope.VarDeclaredNames.CopyItemsTo(blockScope.Parent.VarDeclaredNames);
+            blockScope.ChildScopes.CopyItemsTo(blockScope.Parent.ChildScopes);
+            blockScope.GhostedCatchParameters.CopyItemsTo(blockScope.Parent.GhostedCatchParameters);
+            blockScope.GhostedNamedFunctionExpressions.CopyItemsTo(blockScope.Parent.GhostedNamedFunctionExpressions);
 
-            // always clobber the original context because a function declaration will
-            // take precedence over a parameter or a previous function declaration.
-            funcField.OriginalContext = funcDecl.IdContext;
-            funcField.IsDeclared = true;
-            funcField.IsFunction = true;
-
-            // set the value of the field to be the function object
-            funcField.FieldValue = funcDecl;
-
-            funcDecl.VariableField = funcField;
-            funcDecl.Identifier.IfNotNull(i => i.VariableField = funcField);
+            // remove it from its parent's collection of child scopes
+            blockScope.Parent.ChildScopes.Remove(blockScope);
         }
 
-        private static void DeclareVariable(VariableDeclaration varDecl, ActivationObject scope, bool isInsideWithStatement)
+        private static void CreateFields(ActivationObject scope)
         {
-            var field = scope[varDecl.Name];
-            if (field == null)
+            // declare this scope
+            scope.DeclareScope();
+
+            // and recurse
+            foreach (var childScope in scope.ChildScopes)
             {
-                // could be global or local depending on the scope, so let the scope create it.
-                field = scope.CreateField(varDecl.Name, null, 0);
-                field.OriginalContext = varDecl.IdentifierContext;
-                field.IsDeclared = true;
-
-                if (varDecl.Initializer != null && isInsideWithStatement)
-                {
-                    // this vardecl is inside a with-statement and has an initializer. We need
-                    // to make sure it doesn't get automatically renamed
-                    field.CanCrunch = false;
-                }
-
-                scope.AddField(field);
-            }
-            else if (varDecl.Initializer != null)
-            {
-                // already defined! if this is an initialized var, then the var part is
-                // superfluous and the "initializer" is really a lookup assignment. 
-                // So bump up the ref-count for those cases.
-                field.AddReference(varDecl);
-            }
-
-            varDecl.Field = field;
-        }
-
-        private static void BuildScope(AstNode node, ActivationObject containingScope, AstNodeList parameterDeclarations, CodeSettings settings)
-        {
-            var visitor = new ResolutionVisitor(containingScope, settings); 
-            node.Accept(visitor);
-
-            // create the declarations for this scope
-            visitor.CreateDeclarations(parameterDeclarations);
-
-            // now create all the child function scopes so we can know which ones are
-            // referenced or not.
-            visitor.CreateChildFunctionScopes();
-
-            // resolve the lookups in our scope, which will recurse
-            // any lexical scopes we may have found processing the node tree
-            // (not counting function scopes)
-            visitor.ResolveLookups();
-
-            // now go through the child functions and do the same thing for them
-            visitor.RecurseChildFunctionScopes();
-
-            // once I get here, my scope and all my child scopes have had all
-            // their standard objects declared and all their lookups resolved.
-            // this will satisfy the ecmascript language specifications.
-            // however, now we want to add in the processing we need to do to 
-            // also be in sync with older IE (IE8 and below) scoping anomolies.
-            visitor.ResolveGhostCatchParameters();
-            visitor.ResolveGhostFunctionExpressions();
-        }
-
-        #endregion
-
-        #region private methods
-
-        private void CreateChildFunctionScopes()
-        {
-            // finally, setup any child function scopes using a separate visitor
-            foreach (var funcObject in m_childFunctions)
-            {
-                // if we haven't already created the function scope, do it now
-                if (funcObject.FunctionScope == null)
-                {
-                    // by default, the child functions create a scope under the variable scope.
-                    // but named function expressions will create an interstitial scope containing just
-                    // the function name, which will lay between the variable scope and the function scope.
-                    var parentScope = m_variableScope;
-
-                    // if this is a named function expression, we need to create two scopes: one for the
-                    // name of the function, and another for the function's variable environment.
-                    if (funcObject.FunctionType == FunctionType.Expression && funcObject.Identifier != null)
-                    {
-                        // create a function scope just for the name
-                        parentScope = new FunctionScope(parentScope, true, funcObject.Parser) { FunctionObject = funcObject };
-
-                        // add a field in the child scope for the function expression name so it can be self-referencing.
-                        var functionField = parentScope.CreateField(funcObject.Name, funcObject, 0);
-                        functionField.IsFunction = true;
-                        functionField.OriginalContext = funcObject.IdContext;
-
-                        funcObject.VariableField = functionField;
-                        funcObject.Identifier.VariableField = functionField;
-
-                        parentScope.AddField(functionField);
-                    }
-
-                    // create the function's variable scope and recurse
-                    funcObject.FunctionScope = new FunctionScope(parentScope, funcObject.FunctionType != FunctionType.Declaration, funcObject.Parser)
-                    {
-                        FunctionObject = funcObject
-                    };
-                }
+                CreateFields(childScope);
             }
         }
 
-        private void RecurseChildFunctionScopes()
+        private static void ResolveLookups(ActivationObject scope, CodeSettings settings)
         {
-            foreach(var funcObject in m_childFunctions)
+            // resolve each lookup this scope contains
+            foreach (var lookup in scope.ScopeLookups)
             {
-                // set up this function's scope
-                BuildScope(funcObject.Body, funcObject.FunctionScope, funcObject.ParameterDeclarations, m_settings);
-            }
-        }
-
-        private void CreateDeclarations(AstNodeList parameterDeclarations)
-        {
-            // first bind any parameters
-            DeclareParameters(parameterDeclarations);
-
-            // bind function declarations next
-            DeclareFunctions();
-
-            // bind the arguments object if this is a function scope
-            DeclareArgumentsObject();
-
-            // and finally, the variable declarations
-            DeclareVariables();
-        }
-
-        #endregion
-
-        #region private declaration methods
-
-        private void DeclareParameters(AstNodeList parameterDeclarations)
-        {
-            if (parameterDeclarations != null)
-            {
-                foreach (ParameterDeclaration parameter in parameterDeclarations)
-                {
-                    var argumentField = m_variableScope[parameter.Name];
-                    if (argumentField == null)
-                    {
-                        argumentField = new JSVariableField(FieldType.Argument, parameter.Name, 0, null)
-                        {
-                            Position = parameter.Position,
-                            OriginalContext = parameter.Context
-                        };
-
-                        m_variableScope.AddField(argumentField);
-                    }
-
-                    parameter.Field = argumentField;
-                }
-            }
-        }
-
-        private void DeclareFunctions()
-        {
-            foreach (var funcDecl in m_variableScope.FunctionDeclarations)
-            {
-                DeclareFunction(funcDecl, m_variableScope);
-            }
-        }
-
-        private void DeclareArgumentsObject()
-        {
-            if (m_variableScope is FunctionScope)
-            {
-                if (m_variableScope["arguments"] == null)
-                {
-                    m_variableScope.AddField(new JSVariableField(FieldType.Arguments, "arguments", 0, null));
-                }
-            }
-        }
-
-        private void DeclareVariables()
-        {
-            foreach (var varDecl in m_variableScope.VariableDeclarations)
-            {
-                DeclareVariable(varDecl, m_variableScope, m_vardeclsInsideWith.Contains(varDecl));
-            }
-        }
-
-        #endregion
-
-        #region private resolution methods
-
-        private void ResolveLookups()
-        {
-            // kick off the processing with our variable scope and the current settings
-            ResolveLookups(m_variableScope, m_settings);
-        }
-
-        private static void ResolveLookups(ActivationObject lexicalScope, CodeSettings settings)
-        {
-            // all the declarations are in place. Now we can go through the scope tree and resolve all their references
-            foreach (var lookup in lexicalScope.ScopeLookups)
-            {
-                // resolve lookup via the lexical scope
-                lookup.VariableField = lexicalScope.FindReference(lookup.Name);
-                if (lookup.VariableField.FieldType == FieldType.UndefinedGlobal)
-                {
-                    // couldn't find it.
-                    // if the lookup isn't generated and isn't the object of a typeof operator,
-                    // then we want to throw an error.
-                    UnaryOperator unaryOperator;
-                    if (!lookup.IsGenerated
-                        && ((unaryOperator = lookup.Parent as UnaryOperator) == null || unaryOperator.OperatorToken != JSToken.TypeOf))
-                    {
-                        // report this undefined reference
-                        lookup.Context.ReportUndefined(lookup);
-
-                        // possibly undefined global (but definitely not local).
-                        // see if this is a function or a variable.
-                        var callNode = lookup.Parent as CallNode;
-                        var isFunction = callNode != null && callNode.Function == lookup;
-                        lookup.Context.HandleError((isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable), false);
-                    }
-                }
-                else if (lookup.VariableField.FieldType == FieldType.Predefined)
-                {
-                    // check to see if this is the eval function -- if so, mark the scope as not-known if we aren't ignoring them
-                    if (settings.EvalTreatment != EvalTreatment.Ignore
-                        && string.CompareOrdinal(lookup.Name, "eval") == 0)
-                    {
-                        // it's an eval -- but are we calling it?
-                        // TODO: what if we are assigning it to a variable? Should we track that variable and see if we call it?
-                        // What about passing it as a parameter to a function? track that as well in case the function calls it?
-                        var parentCall = lookup.Parent as CallNode;
-                        if (parentCall != null && parentCall.Function == lookup)
-                        {
-                            lexicalScope.IsKnownAtCompileTime = false;
-                        }
-                    }
-                }
-                else
-                {
-                    // TODO: any other checks?
-                }
-
-                // add the reference
-                lookup.VariableField.AddReference(lookup);
-
-                // we are actually referencing this field, so it's no longer a placeholder field if it
-                // happens to have been one.
-                lookup.VariableField.IsPlaceholder = false;
+                ResolveLookup(scope, lookup, settings);
             }
 
-            // recurse any lexical scopes within this function
-            foreach (var childScope in lexicalScope.ChildScopes)
+            // and recurse
+            foreach (var childScope in scope.ChildScopes)
             {
                 ResolveLookups(childScope, settings);
             }
         }
 
-        private void ResolveGhostCatchParameters()
+        private static void ResolveLookup(ActivationObject scope, Lookup lookup, CodeSettings settings)
         {
-            foreach (var catchParameter in m_catchParameters)
+            // resolve lookup via the lexical scope
+            lookup.VariableField = scope.FindReference(lookup.Name);
+            if (lookup.VariableField.FieldType == FieldType.UndefinedGlobal)
             {
-                // check to see if the name exists in the outer variable scope.
-                var ghostField = m_variableScope[catchParameter.Name];
-                if (ghostField == null)
+                // couldn't find it.
+                // if the lookup isn't generated and isn't the object of a typeof operator,
+                // then we want to throw an error.
+                UnaryOperator unaryOperator;
+                if (!lookup.IsGenerated
+                    && ((unaryOperator = lookup.Parent as UnaryOperator) == null || unaryOperator.OperatorToken != JSToken.TypeOf))
                 {
-                    // set up a ghost field to keep track of the relationship
-                    ghostField = new JSVariableField(FieldType.GhostCatch, catchParameter.Name, 0, null)
-                    {
-                        OriginalContext = catchParameter.Context
-                    };
+                    // report this undefined reference
+                    lookup.Context.ReportUndefined(lookup);
 
-                    m_variableScope.AddField(ghostField);
+                    // possibly undefined global (but definitely not local).
+                    // see if this is a function or a variable.
+                    var callNode = lookup.Parent as CallNode;
+                    var isFunction = callNode != null && callNode.Function == lookup;
+                    lookup.Context.HandleError((isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable), false);
                 }
-                else if (ghostField.FieldType == FieldType.GhostCatch)
+            }
+            else if (lookup.VariableField.FieldType == FieldType.Predefined)
+            {
+                // check to see if this is the eval function -- if so, mark the scope as not-known if we aren't ignoring them
+                if (settings.EvalTreatment != EvalTreatment.Ignore
+                    && string.CompareOrdinal(lookup.Name, "eval") == 0)
                 {
-                    // there is, but it's another ghost catch variable. That's fine; just use it.
-                    // don't even flag it as ambiguous because if someone is later referencing the error variable
-                    // used in a couple catch variables, we'll say something then because other browsers will have that
-                    // variable undefined or from an outer scope.
-                }
-                else
-                {
-                    // there is, and it's NOT another ghosted catch variable. Possible naming
-                    // collision in IE -- if an error happens, it will clobber the existing field's value,
-                    // although that MAY be the intention; we don't know for sure. But it IS a cross-
-                    // browser behavior difference.
-                    ghostField.IsAmbiguous = true;
-
-                    if (ghostField.OuterField != null)
+                    // it's an eval -- but are we calling it?
+                    // TODO: what if we are assigning it to a variable? Should we track that variable and see if we call it?
+                    // What about passing it as a parameter to a function? track that as well in case the function calls it?
+                    var parentCall = lookup.Parent as CallNode;
+                    if (parentCall != null && parentCall.Function == lookup)
                     {
-                        // and to make matters worse, it's actually bound to an OUTER field
-                        // in modern browsers, but will bind to this catch variable in older
-                        // versions of IE! Definitely a cross-browser difference!
-                        // throw a cross-browser issue error.
-                        catchParameter.Context.HandleError(JSError.AmbiguousCatchVar);
+                        scope.IsKnownAtCompileTime = false;
                     }
                 }
+            }
 
-                // link them so they all keep the same name going forward
-                // (since they are named the same in the sources)
-                catchParameter.Field.OuterField = ghostField;
+            // add the reference
+            lookup.VariableField.AddReference(lookup);
 
-                // TODO: this really should be a LIST of ghosted fields, since multiple 
-                // elements can ghost to the same field.
-                ghostField.GhostedField = catchParameter.Field;
+            // we are actually referencing this field, so it's no longer a placeholder field if it
+            // happens to have been one.
+            lookup.VariableField.IsPlaceholder = false;
+        }
 
-                // if the actual field has references, we want to bubble those up
-                // since we're now linking those fields
-                if (catchParameter.Field.RefCount > 0)
-                {
-                    // add the catch parameter's references to the ghost field
-                    ghostField.AddReferences(catchParameter.Field.References);
-                }
+        private static void AddGhostedFields(ActivationObject scope)
+        {
+            foreach (var catchParameter in scope.GhostedCatchParameters)
+            {
+                ResolveGhostedCatchParameter(scope, catchParameter);
+            }
+
+            foreach (var namedFuncExpr in scope.GhostedNamedFunctionExpressions)
+            {
+                ResolceGhostedNamedFunctionExpression(scope, namedFuncExpr);
+            }
+
+            // recurse
+            foreach (var childScope in scope.ChildScopes)
+            {
+                AddGhostedFields(childScope);
             }
         }
 
-        private void ResolveGhostFunctionExpressions()
+        private static void ResolveGhostedCatchParameter(ActivationObject scope, ParameterDeclaration catchParameter)
         {
-            foreach (var funcObject in m_childFunctions)
+            // check to see if the name exists in the outer variable scope.
+            var ghostField = scope[catchParameter.Name];
+            if (ghostField == null)
             {
-                // only interested in the named function expressions
-                if (funcObject.FunctionType == FunctionType.Expression && funcObject.Identifier != null)
+                // set up a ghost field to keep track of the relationship
+                ghostField = new JSVariableField(FieldType.GhostCatch, catchParameter.Name, 0, null)
                 {
-                    var functionField = funcObject.VariableField;
+                    OriginalContext = catchParameter.Context.Clone()
+                };
 
-                    // let's check on ghosted names in the outer variable scope
-                    var ghostField = m_variableScope[funcObject.Name];
-                    if (ghostField == null)
+                scope.AddField(ghostField);
+            }
+            else if (ghostField.FieldType == FieldType.GhostCatch)
+            {
+                // there is, but it's another ghost catch variable. That's fine; just use it.
+                // don't even flag it as ambiguous because if someone is later referencing the error variable
+                // used in a couple catch variables, we'll say something then because other browsers will have that
+                // variable undefined or from an outer scope.
+            }
+            else
+            {
+                // there is, and it's NOT another ghosted catch variable. Possible naming
+                // collision in IE -- if an error happens, it will clobber the existing field's value,
+                // although that MAY be the intention; we don't know for sure. But it IS a cross-
+                // browser behavior difference.
+                ghostField.IsAmbiguous = true;
+
+                if (ghostField.OuterField != null)
+                {
+                    // and to make matters worse, it's actually bound to an OUTER field
+                    // in modern browsers, but will bind to this catch variable in older
+                    // versions of IE! Definitely a cross-browser difference!
+                    // throw a cross-browser issue error.
+                    catchParameter.Context.HandleError(JSError.AmbiguousCatchVar);
+                }
+            }
+
+            // link them so they all keep the same name going forward
+            // (since they are named the same in the sources)
+            catchParameter.VariableField.OuterField = ghostField;
+
+            // TODO: this really should be a LIST of ghosted fields, since multiple 
+            // elements can ghost to the same field.
+            ghostField.GhostedField = catchParameter.VariableField;
+
+            // if the actual field has references, we want to bubble those up
+            // since we're now linking those fields
+            if (catchParameter.VariableField.RefCount > 0)
+            {
+                // add the catch parameter's references to the ghost field
+                ghostField.AddReferences(catchParameter.VariableField.References);
+            }
+        }
+
+        private static void ResolceGhostedNamedFunctionExpression(ActivationObject scope, FunctionObject funcObject)
+        {
+            var functionField = funcObject.VariableField;
+
+            // let's check on ghosted names in the outer variable scope
+            var ghostField = scope[funcObject.Name];
+            if (ghostField == null)
+            {
+                // nothing; good to go. Add a ghosted field to keep track of it.
+                ghostField = new JSVariableField(FieldType.GhostFunctionExpression, funcObject.Name, 0, funcObject)
+                {
+                    OriginalContext = functionField.OriginalContext.Clone()
+                };
+
+                scope.AddField(ghostField);
+            }
+            else if (ghostField.FieldType == FieldType.GhostFunctionExpression)
+            {
+                // there is, but it's another ghosted function expression.
+                // what if a lookup is resolved to this field later? We probably still need to
+                // at least flag it as ambiguous. We will only need to throw an error, though,
+                // if someone actually references the outer ghost variable. 
+                ghostField.IsAmbiguous = true;
+            }
+            else
+            {
+                // something already exists. Could be a naming collision for IE or at least a
+                // a cross-browser behavior difference if it's not coded properly.
+                // mark this field as a function, even if it wasn't before
+                ghostField.IsFunction = true;
+
+                if (ghostField.OuterField != null)
+                {
+                    // if the pre-existing field we are ghosting is a reference to
+                    // an OUTER field, then we actually have a problem that creates a BIG
+                    // difference between older IE browsers and everything else.
+                    // modern browsers will have the link to the outer field, but older
+                    // IE browsers will link to this function expression!
+                    // fire a cross-browser error warning
+                    ghostField.IsAmbiguous = true;
+                    funcObject.IdContext.HandleError(JSError.AmbiguousNamedFunctionExpression);
+                }
+                else if (ghostField.IsReferenced)
+                {
+                    // if the ghosted field isn't even referenced, then who cares?
+                    // but it is referenced. Let's see if it matters.
+                    // something like: var nm = function nm() {}
+                    // is TOTALLY cool common cross-browser syntax.
+                    var parentVarDecl = funcObject.Parent as VariableDeclaration;
+                    if (parentVarDecl == null
+                        || parentVarDecl.Name != funcObject.Name)
                     {
-                        // nothing; good to go. Add a ghosted field to keep track of it.
-                        ghostField = new JSVariableField(FieldType.GhostFunctionExpression, funcObject.Name, 0, funcObject)
+                        // see if it's a simple assignment.
+                        // something like: var nm; nm = function nm(){},
+                        // would also be cool, although less-common than the vardecl version.
+                        Lookup lookup;
+                        var parentAssignment = funcObject.Parent as BinaryOperator;
+                        if (parentAssignment == null || parentAssignment.OperatorToken != JSToken.Assign
+                            || parentAssignment.Operand2 != funcObject
+                            || (lookup = parentAssignment.Operand1 as Lookup) == null
+                            || lookup.Name != funcObject.Name)
                         {
-                            OriginalContext = functionField.OriginalContext
-                        };
-
-                        m_variableScope.AddField(ghostField);
-                    }
-                    else if (ghostField.FieldType == FieldType.GhostFunctionExpression)
-                    {
-                        // there is, but it's another ghosted function expression.
-                        // what if a lookup is resolved to this field later? We probably still need to
-                        // at least flag it as ambiguous. We will only need to throw an error, though,
-                        // if someone actually references the outer ghost variable. 
-                        ghostField.IsAmbiguous = true;
-                    }
-                    else
-                    {
-                        // something already exists. Could be a naming collision for IE or at least a
-                        // a cross-browser behavior difference if it's not coded properly.
-                        // mark this field as a function, even if it wasn't before
-                        ghostField.IsFunction = true;
-
-                        if (ghostField.OuterField != null)
-                        {
-                            // if the pre-existing field we are ghosting is a reference to
-                            // an OUTER field, then we actually have a problem that creates a BIG
-                            // difference between older IE browsers and everything else.
-                            // modern browsers will have the link to the outer field, but older
-                            // IE browsers will link to this function expression!
-                            // fire a cross-browser error warning
+                            // something else. Flag it as ambiguous.
                             ghostField.IsAmbiguous = true;
-                            funcObject.IdContext.HandleError(JSError.AmbiguousNamedFunctionExpression);
                         }
-                        else if (ghostField.IsReferenced)
-                        {
-                            // if the ghosted field isn't even referenced, then who cares?
-                            // but it is referenced. Let's see if it matters.
-                            // something like: var nm = function nm() {}
-                            // is TOTALLY cool common cross-browser syntax.
-                            var parentVarDecl = funcObject.Parent as VariableDeclaration;
-                            if (parentVarDecl == null
-                                || parentVarDecl.Name != funcObject.Name)
-                            {
-                                // see if it's a simple assignment.
-                                // something like: var nm; nm = function nm(){},
-                                // would also be cool, although less-common than the vardecl version.
-                                Lookup lookup;
-                                var parentAssignment = funcObject.Parent as BinaryOperator;
-                                if (parentAssignment == null || parentAssignment.OperatorToken != JSToken.Assign
-                                    || parentAssignment.Operand2 != funcObject
-                                    || (lookup = parentAssignment.Operand1 as Lookup) == null
-                                    || lookup.Name != funcObject.Name)
-                                {
-                                    // something else. Flag it as ambiguous.
-                                    ghostField.IsAmbiguous = true;
-                                }
-                            }
-                        }
-                    }
-
-                    // link them so they all keep the same name going forward
-                    // (since they are named the same in the sources)
-                    functionField.OuterField = ghostField;
-
-                    // TODO: this really should be a LIST of ghosted fields, since multiple 
-                    // elements can ghost to the same field.
-                    ghostField.GhostedField = functionField;
-
-                    // if the actual field has references, we want to bubble those up
-                    // since we're now linking those fields
-                    if (functionField.RefCount > 0)
-                    {
-                        // add the function's references to the ghost field
-                        ghostField.AddReferences(functionField.References);
                     }
                 }
+            }
+
+            // link them so they all keep the same name going forward
+            // (since they are named the same in the sources)
+            functionField.OuterField = ghostField;
+
+            // TODO: this really should be a LIST of ghosted fields, since multiple 
+            // elements can ghost to the same field.
+            ghostField.GhostedField = functionField;
+
+            // if the actual field has references, we want to bubble those up
+            // since we're now linking those fields
+            if (functionField.RefCount > 0)
+            {
+                // add the function's references to the ghost field
+                ghostField.AddReferences(functionField.References);
             }
         }
 
@@ -610,20 +432,57 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // TODO: this could create a scope if it contains ES6 const or let statements.
-
-                // don't bother setting the order of the block itself, just its children
-                for (var ndx = 0; ndx < node.Count; ++ndx)
+                node.Index = NextOrderIndex;
+                if (node.BlockScope == null
+                    && node.Parent != null
+                    && !(node.Parent is SwitchCase)
+                    && !(node.Parent is FunctionObject)
+                    && !(node.Parent is ConditionalCompilationComment))
                 {
-                    var statement = node[ndx];
-                    if (statement != null)
+                    node.BlockScope = new BlockScope(CurrentLexicalScope, node.Context, m_settings)
                     {
-                        statement.Accept(this);
+                        IsInWithScope = m_withDepth > 0
+                    };
+                }
+
+                if (node.BlockScope != null)
+                {
+                    m_lexicalStack.Push(node.BlockScope);
+                }
+
+                try
+                {
+                    // recurse the block statements
+                    for (var ndx = 0; ndx < node.Count; ++ndx)
+                    {
+                        var statement = node[ndx];
+                        if (statement != null)
+                        {
+                            statement.Accept(this);
+                        }
+                    }
+                }
+                finally
+                {
+                    // be sure to reset the unreachable flag when we exit this block
+                    m_isUnreachable = false;
+
+                    if (node.BlockScope != null)
+                    {
+                        Debug.Assert(CurrentLexicalScope == node.BlockScope);
+                        m_lexicalStack.Pop();
                     }
                 }
 
-                // be sure to reset the unreachable flag when we exit this block
-                m_isUnreachable = false;
+                // now, if the block has no lex-decls, we really don't need a separate scope.
+                if (node.BlockScope != null
+                    && !(node.BlockScope is WithScope)
+                    && !(node.BlockScope is CatchScope)
+                    && node.BlockScope.LexicallyDeclaredNames.Count == 0)
+                {
+                    CollapseBlockScope(node.BlockScope);
+                    node.BlockScope = null;
+                }
             }
         }
 
@@ -669,50 +528,32 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(ConditionalCompilationElse node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConditionalCompilationElseIf node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConditionalCompilationEnd node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConditionalCompilationIf node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConditionalCompilationOn node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConditionalCompilationSet node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(Conditional node)
@@ -741,22 +582,22 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // no execution step for literals.
+                node.Index = NextOrderIndex;
             }
         }
 
         public void Visit(ConstantWrapperPP node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ConstStatement node)
         {
             if (node != null)
             {
+                // declarations get -1 position
+                node.Index = -1;
+
                 // the statement itself doesn't get executed, but the initializers do
                 for (var ndx = 0; ndx < node.Count; ++ndx)
                 {
@@ -804,7 +645,7 @@ namespace Microsoft.Ajax.Utilities
                 node.Index = NextOrderIndex;
                 if (node.UseStrict)
                 {
-                    m_variableScope.UseStrict = true;
+                    CurrentVariableScope.UseStrict = true;
                 }
             }
         }
@@ -831,19 +672,49 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 node.Index = NextOrderIndex;
-                if (node.Variable != null)
-                {
-                    node.Variable.Accept(this);
-                }
 
                 if (node.Collection != null)
                 {
                     node.Collection.Accept(this);
                 }
 
-                if (node.Body != null)
+                if (node.Variable != null)
                 {
-                    node.Body.Accept(this);
+                    // if the variable portion of the for-in statement is a lexical
+                    // declaration, then we will create the block node for its body right now
+                    // and add the declaration. This will prevent the body from deleting
+                    // an empty lexical scope.
+                    var lexDeclaration = node.Variable as LexicalDeclaration;
+                    if (lexDeclaration != null)
+                    {
+                        // create the scope on the block
+                        node.BlockScope = new BlockScope(CurrentLexicalScope, node.Context, m_settings)
+                        {
+                            IsInWithScope = m_withDepth > 0
+                        };
+                        m_lexicalStack.Push(node.BlockScope);
+                    }
+                }
+
+                try
+                {
+                    if (node.Variable != null)
+                    {
+                        node.Variable.Accept(this);
+                    }
+
+                    if (node.Body != null)
+                    {
+                        node.Body.Accept(this);
+                    }
+                }
+                finally
+                {
+                    if (node.BlockScope != null)
+                    {
+                        Debug.Assert(CurrentLexicalScope == node.BlockScope);
+                        m_lexicalStack.Pop();
+                    }
                 }
             }
         }
@@ -853,24 +724,54 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 node.Index = NextOrderIndex;
+
                 if (node.Initializer != null)
                 {
-                    node.Initializer.Accept(this);
+                    // if the variable portion of the for-in statement is a lexical
+                    // declaration, then we will create the block node for its body right now
+                    // and add the declaration. This will prevent the body from both creating
+                    // a new lexical scope and from deleting an empty one.
+                    var lexDeclaration = node.Initializer as LexicalDeclaration;
+                    if (lexDeclaration != null)
+                    {
+                        // create the scope on the block
+                        node.BlockScope = new BlockScope(CurrentLexicalScope, node.Context, m_settings)
+                        {
+                            IsInWithScope = m_withDepth > 0
+                        };
+                        m_lexicalStack.Push(node.BlockScope);
+                    }
                 }
 
-                if (node.Condition != null)
+                try
                 {
-                    node.Condition.Accept(this);
-                }
+                    if (node.Initializer != null)
+                    {
+                        node.Initializer.Accept(this);
+                    }
 
-                if (node.Body != null)
-                {
-                    node.Body.Accept(this);
-                }
+                    if (node.Condition != null)
+                    {
+                        node.Condition.Accept(this);
+                    }
 
-                if (node.Incrementer != null)
+                    if (node.Body != null)
+                    {
+                        node.Body.Accept(this);
+                    }
+
+                    if (node.Incrementer != null)
+                    {
+                        node.Incrementer.Accept(this);
+                    }
+                }
+                finally
                 {
-                    node.Incrementer.Accept(this);
+                    if (node.BlockScope != null)
+                    {
+                        Debug.Assert(CurrentLexicalScope == node.BlockScope);
+                        m_lexicalStack.Pop();
+                    }
                 }
             }
         }
@@ -879,24 +780,63 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // DON'T RECURSE NOW -- save the node for later.
-                if (node.FunctionType == FunctionType.Declaration)
+                // it's a declaration; put the index to -1.
+                node.Index = -1;
+
+                // create a function scope, assign it to the function object,
+                // and push it on the stack
+                var parentScope = CurrentLexicalScope;
+                if (node.FunctionType == FunctionType.Expression && node.Identifier != null)
                 {
-                    // we will declare these in the variable scope
-                    m_variableScope.FunctionDeclarations.Add(node);
+                    // function expressions have an intermediate scope between the parent and the
+                    // function's scope that contains just the function name so the function can
+                    // be self-referencing without the function expression polluting the parent scope.
+                    // don't add the function name field yet, because it's not a decl per se.
+                    parentScope = new FunctionScope(parentScope, true, m_settings, node)
+                    {
+                        IsInWithScope = m_withDepth > 0
+                    };
+
+                    // add this function object to the list of function objects the variable scope
+                    // will need to ghost later
+                    CurrentVariableScope.GhostedNamedFunctionExpressions.Add(node);
                 }
 
-                // these are just for recursing later
-                m_childFunctions.Add(node);
+                node.FunctionScope = new FunctionScope(parentScope, node.FunctionType != FunctionType.Declaration, m_settings, node)
+                {
+                    IsInWithScope = m_withDepth > 0
+                };
+                m_lexicalStack.Push(node.FunctionScope);
+                m_variableStack.Push(node.FunctionScope);
+
+                try
+                {
+                    // recurse into the function to handle it
+                    if (node.Body != null)
+                    {
+                        node.Body.Accept(this);
+                    }
+                }
+                finally
+                {
+                    Debug.Assert(CurrentLexicalScope == node.FunctionScope);
+                    m_lexicalStack.Pop();
+                    m_variableStack.Pop();
+                }
+
+                // nothing to add to the var-decl list.
+                // but add the function name to the current lex-decl list
+                // IF it is a declaration and it has a name (and it SHOULD unless there was an error)
+                if (node.FunctionType == FunctionType.Declaration && node.Identifier != null)
+                {
+                    CurrentLexicalScope.LexicallyDeclaredNames.Add(node);
+                }
             }
         }
 
         public void Visit(GetterSetter node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(IfNode node)
@@ -934,10 +874,7 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(ImportantComment node)
         {
-            if (node != null)
-            {
-                // nothing to do.
-            }
+            // nothing to do
         }
 
         public void Visit(LabeledStatement node)
@@ -952,13 +889,29 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public void Visit(LexicalDeclaration node)
+        {
+            if (node != null)
+            {
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    var decl = node[ndx];
+                    if (decl != null)
+                    {
+                        decl.Accept(this);
+                    }
+                }
+            }
+        }
+
         public void Visit(Lookup node)
         {
             if (node != null)
             {
                 node.Index = NextOrderIndex;
 
-                // save the lookup to the current lexical scope
+                // add the lookup node to the current lexical scope, because
+                // that's the starting point for this node's lookup resolution.
                 CurrentLexicalScope.ScopeLookups.Add(node);
             }
         }
@@ -989,18 +942,12 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(ObjectLiteralField node)
         {
-            if (node != null)
-            {
-                // nothing to do
-            }
+            // nothing to do
         }
 
         public void Visit(ParameterDeclaration node)
         {
-            if (node != null)
-            {
-                // do nothing
-            }
+            // nothing to do
         }
 
         public void Visit(RegExpLiteral node)
@@ -1037,9 +984,32 @@ namespace Microsoft.Ajax.Utilities
                     node.Expression.Accept(this);
                 }
 
-                if (node.Cases != null)
+                // the switch has its own block scope to use for all the blocks that are under
+                // its child switch-case nodes
+                node.BlockScope = new BlockScope(CurrentLexicalScope, node.Context, m_settings)
                 {
-                    node.Cases.Accept(this);
+                    IsInWithScope = m_withDepth > 0
+                };
+                m_lexicalStack.Push(node.BlockScope);
+
+                try
+                {
+                    if (node.Cases != null)
+                    {
+                        node.Cases.Accept(this);
+                    }
+                }
+                finally
+                {
+                    Debug.Assert(CurrentLexicalScope == node.BlockScope);
+                    m_lexicalStack.Pop();
+                }
+
+                // if the block has no lex-decls, we really don't need a separate scope.
+                if (node.BlockScope.LexicallyDeclaredNames.Count == 0)
+                {
+                    CollapseBlockScope(node.BlockScope);
+                    node.BlockScope = null;
                 }
             }
         }
@@ -1083,44 +1053,30 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // if there is a catch parameter, then we will need to check for possible
-                // IE collisions in the variable scope later, once all the declarations have
-                // been processed
-                if (node.CatchParameter != null)
-                {
-                    m_catchParameters.Add(node.CatchParameter);
-                }
-
                 node.Index = NextOrderIndex;
+
                 if (node.TryBlock != null)
                 {
                     node.TryBlock.Accept(this);
                 }
 
+                // add this catch parameter to the list of catch parameters the variable
+                // scope will need to ghost later.
+                if (node.CatchParameter != null)
+                {
+                    CurrentVariableScope.GhostedCatchParameters.Add(node.CatchParameter);
+                }
+
                 if (node.CatchBlock != null)
                 {
-                    // create the catch scope, push it on the stack, and process the
-                    // body. don't forget to pop it off
-                    var catchScope = new CatchScope(CurrentLexicalScope, node.CatchBlock.Context, node.Parser);
-                    node.CatchBlock.BlockScope = catchScope;
-                    m_lexicalStack.Push(catchScope);
-                    try
+                    // create the catch-scope, add the catch parameter to it, and recurse the catch block.
+                    // the block itself will push the scope onto the stack and pop it off, so we don't have to.
+                    node.CatchBlock.BlockScope = new CatchScope(CurrentLexicalScope, node.CatchBlock.Context, m_settings, node.CatchParameter)
                     {
-                        // add it to the catch-scope's name table
-                        if (node.CatchParameter != null)
-                        {
-                            var catchField = new JSVariableField(FieldType.Argument, node.CatchParameter.Name, 0, null);
-                            catchScope.AddField(catchField);
-                            catchField.OriginalContext = node.CatchParameter.IfNotNull(p => p.Context);
-                            node.CatchParameter.Field = catchScope.CatchField = catchField;
-                        }
-
-                        node.CatchBlock.Accept(this);
-                    }
-                    finally
-                    {
-                        m_lexicalStack.Pop();
-                    }
+                        IsInWithScope = m_withDepth > 0
+                    };
+                    node.CatchBlock.BlockScope.LexicallyDeclaredNames.Add(node.CatchParameter);
+                    node.CatchBlock.Accept(this);
                 }
 
                 if (node.FinallyBlock != null)
@@ -1146,6 +1102,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // declarations get a -1 position index
+                node.Index = -1;
+
                 for (var ndx = 0; ndx < node.Count; ++ndx)
                 {
                     var decl = node[ndx];
@@ -1161,28 +1120,27 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // we really should do something different for var, const, and let
-                // because in ES6 the const and let declarations are block-specific.
-                // but for now, just save them
-                m_variableScope.VariableDeclarations.Add(node);
+                if (node.Parent is LexicalDeclaration)
+                {
+                    // ES6 let or const declaration. Only add to the current lexical scope.
+                    CurrentLexicalScope.LexicallyDeclaredNames.Add(node);
+                }
+                else
+                {
+                    // must be var or const (mozilla-style). Add to both the lexical scope
+                    // and the variable scope. The variable scope will actually use this node
+                    // to create a field; the lexical stack will just use it to detect conflicts
+                    // with lex-decls
+                    CurrentLexicalScope.VarDeclaredNames.Add(node);
+                    CurrentVariableScope.VarDeclaredNames.Add(node);
+                }
 
                 if (node.Initializer != null)
                 {
-                    // the declaration only gets executed if it has an initializer
                     node.Index = NextOrderIndex;
-                    node.Initializer.Accept(this);
 
-                    // if this vardecl with an assignment happens to be inside a
-                    // with-statement, then we need to treat the initialization as
-                    // the run-time lookup/assignment it really is. Which means,
-                    // because the with-statement is a special scope, we will need
-                    // to create an inner reference within the with-scope pointing
-                    // to this var's declared field.
-                    if (m_withDepth > 0)
-                    {
-                        // add it to this set; we'll deal with it later
-                        m_vardeclsInsideWith.Add(node);
-                    }
+                    // recurse the initializer
+                    node.Initializer.Accept(this);
                 }
             }
         }
@@ -1216,12 +1174,10 @@ namespace Microsoft.Ajax.Utilities
 
                 if (node.Body != null)
                 {
-                    // create the scope for the with-statement
-                    var withScope = new WithScope(CurrentLexicalScope, node.Context, node.Parser);
-                    node.Body.BlockScope = withScope;
+                    // create the with-scope and recurse the block.
+                    // the block itself will push the scope onto the stack and pop it off, so we don't have to.
+                    node.Body.BlockScope = new WithScope(CurrentLexicalScope, node.Body.Context, m_settings);
 
-                    // push it on the stack, recurse the body, then pop it off
-                    m_lexicalStack.Push(withScope);
                     try
                     {
                         ++m_withDepth;
@@ -1230,7 +1186,6 @@ namespace Microsoft.Ajax.Utilities
                     finally
                     {
                         --m_withDepth;
-                        m_lexicalStack.Pop();
                     }
                 }
             }

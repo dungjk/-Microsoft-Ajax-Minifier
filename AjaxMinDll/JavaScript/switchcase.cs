@@ -22,12 +22,7 @@ namespace Microsoft.Ajax.Utilities
     public sealed class SwitchCase : AstNode
     {
         public AstNode CaseValue { get; private set; }
-
-        private Block m_statements;
-        public Block Statements
-        {
-            get { return m_statements; }
-        }
+        public Block Statements { get; private set; }
 
         internal bool IsDefault
         {
@@ -43,22 +38,7 @@ namespace Microsoft.Ajax.Utilities
                 caseValue.Parent = this;
             }
 
-            if (statements != null)
-            {
-                if (statements.Count == 1)
-                {
-                    // if there is only one item in the block
-                    // and that one item IS a block...
-                    Block block = statements[0] as Block;
-                    if (block != null)
-                    {
-                        // then we can skip the intermediary block because all it
-                        // does is add braces around the block, which aren't needed
-                        statements = block;
-                    }
-                }
-            }
-            m_statements = statements;
+            Statements = statements;
             if (statements != null)
             {
                 statements.Parent = this;
@@ -82,7 +62,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(CaseValue, m_statements);
+                return EnumerateNonNullNodes(CaseValue, Statements);
             }
         }
 
@@ -94,12 +74,12 @@ namespace Microsoft.Ajax.Utilities
                 if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
-            if (m_statements == oldNode)
+            if (Statements == oldNode)
             {
                 if (newNode == null)
                 {
                     // remove it
-                    m_statements = null;
+                    Statements = null;
                     return true;
                 }
                 else
@@ -108,7 +88,7 @@ namespace Microsoft.Ajax.Utilities
                     Block newBlock = newNode as Block;
                     if (newBlock != null)
                     {
-                        m_statements = newBlock;
+                        Statements = newBlock;
                         newNode.Parent = this;
                         return true;
                     }
@@ -123,12 +103,12 @@ namespace Microsoft.Ajax.Utilities
             {
                 // no statements doesn't require a separator.
                 // otherwise only if statements require it
-                if (m_statements == null || m_statements.Count == 0)
+                if (Statements == null || Statements.Count == 0)
                 {
                     return false;
                 }
 
-                return m_statements[m_statements.Count - 1].RequiresSeparator;
+                return Statements[Statements.Count - 1].RequiresSeparator;
             }
         }
     }

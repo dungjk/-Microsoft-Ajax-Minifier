@@ -346,6 +346,17 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public virtual void Visit(LexicalDeclaration node)
+        {
+            if (node != null)
+            {
+                foreach (var childNode in node.Children)
+                {
+                    childNode.Accept(this);
+                }
+            }
+        }
+
         public virtual void Visit(Lookup node)
         {
             // no children

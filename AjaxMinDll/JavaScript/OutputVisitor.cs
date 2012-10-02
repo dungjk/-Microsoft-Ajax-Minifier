@@ -1173,13 +1173,14 @@ namespace Microsoft.Ajax.Utilities
                 Output("function");
                 m_startOfStatement = false;
                 bool isAnonymous = true;
-                if (node.Identifier != null)
+                if (node.VariableField != null)
                 {
                     isAnonymous = false;
+                    var funcName = node.VariableField.ToString();
 
                     if (Settings.SymbolsMap != null)
                     {
-                        m_functionStack.Push(node.Identifier.ToString());
+                        m_functionStack.Push(funcName);
                     }
 
                     // if this is a function expression, check to see if the field
@@ -1189,7 +1190,18 @@ namespace Microsoft.Ajax.Utilities
                         || !Settings.RemoveFunctionExpressionNames
                         || !Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
                     {
-                        node.Identifier.Accept(this);
+                        // all identifier should be treated as if they start with a valid
+                        // identifier character. That might not always be the case, like when
+                        // we consider an ASP.NET block to output the start of an identifier.
+                        // so let's FORCE the insert-space logic here.
+                        if (JSScanner.IsValidIdentifierPart(m_lastCharacter))
+                        {
+                            Output(' ');
+                        }
+
+                        var nameSymbol = StartSymbol(node.Identifier);
+                        Output(funcName);
+                        EndSymbol(nameSymbol);
                     }
                 }
 
@@ -1399,6 +1411,51 @@ namespace Microsoft.Ajax.Utilities
                     node.Statement.Accept(this);
                 }
 
+                EndSymbol(symbol);
+            }
+        }
+
+        public void Visit(LexicalDeclaration node)
+        {
+            if (node != null)
+            {
+                var symbol = StartSymbol(node);
+
+                // save the no-in state -- we'll reset before processing each initializer
+                var isNoIn = m_noIn;
+
+                Output(OperatorString(node.StatementToken));
+                m_startOfStatement = false;
+                Indent();
+                var useNewLines = !(node.Parent is ForNode);
+
+                for (var ndx = 0; ndx < node.Count; ++ndx)
+                {
+                    var decl = node[ndx];
+                    if (decl != null)
+                    {
+                        if (ndx > 0)
+                        {
+                            OutputPossibleLineBreak(',');
+                            if (useNewLines)
+                            {
+                                NewLine();
+                            }
+                            else if (Settings.OutputMode == OutputMode.MultipleLines)
+                            {
+                                OutputPossibleLineBreak(' ');
+                            }
+                        }
+
+                        // be sure to set the no-in state to whatever it was when we entered
+                        // this node, because each declaration might reset it as it's outputting
+                        // its child nodes
+                        m_noIn = isNoIn;
+                        decl.Accept(this);
+                    }
+                }
+
+                Unindent();
                 EndSymbol(symbol);
             }
         }
@@ -1984,7 +2041,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
 
                 // output the name (use the field is possible)
-                Output(node.Field != null ? node.Field.ToString() : node.Identifier);
+                Output(node.VariableField != null ? node.VariableField.ToString() : node.Identifier);
                 m_startOfStatement = false;
                 if (node.Initializer != null)
                 {
@@ -2438,6 +2495,8 @@ namespace Microsoft.Ajax.Utilities
                 case JSToken.UnsignedRightShiftAssign: return ">>>=";
                 case JSToken.Divide: return "/";
                 case JSToken.DivideAssign: return "/=";
+                case JSToken.Let: return "let";
+                case JSToken.Const: return "const";
 
                 default: return string.Empty;
             }
@@ -2557,7 +2616,7 @@ namespace Microsoft.Ajax.Utilities
                             // we want to loop backwards until we either find a parameter that is referenced.
                             // at that point, lastRef will be the index of the last referenced parameter so
                             // we can output from 0 to lastRef
-                            var argumentField = (node.ParameterDeclarations[lastRef] as ParameterDeclaration).IfNotNull(p => p.Field);
+                            var argumentField = (node.ParameterDeclarations[lastRef] as ParameterDeclaration).IfNotNull(p => p.VariableField);
                             if (argumentField != null && !argumentField.IsReferenced)
                             {
                                 --lastRef;

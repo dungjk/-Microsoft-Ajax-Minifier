@@ -51,9 +51,6 @@
     <Compile Include="..\AjaxMinTask\AjaxMinManifestTask.cs">
       <Link>AjaxMinManifestTask.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMinTask\GlobalSuppressions.cs">
-      <Link>GlobalSuppressions.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMinTask\Strings.Designer.cs">
       <Link>Strings.Designer.cs</Link>
       <AutoGen>True</AutoGen>
@@ -77,6 +74,11 @@
       <Project>{84C7EDDF-23AC-444C-AB0F-D65F8D6DE89C}</Project>
       <Name>AjaxMinDll2008</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
+      <Link>CustomDictionary.xml</Link>
+    </CodeAnalysisDictionary>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

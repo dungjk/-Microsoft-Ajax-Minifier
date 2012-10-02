@@ -21,17 +21,14 @@ using System.Text;
 namespace Microsoft.Ajax.Utilities
 {
 
-    public sealed class DoWhile : AstNode
+    public sealed class DoWhile : IterationStatement
     {
-        public Block Body { get; set; }
         public AstNode Condition {get; set;}
 
         public DoWhile(Context context, JSParser parser, AstNode body, AstNode condition)
-            : base(context, parser)
+            : base(context, parser, body)
         {
-            Body = ForceToBlock(body);
             Condition = condition;
-            if (Body != null) Body.Parent = this;
             if (Condition != null) Condition.Parent = this;
         }
 

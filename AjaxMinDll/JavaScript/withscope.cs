@@ -20,11 +20,10 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class WithScope : BlockScope
     {
-        public WithScope(ActivationObject parent, Context context, JSParser parser)
-            : base(parent, context, parser)
+        public WithScope(ActivationObject parent, Context context, CodeSettings settings)
+            : base(parent, context, settings)
         {
-            // with statements are unknown by default
-            //IsKnownAtCompileTime = false;
+            IsInWithScope = true;
         }
 
         public override JSVariableField CreateInnerField(JSVariableField outerField)
@@ -42,6 +41,25 @@ namespace Microsoft.Ajax.Utilities
 
                 return withField;
             });
+        }
+
+        /// <summary>
+        /// Set up this scopes lexically-declared fields
+        /// </summary>
+        public override void DeclareScope()
+        {
+            // only bind lexical declarations
+            DefineLexicalDeclarations();
+
+            // however, take a look at the var-decl fields and make sure that
+            // their fields all get marked as cannot-rename.
+            foreach (var varDecl in VarDeclaredNames)
+            {
+                if (varDecl.VariableField != null)
+                {
+                    varDecl.VariableField.CanCrunch = false;
+                }
+            }
         }
 
         public override JSVariableField CreateField(JSVariableField outerField)

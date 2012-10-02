@@ -25,6 +25,9 @@ namespace Microsoft.Ajax.Utilities
     public interface INameDeclaration
     {
         string Name { get; }
-        //bool IsConstant { get; }
+        Context NameContext { get; }
+        AstNode Parent { get; }
+        bool HasInitializer { get; }
+        JSVariableField VariableField { get; set; }
     }
 }

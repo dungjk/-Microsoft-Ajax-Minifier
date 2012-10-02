@@ -21,22 +21,21 @@ using System.Text;
 namespace Microsoft.Ajax.Utilities
 {
 
-    public sealed class ForNode : AstNode
+    public sealed class ForNode : IterationStatement
     {
         public AstNode Initializer { get; private set; }
         public AstNode Condition { get; private set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Incrementer")]
         public AstNode Incrementer { get; private set; }
-        public Block Body { get; private set; }
+
+        public BlockScope BlockScope { get; set; }
 
         public ForNode(Context context, JSParser parser, AstNode initializer, AstNode condition, AstNode increment, AstNode body)
-            : base(context, parser)
+            : base(context, parser, body)
         {
             Initializer = initializer;
             Condition = condition;
             Incrementer = increment;
-            Body = ForceToBlock(body);
-            if (Body != null) Body.Parent = this;
             if (Incrementer != null) Incrementer.Parent = this;
             if (Condition != null) Condition.Parent = this;
             if (Initializer != null) Initializer.Parent = this;

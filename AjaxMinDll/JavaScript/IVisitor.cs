@@ -48,6 +48,7 @@ namespace Microsoft.Ajax.Utilities
         void Visit(IfNode node);
         void Visit(ImportantComment node);
         void Visit(LabeledStatement node);
+        void Visit(LexicalDeclaration node);
         void Visit(Lookup node);
         void Visit(Member node);
         void Visit(ObjectLiteral node);

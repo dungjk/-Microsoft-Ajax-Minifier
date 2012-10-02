@@ -59,7 +59,7 @@ namespace Microsoft.Ajax.Utilities
 
         public void SetCatchVariable(JSVariableField field)
         {
-            CatchParameter.Field = field;
+            CatchParameter.VariableField = field;
         }
 
         public override void Accept(IVisitor visitor)

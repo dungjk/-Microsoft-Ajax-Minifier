@@ -2526,6 +2526,7 @@ namespace Microsoft.Ajax.Utilities
             return text;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="No, we want to output lower-case here")]
         private Parsed ParseFunction()
         {
             Parsed parsed = Parsed.False;
@@ -3085,6 +3086,7 @@ namespace Microsoft.Ajax.Utilities
             return parsed;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="we want lower-case output")]
         private Parsed ParseMinMax()
         {
             // return false if the function isn't min or max

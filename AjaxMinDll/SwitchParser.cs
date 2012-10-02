@@ -486,6 +486,25 @@ namespace Microsoft.Ajax.Utilities
 
                                 break;
 
+                            case "CONST":
+                                // options: MOZ or ES6 (ES6 is the default)
+                                if (paramPartUpper == "MOZ")
+                                {
+                                    JSSettings.ConstStatementsMozilla = true;
+                                }
+                                else if (paramPartUpper == "ES6")
+                                {
+                                    JSSettings.ConstStatementsMozilla = false;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
+                                // this is a JS-only switch
+                                OnJSOnlyParameter();
+                                break;
+
                             case "CSS":
                                 OnCssOnlyParameter();
                                 if (paramPartUpper != null)
@@ -1677,6 +1696,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification="duly noted")]
         public static bool BooleanSwitch(string booleanText, bool defaultValue, out bool booleanValue)
         {
             // assume it's valid unless proven otherwise

@@ -831,6 +831,7 @@ namespace JSUnitTest
 
             if (!testPassed)
             {
+                Trace.WriteLine("");
                 Trace.WriteLine("UNEXPECTED ERROR RESULTS");
             }
 

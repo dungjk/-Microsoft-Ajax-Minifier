@@ -348,10 +348,12 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.StrictComparisonIsAlwaysTrueOrFalse:
                     return 1;
 
+                case JSError.DuplicateCatch:
                 case JSError.DuplicateConstantDeclaration:
+                case JSError.DuplicateLexicalDeclaration:
                 case JSError.KeywordUsedAsIdentifier:
                 case JSError.MisplacedFunctionDeclaration:
-                case JSError.ObjectLiteralReservedWord:
+                case JSError.ObjectLiteralKeyword:
                     return 2;
 
                 case JSError.ArgumentNotReferenced:

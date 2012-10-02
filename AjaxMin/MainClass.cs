@@ -1883,6 +1883,7 @@ namespace Microsoft.Ajax.Utilities
             return sb.ToString();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times", Justification="incorrect; gzipstream constructor does not close outer stream when third parameter is true")]
         private static long CalculateGzipSize(byte[] bytes)
         {
             using(var memoryStream = new MemoryStream())

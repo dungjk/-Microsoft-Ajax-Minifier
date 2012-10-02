@@ -24,10 +24,12 @@ namespace Microsoft.Ajax.Utilities
     {
         public string Identifier { get; private set; }
         public Context IdentifierContext { get; private set; }
+        public Context NameContext { get { return IdentifierContext; } }
 
         public AstNode Initializer { get; private set; }
+        public bool HasInitializer { get { return Initializer != null; } }
 
-        public JSVariableField Field { get; set; }
+        public JSVariableField VariableField { get; set; }
         public bool IsCCSpecialCase { get; set; }
         public bool UseCCOn { get; set; }
 
@@ -43,9 +45,9 @@ namespace Microsoft.Ajax.Utilities
             set
             {
                 m_isGenerated = value;
-                if (Field != null)
+                if (VariableField != null)
                 {
-                    Field.IsGenerated = m_isGenerated;
+                    VariableField.IsGenerated = m_isGenerated;
                 }
             }
         }
@@ -112,7 +114,7 @@ namespace Microsoft.Ajax.Utilities
             var otherVarDecl = otherNode as VariableDeclaration;
             if (otherVarDecl != null)
             {
-                otherField = otherVarDecl.Field;
+                otherField = otherVarDecl.VariableField;
             }
             else if ((otherLookup = otherNode as Lookup) != null)
             {
@@ -120,7 +122,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // if we get here, we're not equivalent
-            return this.Field != null && this.Field.IsSameField(otherField);
+            return this.VariableField != null && this.VariableField.IsSameField(otherField);
         }
 
         #region INameReference Members
@@ -130,7 +132,7 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 // if we don't have a field, return null. Otherwise it's the field's owning scope.
-                return this.Field.IfNotNull(f => f.OwningScope);
+                return this.VariableField.IfNotNull(f => f.OwningScope);
             }
         }
 

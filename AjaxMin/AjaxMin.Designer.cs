@@ -79,6 +79,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Lexical.
+        /// </summary>
+        internal static string BlockTypeLexical {
+            get {
+                return ResourceManager.GetString("BlockTypeLexical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to With.
         /// </summary>
         internal static string BlockTypeWith {
@@ -583,11 +592,38 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to catch error.
+        /// </summary>
+        internal static string MemberInfoTypeCatchEror {
+            get {
+                return ResourceManager.GetString("MemberInfoTypeCatchEror", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to object property.
         /// </summary>
         internal static string MemberInfoWithField {
             get {
                 return ResourceManager.GetString("MemberInfoWithField", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [or lexical declaration].
+        /// </summary>
+        internal static string MemberInfoWithLexDecl {
+            get {
+                return ResourceManager.GetString("MemberInfoWithLexDecl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [or lexical function].
+        /// </summary>
+        internal static string MemberInfoWithLexFunc {
+            get {
+                return ResourceManager.GetString("MemberInfoWithLexFunc", resourceCulture);
             }
         }
         

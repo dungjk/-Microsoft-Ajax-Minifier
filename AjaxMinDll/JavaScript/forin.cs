@@ -19,21 +19,23 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public sealed class ForIn : AstNode
+    public sealed class ForIn : IterationStatement
     {
         public AstNode Variable { get; private set; }
         public AstNode Collection { get; private set; }
-        public Block Body { get; private set; }
+        public JSToken Operator { get; set; }
 
-        public ForIn(Context context, JSParser parser, AstNode var, AstNode collection, AstNode body)
-            : base(context, parser)
+        public BlockScope BlockScope { get; set; }
+
+        public ForIn(Context context, JSParser parser, AstNode var, AstNode collection, AstNode body, JSToken operatorToken)
+            : base(context, parser, body)
         {
             Variable = var;
             Collection = collection;
-            Body = ForceToBlock(body);
-            if (Body != null) Body.Parent = this;
             if (Variable != null) Variable.Parent = this;
             if (Collection != null) Collection.Parent = this;
+
+            Operator = operatorToken;
         }
 
         public override void Accept(IVisitor visitor)

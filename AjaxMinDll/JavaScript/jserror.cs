@@ -102,10 +102,12 @@ namespace Microsoft.Ajax.Utilities
         StringNotInlineSafe = 1299, // string literal is not inline safe
         StrictModeUndefinedVariable = 1300, // undefined variable in strict mode
         UnclosedFunction = 1301, // end of file encountered before function is properly closed
-        ObjectLiteralReservedWord = 1303, // reserved word used as object literal property name
+        ObjectLiteralKeyword = 1303, // reserved word used as object literal property name
         NoEndIfDirective = 1304, // expected #ENDIF directive
         NoEndDebugDirective = 1305, // expected #ENDDEBUG directive
         BadNumericLiteral = 1306, // bad numeric literal
+        DuplicateLexicalDeclaration = 1307, // duplicate lexical declaration
+        DuplicateCatch = 1308, // variable declaration duplicates catch error name
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

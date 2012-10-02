@@ -14,11 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Reflection;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public abstract class BlockScope : ActivationObject
+    public class BlockScope : ActivationObject
     {
         private Context m_context;// = null;
         public Context Context
@@ -26,47 +27,33 @@ namespace Microsoft.Ajax.Utilities
             get { return m_context; }
         }
 
-        // not instantiated directly, only through derived classes
-        protected BlockScope(ActivationObject parent, Context context, JSParser parser)
-            : base(parent, parser)
+        public BlockScope(ActivationObject parent, Context context, CodeSettings settings)
+            : base(parent, settings)
         {
-            m_context = (context == null ? new Context(parser) : context.Clone());
-        }
-
-        public override JSVariableField this[string name]
-        {
-            get
+            if (context == null)
             {
-                // check this name table
-                JSVariableField variableField = base[name];
-                if (variableField == null)
-                {
-                    // we need to keep checking until we hit a non-block scope?
-                }
-                return variableField;
-            }
-        }
-
-        public override JSVariableField DeclareField(string name, object value, FieldAttributes attributes)
-        {
-            JSVariableField variableField;
-            if (!NameTable.TryGetValue(name, out variableField))
-            {
-                // find the owning scope where variables are defined
-                ActivationObject owningScope = Parent;
-                while (owningScope is BlockScope)
-                {
-                    owningScope = owningScope.Parent;
-                }
-
-                // create the variable in that scope
-                variableField = owningScope.DeclareField(name, value, attributes);
-
-                // and create an inner-reference in our scope
-                variableField = CreateInnerField(variableField);
+                throw new ArgumentNullException("context");
             }
 
-            return variableField;
+            m_context = context.Clone();
+        }
+
+        #region scope setup methods
+
+        /// <summary>
+        /// Set up this scopes lexically-declared fields
+        /// </summary>
+        public override void DeclareScope()
+        {
+            // only bind lexical declarations
+            DefineLexicalDeclarations();
+        }
+
+        #endregion
+
+        public override JSVariableField CreateField(string name, object value, FieldAttributes attributes)
+        {
+            return new JSVariableField(FieldType.Local, name, attributes, value);
         }
     }
 }

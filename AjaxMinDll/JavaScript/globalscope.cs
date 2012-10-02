@@ -30,8 +30,8 @@ namespace Microsoft.Ajax.Utilities
 
         public ICollection<UndefinedReferenceException> UndefinedReferences { get { return m_undefined; } }
 
-        internal GlobalScope(JSParser parser)
-            : base(null, parser)
+        internal GlobalScope(CodeSettings settings)
+            : base(null, settings)
         {
             // define the Global object's properties, and methods
             m_globalProperties = new HashSet<string>( new [] { 
@@ -41,6 +41,18 @@ namespace Microsoft.Ajax.Utilities
             m_globalFunctions = new HashSet<string>( new [] {
                 "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "escape", "eval", "importScripts", "isNaN", "isFinite", "parseFloat", "parseInt", "unescape", "ActiveXObject", "Array", "Boolean", "Date", "Error", "EvalError", "EventSource", "File", "FileList", "FileReader", "Function", "GeckoActiveXObject", "HTMLElement", "Number", "Object", "Proxy", "RangeError", "ReferenceError", "RegExp", "SharedWorker", "String", "SyntaxError", "TypeError", "URIError", "WebSocket", "Worker",
                 "addEventListener", "alert", "attachEvent", "blur", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", "detachEvent", "dispatchEvent", "execScript", "focus", "getComputedStyle", "getSelection", "moveBy", "moveTo", "navigate", "open", "postMessage", "prompt", "removeEventListener", "resizeBy", "resizeTo", "scroll", "scrollBy", "scrollTo", "setActive", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog" });
+        }
+
+        /// <summary>
+        /// Set up this scopes lexically- and var-declared fields
+        /// </summary>
+        public override void DeclareScope()
+        {
+            // bind lexical declarations
+            DefineLexicalDeclarations();
+
+            // bind the variable declarations
+            DefineVarDeclarations();
         }
 
         public void AddUndefinedReference(UndefinedReferenceException exception)

@@ -20,18 +20,15 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public sealed class WhileNode : AstNode
+    public sealed class WhileNode : IterationStatement
     {
         public AstNode Condition { get; private set; }
-        public Block Body { get; private set; }
 
         public WhileNode(Context context, JSParser parser, AstNode condition, AstNode body)
-            : base(context, parser)
+            : base(context, parser, body)
         {
             Condition = condition;
-            Body = ForceToBlock(body);
             if (Condition != null) Condition.Parent = this;
-            if (Body != null) Body.Parent = this;
         }
 
         public override void Accept(IVisitor visitor)

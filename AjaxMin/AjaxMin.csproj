@@ -117,10 +117,10 @@
       <DependentUpon>AjaxMin.resx</DependentUpon>
     </Compile>
     <Compile Include="DefaultScopeReport.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IScopeReport.cs" />
     <Compile Include="XmlScopeReport.cs" />
     <Content Include="..\App.ico" />
-    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Properties\ProductAssemblyInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
@@ -130,6 +130,9 @@
     <Compile Include="MainClass.cs">
       <SubType>Code</SubType>
     </Compile>
+    <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
+      <Link>CustomDictionary.xml</Link>
+    </CodeAnalysisDictionary>
     <EmbeddedResource Include="AjaxMin.resx">
       <LastGenOutput>AjaxMin.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>

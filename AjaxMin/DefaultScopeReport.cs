@@ -142,14 +142,13 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
-                        WriteProgress();
-                        WriteProgress(AjaxMin.UnknownScopeType.FormatInvariant(scope.GetType().ToString()));
+                        WriteBlockHeader(blockScope, AjaxMin.BlockTypeLexical);
                     }
                 }
             }
 
             // get all the fields in the scope
-            List<JSVariableField> scopeFields = new List<JSVariableField>(scope.FieldTable);
+            List<JSVariableField> scopeFields = new List<JSVariableField>(scope.NameTable.Values);
 
             // sort the fields
             scopeFields.Sort(FieldComparer.Instance);
@@ -320,10 +319,21 @@ namespace Microsoft.Ajax.Utilities
                     // if the field is a with field, we won't be using the crunched field (since
                     // those fields can't be crunched), so let's overload it with what the field
                     // could POSSIBLY be if the with object doesn't have a property of that name
-                    string outerScope;
-                    string outerType;
-                    GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
-                    crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
+                    if (variableField.OuterField != null)
+                    {
+                        string outerScope;
+                        string outerType;
+                        GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
+                        crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
+                    }
+                    else
+                    {
+                        // no outer field. Then it must be a lexically-declared field inside the with-statement's
+                        // block. These are tricky! At run-time if you try to declare a function, const, or let
+                        // inside the with-scope, and the with-object already has a property with that name, the
+                        // declaration will throw a run-time error.
+                        crunched = variableField.IsFunction ? AjaxMin.MemberInfoWithLexFunc : AjaxMin.MemberInfoWithLexDecl;
+                    }
                 }
 
                 var definedLocation = string.Empty;
@@ -356,6 +366,10 @@ namespace Microsoft.Ajax.Utilities
 
                 case FieldType.Arguments:
                     type = AjaxMin.MemberInfoTypeArguments;
+                    break;
+
+                case FieldType.CatchError:
+                    type = AjaxMin.MemberInfoTypeCatchEror;
                     break;
 
                 case FieldType.GhostCatch:
@@ -600,7 +614,7 @@ namespace Microsoft.Ajax.Utilities
 
             private static FieldOrder GetOrderIndex(JSVariableField obj)
             {
-                if (obj.FieldType == FieldType.Argument)
+                if (obj.FieldType == FieldType.Argument || obj.FieldType == FieldType.CatchError)
                 {
                     return FieldOrder.Argument;
                 }

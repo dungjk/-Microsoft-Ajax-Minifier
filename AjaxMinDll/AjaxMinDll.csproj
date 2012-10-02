@@ -132,7 +132,6 @@
       <DependentUpon>CssStrings.resx</DependentUpon>
     </Compile>
     <Compile Include="Extensions.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="JavaScript\activationobject.cs" />
     <Compile Include="JavaScript\AnalyzeNodeVisitor.cs" />
@@ -182,6 +181,7 @@
     <Compile Include="JavaScript\importantcomment.cs" />
     <Compile Include="JavaScript\INameReference.cs" />
     <Compile Include="JavaScript\ISourceMap.cs" />
+    <Compile Include="JavaScript\IterationStatement.cs" />
     <Compile Include="JavaScript\IVisitor.cs" />
     <Compile Include="JavaScript\JavaScriptSymbol.cs" />
     <Compile Include="JavaScript\JScript.Designer.cs">
@@ -197,6 +197,7 @@
     <Compile Include="JavaScript\jstoken.cs" />
     <Compile Include="JavaScript\jsvariablefield.cs" />
     <Compile Include="JavaScript\labeledstatement.cs" />
+    <Compile Include="JavaScript\LexicalDeclaration.cs" />
     <Compile Include="JavaScript\LogicalNotVisitor.cs" />
     <Compile Include="JavaScript\lookup.cs" />
     <Compile Include="JavaScript\MatchPropertiesVisitor.cs" />
@@ -270,6 +271,11 @@
       <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
       <LastGenOutput>JScript.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="..\CustomDictionary.xml">
+      <Link>CustomDictionary.xml</Link>
+    </CodeAnalysisDictionary>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

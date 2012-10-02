@@ -61,7 +61,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Ambiguous catch identifier &apos;{0}&apos;. Cross-browser behavior difference. .
+        ///   Looks up a localized string similar to Ambiguous catch identifier. Cross-browser behavior difference. .
         /// </summary>
         internal static string AmbiguousCatchVar {
             get {
@@ -88,7 +88,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Argument &apos;{0}&apos; defined but not referenced.
+        ///   Looks up a localized string similar to Argument defined but not referenced.
         /// </summary>
         internal static string ArgumentNotReferenced {
             get {
@@ -223,6 +223,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Variable or function declaration redefines the catch error name.
+        /// </summary>
+        internal static string DuplicateCatch {
+            get {
+                return ResourceManager.GetString("DuplicateCatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Constant declaration already declared.
         /// </summary>
         internal static string DuplicateConstantDeclaration {
@@ -232,7 +241,16 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; is already defined.
+        ///   Looks up a localized string similar to Duplicate lexical declaration; cannot redefine let or const variables.
+        /// </summary>
+        internal static string DuplicateLexicalDeclaration {
+            get {
+                return ResourceManager.GetString("DuplicateLexicalDeclaration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name is already defined.
         /// </summary>
         internal static string DuplicateName {
             get {
@@ -286,7 +304,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Function &apos;{0}&apos; defined but not referenced.
+        ///   Looks up a localized string similar to Function defined but not referenced.
         /// </summary>
         internal static string FunctionNotReferenced {
             get {
@@ -340,7 +358,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; is a new reserved word and should not be used as an identifier.
+        ///   Looks up a localized string similar to Reserved words and should not be used as an identifier; cross-browser differences.
         /// </summary>
         internal static string KeywordUsedAsIdentifier {
             get {
@@ -585,9 +603,9 @@ namespace Microsoft.Ajax.Utilities {
         /// <summary>
         ///   Looks up a localized string similar to Reserved word used as object literal property name; cross-browser issue..
         /// </summary>
-        internal static string ObjectLiteralReservedWord {
+        internal static string ObjectLiteralKeyword {
             get {
-                return ResourceManager.GetString("ObjectLiteralReservedWord", resourceCulture);
+                return ResourceManager.GetString("ObjectLiteralKeyword", resourceCulture);
             }
         }
         
@@ -772,7 +790,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Strict-mode does not allow assignment to undefined variables: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Strict-mode does not allow assignment to undefined variables.
         /// </summary>
         internal static string StrictModeUndefinedVariable {
             get {
@@ -790,7 +808,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to String literal is not safe for inline: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to String literal is not safe for inline.
         /// </summary>
         internal static string StringNotInlineSafe {
             get {
@@ -853,7 +871,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Function &apos;{0}&apos; has not been defined.
+        ///   Looks up a localized string similar to Function has not been defined.
         /// </summary>
         internal static string UndeclaredFunction {
             get {
@@ -862,7 +880,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Variable &apos;{0}&apos; has not been declared.
+        ///   Looks up a localized string similar to Variable has not been declared.
         /// </summary>
         internal static string UndeclaredVariable {
             get {
@@ -898,7 +916,7 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Variable &apos;{0}&apos; defined but not referenced.
+        ///   Looks up a localized string similar to Variable defined but not referenced.
         /// </summary>
         internal static string VariableDefinedNotReferenced {
             get {

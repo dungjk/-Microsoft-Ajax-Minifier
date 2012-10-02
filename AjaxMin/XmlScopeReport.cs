@@ -37,6 +37,7 @@ namespace Microsoft.Ajax.Utilities
             get { return "Xml"; }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="lower-case by design")]
         public void CreateReport(TextWriter writer, GlobalScope globalScope, bool useReferenceCounts)
         {
             if (globalScope != null)
@@ -94,6 +95,7 @@ namespace Microsoft.Ajax.Utilities
 
         #region private methods
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="lower-case by design")]
         private void ProcessScope(ActivationObject scope)
         {
             var functionScope = scope as FunctionScope;
@@ -165,14 +167,14 @@ namespace Microsoft.Ajax.Utilities
                             if (parameter != null)
                             {
                                 m_writer.WriteAttributeString("src", parameter.OriginalName);
-                                if (parameter.Field.CrunchedName != null)
+                                if (parameter.VariableField.CrunchedName != null)
                                 {
                                     m_writer.WriteAttributeString("min", parameter.Name);
                                 }
 
-                                if (m_useReferenceCounts && parameter.Field != null)
+                                if (m_useReferenceCounts && parameter.VariableField != null)
                                 {
-                                    m_writer.WriteAttributeString("refcount", parameter.Field.RefCount.ToStringInvariant());
+                                    m_writer.WriteAttributeString("refcount", parameter.VariableField.RefCount.ToStringInvariant());
                                 }
 
                             }
@@ -200,7 +202,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     m_writer.WriteStartElement("catch");
 
-                    var catchVariable = catchScope.CatchField;
+                    var catchVariable = catchScope.CatchParameter.VariableField;
                     m_writer.WriteStartElement("catchvar");
                     m_writer.WriteAttributeString("src", catchVariable.Name);
                     if (catchVariable.CrunchedName != null)
@@ -247,7 +249,7 @@ namespace Microsoft.Ajax.Utilities
             // split fields into defined and referenced lists
             var definedFields = new List<JSVariableField>();
             var referencedFields = new List<JSVariableField>();
-            foreach (var field in scope.FieldTable)
+            foreach (var field in scope.NameTable.Values)
             {
                 // if the field has no outer field reference, it is defined in this scope.
                 // otherwise we're just referencing a field defined elsewhere
@@ -275,6 +277,10 @@ namespace Microsoft.Ajax.Utilities
                             // ignore the scope's arguments because we handle them separately
                             break;
 
+                        case FieldType.CatchError:
+                            // ignore the catch-scope's error parameter because we handle it separately
+                            break;
+
                         case FieldType.Arguments:
                             if (field.RefCount > 0)
                             {
@@ -299,7 +305,7 @@ namespace Microsoft.Ajax.Utilities
                     // if the outer field is a placeholder, then we actually define it, not the outer scope
                     if (field.OuterField.IsPlaceholder)
                     {
-                        if (field.FieldType != FieldType.Argument)
+                        if (field.FieldType != FieldType.Argument && field.FieldType != FieldType.CatchError)
                         {
                             definedFields.Add(field);
                         }
@@ -334,6 +340,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="lower-case by design")]
         private void ProcessField(JSVariableField field, bool isDefined)
         {
             // save THIS field's refcount value because we will
@@ -359,6 +366,7 @@ namespace Microsoft.Ajax.Utilities
             switch (field.FieldType)
             {
                 case FieldType.Argument:
+                case FieldType.CatchError:
                 case FieldType.WithField:
                     if (isOuter)
                     {

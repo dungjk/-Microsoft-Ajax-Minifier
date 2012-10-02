@@ -24,7 +24,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return (Field != null ? Field.ToString() : m_name);
+                return (VariableField != null ? VariableField.ToString() : m_name);
             }
         }
 
@@ -35,7 +35,11 @@ namespace Microsoft.Ajax.Utilities
 
         public int Position { get; private set; }
 
-        public JSVariableField Field { get; set; }
+        public JSVariableField VariableField { get; set; }
+
+        public bool HasInitializer { get { return false; } }
+
+        public Context NameContext { get { return Context; } }
 
         public ParameterDeclaration(Context context, JSParser parser, string identifier, int position)
             : base(context, parser)

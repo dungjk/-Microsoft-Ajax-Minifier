@@ -32,6 +32,7 @@ namespace Microsoft.Ajax.Utilities
         Arguments,
         Argument,
         WithField,
+        CatchError,
         GhostCatch,
         GhostFunctionExpression,
         UndefinedGlobal,
@@ -46,9 +47,7 @@ namespace Microsoft.Ajax.Utilities
         private bool m_isGenerated;
         private string m_crunchedName;// = null;
 
-        // never update this context object. It is shared
         public Context OriginalContext { get; set; }
-
         public string Name { get; private set; }
         public FieldType FieldType { get; set; }
         public FieldAttributes Attributes { get; set; }
@@ -57,7 +56,6 @@ namespace Microsoft.Ajax.Utilities
         public bool IsFunction { get; internal set; }
         public bool IsAmbiguous { get; set; }
         public bool IsPlaceholder { get; set; }
-
         public bool InitializationOnly { get; set; }
         public int Position { get; set; }
 
@@ -239,6 +237,7 @@ namespace Microsoft.Ajax.Utilities
             switch (FieldType)
             {
                 case FieldType.Argument:
+                case FieldType.CatchError:
                     IsDeclared = true;
                     CanCrunch = true;
                     break;

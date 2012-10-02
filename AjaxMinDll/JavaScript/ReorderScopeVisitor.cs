@@ -191,10 +191,10 @@ namespace Microsoft.Ajax.Utilities
                                         varDecl.Context,
                                         varDecl.Parser,
                                         varDecl.Identifier,
-                                        varDecl.Field.OriginalContext,
+                                        varDecl.VariableField.OriginalContext,
                                         null)
                                         {
-                                            Field = varDecl.Field
+                                            VariableField = varDecl.VariableField
                                         };
 
                                     // replace the special vardecl with the copy
@@ -216,9 +216,9 @@ namespace Microsoft.Ajax.Utilities
                                     assignments.Add(new BinaryOperator(
                                         varDecl.Context,
                                         varDecl.Parser,
-                                        new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varDecl.Parser) 
+                                        new Lookup(varDecl.Identifier, varDecl.VariableField.OriginalContext, varDecl.Parser) 
                                         { 
-                                            VariableField = varDecl.Field
+                                            VariableField = varDecl.VariableField,
                                         },
                                         initializer,
                                         JSToken.Assign));
@@ -259,7 +259,10 @@ namespace Microsoft.Ajax.Utilities
                                 var varDecl = varStatement[0];
                                 varStatement.Parent.ReplaceChild(
                                     varStatement,
-                                    new Lookup(varDecl.Identifier, varDecl.Field.OriginalContext, varStatement.Parser) { VariableField = varDecl.Field });
+                                    new Lookup(varDecl.Identifier, varDecl.VariableField.OriginalContext, varStatement.Parser) 
+                                    { 
+                                        VariableField = varDecl.VariableField 
+                                    });
                             }
                             else
                             {
@@ -304,12 +307,17 @@ namespace Microsoft.Ajax.Utilities
                     // unnest recursively
                     UnnestBlocks(nestedBlock);
 
-                    // remove the nested block
-                    node.RemoveAt(ndx);
+                    // if the block has a block scope, then we can't really unnest it
+                    // without merging lexical scopes
+                    if (nestedBlock.BlockScope == null)
+                    {
+                        // remove the nested block
+                        node.RemoveAt(ndx);
 
-                    // then start adding the statements in the nested block to our own.
-                    // go backwards so we can just keep using the same index
-                    node.InsertRange(ndx, nestedBlock.Children);
+                        // then start adding the statements in the nested block to our own.
+                        // go backwards so we can just keep using the same index
+                        node.InsertRange(ndx, nestedBlock.Children);
+                    }
                 }
                 else if (ndx > 0)
                 {
@@ -362,14 +370,29 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            // try doing the same for const-statements: combine adjacent ones
-                            var previousConst = node[ndx - 1] as ConstStatement;
-                            if (previousConst != null && node[ndx] is ConstStatement)
+                            // do the same thing for lexical declarations
+                            var previousLex = node[ndx - 1] as LexicalDeclaration;
+                            var thisLex = node[ndx] as LexicalDeclaration;
+                            if (previousLex != null && thisLex != null)
                             {
-                                // they are both ConstStatements, so adding the current one to the 
-                                // previous one will combine them, then delete the latter one.
-                                previousConst.Append(node[ndx]);
-                                node.RemoveAt(ndx);
+                                // but we can only combine them if they are the same type (let or const)
+                                if (previousLex.StatementToken == thisLex.StatementToken)
+                                {
+                                    previousLex.Append(node[ndx]);
+                                    node.RemoveAt(ndx);
+                                }
+                            }
+                            else
+                            {
+                                // try doing the same for const-statements: combine adjacent ones
+                                var previousConst = node[ndx - 1] as ConstStatement;
+                                if (previousConst != null && node[ndx] is ConstStatement)
+                                {
+                                    // they are both ConstStatements, so adding the current one to the 
+                                    // previous one will combine them, then delete the latter one.
+                                    previousConst.Append(node[ndx]);
+                                    node.RemoveAt(ndx);
+                                }
                             }
                         }
                     }

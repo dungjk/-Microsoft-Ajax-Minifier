@@ -180,15 +180,16 @@ namespace Microsoft.Ajax.Utilities
             // arguments come first, ordered by position. This is an effort to try and make the
             // argument lists for the functions come out in a more repeatable pattern so gzip will
             // compress the file better.
-            if (left.FieldType == FieldType.Argument && right.FieldType == FieldType.Argument)
+            if ((left.FieldType == FieldType.Argument || left.FieldType == FieldType.CatchError)
+                && (right.FieldType == FieldType.Argument || right.FieldType == FieldType.CatchError))
             {
                 return left.Position - right.Position;
             }
-            if (left.FieldType == FieldType.Argument)
+            if (left.FieldType == FieldType.Argument || left.FieldType == FieldType.CatchError)
             {
                 return -1;
             }
-            if (right.FieldType == FieldType.Argument)
+            if (right.FieldType == FieldType.Argument || right.FieldType == FieldType.CatchError)
             {
                 return 1;
             }

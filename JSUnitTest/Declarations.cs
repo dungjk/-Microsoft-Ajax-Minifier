@@ -90,5 +90,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod()]
+        public void Const_moz()
+        {
+            TestHelper.Instance.RunTest("-const:moz");
+        }
     }
 }

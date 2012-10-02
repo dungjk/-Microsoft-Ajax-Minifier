@@ -123,6 +123,7 @@ namespace Microsoft.Ajax.Utilities
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 CollapseToLiteral = this.CollapseToLiteral,
                 //CombineDuplicateLiterals = this.CombineDuplicateLiterals,
+                ConstStatementsMozilla = this.ConstStatementsMozilla,
                 DebugLookupList = this.DebugLookupList,
                 EvalLiteralExpressions = this.EvalLiteralExpressions,
                 EvalTreatment = this.EvalTreatment,
@@ -626,6 +627,16 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// Gets or sets a boolean value indicating whether to use old-style const statements (just var-statements that
+        /// define unchangeable fields) or new EcmaScript 6 lexical declarations.
+        /// </summary>
+        public bool ConstStatementsMozilla
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Throw an error if a source string is not safe for inclusion 
         /// in an HTML inline script block. Default is false.
         /// </summary>
@@ -722,8 +733,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Gets or sets a boolean value indicating whether to modify the source code's syntax tree to provide the smallest equivalent output [true, default],
-        /// or to not modify the syntax tree [false]
+        /// Gets or sets a boolean value indicating whether any operations are to be applied to the parsed tree [true, default],
+        /// or whether to return it as-is [false]. 
         /// </summary>
         public bool MinifyCode
         {

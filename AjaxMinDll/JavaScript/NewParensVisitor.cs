@@ -289,6 +289,11 @@ namespace Microsoft.Ajax.Utilities
             Debug.Fail("shouldn't get here");
         }
 
+        public void Visit(LexicalDeclaration node)
+        {
+            Debug.Fail("shouldn't get here");
+        }
+
         public void Visit(ReturnNode node)
         {
             Debug.Fail("shouldn't get here");

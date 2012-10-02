@@ -305,6 +305,39 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // if this block has a block scope, then look at the lexically-declared names (if any)
+                // and throw an error if any are defined as var's within this scope (ES6 rules).
+                // if this is the body of a function object, use the function scope.
+                ActivationObject lexicalScope = node.BlockScope;
+                if (lexicalScope == null)
+                {
+                    var functionObject = node.Parent as FunctionObject;
+                    if (functionObject != null)
+                    {
+                        lexicalScope = functionObject.FunctionScope;
+                    }
+                }
+
+                if (lexicalScope != null)
+                {
+                    foreach (var lexDecl in lexicalScope.LexicallyDeclaredNames)
+                    {
+                        var varDecl = lexicalScope.VarDeclaredName(lexDecl.Name);
+                        if (varDecl != null)
+                        {
+                            // collision.
+                            // if the lexical declaration is a let or const declaration (as opposed to a function declaration),
+                            // then force the warning to an error. This is so the function declaration will remain a warning if
+                            // it collides with a var. 
+                            varDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, lexDecl is LexicalDeclaration);
+
+                            // mark them both a no-rename to preserve the collision in the output
+                            lexDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                            varDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                        }
+                    }
+                }
+
                 // we might things differently if these statements are the body collection for a function
                 // because we can assume the implicit return statement at the end of it
                 bool isFunctionLevel = (node.Parent is FunctionObject);
@@ -589,7 +622,7 @@ namespace Microsoft.Ajax.Utilities
                             VariableDeclaration varDecl;
                             if ((varDecl = varStatement[varStatement.Count - 1]).Initializer != null
                                 && varDecl.IsEquivalentTo(lookup)
-                                && varDecl.Field.RefCount == 1)
+                                && varDecl.VariableField.RefCount == 1)
                             {
                                 if (varStatement.Count == 1)
                                 {
@@ -1128,10 +1161,7 @@ namespace Microsoft.Ajax.Utilities
                             // not as compact, but will always work. Nothing to resolve inside the scope because the body is empty
                             // and it's not a named function expression.
                             var functionExpression = new FunctionObject(null, node.Parser, FunctionType.Expression, null, null, node.Function.Context);
-                            functionExpression.FunctionScope = new FunctionScope(node.EnclosingScope, true, node.Parser)
-                                    {
-                                        FunctionObject = functionExpression
-                                    };
+                            functionExpression.FunctionScope = new FunctionScope(node.EnclosingScope, true, m_parser.Settings, functionExpression);
                             replacementFunction = functionExpression;
                         }
 
@@ -1654,12 +1684,56 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // if this for-statement has it's own lexical scope, then it's an error
+                // if the any of the field names declared in this scope is also defined inside the body.
+                if (node.BlockScope != null)
+                {
+                    foreach (var field in node.BlockScope.LexicallyDeclaredNames)
+                    {
+                        // if the block has a lexical scope, check it for conflicts
+                        if (node.Body != null && node.Body.BlockScope != null)
+                        {
+                            var lexDecl = node.Body.BlockScope.LexicallyDeclaredName(field.Name);
+                            if (lexDecl != null)
+                            {
+                                // report the error (lex/const/funcdecl collision)
+                                lexDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, true);
+
+                                // link the inner one to the outer one so any renaming stays in sync.
+                                if (lexDecl.VariableField != null)
+                                {
+                                    lexDecl.VariableField.OuterField = field.VariableField;
+                                    if (field.VariableField != null && !lexDecl.VariableField.CanCrunch)
+                                    {
+                                        field.VariableField.CanCrunch = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        // check to make sure there are no var-decl'd names with the same name. Those will
+                        // get carried up to this scope so we don't need to check the block scope (if any)
+                        var varDecl = node.BlockScope.VarDeclaredName(field.Name);
+                        if (varDecl != null)
+                        {
+                            // report the error (lex/const collides with var) or warning (funcdecl collides with var)
+                            varDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, field is LexicalDeclaration);
+
+                            // and mark them both as no-rename
+                            varDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                            field.VariableField.IfNotNull(v => v.CanCrunch = false);
+                        }
+                    }
+                }
+
                 // if we are stripping debugger statements and the body is
                 // just a debugger statement, replace it with a null
+                // (but only if the body doesn't have its own lexical scope)
                 if (m_parser.Settings.StripDebugStatements
                      && m_parser.Settings.IsModificationAllowed(TreeModifications.StripDebugStatements)
                      && node.Body != null
-                     && node.Body.IsDebuggerStatement)
+                     && node.Body.IsDebuggerStatement
+                     && node.Body.BlockScope == null)
                 {
                     node.ReplaceChild(node.Body, null);
                 }
@@ -1667,8 +1741,8 @@ namespace Microsoft.Ajax.Utilities
                 // recurse
                 base.Visit(node);
 
-                // if the body is now empty, make it null
-                if (node.Body != null && node.Body.Count == 0)
+                // if the body is now empty (and doesn't have its own lexical scope), make it null
+                if (node.Body != null && node.Body.Count == 0 && node.Body.BlockScope == null)
                 {
                     node.ReplaceChild(node.Body, null);
                 }
@@ -1679,11 +1753,55 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // if this forIn-statement has it's own lexical scope, then it's an error
+                // if the any of the field names declared in this scope is also defined inside the body.
+                if (node.BlockScope != null)
+                {
+                    foreach (var field in node.BlockScope.LexicallyDeclaredNames)
+                    {
+                        // if the block has a lexical scope, check it for conflicts
+                        if (node.Body != null && node.Body.BlockScope != null)
+                        {
+                            var lexDecl = node.Body.BlockScope.LexicallyDeclaredName(field.Name);
+                            if (lexDecl != null)
+                            {
+                                // report the error (lex/const/funcdecl collision)
+                                lexDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, true);
+
+                                // link the inner one to the outer one so any renaming stays in sync.
+                                if (lexDecl.VariableField != null)
+                                {
+                                    lexDecl.VariableField.OuterField = field.VariableField;
+                                    if (field.VariableField != null && !lexDecl.VariableField.CanCrunch)
+                                    {
+                                        field.VariableField.CanCrunch = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        // check to make sure there are no var-decl'd names with the same name. Those will
+                        // get carried up to this scope so we don't need to check the block scope (if any)
+                        var varDecl = node.BlockScope.VarDeclaredName(field.Name);
+                        if (varDecl != null)
+                        {
+                            // report the error (lex/const collides with var) or warning (funcdecl collides with var)
+                            varDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, field is LexicalDeclaration);
+
+                            // and mark them both as no-rename
+                            varDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                            field.VariableField.IfNotNull(v => v.CanCrunch = false);
+                        }
+                    }
+                }
+
                 // if we are stripping debugger statements and the body is
                 // just a debugger statement, replace it with a null
+                // (but only if the body doesn't have its own lexical scope)
                 if (m_parser.Settings.StripDebugStatements
                      && m_parser.Settings.IsModificationAllowed(TreeModifications.StripDebugStatements)
                      && node.Body != null
+                     && node.Body.BlockScope == null
                      && node.Body.IsDebuggerStatement)
                 {
                     node.ReplaceChild(node.Body, null);
@@ -1692,8 +1810,8 @@ namespace Microsoft.Ajax.Utilities
                 // recurse
                 base.Visit(node);
 
-                // if the body is now empty, make it null
-                if (node.Body != null && node.Body.Count == 0)
+                // if the body is now empty (and doesn't have its own lexical scope), make it null
+                if (node.Body != null && node.Body.Count == 0 && node.Body.BlockScope == null)
                 {
                     node.ReplaceChild(node.Body, null);
                 }
@@ -2327,6 +2445,25 @@ namespace Microsoft.Ajax.Utilities
             {
                 base.Visit(node);
 
+                // if the switch case has a lexical scope, we need to check to make sure anything declared lexically
+                // doesn't collide with anything declared as a var underneath (which bubbles up to the variable scope).
+                if (node.BlockScope != null)
+                {
+                    foreach (var lexDecl in node.BlockScope.LexicallyDeclaredNames)
+                    {
+                        var varDecl = node.BlockScope.VarDeclaredName(lexDecl.Name);
+                        if (varDecl != null)
+                        {
+                            // report the error (lex/const collides with var) or warning (funcdecl collides with var)
+                            varDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, lexDecl is LexicalDeclaration);
+
+                            // mark them both a no-rename to preserve the collision
+                            varDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                            lexDecl.VariableField.IfNotNull(v => v.CanCrunch = false);
+                        }
+                    }
+                }
+
                 // we only want to remove stuff if we are hypercrunching
                 if (m_parser.Settings.RemoveUnneededCode)
                 {
@@ -2544,6 +2681,41 @@ namespace Microsoft.Ajax.Utilities
                         node.CatchVarContext.HandleError(JSError.StrictModeVariableName, true);
                     }
                 }
+
+                if (node.CatchParameter != null)
+                {
+                    // if the block has a lexical scope, check it for conflicts
+                    foreach(var lexDecl in node.CatchBlock.BlockScope.LexicallyDeclaredNames)
+                    {
+                        if (lexDecl != node.CatchParameter
+                            && string.CompareOrdinal(lexDecl.Name, node.CatchParameter.Name) == 0)
+                        {
+                            // report the error (catchvar collides with lex/const) or warning (catchvar collides with funcdecl)
+                            lexDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, lexDecl is LexicalDeclaration);
+
+                            // link the inner one to the outer one so any renaming stays in sync.
+                            if (lexDecl.VariableField != null)
+                            {
+                                lexDecl.VariableField.OuterField = node.CatchParameter.VariableField;
+                                if (node.CatchParameter.VariableField != null && !lexDecl.VariableField.CanCrunch)
+                                {
+                                    node.CatchParameter.VariableField.CanCrunch = false;
+                                }
+                            }
+                        }
+                    }
+
+                    // check to make sure there are no var-decl'd names with the same name. 
+                    foreach (var varDecl in node.CatchBlock.BlockScope.VarDeclaredNames)
+                    {
+                        if (string.CompareOrdinal(varDecl.Name, node.CatchParameter.Name) == 0)
+                        {
+                            // report the warning (catchvar collides with var)
+                            // we shouldn't have to link them; the catchvar should already ghosted.
+                            varDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, false);
+                        }
+                    }
+                }
             }
         }
 
@@ -2568,20 +2740,28 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (node.OperatorToken == JSToken.Increment || node.OperatorToken == JSToken.Decrement)
                 {
-                    // strict mode has some restrictions we want to check now
-                    if (m_scopeStack.Peek().UseStrict)
+                    var lookup = node.Operand as Lookup;
+                    if (lookup != null)
                     {
-                        // the operator cannot be the eval function or arguments object.
-                        // that means the operator is a lookup, and the field for that lookup
-                        // is the arguments object or the predefined "eval" object.
-                        var lookup = node.Operand as Lookup;
-                        if (lookup != null
-                            && (lookup.VariableField == null
-                            || lookup.VariableField.FieldType == FieldType.UndefinedGlobal
-                            || lookup.VariableField.FieldType == FieldType.Arguments
-                            || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0)))
+                        if (lookup.VariableField != null && lookup.VariableField.InitializationOnly)
                         {
-                            node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);
+                            // can't increment or decrement a constant!
+                            lookup.Context.HandleError(JSError.AssignmentToConstant, true);
+                        }
+                        
+                        // and strict mode has some restrictions we want to check now
+                        if (m_scopeStack.Peek().UseStrict)
+                        {
+                            // the operator cannot be the eval function or arguments object.
+                            // that means the operator is a lookup, and the field for that lookup
+                            // is the arguments object or the predefined "eval" object.
+                            if (lookup.VariableField == null
+                                || lookup.VariableField.FieldType == FieldType.UndefinedGlobal
+                                || lookup.VariableField.FieldType == FieldType.Arguments
+                                || (lookup.VariableField.FieldType == FieldType.Predefined && string.CompareOrdinal(lookup.Name, "eval") == 0))
+                            {
+                                node.Operand.Context.HandleError(JSError.StrictModeInvalidPreOrPost, true);
+                            }
                         }
                     }
                 }
@@ -2867,7 +3047,7 @@ namespace Microsoft.Ajax.Utilities
                             lookup.Context.Clone(),
                             binaryOp.Operand2)
                             {
-                                Field = lookup.VariableField
+                                VariableField = lookup.VariableField
                             };
                         varDecls.Add(varDecl);
                     }

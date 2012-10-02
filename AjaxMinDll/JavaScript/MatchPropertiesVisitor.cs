@@ -76,9 +76,9 @@ namespace Microsoft.Ajax.Utilities
             // only interested if the index is greater than zero, since the zero-index
             // needs to be a lookup. Also needs to be a brackets-call, and there needs to
             // be a single argument.
-            if (node != null 
+            if (node != null
                 && m_index > 0
-                && node.InBrackets 
+                && node.InBrackets
                 && node.Arguments != null
                 && node.Arguments.Count == 1)
             {
@@ -269,6 +269,11 @@ namespace Microsoft.Ajax.Utilities
         }
 
         public void Visit(LabeledStatement node)
+        {
+            // not applicable; terminate
+        }
+
+        public void Visit(LexicalDeclaration node)
         {
             // not applicable; terminate
         }

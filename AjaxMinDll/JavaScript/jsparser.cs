@@ -100,7 +100,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_globalScope == null)
                 {
-                    m_globalScope = new GlobalScope(this);
+                    m_globalScope = new GlobalScope(m_settings);
                 }
                 return m_globalScope;
             }
@@ -786,6 +786,7 @@ namespace Microsoft.Ajax.Utilities
                         return ParseDebuggerStatement();
                     case JSToken.Var:
                     case JSToken.Const:
+                    case JSToken.Let:
                         return ParseVariableStatement();
                     case JSToken.If:
                         return ParseIfStatement();
@@ -1196,6 +1197,8 @@ namespace Microsoft.Ajax.Utilities
         //    'var' VariableDeclarationList
         //    or
         //    'const' VariableDeclarationList
+        //    or
+        //    'let' VariableDeclarationList
         //
         //  VariableDeclarationList :
         //    VariableDeclaration |
@@ -1216,9 +1219,16 @@ namespace Microsoft.Ajax.Utilities
             {
                 varList = new Var(m_currentToken.Clone(), this);
             }
-            else if (m_currentToken.Token == JSToken.Const)
+            else if (m_currentToken.Token == JSToken.Const || m_currentToken.Token == JSToken.Let)
             {
-                varList = new ConstStatement(m_currentToken.Clone(), this);
+                if (m_currentToken.Token == JSToken.Const && m_settings.ConstStatementsMozilla)
+                {
+                    varList = new ConstStatement(m_currentToken.Clone(), this);
+                }
+                else
+                {
+                    varList = new LexicalDeclaration(m_currentToken.Clone(), this, m_currentToken.Token);
+                }
             }
             else
             {
@@ -1666,23 +1676,35 @@ namespace Microsoft.Ajax.Utilities
 
                 try
                 {
-                    if (JSToken.Var == m_currentToken.Token)
+                    if (JSToken.Var == m_currentToken.Token
+                        || JSToken.Let == m_currentToken.Token
+                        || JSToken.Const == m_currentToken.Token)
                     {
                         isForIn = true;
-                        Var varList = new Var(m_currentToken.Clone(), this);
-                        varList.Append(ParseIdentifierInitializer(JSToken.In));
+                        Declaration declaration;
+                        if (m_currentToken.Token == JSToken.Var)
+                        {
+                            declaration = new Var(m_currentToken.Clone(), this);
+                        }
+                        else
+                        {
+                            declaration = new LexicalDeclaration(m_currentToken.Clone(), this, m_currentToken.Token);
+                        }
+ 
+                        declaration.Append(ParseIdentifierInitializer(JSToken.In));
 
                         // a list of variable initializers is allowed only in a for(;;)
                         while (JSToken.Comma == m_currentToken.Token)
                         {
                             isForIn = false;
-                            varList.Append(ParseIdentifierInitializer(JSToken.In));
+                            declaration.Append(ParseIdentifierInitializer(JSToken.In));
                             //initializer = new Comma(initializer.context.CombineWith(var.context), initializer, var);
                         }
 
-                        initializer = varList;
+                        initializer = declaration;
 
                         // if it could still be a for..in, now it's time to get the 'in'
+                        // TODO: for ES6 might be 'of'
                         if (isForIn)
                         {
                             if (JSToken.In == m_currentToken.Token)
@@ -1775,14 +1797,14 @@ namespace Microsoft.Ajax.Utilities
                             body = new Block(CurrentPositionContext(), this);
                         else
                             body = exc._partiallyComputedNode;
-                        exc._partiallyComputedNode = new ForIn(forCtx, this, (lhs != null ? lhs : initializer), condOrColl, body);
+                        exc._partiallyComputedNode = new ForIn(forCtx, this, (lhs != null ? lhs : initializer), condOrColl, body, JSToken.In);
                         throw;
                     }
                     // for (a in b)
                     //      lhs = a, initializer = null
                     // for (var a in b)
                     //      lhs = null, initializer = var a
-                    forNode = new ForIn(forCtx, this, (lhs != null ? lhs : initializer), condOrColl, body);
+                    forNode = new ForIn(forCtx, this, (lhs != null ? lhs : initializer), condOrColl, body, JSToken.In);
                 }
                 else
                 {
@@ -2581,7 +2603,7 @@ namespace Microsoft.Ajax.Utilities
                         m_blockType.Add(BlockType.Block);
                         try
                         {
-                            Block statements = new Block(m_currentToken.Clone(), this);
+                            var statements = new Block(m_currentToken.Clone(), this);
                             m_noSkipTokenSet.Add(NoSkipTokenSet.s_SwitchNoSkipTokenSet);
                             m_noSkipTokenSet.Add(NoSkipTokenSet.s_StartStatementNoSkipTokenSet);
                             try
@@ -2600,6 +2622,7 @@ namespace Microsoft.Ajax.Utilities
                                             statements.Append(exc._partiallyComputedNode);
                                             exc._partiallyComputedNode = null;
                                         }
+
                                         if (IndexOfToken(NoSkipTokenSet.s_StartStatementNoSkipTokenSet, exc) == -1)
                                         {
                                             throw;
@@ -2621,10 +2644,7 @@ namespace Microsoft.Ajax.Utilities
                                 m_noSkipTokenSet.Remove(NoSkipTokenSet.s_StartStatementNoSkipTokenSet);
                                 m_noSkipTokenSet.Remove(NoSkipTokenSet.s_SwitchNoSkipTokenSet);
                             }
-                            if (JSToken.RightCurly == m_currentToken.Token)
-                            {
-                                statements.Context.UpdateWith(m_currentToken);
-                            }
+
                             caseCtx.UpdateWith(statements.Context);
                             caseClause = new SwitchCase(caseCtx, this, caseValue, statements);
                             cases.Append(caseClause);
@@ -4128,7 +4148,7 @@ namespace Microsoft.Ajax.Utilities
                                         // so if it is a reserved word, let's throw a low-sev cross-browser warning on the code.
                                         if (JSKeyword.CanBeIdentifier(m_currentToken.Token) == null)
                                         {
-                                            ReportError(JSError.ObjectLiteralReservedWord, m_currentToken.Clone(), true);
+                                            ReportError(JSError.ObjectLiteralKeyword, m_currentToken.Clone(), true);
                                         }
 
                                         field = new ObjectLiteralField(ident, PrimitiveType.String, m_currentToken.Clone(), this);

@@ -212,16 +212,8 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="element">node to add to the block</param>
         public void Append(AstNode element)
         {
-            Block block = element as Block;
-            if (block != null)
+            if (element != null)
             {
-                // adding a block to the block -- just append the elements
-                // from the block to ourselves
-                InsertRange(m_list.Count, block.Children);
-            }
-            else if (element != null)
-            {
-                // not a block....
                 element.Parent = this;
                 m_list.Add(element);
             }
