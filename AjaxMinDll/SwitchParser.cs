@@ -1196,14 +1196,25 @@ namespace Microsoft.Ajax.Utilities
                             case "P": // <-- old style
                                 // doesn't take a flag -- just set to pretty
                                 PrettyPrint = true;
-                                JSSettings.OutputMode = 
-                                    CssSettings.OutputMode = OutputMode.MultipleLines;
+                                JSSettings.OutputMode = CssSettings.OutputMode = OutputMode.MultipleLines;
+
+                                // some settings we always want to specify for pretty mode. If we want to override
+                                // them, we can just specify the converse switch on the command line AFTER the -pretty
+                                // switch.
+                                JSSettings.CollapseToLiteral = false;
+                                JSSettings.EvalLiteralExpressions = false;
+                                JSSettings.PreserveFunctionNames = true;
+                                JSSettings.PreserveImportantComments = true;
+                                JSSettings.RemoveFunctionExpressionNames = false;
+                                JSSettings.RemoveUnneededCode = false;
+                                JSSettings.ReorderScopeDeclarations = false;
 
                                 // if renaming hasn't been specified yet, turn it off for prety-print
                                 if (!renamingSpecified)
                                 {
                                     JSSettings.LocalRenaming = LocalRenaming.KeepAll;
                                 }
+
 
                                 // if minify hasn't been specified yet, turn it off. This will stop
                                 // most (but not all) AST modifications. BUT if we specified the -rename
