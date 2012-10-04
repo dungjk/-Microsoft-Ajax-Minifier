@@ -1078,11 +1078,15 @@ namespace Microsoft.Ajax.Utilities
 
                             case "MINIFY":
                                 minifySpecified = true;
-
-                                // optional boolean switch
-                                // no arg is a valid scenario (default is true)
-                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                if (renamingSpecified && JSSettings.LocalRenaming != LocalRenaming.KeepAll)
                                 {
+                                    // minify can only exist if rename is set to KeepAll
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                else if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    // optional boolean switch
+                                    // no arg is a valid scenario (default is true)
                                     JSSettings.MinifyCode = parameterFlag;
                                 }
                                 else
@@ -1195,53 +1199,14 @@ namespace Microsoft.Ajax.Utilities
                             case "PRETTY":
                             case "P": // <-- old style
                                 // doesn't take a flag -- just set to pretty
-                                PrettyPrint = true;
+                                PrettyPrint = true;            
+
+                                // by default, pretty mode turns off minification, which sets a bunch of other flags as well
+                                JSSettings.MinifyCode = false;
+
+                                // and some other flags for pretty-mode
                                 JSSettings.OutputMode = CssSettings.OutputMode = OutputMode.MultipleLines;
-
-                                // some settings we always want to specify for pretty mode. If we want to override
-                                // them, we can just specify the converse switch on the command line AFTER the -pretty
-                                // switch.
-                                JSSettings.CollapseToLiteral = false;
-                                JSSettings.EvalLiteralExpressions = false;
-                                JSSettings.PreserveFunctionNames = true;
-                                JSSettings.PreserveImportantComments = true;
-                                JSSettings.RemoveFunctionExpressionNames = false;
-                                JSSettings.RemoveUnneededCode = false;
-                                JSSettings.ReorderScopeDeclarations = false;
-
-                                // if renaming hasn't been specified yet, turn it off for prety-print
-                                if (!renamingSpecified)
-                                {
-                                    JSSettings.LocalRenaming = LocalRenaming.KeepAll;
-                                }
-
-
-                                // if minify hasn't been specified yet, turn it off. This will stop
-                                // most (but not all) AST modifications. BUT if we specified the -rename
-                                // options and set it to something other than keepall, then we don't want
-                                // to turn off minification.
-                                if (!minifySpecified
-                                    && (!renamingSpecified || JSSettings.LocalRenaming == LocalRenaming.KeepAll ))
-                                {
-                                    JSSettings.MinifyCode = false;
-                                }
-
-                                // if a kill switch hasn't been specified yet, set all its bits on.
-                                // EXCEPT the important-comment bit -- we DO want to preserve important comments in pretty mode.
-                                if (!killSpecified)
-                                {
-                                    if (renamingSpecified && JSSettings.LocalRenaming != LocalRenaming.KeepAll)
-                                    {
-                                        // we specifically turned on local renaming, so set the kill switch to everything BUT
-                                        JSSettings.KillSwitch = ~((long)(TreeModifications.LocalRenaming | TreeModifications.PreserveImportantComments));
-                                        CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
-                                    }
-                                    else
-                                    {
-                                        // we didn't specifically turn on local renaming. Turn everything off.
-                                        JSSettings.KillSwitch = CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
-                                    }
-                                }
+                                CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
 
                                 // optional integer switch argument
                                 if (paramPartUpper != null)
@@ -1365,7 +1330,13 @@ namespace Microsoft.Ajax.Utilities
                                 // stop renaming, which we have explicitly said we want.
                                 if (JSSettings.LocalRenaming != LocalRenaming.KeepAll)
                                 {
-                                    ResetRenamingKill(minifySpecified, killSpecified);
+                                    ResetRenamingKill(killSpecified);
+
+                                    // if minify was specified as turned off, then this is invalid
+                                    if (minifySpecified && !JSSettings.MinifyCode)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
 
                                 // this is a JS-only switch
@@ -1552,7 +1523,13 @@ namespace Microsoft.Ajax.Utilities
                                 // since we specified a rename switch OTHER than none, 
                                 // let's make sure we don't *automatically* turn off switches that would 
                                 // stop renaming, which we have explicitly said we want.
-                                ResetRenamingKill(minifySpecified, killSpecified);
+                                ResetRenamingKill(killSpecified);
+
+                                // if minify was specified as turned off, then this is invalid
+                                if (minifySpecified && !JSSettings.MinifyCode)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
                                 break;
 
                             case "HL":
@@ -1567,7 +1544,13 @@ namespace Microsoft.Ajax.Utilities
                                 // since we specified a rename switch OTHER than none, 
                                 // let's make sure we don't *automatically* turn off switches that would 
                                 // stop renaming, which we have explicitly said we want.
-                                ResetRenamingKill(minifySpecified, killSpecified);
+                                ResetRenamingKill(killSpecified);
+
+                                // if minify was specified as turned off, then this is invalid
+                                if (minifySpecified && !JSSettings.MinifyCode)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
                                 break;
 
                             case "HC":
@@ -1748,7 +1731,7 @@ namespace Microsoft.Ajax.Utilities
             return isValid;
         }
 
-        private void ResetRenamingKill(bool minifySpecified, bool killSpecified)
+        private void ResetRenamingKill(bool killSpecified)
         {
             // Reset the LocalRenaming kill bit IF the kill switch hadn't been specified
             // and it's also not zero. If that's the case, that's because we set it to something
@@ -1758,12 +1741,6 @@ namespace Microsoft.Ajax.Utilities
             if (!killSpecified && JSSettings.KillSwitch != 0)
             {
                 JSSettings.KillSwitch &= ~((long)TreeModifications.LocalRenaming);
-            }
-
-            // and make sure the minify flag is turned on if it wasn't explicity turned off
-            if (!minifySpecified)
-            {
-                JSSettings.MinifyCode = true;
             }
         }
 

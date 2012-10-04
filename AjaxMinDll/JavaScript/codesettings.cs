@@ -73,28 +73,30 @@ namespace Microsoft.Ajax.Utilities
     /// </summary>
     public class CodeSettings : CommonSettings
     {
+        #region private fields
+
+        private bool m_minify;
+
+        #endregion
+
         /// <summary>
         /// Instantiate a CodeSettings object with the default settings
         /// </summary>
         public CodeSettings()
         {
-            this.CollapseToLiteral = true;
-            //this.CombineDuplicateLiterals = false;
+            // setting this property sets other fields as well
+            this.MinifyCode = true;
+
+            // other fields we want initialized
             this.EvalTreatment = EvalTreatment.Ignore;
             this.InlineSafeStrings = true;
-            this.LocalRenaming = LocalRenaming.CrunchAll;
             this.MacSafariQuirks = true;
-            this.MinifyCode = true;
-            this.PreserveFunctionNames = false;
             this.PreserveImportantComments = true;
             this.QuoteObjectLiteralProperties = false;
-            this.ReorderScopeDeclarations = true;
-            this.RemoveFunctionExpressionNames = true;
-            this.RemoveUnneededCode = true;
             this.StrictMode = false;
             this.StripDebugStatements = true;
-            this.EvalLiteralExpressions = true;
             this.ManualRenamesProperties = true;
+            this.OutputMode = OutputMode.SingleLine;
 
             // no default globals
             this.m_knownGlobals = new HashSet<string>();
@@ -120,9 +122,12 @@ namespace Microsoft.Ajax.Utilities
             // create a new settings object and set all the properties using this settings object
             var newSettings = new CodeSettings()
             {
+                // set the field, not the property. Setting the property will set a bunch of
+                // other properties, which may not represent their actual values.
+                m_minify = this.m_minify,
+
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 CollapseToLiteral = this.CollapseToLiteral,
-                //CombineDuplicateLiterals = this.CombineDuplicateLiterals,
                 ConstStatementsMozilla = this.ConstStatementsMozilla,
                 DebugLookupList = this.DebugLookupList,
                 EvalLiteralExpressions = this.EvalLiteralExpressions,
@@ -139,7 +144,6 @@ namespace Microsoft.Ajax.Utilities
                 LocalRenaming = this.LocalRenaming,
                 MacSafariQuirks = this.MacSafariQuirks,
                 ManualRenamesProperties = this.ManualRenamesProperties,
-                MinifyCode = this.MinifyCode,
                 NoAutoRenameList = this.NoAutoRenameList,
                 OutputMode = this.OutputMode,
                 PreprocessOnly = this.PreprocessOnly,
@@ -738,7 +742,31 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public bool MinifyCode
         {
-            get; set;
+            get 
+            {
+                // just return the minify flag
+                return m_minify;
+            }
+            set 
+            { 
+                // when we set this flag, we want to turn other things on and off at the same time
+                m_minify = value;
+
+                // aligned properties
+                this.CollapseToLiteral = m_minify;
+                this.EvalLiteralExpressions = m_minify;
+                this.RemoveFunctionExpressionNames = m_minify;
+                this.RemoveUnneededCode = m_minify;
+                this.ReorderScopeDeclarations = m_minify;
+
+                // opposite properties
+                this.PreserveFunctionNames = !m_minify;
+                this.PreserveImportantComments = !m_minify;
+
+                // dependent switches
+                this.LocalRenaming = m_minify ? LocalRenaming.CrunchAll : LocalRenaming.KeepAll;
+                this.KillSwitch = m_minify ? 0 : ~((long)TreeModifications.PreserveImportantComments);
+            }
         }
 
         /// <summary>
