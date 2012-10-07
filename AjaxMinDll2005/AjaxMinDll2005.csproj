@@ -259,6 +259,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\jskeyword.cs">
       <Link>JavaScript\jskeyword.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\JSONOutputVisitor.cs">
+      <Link>JavaScript\JSONOutputVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\jsparser.cs">
       <Link>JavaScript\jsparser.cs</Link>
     </Compile>
