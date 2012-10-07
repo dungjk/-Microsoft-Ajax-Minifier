@@ -39,6 +39,12 @@ namespace JSUnitTest
         }
 
         [TestMethod()]
+        public void LexConst_ES6()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:all -const:ES6", JSError.UndeclaredVariable);
+        }
+
+        [TestMethod()]
         public void LexLet()
         {
             // we have one undeclared variable to make sure it doesn't resolve to the lexical scope

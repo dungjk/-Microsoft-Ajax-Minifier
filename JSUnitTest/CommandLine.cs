@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -41,7 +42,14 @@ namespace JSUnitTest
     [TestMethod]
     public void TermSemi1()
     {
-      TestHelper.Instance.RunTest("-term");
+      TestHelper.Instance.RunTest("-term -js:prog");
+    }
+
+    [TestMethod]
+    public void TermSemi1_expr()
+    {
+        // it's not an expression!
+        TestHelper.Instance.RunErrorTest("-js:expr", JSError.ExpressionExpected);
     }
 
     [TestMethod]
@@ -61,6 +69,39 @@ namespace JSUnitTest
     {
         // there shouldn't be any errors
         TestHelper.Instance.RunErrorTest("-pponly -debug");
+    }
+
+    [TestMethod]
+    public void JSON()
+    {
+        // there shouldn't be any errors
+        TestHelper.Instance.RunErrorTest("-js:json");
+    }
+
+    [TestMethod]
+    public void EventHandler()
+    {
+        // there shouldn't be any errors
+        TestHelper.Instance.RunErrorTest("-js:evt");
+    }
+
+    [TestMethod]
+    public void Expression()
+    {
+        TestHelper.Instance.RunTest("-js:expr -rename:all");
+    }
+
+    [TestMethod]
+    public void Expression_prog()
+    {
+        TestHelper.Instance.RunTest("-js:prog -rename:all");
+    }
+
+    [TestMethod]
+    public void Expression_json()
+    {
+        // not valid JSON
+        TestHelper.Instance.RunTest("-js:json -rename:all");
     }
   }
 }

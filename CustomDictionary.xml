@@ -33,6 +33,7 @@
     <Acronyms>
         <CasingExceptions>
             <Acronym>Js</Acronym>
+            <Acronym>JSON</Acronym>
         </CasingExceptions>
     </Acronyms>
 </Dictionary>

@@ -157,9 +157,15 @@
     <Content Include="TestData\JS\Expected\CatchVariable\OuterIsGlobal.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef_h.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\EventHandler.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\Expression.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\Expression_json.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\Expression_prog.js" />
     <Content Include="TestData\JS\Expected\CommandLine\Globals.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\json.js" />
     <Content Include="TestData\JS\Expected\CommandLine\PreprocessOnly.js" />
     <Content Include="TestData\JS\Expected\CommandLine\TermSemi1.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\TermSemi1_expr.js" />
     <Content Include="TestData\JS\Expected\CommandLine\TermSemi2.js" />
     <Content Include="TestData\JS\Expected\Comments\Comment.js" />
     <Content Include="TestData\JS\Expected\Comments\EndWithImportantComment.js" />
@@ -251,6 +257,7 @@
     <Content Include="TestData\JS\Expected\LexicalDeclarations\ConstAssign.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\LexBlock.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\LexConst.js" />
+    <Content Include="TestData\JS\Expected\LexicalDeclarations\LexConst_ES6.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\LexConst_mozilla.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\LexDuplicate.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\LexFor.js" />
@@ -351,6 +358,7 @@
     <Content Include="TestData\JS\Expected\Strict\FuncDeclStrict.js" />
     <Content Include="TestData\JS\Expected\Strict\InvalidDelete.js" />
     <Content Include="TestData\JS\Expected\Strict\InvalidVarName.js" />
+    <Content Include="TestData\JS\Expected\Strict\StrictPartial.js" />
     <Content Include="TestData\JS\Expected\Strict\StrictSwitchOn.js" />
     <Content Include="TestData\JS\Expected\Strict\UnknownGlobal.js" />
     <Content Include="TestData\JS\Expected\Strict\With.js" />
@@ -445,7 +453,10 @@
     <Content Include="TestData\JS\Input\CatchVariable\NoOuter.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterIsGlobal.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterNotRef.js" />
+    <Content Include="TestData\JS\Input\CommandLine\EventHandler.js" />
+    <Content Include="TestData\JS\Input\CommandLine\Expression.js" />
     <Content Include="TestData\JS\Input\CommandLine\Globals.js" />
+    <Content Include="TestData\JS\Input\CommandLine\json.js" />
     <Content Include="TestData\JS\Input\CommandLine\TermSemi1.js" />
     <Content Include="TestData\JS\Input\CommandLine\TermSemi2.js" />
     <Content Include="TestData\JS\Input\Comments\Comment.js" />
@@ -587,9 +598,13 @@
     <Content Include="TestData\JS\Input\Strict\FuncDeclStrict.js" />
     <Content Include="TestData\JS\Input\Strict\InvalidDelete.js" />
     <Content Include="TestData\JS\Input\Strict\InvalidVarName.js" />
+    <Content Include="TestData\JS\Input\Strict\StrictPartial1.js" />
+    <Content Include="TestData\JS\Input\Strict\StrictPartial2.js" />
+    <Content Include="TestData\JS\Input\Strict\StrictPartial3.js" />
     <Content Include="TestData\JS\Input\Strict\StrictSwitch1.js" />
     <Content Include="TestData\JS\Input\Strict\StrictSwitch2.js" />
     <Content Include="TestData\JS\Input\Strict\StrictSwitchOn.xml" />
+    <Content Include="TestData\JS\Input\Strict\StrictPartial.xml" />
     <Content Include="TestData\JS\Input\Strict\UnknownGlobal.js" />
     <Content Include="TestData\JS\Input\Strict\With.js" />
     <Content Include="TestData\JS\Input\Switch\Braces.js" />

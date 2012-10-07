@@ -117,6 +117,13 @@ namespace JSUnitTest
         }
 
         [TestMethod]
+        public void StrictPartial()
+        {
+            // error because it's in strict mode
+            TestHelper.Instance.RunTest("-rename:all -xml");
+        }
+
+        [TestMethod]
         public void UnknownGlobal()
         {
             TestHelper.Instance.RunErrorTest("-rename:all", JSError.UndeclaredVariable, JSError.StrictModeUndefinedVariable, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.StrictModeInvalidPreOrPost);

@@ -408,4 +408,7 @@
   <data name="DuplicateCatch" xml:space="preserve">
     <value>Variable or function declaration redefines the catch error name</value>
   </data>
+  <data name="InvalidJSONOutput" xml:space="preserve">
+    <value>Invalid JSON JavaScript nodes encountered during output</value>
+  </data>
 </root>

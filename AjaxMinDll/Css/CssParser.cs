@@ -40,7 +40,6 @@ namespace Microsoft.Ajax.Utilities
         private bool m_noOutput;
         private string m_lastOutputString;
         private bool m_mightNeedSpace;
-        private bool m_expressionContainsErrors;
         private bool m_skippedSpace;
         private int m_lineLength;
         private bool m_noColorAbbreviation;
@@ -63,6 +62,32 @@ namespace Microsoft.Ajax.Utilities
         public string FileContext { get; set; }
 
         private CodeSettings m_jsSettings;
+        public CodeSettings JSSettings
+        {
+            get
+            {
+                return m_jsSettings;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    // clone the settings
+                    m_jsSettings = value.Clone();
+
+                    // and then make SURE the source format is Expression
+                    m_jsSettings.SourceMode = JavaScriptSourceMode.Expression;
+                }
+                else
+                {
+                    m_jsSettings = new CodeSettings()
+                        {
+                            KillSwitch = (long)TreeModifications.MinifyStringLiterals,
+                            SourceMode = JavaScriptSourceMode.Expression
+                        };
+                }
+            }
+        }
 
         #endregion
 
@@ -272,10 +297,10 @@ namespace Microsoft.Ajax.Utilities
             // default settings
             Settings = new CssSettings();
 
-            // create the settings we'll use for JS expression minification
+            // create the default settings we'll use for JS expression minification
             // use the defaults, other than to set the kill switch so that it leaves
             // string literals alone (so we don't inadvertently change any delimiter chars)
-            m_jsSettings = new CodeSettings() { KillSwitch = (long)TreeModifications.MinifyStringLiterals };
+            JSSettings = null;
 
             // create a list of strings that represent the namespaces declared
             // in a @namespace statement. We will clear this every time we parse a new source string.
@@ -2772,16 +2797,20 @@ namespace Microsoft.Ajax.Utilities
 
                         // hook the error handler and set the "contains errors" flag to false.
                         // the handler will set the value to true if it encounters any errors
-                        jsParser.CompilerError += OnScriptError;
-                        m_expressionContainsErrors = false;
+                        var containsErrors = false;
+                        jsParser.CompilerError += (sender, ea) =>
+                            {
+                                ReportError(0, CssErrorCode.ExpressionError, ea.Error.Message);
+                                containsErrors = true;
+                            };
 
                         // parse the source as an expression using our common JS settings
-                        Block block = jsParser.ParseExpression(m_jsSettings);
+                        Block block = jsParser.Parse(m_jsSettings);
 
                         // if we got back a parsed block and there were no errors, output the minified code.
                         // if we didn't get back the block, or if there were any errors at all, just output
                         // the raw expression source.
-                        if (block != null && !m_expressionContainsErrors)
+                        if (block != null && !containsErrors)
                         {
                             Append(block.ToCode());
                         }
@@ -2851,12 +2880,6 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
             return parsed;
-        }
-
-        private void OnScriptError(object sender, JScriptExceptionEventArgs ea)
-        {
-            ReportError(0, CssErrorCode.ExpressionError, ea.Error.Message);
-            m_expressionContainsErrors = true;
         }
 
         private Parsed ParseHexcolor()

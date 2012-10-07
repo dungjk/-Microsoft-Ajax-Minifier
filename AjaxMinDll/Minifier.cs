@@ -126,7 +126,37 @@ namespace Microsoft.Ajax.Utilities
                     if (scriptBlock != null)
                     {
                         // we'll return the crunched code
-                        crunched = scriptBlock.ToCode();
+                        if (codeSettings != null && codeSettings.Format == JavaScriptFormat.JSON)
+                        {
+                            // we're going to use a different output visitor -- one
+                            // that specifically returns valid JSON.
+                            var sb = new StringBuilder();
+                            using (var stringWriter = new StringWriter(sb, CultureInfo.InvariantCulture))
+                            {
+                                if (!JSONOutputVisitor.Apply(stringWriter, scriptBlock))
+                                {
+                                    m_errorList.Add(new ContextError(
+                                        true,
+                                        0,
+                                        null,
+                                        null,
+                                        null,
+                                        this.FileName,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        JScript.InvalidJSONOutput));
+                                }
+                            }
+
+                            crunched = sb.ToString();
+                        }
+                        else
+                        {
+                            // just use the normal output visitor
+                            crunched = scriptBlock.ToCode();
+                        }
                     }
                 }
             }
@@ -146,6 +176,7 @@ namespace Microsoft.Ajax.Utilities
                     e.Message));
                 throw;
             }
+
             return crunched;
         }
 
@@ -163,7 +194,7 @@ namespace Microsoft.Ajax.Utilities
         public string MinifyStyleSheet(string source)
         {
             // just pass in default settings
-            return MinifyStyleSheet(source, new CssSettings());
+            return MinifyStyleSheet(source, new CssSettings(), new CodeSettings());
         }
 
         /// <summary>
@@ -175,6 +206,20 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>Minified StyleSheet</returns>
         public string MinifyStyleSheet(string source, CssSettings settings)
         {
+            // just pass in default settings
+            return MinifyStyleSheet(source, settings, new CodeSettings());
+        }
+
+        /// <summary>
+        /// Minifies the CSS stylesheet passes to it using the given settings, returning the minified results
+        /// The ErrorList property will be set with any errors found during the minification process.
+        /// </summary>
+        /// <param name="source">CSS Source</param>
+        /// <param name="settings">CSS minification settings</param>
+        /// <param name="jsSettings">JS minification settings to use for expression-minification</param>
+        /// <returns>Minified StyleSheet</returns>
+        public string MinifyStyleSheet(string source, CssSettings settings, CodeSettings jsSettings)
+        {
             // initialize some values, including the error list (which shoudl start off empty)
             string minifiedResults = string.Empty;
             m_errorList = new List<ContextError>();
@@ -183,9 +228,15 @@ namespace Microsoft.Ajax.Utilities
             // use it to set the Parser's settings object
             CssParser parser = new CssParser();
             parser.FileContext = FileName;
+
             if (settings != null)
             {
                 parser.Settings = settings;
+            }
+
+            if (jsSettings != null)
+            {
+                parser.JSSettings = jsSettings;
             }
 
             // hook the error handler

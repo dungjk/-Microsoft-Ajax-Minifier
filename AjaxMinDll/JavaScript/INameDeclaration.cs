@@ -28,6 +28,7 @@ namespace Microsoft.Ajax.Utilities
         Context NameContext { get; }
         AstNode Parent { get; }
         bool HasInitializer { get; }
+        bool RenameNotAllowed { get; }
         JSVariableField VariableField { get; set; }
     }
 }

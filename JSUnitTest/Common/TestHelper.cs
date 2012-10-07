@@ -19,6 +19,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using System.Xml;
 
 using Microsoft.Ajax.Utilities;
@@ -772,7 +773,25 @@ namespace JSUnitTest
             {
                 // normal -- just run it through the parser
                 var block = parser.Parse(switchParser.JSSettings);
-                crunchedCode = block.ToCode();
+
+                // look at the settings for the proper output visitor
+                if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                {
+                    var sb = new StringBuilder();
+                    using (var writer = new StringWriter(sb))
+                    {
+                        if (!JSONOutputVisitor.Apply(writer, block))
+                        {
+                            Trace.WriteLine("JSON OUTPUT ERRORS!");
+                        }
+                    }
+
+                    crunchedCode = sb.ToString();
+                }
+                else
+                {
+                    crunchedCode = block.ToCode();
+                }
             }
 
             // output the crunched code using the proper output encoding
@@ -930,9 +949,13 @@ namespace JSUnitTest
             Trace.WriteLine("MAP COMPARISON");
             Trace.WriteLine(string.Format("odd \"{0}\" \"{1}\"", rightPath, leftPath));
             Trace.WriteLine(string.Empty);
-
-            using (XmlReader leftReader = XmlReader.Create(leftPath))
-            using (XmlReader rightReader = XmlReader.Create(rightPath))
+            Trace.WriteLine("-");
+            var xmlReaderSettings = new XmlReaderSettings()
+                {
+                    IgnoreWhitespace = true
+                };
+            using (XmlReader leftReader = XmlReader.Create(leftPath, xmlReaderSettings))
+            using (XmlReader rightReader = XmlReader.Create(rightPath, xmlReaderSettings))
             {
                 bool leftHasMoreNodes = leftReader.Read();
                 bool rightHasMoreNodes = rightReader.Read();
@@ -948,7 +971,10 @@ namespace JSUnitTest
                         string rightScriptName = Path.GetFileName(rightReader.GetAttribute(FilePathAttribute));
 
                         Assert.AreEqual(leftScriptName, rightScriptName, "Script names don't match");
-                        Assert.AreEqual(leftReader.ReadInnerXml(), rightReader.ReadInnerXml(), "Script symbols don't match");
+
+                        var leftInner = leftReader.ReadInnerXml();
+                        var rightInner = rightReader.ReadInnerXml();
+                        Assert.AreEqual(leftInner, rightInner, "Script symbols don't match");
                     }
                     else if (leftReader.Name == SourceFileTag && rightReader.Name == SourceFileTag)
                     {

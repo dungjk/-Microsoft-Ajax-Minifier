@@ -100,6 +100,8 @@ namespace Microsoft.Ajax.Utilities
 
         public event EventHandler<GlobalDefineEventArgs> GlobalDefine;
 
+        public event EventHandler<EventArgs> NewModule;
+
         #endregion
 
         #region constructors
@@ -1027,6 +1029,14 @@ namespace Microsoft.Ajax.Utilities
             if (GlobalDefine != null)
             {
                 GlobalDefine(this, new GlobalDefineEventArgs() { Name = name });
+            }
+        }
+
+        private void OnNewModule()
+        {
+            if (NewModule != null)
+            {
+                NewModule(this, new EventArgs());
             }
         }
 
@@ -2700,6 +2710,14 @@ namespace Microsoft.Ajax.Utilities
                         // and because the column position in the comment is one-based, add one to get 
                         // back to zero-based: current - (col - 1)
                         this.m_startLinePosition = m_currentPosition - colPos + 1;
+
+                        // the source offset for both start and end is now the current position.
+                        // this is assuming that a single token doesn't span across source files, which isn't
+                        // entirely true, since a string literal or multi-line comment (for example) may do just that.
+                        this.m_currentToken.SourceOffsetStart = this.m_currentToken.SourceOffsetEnd = m_currentPosition;
+
+                        // alert anyone (the parser) that we encountered the start of a new module
+                        OnNewModule();
 
                         // return false because we are all set on the next line and DON'T want the
                         // line skipped.

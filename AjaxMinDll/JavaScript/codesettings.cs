@@ -69,6 +69,33 @@ namespace Microsoft.Ajax.Utilities
     }
 
     /// <summary>
+    /// Enum describing the type of input expected
+    /// </summary>
+    public enum JavaScriptSourceMode
+    {
+        /// <summary>Default input mode: a program, a block of top-level global statements</summary>
+        Program = 0,
+
+        /// <summary>Input is a single JavaScript Expression</summary>
+        Expression,
+
+        /// <summary>Input is an implicit function block, as in the value of an HTML onclick attribute</summary>
+        EventHandler
+    }
+
+    /// <summary>
+    /// Enum describing how to treat the output JavaScript
+    /// </summary>
+    public enum JavaScriptFormat
+    {
+        /// <summary>normal JavaScript code</summary>
+        Normal = 0,
+
+        /// <summary>JSON code</summary>
+        JSON
+    }
+
+    /// <summary>
     /// Object used to store code settings for JavaScript parsing, minification, and output
     /// </summary>
     public class CodeSettings : CommonSettings
@@ -132,6 +159,7 @@ namespace Microsoft.Ajax.Utilities
                 DebugLookupList = this.DebugLookupList,
                 EvalLiteralExpressions = this.EvalLiteralExpressions,
                 EvalTreatment = this.EvalTreatment,
+                Format = this.Format,
                 IgnoreConditionalCompilation = this.IgnoreConditionalCompilation,
                 IgnoreAllErrors = this.IgnoreAllErrors,
                 IgnoreErrorList = this.IgnoreErrorList,
@@ -155,6 +183,7 @@ namespace Microsoft.Ajax.Utilities
                 RemoveUnneededCode = this.RemoveUnneededCode,
                 RenamePairs = this.RenamePairs,
                 ReorderScopeDeclarations = this.ReorderScopeDeclarations,
+                SourceMode = this.SourceMode,
                 StrictMode = this.StrictMode,
                 StripDebugStatements = this.StripDebugStatements,
                 TermSemicolons = this.TermSemicolons,
@@ -696,6 +725,14 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// Gets or sets the format to use for the JavaScript processing.
+        /// </summary>
+        public JavaScriptFormat Format
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Gets or sets a boolean value indicating whether or not to ignore conditional-compilation comment syntax (true) or
         /// to try to retain the comments in the output (false; default)
         /// </summary>
@@ -839,6 +876,14 @@ namespace Microsoft.Ajax.Utilities
         /// or to keep such code in the output [false].
         /// </summary>
         public bool RemoveUnneededCode
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets the source mode
+        /// </summary>
+        public JavaScriptSourceMode SourceMode
         {
             get; set;
         }

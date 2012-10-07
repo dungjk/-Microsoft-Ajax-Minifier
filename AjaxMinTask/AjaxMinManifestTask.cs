@@ -244,6 +244,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                         inputCode,
                                         manifestFolder,
                                         settings.CssSettings,
+                                        settings.JSSettings,
                                         outputFileInfo.FullName,
                                         GetStylesheetEncoding(outputGroup.EncodingName ?? settings.EncodingOutputName));
                                     break;
@@ -332,7 +333,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private void ProcessStylesheet(string inputCode, string manifestFolder, CssSettings settings, string outputPath, Encoding encoding)
+        private void ProcessStylesheet(string inputCode, string manifestFolder, CssSettings settings, CodeSettings jsSettings, string outputPath, Encoding encoding)
         {
             // create and setup parser
             var parser = new CssParser();
@@ -341,6 +342,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 LogContextError(ea.Error);
             };
             parser.Settings = settings;
+            parser.JSSettings = jsSettings;
 
             // minify input
             var minifiedCode = parser.Parse(inputCode);

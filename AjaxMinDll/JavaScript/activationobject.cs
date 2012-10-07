@@ -166,9 +166,12 @@ namespace Microsoft.Ajax.Utilities
                 if (field == null)
                 {
                     // no collision - create the catch-error field
-                    field = new JSVariableField(FieldType.CatchError, nameDecl.Name, 0, null);
-                    field.OriginalContext = nameDecl.NameContext.Clone();
-                    field.IsDeclared = true;
+                    field = new JSVariableField(FieldType.CatchError, nameDecl.Name, 0, null)
+                    {
+                        OriginalContext = nameDecl.NameContext.Clone(),
+                        IsDeclared = true
+                    };
+
                     this.AddField(field);
                 }
                 else
@@ -230,8 +233,9 @@ namespace Microsoft.Ajax.Utilities
 
             nameDecl.VariableField = field;
 
-            // if this scope is within a with-statement, then mark the field as not crunchable
-            if (IsInWithScope)
+            // if this scope is within a with-statement, or if the declaration was flagged
+            // as not being renamable, then mark the field as not crunchable
+            if (IsInWithScope || nameDecl.RenameNotAllowed)
             {
                 field.CanCrunch = false;
             }

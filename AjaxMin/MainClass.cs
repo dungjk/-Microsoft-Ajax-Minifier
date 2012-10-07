@@ -67,6 +67,9 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private string m_configuration;
 
+        /// <summary>whether to suppress output of the parsed code</summary>
+        private bool m_noOutput;
+
         #endregion
 
         #region common settings
@@ -349,18 +352,44 @@ namespace Microsoft.Ajax.Utilities
 
                     case "OUT":
                     case "O": // <-- old style
-                        // next argument is the output path
-                        // cannot have two out arguments
-                        if (!string.IsNullOrEmpty(m_outputFile))
+                        // cannot have two out arguments. If we've already seen an out statement,
+                        // either we will have an output file or the no-output flag will be set
+                        if (!string.IsNullOrEmpty(m_outputFile) || m_noOutput)
                         {
                             throw new UsageException(m_outputMode, AjaxMin.MultipleOutputArg);
                         }
-                        else if (ea.Index >= ea.Arguments.Count - 1)
+                        else
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.OutputArgNeedsPath);
-                        }
+                            // first instance of the -out switch. 
+                            // First check to see if there's a flag on the output switch
+                            if (!string.IsNullOrEmpty(ea.ParameterPart))
+                            {
+                                // there is. See if it's a boolean false. If it is, then we want no output 
+                                // and we don't follow this switch with an output path.
+                                bool outputSwitch;
+                                if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out outputSwitch))
+                                {
+                                    // the no-output flag is the opposite of the boolean flag
+                                    m_noOutput = !outputSwitch;
+                                }
+                                else
+                                {
+                                    // invalid argument switch
+                                    throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                                }
+                            }
 
-                        m_outputFile = ea.Arguments[++ea.Index];
+                            // if we still want output, then the next argument is the output path
+                            if (!m_noOutput)
+                            {
+                                if (ea.Index >= ea.Arguments.Count - 1)
+                                {
+                                    throw new UsageException(m_outputMode, AjaxMin.OutputArgNeedsPath);
+                                }
+
+                                m_outputFile = ea.Arguments[++ea.Index];
+                            }
+                        }
                         break;
 
                     case "MAP":
@@ -938,6 +967,67 @@ namespace Microsoft.Ajax.Utilities
             // length of all the source files combined
             long sourceLength = 0;
 
+            // if we are echoing the input, then we don't want to echo the assembled input with the
+            // added ///#SOURCE comments. So create a second builder in those cases, which won't get
+            // the comments added to it.
+            StringBuilder echoBuilder = null;
+            if (m_echoInput)
+            {
+                echoBuilder = new StringBuilder();
+
+                // we're just echoing the input -- so if this is a JS output file,
+                // we want to output a JS version of all resource dictionaries at the top
+                // of the file.
+                if (crunchGroup.InputType == InputType.JavaScript
+                    && switchParser.JSSettings.ResourceStrings.Count > 0)
+                {
+                    foreach (var resourceStrings in switchParser.JSSettings.ResourceStrings)
+                    {
+                        string resourceObject = CreateJSFromResourceStrings(resourceStrings);
+                        echoBuilder.Append(resourceObject);
+                    }
+                }
+            }
+
+            // combine all the source files into a single string, delimited with ///#SOURCE comments so we can track
+            // back to the original files
+            var inputBuilder = new StringBuilder();
+            if (crunchGroup.Count == 0)
+            {
+                // coming from stdin
+                var sourceCode = ReadInputFile(string.Empty, null, ref sourceLength);
+                inputBuilder.AppendLine("///#SOURCE 1 1 stdin");
+                inputBuilder.Append(sourceCode);
+
+                // if we are echoing the input, add it to the echo builder, but without the comment
+                if (echoBuilder != null)
+                {
+                    echoBuilder.Append(sourceCode);
+                }
+            }
+            else
+            {
+                for (var ndx = 0; ndx < crunchGroup.Count; ++ndx)
+                {
+                    var sourceCode = ReadInputFile(
+                        crunchGroup[ndx].Path, 
+                        crunchGroup[ndx].EncodingName ?? switchParser.EncodingInputName, 
+                        ref sourceLength);
+
+                    inputBuilder.Append("///#SOURCE 1 1 ");
+                    inputBuilder.AppendLine(crunchGroup[ndx].Path);
+                    inputBuilder.Append(sourceCode);
+
+                    // if we are echoing the input, add it to the echo builder, but without the comment
+                    if (echoBuilder != null)
+                    {
+                        echoBuilder.Append(sourceCode);
+                    }
+                }
+            }
+
+            var combinedSourceCode = inputBuilder.ToString();
+
             // if the crunch group has any resource strings objects, we need to add them to the back
             // of the settings list
             var hasCrunchSpecificResources = crunchGroup.ResourceStrings != null && crunchGroup.ResourceStrings.Count > 0;
@@ -957,26 +1047,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    // see how many input files there are
-                    if (crunchGroup.Count == 0)
-                    {
-                        // no input files -- take from stdin
-                        retVal = ProcessCssFile(string.Empty, null, switchParser, outputBuilder, ref sourceLength);
-                    }
-                    else
-                    {
-                        // process each input file
-                        for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                        {
-                            retVal = ProcessCssFile(
-                                crunchGroup[ndx].Path,
-                                crunchGroup[ndx].EncodingName,
-                                switchParser,
-                                outputBuilder,
-                                ref sourceLength);
-                        }
-                    }
-
+                    retVal = ProcessCssFile(combinedSourceCode, switchParser, outputBuilder);
                     break;
 
                 case InputType.JavaScript:
@@ -989,95 +1060,20 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    if (m_echoInput && switchParser.JSSettings.ResourceStrings.Count > 0)
-                    {
-                        // we're just echoing the output -- so output a JS version of the dictionary
-                        // create JS from the dictionary and output it to the stream
-                        // leave the object null
-                        foreach (var resourceStrings in switchParser.JSSettings.ResourceStrings)
-                        {
-                            string resourceObject = CreateJSFromResourceStrings(resourceStrings);
-                            outputBuilder.Append(resourceObject);
-                        }
-                    }
-
                     try
                     {
                         if (m_switchParser.JSSettings.PreprocessOnly)
                         {
-                            // see how many input files there are
-                            if (crunchGroup.Count == 0)
-                            {
-                                // take input from stdin.
-                                // since that's the ONLY input file, pass TRUE for isLastFile
-                                retVal = PreprocessJSFile(string.Empty, null, switchParser, outputBuilder, true, ref sourceLength);
-                            }
-                            else
-                            {
-                                // process each input file in turn. 
-                                for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                                {
-                                    retVal = PreprocessJSFile(
-                                        crunchGroup[ndx].Path,
-                                        crunchGroup[ndx].EncodingName,
-                                        switchParser,
-                                        outputBuilder,
-                                        ndx == crunchGroup.Count - 1,
-                                        ref sourceLength);
-                                }
-                            }
+                            // pre-process the input
+                            retVal = PreprocessJSFile(combinedSourceCode, switchParser, outputBuilder);
                         }
                         else if (m_echoInput)
                         {
-                            // see how many input files there are
-                            if (crunchGroup.Count == 0)
-                            {
-                                // take input from stdin.
-                                // since that's the ONLY input file, pass TRUE for isLastFile
-                                retVal = ProcessJSFileEcho(string.Empty, null, switchParser, outputBuilder, ref sourceLength);
-                            }
-                            else
-                            {
-                                // process each input file in turn. 
-                                for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                                {
-                                    retVal = ProcessJSFileEcho(
-                                        crunchGroup[ndx].Path,
-                                        crunchGroup[ndx].EncodingName,
-                                        switchParser,
-                                        outputBuilder,
-                                        ref sourceLength);
-                                }
-                            }
+                            retVal = ProcessJSFileEcho(combinedSourceCode, switchParser, outputBuilder);
                         }
                         else
                         {
-                            using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
-                            {
-                                var outputVisitor = new OutputVisitor(writer, switchParser.JSSettings);
-
-                                // see how many input files there are
-                                if (crunchGroup.Count == 0)
-                                {
-                                    // take input from stdin.
-                                    // since that's the ONLY input file, pass TRUE for isLastFile
-                                    retVal = ProcessJSFile(string.Empty, null, switchParser, outputVisitor, true, ref sourceLength);
-                                }
-                                else
-                                {
-                                    // process each input file in turn. 
-                                    for (int ndx = 0; retVal == 0 && ndx < crunchGroup.Count; ++ndx)
-                                    {
-                                        retVal = ProcessJSFile(
-                                            crunchGroup[ndx].Path,
-                                            crunchGroup[ndx].EncodingName,
-                                            switchParser,
-                                            outputVisitor,
-                                            ndx == crunchGroup.Count - 1,
-                                            ref sourceLength);
-                                    }
-                                }
-                            }
+                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder);
                         }
                     }
                     catch (JScriptException e)
@@ -1116,19 +1112,6 @@ namespace Microsoft.Ajax.Utilities
                 // if the code is empty, don't bother outputting it to the console
                 if (!string.IsNullOrEmpty(crunchedCode))
                 {
-                    // set the console encoding
-                    try
-                    {
-                        // try setting the appropriate output encoding
-                        Console.OutputEncoding = encodingOutput;
-                    }
-                    catch (IOException e)
-                    {
-                        // sometimes they will error, in which case we'll just set it to ascii
-                        Debug.WriteLine(e.ToString());
-                        Console.OutputEncoding = Encoding.ASCII;
-                    }
-
                     // however, for some reason when I set the output encoding it
                     // STILL doesn't call the EncoderFallback to Unicode-escape characters
                     // not supported by the encoding scheme. So instead we need to run the
@@ -1136,10 +1119,8 @@ namespace Microsoft.Ajax.Utilities
                     // so the translated bytes get displayed properly in the console.
                     byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
 
-                    // only output the size analysis if we are in analyze mode
-                    // change: no, output the size analysis all the time.
-                    // (unless in silent mode, but WriteProgess will take care of that)
-                    ////if (m_analyze)
+                    // only output the size analysis if we aren't echoing the input
+                    if (!m_echoInput)
                     {
                         // output blank line before
                         WriteProgress();
@@ -1177,9 +1158,30 @@ namespace Microsoft.Ajax.Utilities
                         WriteProgress();
                     }
 
-                    // send to console out
-                    Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
-                    //Console.Out.Write(crunchedCode);
+                    // send to console out -- if we even want any output
+                    if (!m_noOutput)
+                    {
+                        // set the console encoding
+                        try
+                        {
+                            // try setting the appropriate output encoding
+                            Console.OutputEncoding = encodingOutput;
+                        }
+                        catch (IOException e)
+                        {
+                            // sometimes they will error, in which case we'll just set it to ascii
+                            Debug.WriteLine(e.ToString());
+                            Console.OutputEncoding = Encoding.ASCII;
+                        }
+
+                        // if we are echoing the input, the get a new stream of bytes
+                        if (echoBuilder != null)
+                        {
+                            encodedBytes = encodingOutput.GetBytes(echoBuilder.ToString());
+                        }
+
+                        Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
+                    }
                 }
             }
             else
@@ -1194,11 +1196,20 @@ namespace Microsoft.Ajax.Utilities
                            encodingOutput
                            ))
                         {
-                            outputStream.Write(crunchedCode);
+                            if (echoBuilder == null)
+                            {
+                                outputStream.Write(crunchedCode);
+                            }
+                            else
+                            {
+                                // just echo the input
+                                outputStream.Write(echoBuilder.ToString());
+                            }
                         }
 
                         // only output the size analysis if there is actually some output to measure
-                        if (File.Exists(path))
+                        // and we're not echoing the input
+                        if (File.Exists(path) && !m_echoInput)
                         {
                             // get the size of the resulting file
                             FileInfo crunchedFileInfo = new FileInfo(path);
@@ -1216,10 +1227,10 @@ namespace Microsoft.Ajax.Utilities
                                     // calculate the percentage saved by minification
                                     percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
                                     WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
-                                                      sourceLength,
-                                                      crunchedLength,
-                                                      percentage
-                                                      ));
+                                                        sourceLength,
+                                                        crunchedLength,
+                                                        percentage
+                                                        ));
                                 }
                                 else
                                 {

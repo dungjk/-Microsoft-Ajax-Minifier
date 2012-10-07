@@ -71,6 +71,12 @@ namespace Microsoft.Ajax.Utilities
             m_onNewLine = true;
         }
 
+        public static void Apply(TextWriter writer, AstNode node, CodeSettings settings)
+        {
+            var outputVisitor = new OutputVisitor(writer, settings);
+            node.Accept(outputVisitor);
+        }
+
         #region IVisitor Members
 
         public void Visit(ArrayLiteral node)
@@ -372,7 +378,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                var symbol = StartSymbol(node);
+                // don't create a symbol for the root node -- it can encompass any of the input files
+                var symbol = node.Parent != null ? StartSymbol(node) : null;
 
                 if (node.Parent != null)
                 {
@@ -450,7 +457,10 @@ namespace Microsoft.Ajax.Utilities
                     OutputPossibleLineBreak(';');
                 }
 
-                EndSymbol(symbol);
+                if (symbol != null)
+                {
+                    EndSymbol(symbol);
+                }
             }
         }
 

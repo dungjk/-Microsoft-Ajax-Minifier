@@ -47,6 +47,8 @@ namespace Microsoft.Ajax.Utilities
 
         private Block m_program;
 
+        private bool m_newModule;
+
         // we're going to copy the debug lookups from the settings passed to us,
         // then use this collection, because we might programmatically add more
         // as we process the code, and we don't want to change the settings object.
@@ -212,6 +214,11 @@ namespace Microsoft.Ajax.Utilities
                         var field = globalScope.CreateField(ea.Name, null, FieldAttributes.SpecialName);
                         globalScope.AddField(field);
                     }
+                };
+
+            m_scanner.NewModule += (sender, ea) =>
+                {
+                    m_newModule = true;
                 };
         }
 
@@ -441,8 +448,64 @@ namespace Microsoft.Ajax.Utilities
             // make sure the global scope knows about our known global names
             GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalCollection, m_settings.DebugLookupCollection);
 
-            // parse a block of statements and resolve everything
-            var scriptBlock = ParseStatements();
+            // start of a new module
+            m_newModule = true;
+
+            Block scriptBlock;
+            Block returnBlock;
+            switch (m_settings.SourceMode)
+            {
+                case JavaScriptSourceMode.Program:
+                    // simply parse a block of statements
+                    returnBlock = scriptBlock = ParseStatements();
+                    break;
+                    
+                case JavaScriptSourceMode.Expression:
+                    // create a block, get the first token, add in the parse of a single expression, 
+                    // and we'll go fron there.
+                    returnBlock = scriptBlock = new Block(null, this);
+                    GetNextToken();
+                    try
+                    {
+                        scriptBlock.Append(ParseExpression());
+                    }
+                    catch (EndOfFileException)
+                    {
+                        Debug.WriteLine("EOF");
+                    }
+                    break;
+
+                case JavaScriptSourceMode.EventHandler:
+                    // we're going to create the global block, add in a function expression with a single
+                    // parameter named "event", and then we're going to parse the input as the body of that
+                    // function expression. We're going to resolve the global block, but only return the body
+                    // of the function.
+                    scriptBlock = new Block(null, this);
+
+                    var parameters = new AstNodeList(null, this);
+                    parameters.Append(new ParameterDeclaration(null, this, "event", 0)
+                        {
+                            RenameNotAllowed = true
+                        });
+                    var funcExpression = new FunctionObject(
+                        null, 
+                        this, 
+                        FunctionType.Expression, 
+                        parameters, 
+                        null, 
+                        null);
+                    scriptBlock.Append(funcExpression);
+
+                    returnBlock = ParseStatements();
+                    funcExpression.SetBody(returnBlock);
+                    break;
+
+                default:
+                    Debug.Fail("Unexpected source mode enumeration");
+                    return null;
+            }
+
+            // resolve everything
             ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
 
             if (scriptBlock != null && Settings.MinifyCode)
@@ -491,7 +554,12 @@ namespace Microsoft.Ajax.Utilities
                 m_globalScope.ValidateGeneratedNames();
             }
 
-            return scriptBlock;
+            if (returnBlock.Parent != null)
+            {
+                returnBlock.Parent = null;
+            }
+
+            return returnBlock;
         }
 
         /// <summary>
@@ -501,83 +569,16 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         /// <param name="codeSettings">settings to use</param>
         /// <returns>a block node containing the parsed expression as its only child</returns>
+        [Obsolete("This property is deprecated; call Parse with CodeSettings.SourceMode set to JavaScriptSourceMode.Expression instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public Block ParseExpression(CodeSettings settings)
         {
-            // initialize the scanner with our settings
-            // make sure the RawTokens setting is OFF or we won't be able to create our AST
-            InitializeScanner(settings);
-
-            // make sure we initialize the global scope's strict mode to our flag, whether or not it
-            // is true. This means if the setting is false, we will RESET the flag to false if we are 
-            // reusing the scope and a previous Parse call had code that set it to strict with a 
-            // program directive. 
-            GlobalScope.UseStrict = m_settings.StrictMode;
-
-            // make sure the global scope knows about our known global names
-            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalCollection, m_settings.DebugLookupCollection);
-
-            // container for the expression
-            Block block = null;
-
-            // prime the scanner
-            GetNextToken();
-
-            // parse an expression
-            var expression = ParseExpression();
-            if (expression != null)
-            {
-                block = new Block(expression.Context.Clone(), this);
-                block.Append(expression);
-                ResolutionVisitor.Apply(block, GlobalScope, m_settings);
-            }
-            
-            if (block != null && Settings.MinifyCode)
-            {
-                // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
-                // and unnests blocks. 
-                ReorderScopeVisitor.Apply(block, this);
-
-                // analyze the entire node tree (needed for hypercrunch)
-                // root to leaf (top down)
-                var analyzeVisitor = new AnalyzeNodeVisitor(this);
-                block.Accept(analyzeVisitor);
-
-                // analyze the scope chain (also needed for hypercrunch)
-                // root to leaf (top down)
-                m_globalScope.AnalyzeScope();
-
-                // if we want to crunch any names....
-                if (m_settings.LocalRenaming != LocalRenaming.KeepAll
-                    && m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))
-                {
-                    // then do a top-down traversal of the scope tree. For each field that had not
-                    // already been crunched (globals and outers will already be crunched), crunch
-                    // the name with a crunch iterator that does not use any names in the verboten set.
-                    m_globalScope.AutoRenameFields();
-                }
-
-                // if we want to evaluate literal expressions, do so now
-                if (m_settings.EvalLiteralExpressions)
-                {
-                    var visitor = new EvaluateLiteralVisitor(this);
-                    block.Accept(visitor);
-                }
-
-                // if any of the conditions we check for in the final pass are available, then
-                // make the final pass
-                if (m_settings.IsModificationAllowed(TreeModifications.BooleanLiteralsToNotOperators))
-                {
-                    var visitor = new FinalPassVisitor(this);
-                    block.Accept(visitor);
-                }
-
-                // we want to walk all the scopes to make sure that any generated
-                // variables that haven't been crunched have been assigned valid
-                // variable names that don't collide with any existing variables.
-                m_globalScope.ValidateGeneratedNames();
-            }
-
-            return block;
+            // we need to make sure the settings object has the expression source mode property set,
+            // but let's not modify the settings object passed in. So clone it, set the property on the
+            // clone, and use that object for parsing.
+            settings = settings.Clone();
+            settings.SourceMode = JavaScriptSourceMode.Expression;
+            return Parse(settings);
         }
 
         //---------------------------------------------------------------------------------------
@@ -622,26 +623,30 @@ namespace Microsoft.Ajax.Utilities
                             // are not statements!
                             ast = ParseStatement(true);
 
-                            // if we are still possibly looking for directive prologues....
+                            // if we are still possibly looking for directive prologues
                             if (possibleDirectivePrologue)
                             {
                                 var constantWrapper = ast as ConstantWrapper;
                                 if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
                                 {
-                                    // use a directive prologue node instead
-                                    var directive = new DirectivePrologue(constantWrapper.Value.ToString(), ast.Context, ast.Parser);
-                                    if (directive.UseStrict)
+                                    if (!(constantWrapper is DirectivePrologue))
                                     {
-                                        // set the global scope to strict mode
-                                        m_globalScope.UseStrict = true;
+                                        // use a directive prologue node instead
+                                        ast = new DirectivePrologue(constantWrapper.Value.ToString(), ast.Context, ast.Parser);
                                     }
-                                    ast = directive;
                                 }
-                                else
+                                else if (!m_newModule)
                                 {
                                     // nope -- no longer finding directive prologues
                                     possibleDirectivePrologue = false;
                                 }
+                            }
+                            else if (m_newModule)
+                            {
+                                // we aren't looking for directive prologues anymore, but we did scan
+                                // into a new module after that last AST, so reset the flag because that
+                                // new module might have directive prologues for next time
+                                possibleDirectivePrologue = true;
                             }
                         }
                         catch (RecoveryTokenException exc)
@@ -765,6 +770,7 @@ namespace Microsoft.Ajax.Utilities
             else
             {
                 String id = null;
+                var isNewModule = m_newModule;
 
                 switch (m_currentToken.Token)
                 {
@@ -925,6 +931,22 @@ namespace Microsoft.Ajax.Utilities
                                 }
                             }
                             statement = ParseExpression(statement, false, bAssign, JSToken.None);
+
+                            // if we just started a new module and this statement happens to be an expression statement...
+                            if (isNewModule && statement.IsExpression)
+                            {
+                                // see if it's a constant wrapper
+                                var constantWrapper = statement as ConstantWrapper;
+                                if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
+                                {
+                                    // we found a string constant expression statement right after the start of a new
+                                    // module. Let's make it a DirectivePrologue if it isn't already
+                                    if (!(statement is DirectivePrologue))
+                                    {
+                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, this);
+                                    }
+                                }
+                            }
                         }
                         catch (RecoveryTokenException exc)
                         {
@@ -3140,14 +3162,23 @@ namespace Microsoft.Ajax.Utilities
                                 var constantWrapper = statement as ConstantWrapper;
                                 if (constantWrapper != null && constantWrapper.PrimitiveType == PrimitiveType.String)
                                 {
-                                    // make hte statement a directive prologue instead of a constant wrapper
-                                    statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
+                                    // if it's already a directive prologues, we're good to go
+                                    if (!(constantWrapper is DirectivePrologue))
+                                    {
+                                        // make the statement a directive prologue instead of a constant wrapper
+                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
+                                    }
                                 }
-                                else
+                                else if (!m_newModule)
                                 {
                                     // no longer considering constant wrappers
                                     possibleDirectivePrologue = false;
                                 }
+                            }
+                            else if (m_newModule)
+                            {
+                                // we scanned into a new module -- we might find directive prologues again
+                                possibleDirectivePrologue = true;
                             }
 
                             // add it to the body
@@ -4788,6 +4819,7 @@ namespace Microsoft.Ajax.Utilities
 
         private Context ScanNextToken()
         {
+            m_newModule = false;
             m_foundEndOfLine = false;
             m_importantComments.Clear();
 
@@ -4885,7 +4917,6 @@ namespace Microsoft.Ajax.Utilities
         {
             // get the current position token
             Context context = m_currentToken.Clone();
-            context.EndPosition = context.StartPosition + 1;
             ReportError(errorId, context, skipToken);
         }
 

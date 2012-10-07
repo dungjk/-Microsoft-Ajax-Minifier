@@ -222,7 +222,7 @@ namespace Microsoft.Ajax.Utilities
 
             foreach (var namedFuncExpr in scope.GhostedNamedFunctionExpressions)
             {
-                ResolceGhostedNamedFunctionExpression(scope, namedFuncExpr);
+                ResolveGhostedNamedFunctionExpression(scope, namedFuncExpr);
             }
 
             // recurse
@@ -288,7 +288,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private static void ResolceGhostedNamedFunctionExpression(ActivationObject scope, FunctionObject funcObject)
+        private static void ResolveGhostedNamedFunctionExpression(ActivationObject scope, FunctionObject funcObject)
         {
             var functionField = funcObject.VariableField;
 

@@ -32,21 +32,16 @@ namespace Microsoft.Ajax.Utilities
     {
         #region file processing
 
-        private int PreprocessJSFile(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, bool isLastFile, ref long sourceLength)
+        private int PreprocessJSFile(string combinedSourceFile, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             // blank line before
             WriteProgress();
 
-            // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
-
             // create the a parser object for our chunk of code
-            JSParser parser = new JSParser(source);
-
-            // set up the file context for the parser
-            parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
+            JSParser parser = new JSParser(combinedSourceFile);
 
             // hook the engine events
+            parser.UndefinedReference += OnUndefinedReference;
             parser.CompilerError += (sender, ea) =>
                 {
                     var error = ea.Error;
@@ -62,31 +57,14 @@ namespace Microsoft.Ajax.Utilities
                         WriteError(error.ToString());
                     }
                 };
-            parser.UndefinedReference += OnUndefinedReference;
-
-            // pull our JS settings from the switch-parser class
-            CodeSettings settings = switchParser.JSSettings;
-
-            // if this isn't the last file, make SURE we terminate the last statement with
-            // a semicolon, since we'll be adding more code for the next file. But save the previous
-            // setting so can restore it before we leave
-            var termSemicolons = settings.TermSemicolons;
-            if (!isLastFile)
-            {
-                settings.TermSemicolons = true;
-            }
 
             // we only want to preprocess the code. Call that api on the parser
-            var resultingCode = parser.PreprocessOnly(settings);
-
-            // make sure we restore the intended temrinating-semicolon setting, 
-            // since we may have changed it earlier
-            settings.TermSemicolons = termSemicolons;
+            var resultingCode = parser.PreprocessOnly(switchParser.JSSettings);
 
             if (!string.IsNullOrEmpty(resultingCode))
             {
                 // always output the crunched code to debug stream
-                System.Diagnostics.Debug.WriteLine(resultingCode);
+                Debug.WriteLine(resultingCode);
 
                 // send the output code to the output stream
                 outputBuilder.Append(resultingCode);
@@ -100,87 +78,16 @@ namespace Microsoft.Ajax.Utilities
             return 0;
         }
 
-        private int ProcessJSFileEcho(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, ref long sourceLength)
+        private int ProcessJSFileEcho(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             // blank line before
             WriteProgress();
-
-            // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
-            if (!string.IsNullOrEmpty(source))
-            {
-                // create the a parser object for our chunk of code
-                JSParser parser = new JSParser(source);
-
-                // set up the file context for the parser
-                parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
-
-                // hook the engine events
-                parser.CompilerError += (sender, ea) =>
-                {
-                    var error = ea.Error;
-
-                    // ignore severity values greater than our severity level
-                    // also ignore errors that are in our ignore list (if any)
-                    if (error.Severity <= switchParser.WarningLevel)
-                    {
-                        // we found an error
-                        m_errorsFound = true;
-
-                        // write the error out
-                        WriteError(error.ToString());
-                    }
-                };
-                parser.UndefinedReference += OnUndefinedReference;
-
-                // pull our JS settings from the switch-parser class
-                CodeSettings settings = switchParser.JSSettings;
-
-                Block scriptBlock = parser.Parse(settings);
-                if (scriptBlock != null)
-                {
-                    if (switchParser.AnalyzeMode)
-                    {
-                        // blank line before
-                        WriteProgress();
-
-                        // output our report
-                        CreateReport(parser.GlobalScope, switchParser);
-                    }
-                }
-                else
-                {
-                    // no code?
-                    WriteProgress(AjaxMin.NoParsedCode);
-                }
-
-                // send the output code to the output stream
-                outputBuilder.Append(source);
-            }
-            else
-            {
-                // resulting code is null or empty
-                Debug.WriteLine(AjaxMin.OutputEmpty);
-            }
-
-            return 0;
-        }
-
-        private int ProcessJSFile(string sourceFileName, string encodingName, SwitchParser switchParser, OutputVisitor outputVisitor, bool isLastFile, ref long sourceLength)
-        {
-            // blank line before
-            WriteProgress();
-
-            // read our chunk of code
-            var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
 
             // create the a parser object for our chunk of code
-            JSParser parser = new JSParser(source);
-
-            // set up the file context for the parser
-            parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
+            JSParser parser = new JSParser(combinedSourceCode);
 
             // hook the engine events
+            parser.UndefinedReference += OnUndefinedReference;
             parser.CompilerError += (sender, ea) =>
             {
                 var error = ea.Error;
@@ -196,21 +103,60 @@ namespace Microsoft.Ajax.Utilities
                     WriteError(error.ToString());
                 }
             };
-            parser.UndefinedReference += OnUndefinedReference;
 
-            // pull our JS settings from the switch-parser class
-            CodeSettings settings = switchParser.JSSettings;
-
-            // if this isn't the last file, make SURE we terminate the last statement with
-            // a semicolon, since we'll be adding more code for the next file. But save the previous
-            // setting so can restore it before we leave
-            var termSemicolons = settings.TermSemicolons;
-            if (!isLastFile)
+            Block scriptBlock = parser.Parse(switchParser.JSSettings);
+            if (scriptBlock != null)
             {
-                settings.TermSemicolons = true;
+                if (switchParser.AnalyzeMode)
+                {
+                    // blank line before
+                    WriteProgress();
+
+                    // output our report
+                    CreateReport(parser.GlobalScope, switchParser);
+                }
+            }
+            else
+            {
+                // no code?
+                WriteProgress(AjaxMin.NoParsedCode);
             }
 
-            Block scriptBlock = parser.Parse(settings);
+            // send the output code to the output stream
+            outputBuilder.Append(combinedSourceCode);
+
+            return 0;
+        }
+
+        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
+        {
+            var returnCode = 0;
+
+            // blank line before
+            WriteProgress();
+
+            // create the a parser object for our chunk of code
+            JSParser parser = new JSParser(combinedSourceCode);
+
+            // hook the engine events
+            parser.UndefinedReference += OnUndefinedReference;
+            parser.CompilerError += (sender, ea) =>
+            {
+                var error = ea.Error;
+
+                // ignore severity values greater than our severity level
+                // also ignore errors that are in our ignore list (if any)
+                if (error.Severity <= switchParser.WarningLevel)
+                {
+                    // we found an error
+                    m_errorsFound = true;
+
+                    // write the error out
+                    WriteError(error.ToString());
+                }
+            };
+
+            Block scriptBlock = parser.Parse(switchParser.JSSettings);
             if (scriptBlock != null)
             {
                 if (switchParser.AnalyzeMode)
@@ -224,8 +170,20 @@ namespace Microsoft.Ajax.Utilities
 
                 // crunch the output and write it to debug stream, but make sure
                 // the settings we use to output THIS chunk are correct
-                outputVisitor.Settings = settings;
-                scriptBlock.Accept(outputVisitor);
+                using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
+                {
+                    if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                    {
+                        if (!JSONOutputVisitor.Apply(writer, scriptBlock))
+                        {
+                            returnCode = 1;
+                        }
+                    }
+                    else
+                    {
+                        OutputVisitor.Apply(writer, scriptBlock, switchParser.JSSettings);
+                    }
+                }
             }
             else
             {
@@ -233,10 +191,7 @@ namespace Microsoft.Ajax.Utilities
                 WriteProgress(AjaxMin.NoParsedCode);
             }
 
-            // make sure we restore the intended temrinating-semicolon setting, 
-            // since we may have changed it earlier
-            settings.TermSemicolons = termSemicolons;
-            return 0;
+            return returnCode;
         }
 
         #endregion

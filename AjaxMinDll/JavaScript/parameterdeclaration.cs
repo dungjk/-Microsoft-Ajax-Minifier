@@ -35,6 +35,8 @@ namespace Microsoft.Ajax.Utilities
 
         public int Position { get; private set; }
 
+        public bool RenameNotAllowed { get; set; }
+
         public JSVariableField VariableField { get; set; }
 
         public bool HasInitializer { get { return false; } }

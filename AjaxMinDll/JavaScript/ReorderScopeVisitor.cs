@@ -26,6 +26,12 @@ namespace Microsoft.Ajax.Utilities
         // list of all other functions found in this scope
         private List<FunctionObject> m_functionExpressions;
 
+        // all directive prologues we found BEYOND the initial grouping.
+        // if we find any, it was probably because they were directive prologues
+        // for modules that were batched together and no longer at the top, so
+        // we will need to promote them to get them to the proper place.
+        private List<DirectivePrologue> m_moduleDirectives;
+
         // list of all var statements found in this scope
         private List<Var> m_varStatements;
 
@@ -59,9 +65,18 @@ namespace Microsoft.Ajax.Utilities
             var visitor = new ReorderScopeVisitor(parser);
             block.Accept(visitor);
 
-            // get the first insertion point. Make sure that we skip over any comments and directive prologues.
-            // we do NOT want to insert anything between the start of the scope and any directive prologues.
-            int insertAt = 0;
+            // if there were any module directive prologues we need to promote, do them first
+            var insertAt = 0;
+            if (visitor.m_moduleDirectives != null)
+            {
+                foreach (var directivePrologue in visitor.m_moduleDirectives)
+                {
+                    insertAt = RelocateDirectivePrologue(block, insertAt, directivePrologue);
+                }
+            }
+
+            // Make sure that we skip over any remaining comments and directive prologues.
+            // we do NOT want to insert anything between the start of the scope and any directive prologues.            
             while (insertAt < block.Count
                 && (block[insertAt] is DirectivePrologue || block[insertAt] is ImportantComment))
             {
@@ -105,6 +120,26 @@ namespace Microsoft.Ajax.Utilities
                     Apply(funcExpr.Body, parser);
                 }
             }
+        }
+
+        private static int RelocateDirectivePrologue(Block block, int insertAt, DirectivePrologue directivePrologue)
+        {
+            // skip over any important comments
+            while (insertAt < block.Count && (block[insertAt] is ImportantComment))
+            {
+                ++insertAt;
+            }
+
+            // if the one we want to insert is already at this spot, then we're good to go
+            if (block[insertAt] != directivePrologue)
+            {
+                // remove it from where it is right now and insert it into the proper location
+                directivePrologue.Parent.ReplaceChild(directivePrologue, null);
+                block.Insert(insertAt, directivePrologue);
+            }
+
+            // and move up to the next slot
+            return ++insertAt;
         }
 
         private static int RelocateFunction(Block block, int insertAt, FunctionObject funcDecl)
@@ -432,6 +467,17 @@ namespace Microsoft.Ajax.Utilities
                 // just decrement the level, because there's nothing to recurse
                 --m_conditionalCommentLevel;
             }
+        }
+
+        public override void Visit(DirectivePrologue node)
+        {
+            // no need to call the base, just add it to the list
+            if (m_moduleDirectives == null)
+            {
+                m_moduleDirectives = new List<DirectivePrologue>();
+            }
+
+            m_moduleDirectives.Add(node);
         }
 
         public override void Visit(FunctionObject node)

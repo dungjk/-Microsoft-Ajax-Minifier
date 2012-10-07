@@ -28,6 +28,9 @@ namespace Microsoft.Ajax.Utilities
         public int EndLineNumber { get; internal set; }
         public int EndLinePosition { get; internal set; }
         public int EndPosition { get; internal set; }
+        public int SourceOffsetStart { get; internal set; }
+        public int SourceOffsetEnd { get; internal set; }
+
         public JSToken Token { get; internal set; }
 
         public Context(JSParser parser)
@@ -60,7 +63,9 @@ namespace Microsoft.Ajax.Utilities
                 StartPosition = this.StartPosition,
                 EndLineNumber = this.EndLineNumber, 
                 EndLinePosition = this.EndLinePosition, 
-                EndPosition = this.EndPosition, 
+                EndPosition = this.EndPosition,
+                SourceOffsetStart = this.SourceOffsetStart,
+                SourceOffsetEnd = this.SourceOffsetEnd,
                 Token = this.Token,
             };
         }
@@ -77,6 +82,8 @@ namespace Microsoft.Ajax.Utilities
                         EndLineNumber = other.EndLineNumber,
                         EndLinePosition = other.EndLinePosition,
                         EndPosition = other.EndPosition,
+                        SourceOffsetStart = this.SourceOffsetStart,
+                        SourceOffsetEnd = other.SourceOffsetEnd,
                         Token = this.Token
                     };
         }
@@ -163,12 +170,21 @@ namespace Microsoft.Ajax.Utilities
         {
             if (other != null)
             {
-                StartPosition = Math.Min(StartPosition, other.StartPosition);
-                StartLineNumber = Math.Min(StartLineNumber, other.StartLineNumber);
-                StartLinePosition = Math.Min(StartLinePosition, other.StartLinePosition);
-                EndPosition = Math.Max(EndPosition, other.EndPosition);
-                EndLineNumber = Math.Max(EndLineNumber, other.EndLineNumber);
-                EndLinePosition = Math.Max(EndLinePosition, other.EndLinePosition);
+                if (other.StartPosition < this.StartPosition)
+                {
+                    this.StartPosition = other.StartPosition;
+                    this.StartLineNumber = other.StartLineNumber;
+                    this.StartLinePosition = other.StartLinePosition;
+                    this.SourceOffsetStart = other.SourceOffsetStart;
+                }
+
+                if (other.EndPosition > this.EndPosition)
+                {
+                    this.EndPosition = other.EndPosition;
+                    this.EndLineNumber = other.EndLineNumber;
+                    this.EndLinePosition = other.EndLinePosition;
+                    this.SourceOffsetEnd = other.SourceOffsetEnd;
+                }
             }
         }
 

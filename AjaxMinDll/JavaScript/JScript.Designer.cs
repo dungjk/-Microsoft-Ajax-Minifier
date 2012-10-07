@@ -349,6 +349,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid JSON JavaScript nodes encountered during output.
+        /// </summary>
+        internal static string InvalidJSONOutput {
+            get {
+                return ResourceManager.GetString("InvalidJSONOutput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to JSParser Exception.
         /// </summary>
         internal static string JSParserException {

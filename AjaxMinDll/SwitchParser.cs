@@ -842,6 +842,62 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "JS":
+                                if (paramPart == null)
+                                {
+                                    // normal settings
+                                    JSSettings.SourceMode = JavaScriptSourceMode.Program;
+                                    JSSettings.Format = JavaScriptFormat.Normal;
+                                }
+                                else
+                                {
+                                    // comma-delimited list of JS settings
+                                    var tokens = paramPartUpper.Split(',', ';');
+                                    foreach (var token in tokens)
+                                    {
+                                        switch (token)
+                                        {
+                                            case "JSON":
+                                                // JSON is incompatible with any other tokens, so throw an error
+                                                // if it's not the only token
+                                                if (tokens.Length > 1)
+                                                {
+                                                    OnInvalidSwitch(switchPart, paramPart);
+                                                }
+
+                                                // nothing to "minify" in the JSON format, so turn off the minify flag
+                                                JSSettings.MinifyCode = false;
+
+                                                // JSON affects both the input (it's an expression) and the output
+                                                // (use the JSON-output visitor)
+                                                JSSettings.SourceMode = JavaScriptSourceMode.Expression;
+                                                JSSettings.Format = JavaScriptFormat.JSON;
+                                                break;
+
+                                            case "PROG":
+                                                // this is the default setting
+                                                JSSettings.SourceMode = JavaScriptSourceMode.Program;
+                                                break;
+
+                                            case "EXPR":
+                                                JSSettings.SourceMode = JavaScriptSourceMode.Expression;
+                                                break;
+
+                                            case "EVT":
+                                                JSSettings.SourceMode = JavaScriptSourceMode.EventHandler;
+                                                break;
+
+                                            default:
+                                                // later: ES5 to convert any ES6 syntax to ES5-compatible
+                                                // later: ES6 to create ES6 syntax when optimizing
+                                                // etc.
+                                                // those two examples will affect the format property.
+                                                // but for now, not supported
+                                                OnInvalidSwitch(switchPart, paramPart);
+                                                break;
+                                        }
+                                    }
+                                }
+
                                 OnJSOnlyParameter();
                                 break;
 
@@ -1709,6 +1765,7 @@ namespace Microsoft.Ajax.Utilities
 
                 case "N":
                 case "NO":
+                case "NONE":
                 case "F":
                 case "FALSE":
                 case "OFF":

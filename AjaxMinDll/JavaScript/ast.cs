@@ -87,8 +87,7 @@ namespace Microsoft.Ajax.Utilities
         {
             using (var writer = new StringWriter(CultureInfo.InvariantCulture))
             {
-                var outputVisitor = new OutputVisitor(writer, Parser.Settings);
-                this.Accept(outputVisitor);
+                OutputVisitor.Apply(writer, this, Parser.Settings);
                 return writer.ToString();
             }
         }

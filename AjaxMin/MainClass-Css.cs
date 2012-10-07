@@ -26,7 +26,7 @@ namespace Microsoft.Ajax.Utilities
     {
         #region ProcessCssFile method
 
-        private int ProcessCssFile(string sourceFileName, string encodingName, SwitchParser switchParser, StringBuilder outputBuilder, ref long sourceLength)
+        private int ProcessCssFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             int retVal = 0;
 
@@ -35,11 +35,10 @@ namespace Microsoft.Ajax.Utilities
 
             try
             {
-                // read the input file
-                var source = ReadInputFile(sourceFileName, encodingName ?? switchParser.EncodingInputName, ref sourceLength);
-
                 // process input source...
                 CssParser parser = new CssParser();
+                parser.Settings = switchParser.CssSettings;
+                parser.JSSettings = switchParser.JSSettings;
                 parser.CssError += (sender, ea) =>
                     {
                         var error = ea.Error;
@@ -53,30 +52,17 @@ namespace Microsoft.Ajax.Utilities
                         }
                     };
 
-                parser.FileContext = string.IsNullOrEmpty(sourceFileName) ? "stdin" : sourceFileName;
-                parser.Settings = switchParser.CssSettings;
-
                 // crunch the source and output to the string builder we were passed
-                string crunchedStyles = parser.Parse(source);
-                if (crunchedStyles != null)
+                string crunchedStyles = parser.Parse(combinedSourceCode);
+                if (!string.IsNullOrEmpty(crunchedStyles))
                 {
-                    Debug.WriteLine(crunchedStyles);                  
+                    Debug.WriteLine(crunchedStyles);
+                    outputBuilder.Append(crunchedStyles);
                 }
                 else
                 {
-                    // there was an error and no output was generated
-                    retVal = 1;
-                }
-
-                if (m_echoInput)
-                {
-                    // just echo the input to the output
-                    outputBuilder.Append(source);
-                }
-                else if (!string.IsNullOrEmpty(crunchedStyles))
-                {
-                    // send the crunched styles to the output
-                    outputBuilder.Append(crunchedStyles);
+                    // resulting code is null or empty
+                    Debug.WriteLine(AjaxMin.OutputEmpty);
                 }
             }
             catch (IOException e)

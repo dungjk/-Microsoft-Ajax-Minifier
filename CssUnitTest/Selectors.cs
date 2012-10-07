@@ -87,7 +87,7 @@ namespace CssUnitTest
     [TestMethod]
     public void Namespace()
     {
-        TestHelper.Instance.RunTest();
+        TestHelper.Instance.RunTest("-css:full");
     }
 
     [TestMethod]

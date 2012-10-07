@@ -1446,7 +1446,7 @@ namespace Microsoft.Ajax.Utilities
                         // (unless, of course, the parser settings say evals are safe)
                         // call AFTER recursing so we know the left-hand side properties have had a chance to
                         // lookup their fields to see if they are local or global
-                        if (member.LeftHandSide.IsWindowLookup)
+                        if (member.Root.IsWindowLookup)
                         {
                             // this is a call to window.eval()
                             isEval = true;
@@ -1457,7 +1457,7 @@ namespace Microsoft.Ajax.Utilities
                         CallNode callNode = node.Function as CallNode;
                         if (callNode != null
                             && callNode.InBrackets
-                            && callNode.LeftHandSide.IsWindowLookup
+                            && callNode.Function.IsWindowLookup
                             && callNode.Arguments.IsSingleConstantArgument("eval"))
                         {
                             // this is a call to window["eval"]

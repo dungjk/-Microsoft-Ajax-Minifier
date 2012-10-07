@@ -33,6 +33,14 @@ namespace Microsoft.Ajax.Utilities
 
         public Context NameContext { get { return IdContext; } }
 
+        public bool RenameNotAllowed
+        {
+            get
+            {
+                return VariableField == null ? true : !VariableField.CanCrunch;
+            }
+        }
+
         private bool m_leftHandFunction;// = false;
         public bool LeftHandFunctionExpression
         {
@@ -127,6 +135,20 @@ namespace Microsoft.Ajax.Utilities
             if (visitor != null)
             {
                 visitor.Visit(this);
+            }
+        }
+
+        public void SetBody(Block body)
+        {
+            if (Body != null && body != Body)
+            {
+                Body.Parent = null;
+            }
+
+            Body = body;
+            if (Body != null)
+            {
+                Body.Parent = this;
             }
         }
 

@@ -100,7 +100,8 @@ namespace Microsoft.Ajax.Utilities
                         argumentField = new JSVariableField(FieldType.Argument, parameter.Name, 0, null)
                         {
                             Position = parameter.Position,
-                            OriginalContext = parameter.Context.Clone()
+                            OriginalContext = parameter.Context.Clone(),
+                            CanCrunch = !parameter.RenameNotAllowed
                         };
 
                         this.AddField(argumentField);
