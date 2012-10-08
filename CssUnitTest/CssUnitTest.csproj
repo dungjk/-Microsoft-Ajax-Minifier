@@ -128,6 +128,7 @@
     <Content Include="TestData\CSS\Expected\CommentHacks\ImportantComment_None.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\OnlyNS4_nc.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\OnlyNS4.css" />
+    <Content Include="TestData\CSS\Expected\CommentHacks\SingleLine.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\TwoImportantComments.css" />
     <Content Include="TestData\CSS\Expected\CommentHacks\TwoImportantComments_pretty.css" />
     <Content Include="TestData\CSS\Expected\Declarations\NoTrailingSemicolon.css" />
@@ -214,6 +215,7 @@
     <Content Include="TestData\CSS\Input\CommentHacks\ImportantComment.css" />
     <Content Include="TestData\CSS\Input\CommentHacks\ImportantCommentHacks.css" />
     <Content Include="TestData\CSS\Input\CommentHacks\OnlyNS4.css" />
+    <Content Include="TestData\CSS\Input\CommentHacks\SingleLine.css" />
     <Content Include="TestData\CSS\Input\CommentHacks\TwoImportantComments.css" />
     <Content Include="TestData\CSS\Input\Declarations\NoTrailingSemicolon.css" />
     <Content Include="TestData\CSS\Input\Declarations\TrailingSemicolon.css" />

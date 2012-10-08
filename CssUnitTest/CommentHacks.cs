@@ -149,5 +149,13 @@ namespace CssUnitTest
     {
         TestHelper.Instance.RunTest("-comments:all");
     }
+
+    [TestMethod]
+    public void SingleLine()
+    {
+        // even though we say all comments, we won't persist single-line comments since
+        // they aren't valid CSS comments
+        TestHelper.Instance.RunTest("-comments:all");
+    }
   }
 }
