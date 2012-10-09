@@ -692,18 +692,26 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // individually-minified files
                 foreach (ITaskItem item in this.JsSourceFiles)
                 {
-                    string path = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
+                    string outputPath = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
                                                 RegexOptions.IgnoreCase);
 
-                    if (FileIsWritable(path))
+                    if (FileIsWritable(outputPath))
                     {
-                        string source = File.ReadAllText(item.ItemSpec);
-                        MinifyJavaScript(source, item.ItemSpec, path);
+                        if (!File.Exists(outputPath)
+                            || File.GetLastWriteTimeUtc(outputPath) <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                        {
+                            string source = File.ReadAllText(item.ItemSpec);
+                            MinifyJavaScript(source, item.ItemSpec, outputPath);
+                        }
+                        else
+                        {
+                            Log.LogMessage(Strings.DidNotMinify, Path.GetFileName(item.ItemSpec), Strings.AlreadyDone);
+                        }
                     }
                     else
                     {
                         // log a WARNING that the minification was skipped -- don't break the build
-                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path);
+                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), outputPath);
                     }
                 }
             }
@@ -712,21 +720,30 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // combine the sources into a single file and minify the results
                 if (FileIsWritable(this.JsCombinedFileName))
                 {
-                    var minifiedJs = MinifyAndConcatenateJavaScript();
-                    if (!Log.HasLoggedErrors)
+                    // if the output file doesn't exist, we need to minify the sources.
+                    // but if it does, check the last-write time; and if any input file is
+                    // newer than the output, we need to re-minify.
+                    var needToMinify = !File.Exists(this.JsCombinedFileName);
+                    if (!needToMinify)
                     {
-                        try
+                        var outputTime = File.GetLastWriteTimeUtc(this.JsCombinedFileName);
+                        foreach (var inputFile in this.JsSourceFiles)
                         {
-                            File.WriteAllText(this.JsCombinedFileName, minifiedJs);
+                            if (File.GetLastWriteTimeUtc(inputFile.ItemSpec) >= outputTime)
+                            {
+                                needToMinify = true;
+                                break;
+                            }
                         }
-                        catch (UnauthorizedAccessException)
-                        {
-                            LogFileError(this.JsCombinedFileName, Strings.NoWritePermission, this.JsCombinedFileName);
-                        }
+                    }
+
+                    if (needToMinify)
+                    {
+                        MinifyAndConcatenateJavaScript();
                     }
                     else
                     {
-                        Log.LogWarning(Strings.DidNotMinify, this.JsCombinedFileName, Strings.ThereWereErrors);
+                        Log.LogMessage(Strings.DidNotMinify, Path.GetFileName(this.JsCombinedFileName), Strings.AlreadyDone);
                     }
                 }
                 else
@@ -747,24 +764,32 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // individually-minified files
                 foreach (ITaskItem item in this.CssSourceFiles)
                 {
-                    string path = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
-                    if (FileIsWritable(path))
+                    string outputPath = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
+                    if (FileIsWritable(outputPath))
                     {
-                        try
+                        if (!File.Exists(outputPath)
+                            || File.GetLastWriteTimeUtc(outputPath) <= File.GetLastWriteTimeUtc(item.ItemSpec))
                         {
-                            string source = File.ReadAllText(item.ItemSpec);
-                            MinifyStyleSheet(source, item.ItemSpec, path);
+                            try
+                            {
+                                string source = File.ReadAllText(item.ItemSpec);
+                                MinifyStyleSheet(source, item.ItemSpec, outputPath);
+                            }
+                            catch (Exception e)
+                            {
+                                LogFileError(item.ItemSpec, Strings.DidNotMinify, outputPath, e.Message);
+                                throw;
+                            }
                         }
-                        catch (Exception e)
+                        else
                         {
-                            LogFileError(item.ItemSpec, Strings.DidNotMinify, path, e.Message);
-                            throw;
+                            Log.LogMessage(Strings.DidNotMinify, Path.GetFileName(item.ItemSpec), Strings.AlreadyDone);
                         }
                     }
                     else
                     {
                         // log a WARNING that the minification was skipped -- don't break the build
-                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), path);
+                        Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(item.ItemSpec), outputPath);
                     }
                 }
             }
@@ -773,21 +798,30 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // combine the source files and minify the results to a single file
                 if (FileIsWritable(this.CssCombinedFileName))
                 {
-                    var minifiedResults = MinifyAndConcatenateStyleSheet();
-                    if (!Log.HasLoggedErrors)
+                    // if the output file doesn't exist, we need to minify the sources.
+                    // but if it does, check the last-write time; and if any input file is
+                    // newer than the output, we need to re-minify.
+                    var needToMinify = !File.Exists(this.CssCombinedFileName);
+                    if (!needToMinify)
                     {
-                        try
+                        var outputTime = File.GetLastWriteTimeUtc(this.CssCombinedFileName);
+                        foreach (var inputFile in this.CssSourceFiles)
                         {
-                            File.WriteAllText(this.CssCombinedFileName, minifiedResults);
+                            if (File.GetLastWriteTimeUtc(inputFile.ItemSpec) >= outputTime)
+                            {
+                                needToMinify = true;
+                                break;
+                            }
                         }
-                        catch (UnauthorizedAccessException)
-                        {
-                            LogFileError(this.CssCombinedFileName, Strings.NoWritePermission, this.CssCombinedFileName);
-                        }
+                    }
+
+                    if (needToMinify)
+                    {
+                        MinifyAndConcatenateStyleSheet();
                     }
                     else
                     {
-                        Log.LogWarning(Strings.DidNotMinify, this.CssCombinedFileName, Strings.ThereWereErrors);
+                        Log.LogMessage(Strings.DidNotMinify, Path.GetFileName(this.CssCombinedFileName), Strings.AlreadyDone);
                     }
                 }
                 else
@@ -855,74 +889,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private string MinifyAndConcatenateJavaScript()
+        private void MinifyAndConcatenateJavaScript()
         {
-            var outputBuilder = new StringBuilder();
-
-            // we need to make sure that files 0 through length-1 use the setting
-            // value that ensures proper termination of the code so it concatenates
-            // properly. So save the setting value, set the value to true, then
-            // make sure to restore it for the last file
-            var savedSetting = this.m_switchParser.JSSettings.TermSemicolons;
-            this.m_switchParser.JSSettings.TermSemicolons = true;
-
-            try
+            // concatenate all the input files together, with each one prefaced by the
+            // special #SOURCE comment so the errors and warnings turn out right.
+            var inputBuilder = new StringBuilder();
+            foreach (var itemSpec in this.JsSourceFiles)
             {
-                if (m_switchParser.JSSettings.SymbolsMap != null)
-                {
-                    m_switchParser.JSSettings.SymbolsMap.StartPackage(this.JsCombinedFileName);
-                }
-
-                for(var ndx = 0; ndx < this.JsSourceFiles.Length; ++ndx)
-                {
-                    var item = this.JsSourceFiles[ndx];
-                    try
-                    {
-                        var sourceCode = File.ReadAllText(item.ItemSpec);
-
-                        this.m_minifier.FileName = item.ItemSpec;
-
-                        // if this is the last file, restore the setting to its original value
-                        if (ndx == this.JsSourceFiles.Length - 1)
-                        {
-                            this.m_switchParser.JSSettings.TermSemicolons = savedSetting;
-                        }
-
-                        string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
-                        if (this.m_minifier.ErrorList.Count > 0)
-                        {
-                            foreach (var error in this.m_minifier.ErrorList)
-                            {
-                                LogContextError(error);
-                            }
-                        }
-
-                        outputBuilder.Append(minifiedJs);
-                        if (this.m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines)
-                        {
-                            outputBuilder.AppendLine();
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        LogFileError(item.ItemSpec, Strings.DidNotMinify, this.JsCombinedFileName, e.Message);
-                        throw;
-                    }
-                }
-            }
-            finally
-            {
-                // make SURE we restore that setting
-                this.m_switchParser.JSSettings.TermSemicolons = savedSetting;
-
-                // close the symbol map if we are creating one
-                if (m_switchParser.JSSettings.SymbolsMap != null)
-                {
-                    m_switchParser.JSSettings.SymbolsMap.EndPackage();
-                }
+                inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
+                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
             }
 
-            return outputBuilder.ToString();
+            MinifyJavaScript(inputBuilder.ToString(), string.Empty, this.JsCombinedFileName);
         }
 
         /// <summary>
@@ -968,41 +946,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private string MinifyAndConcatenateStyleSheet()
+        private void MinifyAndConcatenateStyleSheet()
         {
-            var outputBuilder = new StringBuilder();
-
-            // minify each input files and send the results to the string builder
-            foreach (var item in this.CssSourceFiles)
+            // concatenate all the input files together, with each one prefaced by the
+            // special #SOURCE comment so the errors and warnings turn out right.
+            var inputBuilder = new StringBuilder();
+            foreach (var itemSpec in this.CssSourceFiles)
             {
-                try
-                {
-                    var sourceCode = File.ReadAllText(item.ItemSpec);
-
-                    this.m_minifier.FileName = item.ItemSpec;
-                    string results = this.m_minifier.MinifyStyleSheet(sourceCode, this.m_switchParser.CssSettings);
-                    if (this.m_minifier.ErrorList.Count > 0)
-                    {
-                        foreach (var error in this.m_minifier.ErrorList)
-                        {
-                            LogContextError(error);
-                        }
-                    }
-
-                    outputBuilder.Append(results);
-                    if (this.m_switchParser.CssSettings.OutputMode == OutputMode.MultipleLines)
-                    {
-                        outputBuilder.AppendLine();
-                    }
-                }
-                catch (Exception e)
-                {
-                    LogFileError(item.ItemSpec, Strings.DidNotMinify, this.CssCombinedFileName, e.Message);
-                    throw;
-                }
+                inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
+                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
             }
 
-            return outputBuilder.ToString();
+            MinifyStyleSheet(inputBuilder.ToString(), string.Empty, this.CssCombinedFileName);
         }
 
         #endregion
