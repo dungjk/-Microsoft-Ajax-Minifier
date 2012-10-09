@@ -446,7 +446,7 @@ namespace Microsoft.Ajax.Utilities
             GlobalScope.UseStrict = m_settings.StrictMode;
 
             // make sure the global scope knows about our known global names
-            GlobalScope.SetAssumedGlobals(m_settings.KnownGlobalCollection, m_settings.DebugLookupCollection);
+            GlobalScope.SetAssumedGlobals(m_settings);
 
             // start of a new module
             m_newModule = true;

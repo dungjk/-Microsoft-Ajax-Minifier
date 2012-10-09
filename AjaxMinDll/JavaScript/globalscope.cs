@@ -65,18 +65,32 @@ namespace Microsoft.Ajax.Utilities
             m_undefined.Add(exception);
         }
 
-        internal void SetAssumedGlobals(IEnumerable<string> globals, IEnumerable<string> debugLookups)
+        internal void SetAssumedGlobals(CodeSettings settings)
         {
-            // start off with any known globals
-            m_assumedGlobals = globals == null ? new HashSet<string>() : new HashSet<string>(globals);
-
-            // chek to see if there are any debug lookups
-            if (debugLookups != null)
+            if (settings != null)
             {
-                foreach (var debugLookup in debugLookups)
+                // start off with any known globals
+                m_assumedGlobals = settings.KnownGlobalCollection == null ? new HashSet<string>() : new HashSet<string>(settings.KnownGlobalCollection);
+
+                // chek to see if there are any debug lookups
+                foreach (var debugLookup in settings.DebugLookupCollection)
                 {
                     m_assumedGlobals.Add(debugLookup.SubstringUpToFirst('.'));
                 }
+
+                // and the root name of any resource strings is also an assumed global
+                foreach (var resourceStrings in settings.ResourceStrings)
+                {
+                    if (!string.IsNullOrWhiteSpace(resourceStrings.Name))
+                    {
+                        m_assumedGlobals.Add(resourceStrings.Name.SubstringUpToFirst('.'));
+                    }
+                }
+            }
+            else
+            {
+                // empty set
+                m_assumedGlobals = new HashSet<string>();
             }
         }
 
