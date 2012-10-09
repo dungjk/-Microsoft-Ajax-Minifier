@@ -1137,6 +1137,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // see if this is a member (we'll need it for a couple checks)
                 Member member = node.Function as Member;
+                Lookup lookup;
 
                 if (m_parser.Settings.StripDebugStatements
                     && m_parser.Settings.IsModificationAllowed(TreeModifications.StripDebugStatements))
@@ -1144,34 +1145,11 @@ namespace Microsoft.Ajax.Utilities
                     // if this is a member, and it's a debugger object, and it's a constructor....
                     if (member != null && member.IsDebuggerStatement && node.IsConstructor)
                     {
-                        // see if the name "Object" resolves to the global predefined
-                        AstNode replacementFunction;
-                        var objectField = node.EnclosingScope.FindReference("Object");
-                        if (objectField.FieldType == FieldType.Predefined)
-                        {
-                            // we need to replace our debugger object with a generic Object
-                            replacementFunction = new Lookup("Object", node.Function.Context, m_parser) 
-                            { 
-                                VariableField = objectField
-                            };
-                        }
-                        else
-                        {
-                            // they've redefined the Object name! Okay, let's just put a function expression in there.
-                            // not as compact, but will always work. Nothing to resolve inside the scope because the body is empty
-                            // and it's not a named function expression.
-                            var functionExpression = new FunctionObject(null, node.Parser, FunctionType.Expression, null, null, node.Function.Context);
-                            functionExpression.FunctionScope = new FunctionScope(node.EnclosingScope, true, m_parser.Settings, functionExpression);
-                            replacementFunction = functionExpression;
-                        }
-
-                        node.ReplaceChild(node.Function, replacementFunction);
-
-                        // and make sure the node list is empty
-                        if (node.Arguments != null && node.Arguments.Count > 0)
-                        {
-                            node.ReplaceChild(node.Arguments, new AstNodeList(node.Arguments.Context, m_parser));
-                        }
+                        // we have "new root.func(...)", root.func is a debug namespace, and we
+                        // are stripping debug namespaces. Replace the new-operator with an 
+                        // empty object literal and bail.
+                        node.Parent.ReplaceChild(node, new ObjectLiteral(node.Context, node.Parser, null, null));
+                        return;
                     }
                 }
 
@@ -1181,7 +1159,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // see if this is a lookup, and if so, if it's pointing to one
                     // of the two constructors we want to collapse
-                    Lookup lookup = node.Function as Lookup;
+                    lookup = node.Function as Lookup;
                     if (lookup != null)
                     {
                         if (lookup.Name == "Object"
@@ -1391,88 +1369,49 @@ namespace Microsoft.Ajax.Utilities
 
                 // might have changed
                 member = node.Function as Member;
+                lookup = node.Function as Lookup;
 
-                // call this AFTER recursing to give the fields a chance to resolve, because we only
-                // want to make this replacement if we are working on the global Date object.
-                if (!node.InBrackets && !node.IsConstructor
-                    && (node.Arguments == null || node.Arguments.Count == 0)
-                    && member != null && string.CompareOrdinal(member.Name, "getTime") == 0
-                    && m_parser.Settings.IsModificationAllowed(TreeModifications.DateGetTimeToUnaryPlus))
+                var isEval = false;
+                if (lookup != null
+                    && string.CompareOrdinal(lookup.Name, "eval") == 0
+                    && lookup.VariableField.FieldType == FieldType.Predefined)
                 {
-                    // this is not a constructor and it's not a brackets call, and there are no arguments.
-                    // if the function is a member operation to "getTime" and the object of the member is a 
-                    // constructor call to the global "Date" object (not a local), then we want to replace the call
-                    // with a unary plus on the Date constructor. Converting to numeric type is the same as
-                    // calling getTime, so it's the equivalent with much fewer bytes.
-                    CallNode dateConstructor = member.Root as CallNode;
-                    if (dateConstructor != null
-                        && dateConstructor.IsConstructor)
+                    // call to predefined eval function
+                    isEval = true;
+                }
+                else if (member != null && string.CompareOrdinal(member.Name, "eval") == 0)
+                {
+                    // if this is a window.eval call, then we need to mark this scope as unknown just as
+                    // we would if this was a regular eval call.
+                    // (unless, of course, the parser settings say evals are safe)
+                    // call AFTER recursing so we know the left-hand side properties have had a chance to
+                    // lookup their fields to see if they are local or global
+                    if (member.Root.IsWindowLookup)
                     {
-                        // lookup for the predifined (not local) "Date" field
-                        Lookup lookup = dateConstructor.Function as Lookup;
-                        if (lookup != null && string.CompareOrdinal(lookup.Name, "Date") == 0
-                            && (lookup.VariableField == null || lookup.VariableField.FieldType == FieldType.Predefined))
-                        {
-                            // this is in the pattern: (new Date()).getTime()
-                            // we want to replace it with +new Date
-                            // use the same date constructor node as the operand
-                            var unary = new UnaryOperator(node.Context, m_parser, dateConstructor, JSToken.Plus, false);
-
-                            // replace us (the call to the getTime method) with this unary operator
-                            node.Parent.ReplaceChild(node, unary);
-
-                            // don't need to recurse on the unary operator. The operand has already
-                            // been analyzed when we recursed, and the unary operator wouldn't do anything
-                            // special anyway (since the operand is not a numeric constant)
-                        }
+                        // this is a call to window.eval()
+                        isEval = true;
                     }
                 }
                 else
                 {
-                    var isEval = false;
-
-                    var lookup = node.Function as Lookup;
-                    if (lookup != null
-                        && string.CompareOrdinal(lookup.Name, "eval") == 0
-                        && lookup.VariableField.FieldType == FieldType.Predefined)
+                    CallNode callNode = node.Function as CallNode;
+                    if (callNode != null
+                        && callNode.InBrackets
+                        && callNode.Function.IsWindowLookup
+                        && callNode.Arguments.IsSingleConstantArgument("eval"))
                     {
-                        // call to predefined eval function
+                        // this is a call to window["eval"]
                         isEval = true;
                     }
-                    else if (member != null && string.CompareOrdinal(member.Name, "eval") == 0)
-                    {
-                        // if this is a window.eval call, then we need to mark this scope as unknown just as
-                        // we would if this was a regular eval call.
-                        // (unless, of course, the parser settings say evals are safe)
-                        // call AFTER recursing so we know the left-hand side properties have had a chance to
-                        // lookup their fields to see if they are local or global
-                        if (member.Root.IsWindowLookup)
-                        {
-                            // this is a call to window.eval()
-                            isEval = true;
-                        }
-                    }
-                    else
-                    {
-                        CallNode callNode = node.Function as CallNode;
-                        if (callNode != null
-                            && callNode.InBrackets
-                            && callNode.Function.IsWindowLookup
-                            && callNode.Arguments.IsSingleConstantArgument("eval"))
-                        {
-                            // this is a call to window["eval"]
-                            isEval = true;
-                        }
-                    }
+                }
 
-                    if (isEval)
+                if (isEval)
+                {
+                    if (m_parser.Settings.EvalTreatment != EvalTreatment.Ignore)
                     {
-                        if (m_parser.Settings.EvalTreatment != EvalTreatment.Ignore)
-                        {
-                            // mark this scope as unknown so we don't crunch out locals 
-                            // we might reference in the eval at runtime
-                            m_scopeStack.Peek().IsKnownAtCompileTime = false;
-                        }
+                        // mark this scope as unknown so we don't crunch out locals 
+                        // we might reference in the eval at runtime
+                        m_scopeStack.Peek().IsKnownAtCompileTime = false;
                     }
                 }
             }

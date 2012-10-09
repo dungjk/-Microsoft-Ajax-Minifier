@@ -2,6 +2,11 @@
 // BUT only if the Date lookup turns out to be the built-in reference, not a local.
 // AND neither getTime nor the constructor can have any arguments.
 
+// ACTUALLY... let's kill this automatic "optimization." It saves a few bytes on download,
+// but when performance-testing the results, +new Date executes upwards of 45% slower than
+// new Date().getTime(). So let's not second-guess the developer here; he might be trying to
+// squeeze every last drop of performance out of some script.
+
 var ticks = (new Date()).getTime(); // changed to var ticks=+new Date;
 
 function foo()
