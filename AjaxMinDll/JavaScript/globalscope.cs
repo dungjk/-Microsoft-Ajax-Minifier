@@ -81,7 +81,7 @@ namespace Microsoft.Ajax.Utilities
                 // and the root name of any resource strings is also an assumed global
                 foreach (var resourceStrings in settings.ResourceStrings)
                 {
-                    if (!string.IsNullOrWhiteSpace(resourceStrings.Name))
+                    if (!resourceStrings.Name.IsNullOrWhiteSpace())
                     {
                         m_assumedGlobals.Add(resourceStrings.Name.SubstringUpToFirst('.'));
                     }
