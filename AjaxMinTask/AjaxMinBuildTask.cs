@@ -170,7 +170,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             // process the appropriate resource type
                             switch(Path.GetExtension(resourceFile).ToUpperInvariant())
                             {
-                                case "RESX":
+                                case ".RESX":
                                     using (var reader = new ResXResourceReader(resourceFile))
                                     {
                                         // create an object out of the dictionary
@@ -178,7 +178,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                     }
                                     break;
 
-                                case "RESOURCES":
+                                case ".RESOURCES":
                                     using (var reader = new ResourceReader(resourceFile))
                                     {
                                         // create an object out of the dictionary
