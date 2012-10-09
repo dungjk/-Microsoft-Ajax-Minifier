@@ -382,11 +382,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Elements != null)
                 {
                     node.Elements.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -415,7 +416,6 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Operand1 != null)
                 {
                     node.Operand1.Accept(this);
@@ -425,6 +425,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     node.Operand2.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -502,7 +504,6 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Function != null)
                 {
                     node.Function.Accept(this);
@@ -512,6 +513,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     node.Arguments.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -560,21 +563,27 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Condition != null)
                 {
                     node.Condition.Accept(this);
                 }
 
+                var startingIndex = m_orderIndex;
                 if (node.TrueExpression != null)
                 {
                     node.TrueExpression.Accept(this);
                 }
 
+                var trueEndIndex = m_orderIndex;
+                m_orderIndex = startingIndex;
+
                 if (node.FalseExpression != null)
                 {
                     node.FalseExpression.Accept(this);
                 }
+
+                m_orderIndex = Math.Max(trueEndIndex, m_orderIndex);
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -809,11 +818,13 @@ namespace Microsoft.Ajax.Utilities
                 m_lexicalStack.Push(node.FunctionScope);
                 m_variableStack.Push(node.FunctionScope);
 
+                var savedIndex = m_orderIndex;
                 try
                 {
-                    // recurse into the function to handle it
+                    // recurse into the function to handle it after saving the current index and resetting it
                     if (node.Body != null)
                     {
+                        m_orderIndex = 0;
                         node.Body.Accept(this);
                     }
                 }
@@ -822,6 +833,8 @@ namespace Microsoft.Ajax.Utilities
                     Debug.Assert(CurrentLexicalScope == node.FunctionScope);
                     m_lexicalStack.Pop();
                     m_variableStack.Pop();
+
+                    m_orderIndex = savedIndex;
                 }
 
                 // nothing to add to the var-decl list.
@@ -865,10 +878,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // and keep counting from the farthest point
-                if (trueStop > m_orderIndex)
-                {
-                    m_orderIndex = trueStop;
-                }
+                m_orderIndex = Math.Max(trueStop, m_orderIndex);
             }
         }
 
@@ -893,6 +903,8 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                // lexical declarations get an order index
+                node.Index = NextOrderIndex;
                 for (var ndx = 0; ndx < node.Count; ++ndx)
                 {
                     var decl = node[ndx];
@@ -920,11 +932,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Root != null)
                 {
                     node.Root.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -932,11 +945,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 foreach (var item in node.Values)
                 {
                     item.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -962,11 +976,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Operand != null)
                 {
                     node.Operand.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
 
                 // we can stop marking order for subsequent statements in this block,
                 // since this stops execution
@@ -1037,11 +1052,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Operand != null)
                 {
                     node.Operand.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
 
                 // we can stop marking order for subsequent statements in this block,
                 // since this stops execution
@@ -1090,11 +1106,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                node.Index = NextOrderIndex;
                 if (node.Operand != null)
                 {
                     node.Operand.Accept(this);
                 }
+
+                node.Index = NextOrderIndex;
             }
         }
 
@@ -1137,10 +1154,15 @@ namespace Microsoft.Ajax.Utilities
 
                 if (node.Initializer != null)
                 {
-                    node.Index = NextOrderIndex;
-
                     // recurse the initializer
                     node.Initializer.Accept(this);
+                    node.Index = NextOrderIndex;
+                }
+                else
+                {
+                    // no initializer; give it an index of -1 because it doesn't actually
+                    // do anything at execution time.
+                    node.Index = -1;
                 }
             }
         }

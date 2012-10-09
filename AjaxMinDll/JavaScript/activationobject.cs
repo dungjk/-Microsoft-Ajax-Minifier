@@ -287,8 +287,8 @@ namespace Microsoft.Ajax.Utilities
                                     // so if this is a block scope, don't hide the function, even if it is unreferenced because
                                     // of the cross-browser difference.
                                     if (this.IsKnownAtCompileTime
-                                        && functionObject.Parser.Settings.MinifyCode
-                                        && functionObject.Parser.Settings.RemoveUnneededCode
+                                        && m_settings.MinifyCode
+                                        && m_settings.RemoveUnneededCode
                                         && !(this is BlockScope))
                                     {
                                         functionObject.HideFromOutput = true;
