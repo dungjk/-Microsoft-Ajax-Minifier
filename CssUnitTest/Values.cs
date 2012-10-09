@@ -36,5 +36,11 @@ namespace CssUnitTest
             var retValue = TestHelper.Instance.RunTest();
             Assert.IsTrue(retValue == 0, "shouldn't have any errors");
         }
+
+        [TestMethod]
+        public void Units()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

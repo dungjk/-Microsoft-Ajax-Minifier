@@ -3073,15 +3073,8 @@ namespace Microsoft.Ajax.Utilities
                 // keep going while we have sum operators
                 while (CurrentTokenType == TokenType.Character && (CurrentTokenText == "+" || CurrentTokenText == "-"))
                 {
-                    // plus operators don't seem to need a space before them, but minus do in
-                    // order to keep them from being part of a previous identifier. However, if the
-                    // previous token is a percentage, then we don't need the space.
-                    // but if this is multi-line mode, always put the space in, regardless.
-                    if (Settings.OutputMode == OutputMode.MultipleLines
-                        || (CurrentTokenText == "-" && !m_lastOutputString.EndsWith("%", StringComparison.Ordinal)))
-                    {
-                        Append(' ');
-                    }
+                    // plus and minus operators need space around them.
+                    Append(' ');
                     AppendCurrent();
 
                     // plus and minus operators both need spaces after them.

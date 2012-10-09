@@ -966,50 +966,56 @@ namespace Microsoft.Ajax.Utilities
                         TokenType tokenType = TokenType.Dimension;
                         switch (dimen.ToUpperInvariant())
                         {
-                            case "EM":
-                            case "EX":
-                            case "CH":
-                            case "REM":
-                            case "VW":
-                            case "VH":
-                            case "VM":
-                            case "VMIN":
-                            case "FR":
-                            case "GR":
-                            case "GD":
+                            case "EM":          // font-size of the element
+                            case "EX":          // x-height of the element's font
+                            case "CH":          // width of the zero glyph in the element's font
+                            case "REM":         // font-size of the root element
+                            case "VW":          // viewport's width
+                            case "VH":          // viewport's height
+                            case "VM":          // viewport width or height, whichever is smaller of the two (use VMIN)
+                            case "VMIN":        // minimum of the viewport's height and width
+                            case "VMAX":        // maximum of the viewport's height and width
+                            case "FR":          // fraction of available space
+                            case "GR":          // grid unit
+                            case "GD":          // text grid unit
                                 tokenType = TokenType.RelativeLength;
                                 break;
 
-                            case "CM":
-                            case "MM":
-                            case "IN":
-                            case "PX":
-                            case "PT":
-                            case "PC":
+                            case "CM":          // centimeters
+                            case "MM":          // millimeters
+                            case "IN":          // inches (1in == 2.54cm)
+                            case "PX":          // pixels (1px == 1/96in)
+                            case "PT":          // points (1pt == 1/72in)
+                            case "PC":          // picas (1pc == 12pt)
                                 tokenType = TokenType.AbsoluteLength;
                                 break;
 
-                            case "DEG":
-                            case "GRAD":
-                            case "RAD":
-                            case "TURN":
+                            case "DEG":         // degrees (360deg == 1 full circle)
+                            case "GRAD":        // gradians (400grad == 1 full circle)
+                            case "RAD":         // radians (2*pi radians == 1 full circle)
+                            case "TURN":        // turns (1turn == 1 full circle)
                                 tokenType = TokenType.Angle;
                                 break;
 
-                            case "MS":
-                            case "S":
+                            case "MS":          // milliseconds
+                            case "S":           // seconds
                                 tokenType = TokenType.Time;
                                 break;
 
-                            case "DPI":
-                            case "DPCM":
-                            case "DPPX":
+                            case "DPI":         // dots per inch
+                            case "DPCM":        // dots per centimeter
+                            case "DPPX":        // dots per pixel
                                 tokenType = TokenType.Resolution;
                                 break;
 
-                            case "HZ":
-                            case "KHZ":
+                            case "HZ":          // hertz
+                            case "KHZ":         // kilohertz
                                 tokenType = TokenType.Frequency;
+                                break;
+
+                            case "DB":          // decibel
+                            case "ST":          // semitones
+                                tokenType = TokenType.Speech;
                                 break;
                         }
 
