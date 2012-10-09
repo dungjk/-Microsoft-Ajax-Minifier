@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Resources;
 using System.Security;
@@ -50,6 +51,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         private string m_symbolsMapFile;
 
+        /// <summary>
+        /// A collection of other input files we will use, as specified by swithc parameters
+        /// </summary>
+        private ICollection<string> m_otherInputFiles;
+
         #endregion
 
         #region command-line style switches
@@ -66,6 +72,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
             set
             {
+                // empty the list of other input files
+                m_otherInputFiles.Clear();
+
                 // parse the switches
                 m_switchParser.Parse(value);
 
@@ -96,8 +105,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         // needs to be another parameter still left
                         if (ea.Index < ea.Arguments.Count - 1)
                         {
+                            // get the renaming path and add it to the other input file if it exists
+                            var renamePath = ea.Arguments[++ea.Index];
+                            if (File.Exists(renamePath))
+                            {
+                                m_otherInputFiles.Add(renamePath);
+                            }
+
                             // the renaming file is specified as the NEXT argument
-                            var fileReader = new StreamReader(ea.Arguments[++ea.Index]);
+                            var fileReader = new StreamReader(renamePath);
                             try
                             {
                                 using (var reader = XmlReader.Create(fileReader))
@@ -176,6 +192,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                         // create an object out of the dictionary
                                         resourceStrings = new ResourceStrings(reader.GetEnumerator());
                                     }
+
+                                    m_otherInputFiles.Add(resourceFile);
                                     break;
 
                                 case ".RESOURCES":
@@ -184,6 +202,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                         // create an object out of the dictionary
                                         resourceStrings = new ResourceStrings(reader.GetEnumerator());
                                     }
+
+                                    m_otherInputFiles.Add(resourceFile);
                                     break;
 
                                 default:
@@ -570,6 +590,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             this.m_switchParser = new SwitchParser();
             this.m_switchParser.UnknownParameter += OnUnknownParameter;
+            this.m_otherInputFiles = new HashSet<string>();
             this.JsEnsureFinalSemicolon = true;
         }
 
@@ -687,6 +708,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         private void MinifyJavaScript()
         {
+            // find the most-recent other input file (if any)
+            var mostRecentOtherInput = DateTime.MinValue;
+            foreach (var otherPath in m_otherInputFiles)
+            {
+                var writeTime = File.GetLastWriteTimeUtc(otherPath);
+                if (writeTime >= mostRecentOtherInput)
+                {
+                    mostRecentOtherInput = writeTime;
+                }
+            }
+
             if (this.JsCombinedFileName.IsNullOrWhiteSpace())
             {
                 // individually-minified files
@@ -697,8 +729,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                     if (FileIsWritable(outputPath))
                     {
+                        var outputTime = File.Exists(outputPath)
+                            ? File.GetLastWriteTimeUtc(outputPath)
+                            : DateTime.MinValue;
+
                         if (!File.Exists(outputPath)
-                            || File.GetLastWriteTimeUtc(outputPath) <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                            || outputTime <= mostRecentOtherInput
+                            || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
                         {
                             string source = File.ReadAllText(item.ItemSpec);
                             MinifyJavaScript(source, item.ItemSpec, outputPath);
@@ -727,12 +764,19 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     if (!needToMinify)
                     {
                         var outputTime = File.GetLastWriteTimeUtc(this.JsCombinedFileName);
-                        foreach (var inputFile in this.JsSourceFiles)
+                        if (outputTime <= mostRecentOtherInput)
                         {
-                            if (File.GetLastWriteTimeUtc(inputFile.ItemSpec) >= outputTime)
+                            needToMinify = true;
+                        }
+                        else
+                        {
+                            foreach (var inputFile in this.JsSourceFiles)
                             {
-                                needToMinify = true;
-                                break;
+                                if (outputTime <= File.GetLastWriteTimeUtc(inputFile.ItemSpec))
+                                {
+                                    needToMinify = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -759,6 +803,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         private void MinifyStyleSheets()
         {
+            // find the most-recent other input file (if any)
+            var mostRecentOtherInput = DateTime.MinValue;
+            foreach (var otherPath in m_otherInputFiles)
+            {
+                var writeTime = File.GetLastWriteTimeUtc(otherPath);
+                if (writeTime >= mostRecentOtherInput)
+                {
+                    mostRecentOtherInput = writeTime;
+                }
+            }
+
             if (this.CssCombinedFileName.IsNullOrWhiteSpace())
             {
                 // individually-minified files
@@ -767,8 +822,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     string outputPath = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
                     if (FileIsWritable(outputPath))
                     {
+                        var outputTime = File.Exists(outputPath)
+                            ? File.GetLastWriteTimeUtc(outputPath)
+                            : DateTime.MinValue;
+
                         if (!File.Exists(outputPath)
-                            || File.GetLastWriteTimeUtc(outputPath) <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                            || outputTime <= mostRecentOtherInput
+                            || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
                         {
                             try
                             {
@@ -805,12 +865,19 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     if (!needToMinify)
                     {
                         var outputTime = File.GetLastWriteTimeUtc(this.CssCombinedFileName);
-                        foreach (var inputFile in this.CssSourceFiles)
+                        if (outputTime <= mostRecentOtherInput)
                         {
-                            if (File.GetLastWriteTimeUtc(inputFile.ItemSpec) >= outputTime)
+                            needToMinify = true;
+                        }
+                        else
+                        {
+                            foreach (var inputFile in this.CssSourceFiles)
                             {
-                                needToMinify = true;
-                                break;
+                                if (File.GetLastWriteTimeUtc(inputFile.ItemSpec) >= outputTime)
+                                {
+                                    needToMinify = true;
+                                    break;
+                                }
                             }
                         }
                     }
