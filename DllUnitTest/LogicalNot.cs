@@ -30,7 +30,7 @@ namespace DllUnitTest
 
             // parse the source into an AST
             var parser = new JSParser(expressionSource);
-            var block = parser.ParseExpression(new CodeSettings() { MinifyCode = false });
+            var block = parser.Parse(new CodeSettings() { MinifyCode = false, SourceMode = JavaScriptSourceMode.Expression });
 
             if (block.Count == 1)
             {
