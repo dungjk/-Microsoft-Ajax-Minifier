@@ -20,7 +20,13 @@ function Func(p1)
             }
             break;
         }
+        case ret.maxValue:
+            ret = -2;
+            break;
+
         default:
             break;
     }
+
+    return ret;
 }

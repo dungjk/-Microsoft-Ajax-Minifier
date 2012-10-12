@@ -1033,6 +1033,11 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                if (node.CaseValue != null)
+                {
+                    node.CaseValue.Accept(this);
+                }
+
                 if (node.Statements != null)
                 {
                     node.Statements.Accept(this);
