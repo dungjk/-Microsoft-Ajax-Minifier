@@ -352,6 +352,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\unaryop.cs">
       <Link>JavaScript\unaryop.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\V3SourceMap.cs">
+      <Link>JavaScript\V3SourceMap.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\var.cs">
       <Link>JavaScript\var.cs</Link>
     </Compile>

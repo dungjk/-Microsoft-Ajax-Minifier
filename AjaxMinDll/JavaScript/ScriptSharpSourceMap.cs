@@ -35,14 +35,20 @@ namespace Microsoft.Ajax.Utilities
             get { return "ScriptSharp"; }
         }
 
-        public ScriptSharpSourceMap(XmlWriter writer)
+        public ScriptSharpSourceMap(TextWriter writer)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException("writer");
             }
 
-            m_writer = writer;
+            var settings = new XmlWriterSettings()
+                {
+                    CloseOutput = true,
+                    Indent = true
+                };
+            m_writer = XmlWriter.Create(writer, settings);
+
             m_writer.WriteStartDocument();
             m_writer.WriteStartElement("map");
             JavaScriptSymbol.WriteHeadersTo(m_writer);

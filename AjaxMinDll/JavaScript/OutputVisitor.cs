@@ -73,8 +73,11 @@ namespace Microsoft.Ajax.Utilities
 
         public static void Apply(TextWriter writer, AstNode node, CodeSettings settings)
         {
-            var outputVisitor = new OutputVisitor(writer, settings);
-            node.Accept(outputVisitor);
+            if (node != null)
+            {
+                var outputVisitor = new OutputVisitor(writer, settings);
+                node.Accept(outputVisitor);
+            }
         }
 
         #region IVisitor Members
@@ -2201,9 +2204,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_addSpaceIfTrue(ch))
                 {
-                    // output a space
-                    m_outputStream.Write(' ');
-                    ++m_lineLength;
+                    OutputPossibleLineBreak(' ');
                 }
 
                 // reset the function
@@ -2216,8 +2217,7 @@ namespace Microsoft.Ajax.Utilities
                 // then we need to add a space so it doesn't get read as ++ (or --)
                 if (m_lastCountOdd)
                 {
-                    m_outputStream.Write(' ');
-                    ++m_lineLength;
+                    OutputPossibleLineBreak(' ');
                 }
             }
             else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(ch))
@@ -2225,8 +2225,7 @@ namespace Microsoft.Ajax.Utilities
                 // either the last character is a valid part of an identifier and the current character is, too;
                 // OR the last part was numeric and the current character is a .
                 // we need to separate those with spaces as well
-                m_outputStream.Write(' ');
-                ++m_lineLength;
+                OutputPossibleLineBreak(' ');
             }
         }
 
@@ -2238,9 +2237,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_addSpaceIfTrue(ch))
                 {
-                    // output a space
-                    m_outputStream.Write(' ');
-                    ++m_lineLength;
+                    OutputPossibleLineBreak(' ');
                 }
 
                 // reset the function
@@ -2253,8 +2250,7 @@ namespace Microsoft.Ajax.Utilities
                 // get read as ++ (or --)
                 if (m_lastCountOdd)
                 {
-                    m_outputStream.Write(' ');
-                    ++m_lineLength;
+                    OutputPossibleLineBreak(' ');
                 }
             }
             else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(text))
@@ -2262,8 +2258,7 @@ namespace Microsoft.Ajax.Utilities
                 // either the last character is a valid part of an identifier and the current character is, too;
                 // OR the last part was numeric and the current character is a .
                 // we need to separate those with spaces as well
-                m_outputStream.Write(' ');
-                ++m_lineLength;
+                OutputPossibleLineBreak(' ');
             }
         }
 

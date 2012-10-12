@@ -100,7 +100,7 @@ namespace Microsoft.Ajax.Utilities
 
         public event EventHandler<GlobalDefineEventArgs> GlobalDefine;
 
-        public event EventHandler<EventArgs> NewModule;
+        public event EventHandler<NewModuleEventArgs> NewModule;
 
         #endregion
 
@@ -1032,11 +1032,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private void OnNewModule()
+        private void OnNewModule(string newModule)
         {
             if (NewModule != null)
             {
-                NewModule(this, new EventArgs());
+                NewModule(this, new NewModuleEventArgs { Module = newModule });
             }
         }
 
@@ -2701,7 +2701,8 @@ namespace Microsoft.Ajax.Utilities
                         SkipOneLineTerminator();
 
                         // change the file context
-                        m_currentToken.ChangeFileContext(m_strSourceCode.Substring(ndxStart, m_currentPosition - ndxStart).TrimEnd());
+                        var newModule = m_strSourceCode.Substring(ndxStart, m_currentPosition - ndxStart).TrimEnd();
+                        m_currentToken.ChangeFileContext(newModule);
 
                         // adjust the line number
                         this.m_currentLine = linePos;
@@ -2717,7 +2718,7 @@ namespace Microsoft.Ajax.Utilities
                         this.m_currentToken.SourceOffsetStart = this.m_currentToken.SourceOffsetEnd = m_currentPosition;
 
                         // alert anyone (the parser) that we encountered the start of a new module
-                        OnNewModule();
+                        OnNewModule(newModule);
 
                         // return false because we are all set on the next line and DON'T want the
                         // line skipped.
@@ -3265,5 +3266,10 @@ namespace Microsoft.Ajax.Utilities
     public class GlobalDefineEventArgs : EventArgs
     {
         public string Name { get; set; }
+    }
+
+    public class NewModuleEventArgs : EventArgs
+    {
+        public string Module { get; set; }
     }
 }

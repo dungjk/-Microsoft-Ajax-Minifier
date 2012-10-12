@@ -287,40 +287,64 @@ namespace Microsoft.Ajax.Minifier.Tasks
             };
 
             // if we want a symbols map, we need to set it up now
-            XmlWriter mapWriter = null;
+            TextWriter mapWriter = null;
             try
             {
-                if (symbolMap != null)
+                try
                 {
-                    // create the map writer and the source map implementation.
-                    // TODO: we only have one implementation right now; in the future we will need 
-                    // to look at the Name attribute and implement the proper one.
-                    var xmlSettings = new XmlWriterSettings { CloseOutput = true, Indent = true };
-                    mapWriter = XmlWriter.Create(GetRootedOutput(symbolMap.Path, manifestFolder), xmlSettings);
-                    settings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);
-                }
-
-                // if we want to use resource strings, set them up now
-                foreach (var resource in resourceList)
-                {
-                    settings.AddResourceStrings(ProcessResourceFile(resource.Name, GetRootedInput(resource.Path, manifestFolder)));
-                }
-
-                // minify input
-                var block = parser.Parse(settings);
-                var minifiedCode = block.ToCode();
-
-                // write output
-                if (!Log.HasLoggedErrors)
-                {
-                    using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+                    if (symbolMap != null)
                     {
-                        writer.Write(minifiedCode);
+                        // create the map writer and the source map implementation.
+                        // look at the Name attribute and implement the proper one.
+                        mapWriter = new StreamWriter(GetRootedOutput(symbolMap.Path, manifestFolder), false, Encoding.UTF8);
+                        if (string.Compare(symbolMap.Name, "V3", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            settings.SymbolsMap = new V3SourceMap(mapWriter);
+                        }
+                        else
+                        {
+                            settings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);
+                        }
+
+                        // if we get here, the symbol map now owns the stream and we can null it out so
+                        // we don't double-close it
+                        mapWriter = null;
+
+                        // start the package
+                        settings.SymbolsMap.StartPackage(outputPath);
+                    }
+
+                    // if we want to use resource strings, set them up now
+                    foreach (var resource in resourceList)
+                    {
+                        settings.AddResourceStrings(ProcessResourceFile(resource.Name, GetRootedInput(resource.Path, manifestFolder)));
+                    }
+
+                    // minify input
+                    var block = parser.Parse(settings);
+                    var minifiedCode = block.ToCode();
+
+                    // write output
+                    if (!Log.HasLoggedErrors)
+                    {
+                        using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
+                        {
+                            writer.Write(minifiedCode);
+                        }
+                    }
+                    else
+                    {
+                        Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
                     }
                 }
-                else
+                finally
                 {
-                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                    if (settings.SymbolsMap != null)
+                    {
+                        settings.SymbolsMap.EndPackage();
+                        settings.SymbolsMap.Dispose();
+                        settings.SymbolsMap = null;
+                    }
                 }
             }
             finally

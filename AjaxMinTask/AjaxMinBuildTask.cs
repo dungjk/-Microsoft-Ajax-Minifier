@@ -641,13 +641,24 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     if (FileIsWritable(m_symbolsMapFile))
                     {
-                        using (XmlWriter writer = XmlWriter.Create(
+                        var writer = new StreamWriter(
                             m_symbolsMapFile,
-                            new XmlWriterSettings { CloseOutput = true, Indent = true }))
+                            false,
+                            Encoding.UTF8);
+                        try
                         {
                             using (m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
                             {
+                                writer = null;
                                 MinifyJavaScript();
+                            }
+                        }
+                        finally
+                        {
+                            if (writer != null)
+                            {
+                                writer.Close();
+                                writer = null;
                             }
                         }
                     }

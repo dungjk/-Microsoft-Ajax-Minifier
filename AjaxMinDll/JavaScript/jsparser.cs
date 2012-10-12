@@ -216,6 +216,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 };
 
+            // this event is fired whenever a ///#SOURCE comment is encountered
             m_scanner.NewModule += (sender, ea) =>
                 {
                     m_newModule = true;
@@ -576,7 +577,7 @@ namespace Microsoft.Ajax.Utilities
             // we need to make sure the settings object has the expression source mode property set,
             // but let's not modify the settings object passed in. So clone it, set the property on the
             // clone, and use that object for parsing.
-            settings = settings.Clone();
+            settings = settings.IfNotNull(s => s.Clone());
             settings.SourceMode = JavaScriptSourceMode.Expression;
             return Parse(settings);
         }

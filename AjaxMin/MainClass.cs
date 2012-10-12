@@ -128,6 +128,11 @@ namespace Microsoft.Ajax.Utilities
         private string m_symbolsMapFile;
 
         /// <summary>
+        /// Name of the symbols map implementation to use (if any)
+        /// </summary>
+        private string m_symbolsMapName;
+
+        /// <summary>
         /// clobber type
         /// </summary>
         private enum ClobberType
@@ -411,6 +416,12 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         m_symbolsMapFile = ea.Arguments[++ea.Index];
+
+                        // save the map implementation name, if any
+                        if (!ea.ParameterPart.IsNullOrWhiteSpace())
+                        {
+                            m_symbolsMapName = ea.ParameterPart;
+                        }
                         break;
 
                     case "RENAME":
@@ -682,6 +693,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         Output = new FileInformation() {Path = m_outputFile, EncodingName = m_switchParser.EncodingOutputName},
                         SymbolMapPath = m_symbolsMapFile,
+                        SymbolMapName = m_symbolsMapName,
                         InputType = m_inputType
                     }
                 };
@@ -732,34 +744,47 @@ namespace Microsoft.Ajax.Utilities
             foreach (var crunchGroup in crunchGroups)
             {
                 ++ndxGroup;
-                XmlWriter symbolMapWriter = null;
-                if (!string.IsNullOrEmpty(crunchGroup.SymbolMapPath))
-                {
-                    retVal = this.ClobberFileAndExecuteOperation(
-                        crunchGroup.SymbolMapPath, (path) =>
-                        {
-                            symbolMapWriter = XmlWriter.Create(
-                                path,
-                                new XmlWriterSettings { CloseOutput = true, Indent = true });
-                        });
+                var crunchResult = 1;
 
-                    if (retVal != 0)
-                    {
-                        return retVal;
-                    }
-                }     
-           
                 // create clones of the overall settings to which we will then apply
                 // our changes for this current crunch group
                 var switchParser = m_switchParser.Clone();
                 switchParser.Parse(crunchGroup.Arguments);
 
-                int crunchResult;                
+                TextWriter symbolMapWriter = null;
                 try
                 {
+                    if (!string.IsNullOrEmpty(crunchGroup.SymbolMapPath))
+                    {
+                        retVal = this.ClobberFileAndExecuteOperation(
+                            crunchGroup.SymbolMapPath, (path) =>
+                            {
+                                symbolMapWriter = new StreamWriter(path, false, Encoding.UTF8);
+                            });
+
+                        if (retVal != 0)
+                        {
+                            return retVal;
+                        }
+                    }
+
                     if (symbolMapWriter != null)
                     {
-                        switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(symbolMapWriter);
+                        // which implementation to instantiate?
+                        if (string.Compare(crunchGroup.SymbolMapName, "V3", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            switchParser.JSSettings.SymbolsMap = new V3SourceMap(symbolMapWriter);
+                        }
+                        else
+                        {
+                            switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(symbolMapWriter);
+                        }
+
+                        // if we get here, the symbol map implementation now owns the stream and we can
+                        // set it to null so we don't double-dispose it.
+                        symbolMapWriter = null;
+
+                        // start off the package
                         switchParser.JSSettings.SymbolsMap.StartPackage(crunchGroup.Output.Path);
                     }
 
@@ -773,6 +798,12 @@ namespace Microsoft.Ajax.Utilities
                         switchParser.JSSettings.SymbolsMap.EndPackage();
                         switchParser.JSSettings.SymbolsMap.Dispose();
                         switchParser.JSSettings.SymbolsMap = null;
+                    }
+
+                    if (symbolMapWriter != null)
+                    {
+                        symbolMapWriter.Close();
+                        symbolMapWriter = null;
                     }
                 }
 
@@ -1397,7 +1428,7 @@ namespace Microsoft.Ajax.Utilities
             public string SymbolMapPath { get; set; }
 
             // name of the symbol map implementation
-            //public string SymbolMapName { get; set; }
+            public string SymbolMapName { get; set; }
 
             // optional crunch group-specific arguments
             public string Arguments { get; set; }
@@ -1506,7 +1537,7 @@ namespace Microsoft.Ajax.Utilities
                             InputType = (InputType)outputNode.CodeType,
                             Arguments = GetConfigArguments(outputNode.Arguments),
                             SymbolMapPath = NormalizePath(outputFolder, rootPath, outputNode.SymbolMap.IfNotNull(s => s.Path)),
-                            //SymbolMapName = outputNode.SymbolMap.IfNotNull(s => s.Name)
+                            SymbolMapName = outputNode.SymbolMap.IfNotNull(s => s.Name)
                         };
 
                         // add resources
