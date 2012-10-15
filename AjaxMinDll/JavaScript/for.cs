@@ -23,31 +23,55 @@ namespace Microsoft.Ajax.Utilities
 
     public sealed class ForNode : IterationStatement
     {
-        public AstNode Initializer { get; private set; }
-        public AstNode Condition { get; private set; }
+        private AstNode m_initializer;
+        private AstNode m_condition;
+        private AstNode m_incrementer;
+
+        public AstNode Initializer
+        {
+            get { return m_initializer; }
+            set
+            {
+                m_initializer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_initializer = value;
+                m_initializer.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public AstNode Condition
+        {
+            get { return m_condition; }
+            set
+            {
+                m_condition.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_condition = value;
+                m_condition.IfNotNull(n => n.Parent = this);
+            }
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Incrementer")]
-        public AstNode Incrementer { get; private set; }
+        public AstNode Incrementer
+        {
+            get { return m_incrementer; }
+            set
+            {
+                m_incrementer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_incrementer = value;
+                m_incrementer.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        /// <summary>Context for the first semicolon, separating the initializer and the condition</summary>
+        public Context Separator1Context { get; set; }
+
+        /// <summary>Context for the second semicolon, separating the condition and the incrementor</summary>
+        public Context Separator2Context { get; set; }
 
         public BlockScope BlockScope { get; set; }
 
-        public ForNode(Context context, JSParser parser, AstNode initializer, AstNode condition, AstNode increment, AstNode body)
-            : base(context, parser, body)
+        public ForNode(Context context, JSParser parser)
+            : base(context, parser)
         {
-            Initializer = initializer;
-            Condition = condition;
-            Incrementer = increment;
-            if (Incrementer != null) Incrementer.Parent = this;
-            if (Condition != null) Condition.Parent = this;
-            if (Initializer != null) Initializer.Parent = this;
-        }
-
-        public void SetInitializer(AstNode newNode)
-        {
-            Initializer = newNode;
-            if (newNode != null)
-            {
-                newNode.Parent = this;
-            }
         }
 
         public override void Accept(IVisitor visitor)
@@ -86,25 +110,21 @@ namespace Microsoft.Ajax.Utilities
             if (Initializer == oldNode)
             {
                 Initializer = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Condition == oldNode)
             {
                 Condition = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Incrementer == oldNode)
             {
                 Incrementer = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Body == oldNode)
             {
                 Body = ForceToBlock(newNode);
-                if (Body != null) { Body.Parent = this; }
                 return true;
             }
             return false;

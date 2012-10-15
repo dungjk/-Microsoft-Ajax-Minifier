@@ -18,22 +18,13 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class ParameterDeclaration : AstNode, INameDeclaration
     {
-        private string m_name;
-
         public string Name
         {
-            get
-            {
-                return (VariableField != null ? VariableField.ToString() : m_name);
-            }
+            get;
+            set;
         }
 
-        public string OriginalName
-        {
-            get { return m_name; }
-        }
-
-        public int Position { get; private set; }
+        public int Position { get; set; }
 
         public bool RenameNotAllowed { get; set; }
 
@@ -43,11 +34,9 @@ namespace Microsoft.Ajax.Utilities
 
         public Context NameContext { get { return Context; } }
 
-        public ParameterDeclaration(Context context, JSParser parser, string identifier, int position)
+        public ParameterDeclaration(Context context, JSParser parser)
             : base(context, parser)
         {
-            m_name = identifier;
-            Position = position;
         }
 
         public override void Accept(IVisitor visitor)

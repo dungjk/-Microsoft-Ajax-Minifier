@@ -65,45 +65,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public override bool IsEquivalentTo(AstNode otherNode)
-        {
-            var otherConstant = otherNode as ConstantWrapper;
-            if (otherConstant != null && PrimitiveType == otherConstant.PrimitiveType)
-            {
-                switch (PrimitiveType)
-                {
-                    case PrimitiveType.Boolean:
-                        // bools must be the same
-                        return ToBoolean() == otherConstant.ToBoolean();
-
-                    case PrimitiveType.Null:
-                        // nulls are always equivalent
-                        return true;
-
-                    case PrimitiveType.Number:
-                        // numbers must be equal
-                        return ToNumber() == otherConstant.ToNumber();
-
-                    case PrimitiveType.String:
-                        // strings must be identical
-                        return string.CompareOrdinal(Value.ToString(), otherConstant.ToString()) == 0;
-
-                    case PrimitiveType.Other:
-                        // others are never the same
-                        return false;
-                }
-            }
-
-            // if we get here, we're not equivalent
-            return false;
-        }
-
-        public override PrimitiveType FindPrimitiveType()
-        {
-            // we know the primitive type of this node
-            return PrimitiveType;
-        }
-
         public bool IsNumericLiteral
         {
             get
@@ -229,6 +190,45 @@ namespace Microsoft.Ajax.Utilities
 
             // force numerics to be of type double
             Value = (primitiveType == PrimitiveType.Number ? System.Convert.ToDouble(value, CultureInfo.InvariantCulture) : value);
+        }
+
+        public override bool IsEquivalentTo(AstNode otherNode)
+        {
+            var otherConstant = otherNode as ConstantWrapper;
+            if (otherConstant != null && PrimitiveType == otherConstant.PrimitiveType)
+            {
+                switch (PrimitiveType)
+                {
+                    case PrimitiveType.Boolean:
+                        // bools must be the same
+                        return ToBoolean() == otherConstant.ToBoolean();
+
+                    case PrimitiveType.Null:
+                        // nulls are always equivalent
+                        return true;
+
+                    case PrimitiveType.Number:
+                        // numbers must be equal
+                        return ToNumber() == otherConstant.ToNumber();
+
+                    case PrimitiveType.String:
+                        // strings must be identical
+                        return string.CompareOrdinal(Value.ToString(), otherConstant.ToString()) == 0;
+
+                    case PrimitiveType.Other:
+                        // others are never the same
+                        return false;
+                }
+            }
+
+            // if we get here, we're not equivalent
+            return false;
+        }
+
+        public override PrimitiveType FindPrimitiveType()
+        {
+            // we know the primitive type of this node
+            return PrimitiveType;
         }
 
         public override void Accept(IVisitor visitor)

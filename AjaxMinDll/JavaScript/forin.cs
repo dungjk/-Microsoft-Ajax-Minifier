@@ -21,21 +21,38 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class ForIn : IterationStatement
     {
-        public AstNode Variable { get; private set; }
-        public AstNode Collection { get; private set; }
-        public JSToken Operator { get; set; }
+        private AstNode m_variable;
+        private AstNode m_collection;
+
+        public AstNode Variable
+        {
+            get { return m_variable; }
+            set
+            {
+                m_variable.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_variable = value;
+                m_variable.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public AstNode Collection
+        {
+            get { return m_collection; }
+            set
+            {
+                m_collection.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_collection = value;
+                m_collection.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public Context OperatorContext { get; set; }
 
         public BlockScope BlockScope { get; set; }
 
-        public ForIn(Context context, JSParser parser, AstNode var, AstNode collection, AstNode body, JSToken operatorToken)
-            : base(context, parser, body)
+        public ForIn(Context context, JSParser parser)
+            : base(context, parser)
         {
-            Variable = var;
-            Collection = collection;
-            if (Variable != null) Variable.Parent = this;
-            if (Collection != null) Collection.Parent = this;
-
-            Operator = operatorToken;
         }
 
         public override void Accept(IVisitor visitor)
@@ -59,19 +76,16 @@ namespace Microsoft.Ajax.Utilities
             if (Variable == oldNode)
             {
                 Variable = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Collection == oldNode)
             {
                 Collection = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Body == oldNode)
             {
                 Body = ForceToBlock(newNode);
-                if (Body != null) { Body.Parent = this; }
                 return true;
             }
             return false;

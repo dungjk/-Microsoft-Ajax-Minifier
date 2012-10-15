@@ -43,8 +43,6 @@ namespace Microsoft.Ajax.Utilities
 
         private List<Segment> m_segments;
 
-        private int m_destinationLine;
-
         private int m_lastDestinationColumn;
 
         private int m_lastSourceLine;
@@ -79,8 +77,6 @@ namespace Microsoft.Ajax.Utilities
             m_lastSourceColumn = -1;
             m_lastFileIndex = -1;
             m_lastNameIndex = -1;
-
-            m_destinationLine = 0;
         }
 
         #region ISourceMap implementation
@@ -105,7 +101,9 @@ namespace Microsoft.Ajax.Utilities
 
             WriteProperty("version", 3);
             WriteProperty("file", m_minifiedPath);
-            WriteProperty("lineCount", m_maxMinifiedLine);
+
+            // line number comes in zero-based, so add one to get the line count
+            WriteProperty("lineCount", m_maxMinifiedLine + 1);
 
             // generate the lists for the names and the source files from the
             // hashsets we built up while traversing the tree
@@ -148,6 +146,27 @@ namespace Microsoft.Ajax.Utilities
             return astNode;
         }
 
+        public void MarkSegment(AstNode node, int startLine, int startColumn, string name, Context context)
+        {
+            if (startLine == int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("startLine");
+            }
+
+            // create the segment object and add it to the list.
+            // the destination line/col numbers are zero-based. The format expects line to be 1-based and col 0-based.
+            // the context line is one-based; col is zero-based. The format expected line to be 1-based and col to be 0-based.
+            var segment = CreateSegment(
+                startLine + 1, 
+                startColumn, 
+                context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber,
+                context == null || context.StartColumn < 0 ? -1 : context.StartColumn, 
+                context.IfNotNull(c => c.Document.FileContext), 
+                name);
+
+            m_segments.Add(segment);
+        }
+
         public void EndSymbol(object symbol, int endLine, int endColumn, string parentContext)
         {
             //var astNode = symbol as AstNode;
@@ -156,7 +175,7 @@ namespace Microsoft.Ajax.Utilities
 
         public string Name
         {
-            get { return "JSONV3"; }
+            get { return "V3"; }
         }
 
         public void Dispose()
@@ -175,26 +194,24 @@ namespace Microsoft.Ajax.Utilities
         private string GenerateMappings(IList<string> fileList, IList<string> nameList)
         {
             var sb = new StringBuilder();
-            var currentLine = 0;
+            var currentLine = 1;
             foreach (var segment in m_segments)
             {
-                if (sb.Length > 0)
+                if (currentLine < segment.DestinationLine)
                 {
-                    if (currentLine < segment.DestinationLine)
+                    // we've jumped forward at least one line in the minified file.
+                    // add a semicolon for each line we've advanced
+                    do
                     {
-                        // we've jumped forward at least one line in the minified file.
-                        // add a semicolon for each line we've advanced
-                        do
-                        {
-                            sb.Append(';');
-                        }
-                        while (++currentLine < segment.DestinationLine);
+                        sb.Append(';');
                     }
-                    else
-                    {
-                        // same line; separate segments by comma
-                        sb.Append(',');
-                    }
+                    while (++currentLine < segment.DestinationLine);
+                }
+                else if (sb.Length > 0)
+                {
+                    // same line; separate segments by comma. But only
+                    // if we've already output something
+                    sb.Append(',');
                 }
 
                 EncodeNumbers(sb, segment, fileList, nameList);
@@ -214,7 +231,7 @@ namespace Microsoft.Ajax.Utilities
                 // get the index from the list and encode it into the builder
                 // relative to the last file index.
                 var thisIndex = files.IndexOf(segment.FileName);
-                EncodeNumber(sb, thisIndex - m_lastFileIndex);
+                EncodeNumber(sb, m_lastFileIndex < 0 ? thisIndex : thisIndex - m_lastFileIndex);
                 m_lastFileIndex = thisIndex;
 
                 // add the source line and column
@@ -226,7 +243,7 @@ namespace Microsoft.Ajax.Utilities
                 if (!string.IsNullOrEmpty(segment.SymbolName))
                 {
                     thisIndex = names.IndexOf(segment.SymbolName);
-                    EncodeNumber(sb, thisIndex - m_lastNameIndex);
+                    EncodeNumber(sb, m_lastNameIndex < 0 ? thisIndex : thisIndex - m_lastNameIndex);
                     m_lastNameIndex = thisIndex;
                 }
             }
@@ -262,16 +279,16 @@ namespace Microsoft.Ajax.Utilities
             while (value > 0);
         }
 
-        private Segment CreateSegment(int destinationColumn, int sourceLine, int sourceColumn, string fileName, string symbolName)
+        private Segment CreateSegment(int destinationLine, int destinationColumn, int sourceLine, int sourceColumn, string fileName, string symbolName)
         {
             // create the segment with relative offsets for the destination column, source line, and source column.
             // destination line should be absolute.
             var segment = new Segment()
             {
-                DestinationLine = m_destinationLine,
-                DestinationColumn = destinationColumn - m_lastDestinationColumn,
-                SourceLine = m_lastSourceLine < 0 ? sourceLine : sourceLine - m_lastSourceLine,
-                SourceColumn = m_lastSourceColumn < 0 ? sourceColumn : sourceColumn - m_lastSourceColumn,
+                DestinationLine = destinationLine,
+                DestinationColumn = m_lastDestinationColumn < 0 ? destinationColumn : destinationColumn - m_lastDestinationColumn,
+                SourceLine = fileName == null ? -1 : m_lastSourceLine < 0 ? sourceLine : sourceLine - m_lastSourceLine,
+                SourceColumn = fileName == null ? -1 : m_lastSourceColumn < 0 ? sourceColumn : sourceColumn - m_lastSourceColumn,
                 FileName = fileName,
                 SymbolName = symbolName
             };
@@ -545,6 +562,10 @@ namespace Microsoft.Ajax.Utilities
         }
 
         public void Visit(ObjectLiteralField node)
+        {
+        }
+
+        public void Visit(ObjectLiteralProperty node)
         {
         }
 

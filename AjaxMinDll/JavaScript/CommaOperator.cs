@@ -24,8 +24,10 @@ namespace Microsoft.Ajax.Utilities
     public class CommaOperator : BinaryOperator
     {
         public CommaOperator(Context context, JSParser parser, AstNode operand1, AstNode operand2)
-            : base(context, parser, operand1, operand2, JSToken.Comma)
+            : base(context, parser)
         {
+            OperatorToken = JSToken.Comma;
+
             // if the left is a comma-operator already....
             var leftBinary = operand1 as BinaryOperator;
             var rightBinary = operand2 as BinaryOperator;
@@ -35,10 +37,6 @@ namespace Microsoft.Ajax.Utilities
                 // going to combine them
                 // move the old list's left-hand side to our left-hand side
                 Operand1 = leftBinary.Operand1;
-                if (Operand1 != null)
-                {
-                    Operand1.Parent = this;
-                }
 
                 AstNodeList list;
                 if (rightBinary != null && rightBinary.OperatorToken == JSToken.Comma)
@@ -67,11 +65,12 @@ namespace Microsoft.Ajax.Utilities
 
                 // set the list on the right
                 Operand2 = list;
-                list.Parent = this;
             }
             else if (rightBinary != null && rightBinary.OperatorToken == JSToken.Comma)
             {
                 // the left hand side is NOT a comma operator.
+                Operand1 = operand1;
+
                 // the right-hand side is already a comma-operator, but the left is not.
                 // see if it already has a list we can reuse
                 var rightList = rightBinary.Operand2 as AstNodeList;
@@ -89,7 +88,11 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 Operand2 = rightList;
-                rightList.Parent = this;
+            }
+            else
+            {
+                Operand1 = operand1;
+                Operand2 = operand2;
             }
         }
     }

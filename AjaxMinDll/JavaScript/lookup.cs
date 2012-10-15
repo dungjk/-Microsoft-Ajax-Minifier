@@ -32,32 +32,11 @@ namespace Microsoft.Ajax.Utilities
 
         public bool IsGenerated { get; set; }
         public ReferenceType RefType { get; set; }
+        public string Name { get; set; }
 
-        private string m_name;
-        public string Name
-        {
-            get
-            {
-                return m_name;
-            }
-            set
-            {
-                if (VariableField == null)
-                {
-                    m_name = value;
-                }
-                else
-                {
-                    VariableField.CrunchedName = value;
-                }
-            }
-        }
-
-        // this constructor is invoked when there has been a parse error. The typical scenario is a missing identifier.
-        public Lookup(String name, Context context, JSParser parser)
+        public Lookup(Context context, JSParser parser)
             : base(context, parser)
         {
-            m_name = name;
             RefType = ReferenceType.Variable;
         }
 
@@ -95,7 +74,7 @@ namespace Microsoft.Ajax.Utilities
         internal override string GetFunctionGuess(AstNode target)
         {
             // return the source name
-            return m_name;
+            return Name;
         }
 
         private static bool MatchMemberName(AstNode node, string lookup, int startIndex, int endIndex)
@@ -148,7 +127,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // this lookup is a member chain, so check our name against that
                             // first part before the period; if it matches, we need to walk up the parent tree
-                            if (string.CompareOrdinal(m_name, 0, lookup, 0, firstPeriod) == 0)
+                            if (string.CompareOrdinal(Name, 0, lookup, 0, firstPeriod) == 0)
                             {
                                 // we matched the first one; test the rest of the chain
                                 if (MatchesMemberChain(Parent, lookup, firstPeriod + 1))
@@ -160,7 +139,7 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             // just a straight comparison
-                            if (string.CompareOrdinal(m_name, lookup) == 0)
+                            if (string.CompareOrdinal(Name, lookup) == 0)
                             {
                                 // we found a match
                                 return true;
@@ -177,7 +156,7 @@ namespace Microsoft.Ajax.Utilities
         //code in parser relies on this.name being returned from here
         public override String ToString()
         {
-            return m_name;
+            return Name;
         }
 
         #region INameReference Members

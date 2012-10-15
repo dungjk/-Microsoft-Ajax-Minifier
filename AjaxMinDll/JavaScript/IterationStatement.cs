@@ -23,16 +23,22 @@ namespace Microsoft.Ajax.Utilities
 
     public abstract class IterationStatement : AstNode
     {
-        public Block Body { get; set; }
+        private Block m_body;
 
-        protected IterationStatement(Context context, JSParser parser, AstNode body)
+        public Block Body
+        {
+            get { return m_body; }
+            set
+            {
+                m_body.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_body = value;
+                m_body.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        protected IterationStatement(Context context, JSParser parser)
             : base(context, parser)
         {
-            Body = ForceToBlock(body);
-            if (Body != null)
-            {
-                Body.Parent = this;
-            }
         }
     }
 }

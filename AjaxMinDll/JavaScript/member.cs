@@ -22,18 +22,25 @@ namespace Microsoft.Ajax.Utilities
 
     public sealed class Member : Expression
     {
-        public AstNode Root { get; private set; }
-        public string Name { get; set; }
-        public Context NameContext { get; private set; }
+        private AstNode m_root;
 
-        public Member(Context context, JSParser parser, AstNode rootObject, string memberName, Context idContext)
+        public AstNode Root
+        {
+            get { return m_root; }
+            set
+            {
+                m_root.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_root = value;
+                m_root.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public string Name { get; set; }
+        public Context NameContext { get; set; }
+
+        public Member(Context context, JSParser parser)
             : base(context, parser)
         {
-            Name = memberName;
-            NameContext = idContext;
-
-            Root = rootObject;
-            if (Root != null) Root.Parent = this;
         }
 
         public override OperatorPrecedence Precedence
@@ -101,7 +108,6 @@ namespace Microsoft.Ajax.Utilities
             if (Root == oldNode)
             {
                 Root = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             return false;

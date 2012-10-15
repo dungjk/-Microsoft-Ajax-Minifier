@@ -23,21 +23,48 @@ namespace Microsoft.Ajax.Utilities
 
     public sealed class IfNode : AstNode
     {
-        public AstNode Condition { get; private set; }
-        public Block TrueBlock { get; private set; }
-        public Block FalseBlock { get; private set; }
+        private AstNode m_condition;
+        private Block m_trueBlock;
+        private Block m_falseBlock;
 
-        public IfNode(Context context, JSParser parser, AstNode condition, AstNode trueBranch, AstNode falseBranch)
+        public AstNode Condition
+        {
+            get { return m_condition; }
+            set
+            {
+                m_condition.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_condition = value;
+                m_condition.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public Block TrueBlock
+        {
+            get { return m_trueBlock; }
+            set
+            {
+                m_trueBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_trueBlock = value;
+                m_trueBlock.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public Block FalseBlock
+        {
+            get { return m_falseBlock; }
+            set
+            {
+                m_falseBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_falseBlock = value;
+                m_falseBlock.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public Context ElseContext { get; set; }
+
+        public IfNode(Context context, JSParser parser)
             : base(context, parser)
         {
-            Condition = condition;
-            TrueBlock = ForceToBlock(trueBranch);
-            FalseBlock = ForceToBlock(falseBranch);
-
-            // make sure the parent element is set
-            if (Condition != null) Condition.Parent = this;
-            if (TrueBlock != null) TrueBlock.Parent = this;
-            if (FalseBlock != null) FalseBlock.Parent = this;
         }
 
         public override void Accept(IVisitor visitor)
@@ -50,9 +77,9 @@ namespace Microsoft.Ajax.Utilities
 
         public void SwapBranches()
         {
-            Block temp = TrueBlock;
-            TrueBlock = FalseBlock;
-            FalseBlock = temp;
+            Block temp = m_trueBlock;
+            m_trueBlock = m_falseBlock;
+            m_falseBlock = temp;
         }
 
         public override IEnumerable<AstNode> Children
@@ -68,19 +95,16 @@ namespace Microsoft.Ajax.Utilities
             if (Condition == oldNode)
             {
                 Condition = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (TrueBlock == oldNode)
             {
                 TrueBlock = ForceToBlock(newNode);
-                if (TrueBlock != null) { TrueBlock.Parent = this; }
                 return true;
             }
             if (FalseBlock == oldNode)
             {
                 FalseBlock = ForceToBlock(newNode);
-                if (FalseBlock != null) { FalseBlock.Parent = this; }
                 return true;
             }
             return false;

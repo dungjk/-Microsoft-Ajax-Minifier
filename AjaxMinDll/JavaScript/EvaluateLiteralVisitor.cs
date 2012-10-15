@@ -69,7 +69,12 @@ namespace Microsoft.Ajax.Utilities
                             // we want to replace the call with operator with a new member dot operation, and
                             // since we won't be analyzing it (we're past the analyze phase, we're going to need
                             // to use the new string value
-                            Member replacementMember = new Member(parentCall.Context, m_parser, parentCall.Function, newName, parentCall.Arguments[0].Context);
+                            Member replacementMember = new Member(parentCall.Context, m_parser)
+                                {
+                                    Root = parentCall.Function,
+                                    Name = newName,
+                                    NameContext = parentCall.Arguments[0].Context
+                                };
                             parentCall.Parent.ReplaceChild(parentCall, replacementMember);
                             return true;
                         }
@@ -91,7 +96,12 @@ namespace Microsoft.Ajax.Utilities
                         if (JSScanner.IsSafeIdentifier(combinedString) && !JSScanner.IsKeyword(combinedString, parentCall.EnclosingScope.UseStrict))
                         {
                             // yes -- replace the parent call with a new member node using the newly-combined string
-                            Member replacementMember = new Member(parentCall.Context, m_parser, parentCall.Function, combinedString, parentCall.Arguments[0].Context);
+                            Member replacementMember = new Member(parentCall.Context, m_parser)
+                                {
+                                    Root = parentCall.Function,
+                                    Name = combinedString,
+                                    NameContext = parentCall.Arguments[0].Context
+                                };
                             parentCall.Parent.ReplaceChild(parentCall, replacementMember);
                             return true;
                         }
@@ -1889,7 +1899,11 @@ namespace Microsoft.Ajax.Utilities
                                     // okay, so we have "lookup - 0"
                                     // this is done frequently to force a value to be numeric. 
                                     // There is an easier way: apply the unary + operator to it. 
-                                    var unary = new UnaryOperator(node.Context, m_parser, lookup, JSToken.Plus, false);
+                                    var unary = new UnaryOperator(node.Context, m_parser)
+                                        {
+                                            Operand = lookup,
+                                            OperatorToken = JSToken.Plus
+                                        };
                                     node.Parent.ReplaceChild(node, unary);
                                 }
                             }
@@ -2357,7 +2371,11 @@ namespace Microsoft.Ajax.Utilities
                                 }
 
                                 // create the for using our body and replace ourselves with it
-                                ForNode forNode = new ForNode(node.Context, m_parser, initializer, null, null, node.Body);
+                                var forNode = new ForNode(node.Context, m_parser)
+                                    {
+                                        Initializer = initializer,
+                                        Body = node.Body
+                                    };
                                 node.Parent.ReplaceChild(node, forNode);
                             }
                             else

@@ -166,7 +166,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void UpdateWith(Context other)
+        public Context UpdateWith(Context other)
         {
             if (other != null)
             {
@@ -186,6 +186,8 @@ namespace Microsoft.Ajax.Utilities
                     this.SourceOffsetEnd = other.SourceOffsetEnd;
                 }
             }
+
+            return this;
         }
 
         public bool IsBefore(Context other)

@@ -3015,9 +3015,9 @@ namespace Microsoft.Ajax.Utilities
             return JSToken.FirstBinaryOperator <= token && token <= JSToken.ConditionalIf;
         }
 
-        internal static OperatorPrecedence GetOperatorPrecedence(JSToken token)
+        internal static OperatorPrecedence GetOperatorPrecedence(Context op)
         {
-            return token == JSToken.None ? OperatorPrecedence.None : JSScanner.s_OperatorsPrec[token - JSToken.FirstBinaryOperator];
+            return op == null || op.Token == JSToken.None ? OperatorPrecedence.None : JSScanner.s_OperatorsPrec[op.Token - JSToken.FirstBinaryOperator];
         }
 
         private static OperatorPrecedence[] InitOperatorsPrec()

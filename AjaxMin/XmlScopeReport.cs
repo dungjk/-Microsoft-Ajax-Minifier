@@ -108,7 +108,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     m_writer.WriteAttributeString("type", functionObject.FunctionType.ToString().ToLowerInvariant());
 
-                    if (functionObject.Identifier == null)
+                    if (string.IsNullOrEmpty(functionObject.Name))
                     {
                         if (functionObject.Name.StartsWith("\"", StringComparison.Ordinal))
                         {
@@ -123,10 +123,10 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         m_writer.WriteAttributeString("src", functionObject.Name);
-                        if (functionObject.Identifier.VariableField != null
-                            && functionObject.Identifier.VariableField.CrunchedName != null)
+                        if (functionObject.VariableField != null
+                            && functionObject.VariableField.CrunchedName != null)
                         {
-                            m_writer.WriteAttributeString("min", functionObject.Identifier.VariableField.CrunchedName);
+                            m_writer.WriteAttributeString("min", functionObject.VariableField.CrunchedName);
                         }
                     }
 
@@ -166,10 +166,10 @@ namespace Microsoft.Ajax.Utilities
                             var parameter = item as ParameterDeclaration;
                             if (parameter != null)
                             {
-                                m_writer.WriteAttributeString("src", parameter.OriginalName);
+                                m_writer.WriteAttributeString("src", parameter.Name);
                                 if (parameter.VariableField.CrunchedName != null)
                                 {
-                                    m_writer.WriteAttributeString("min", parameter.Name);
+                                    m_writer.WriteAttributeString("min", parameter.VariableField.CrunchedName);
                                 }
 
                                 if (m_useReferenceCounts && parameter.VariableField != null)

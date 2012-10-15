@@ -289,6 +289,11 @@ namespace Microsoft.Ajax.Utilities
             // not applicable; terminate
         }
 
+        public void Visit(ObjectLiteralProperty node)
+        {
+            // not applicable; terminate
+        }
+
         public void Visit(ParameterDeclaration node)
         {
             // not applicable; terminate

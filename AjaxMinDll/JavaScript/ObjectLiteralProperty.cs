@@ -1,4 +1,4 @@
-// while.cs
+﻿// ObjectLiteralProperty.cs
 //
 // Copyright 2010 Microsoft Corporation
 //
@@ -14,28 +14,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
-    public sealed class WhileNode : IterationStatement
+    public class ObjectLiteralProperty : AstNode
     {
-        private AstNode m_condition;
+        private ObjectLiteralField m_propertyName;
+        private AstNode m_propertyValue;
 
-        public AstNode Condition
+        public ObjectLiteralField Name
         {
-            get { return m_condition; }
+            get { return m_propertyName; }
             set
             {
-                m_condition.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_condition = value;
-                m_condition.IfNotNull(n => n.Parent = this);
+                m_propertyName.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_propertyName = value;
+                m_propertyName.IfNotNull(n => n.Parent = this);
             }
         }
 
-        public WhileNode(Context context, JSParser parser)
+        public AstNode Value
+        {
+            get { return m_propertyValue; }
+            set
+            {
+                m_propertyValue.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_propertyValue = value;
+                m_propertyValue.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public ObjectLiteralProperty(Context context, JSParser parser)
             : base(context, parser)
         {
         }
@@ -52,38 +63,29 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(Condition, Body);
+                return EnumerateNonNullNodes(Name, Value);
             }
         }
 
         public override bool ReplaceChild(AstNode oldNode, AstNode newNode)
         {
-            if (Condition == oldNode)
+            if (Name == oldNode)
             {
-                Condition = newNode;
+                var objectField = newNode as ObjectLiteralField;
+                if (newNode == null || objectField != null)
+                {
+                    Name = objectField;
+                }
                 return true;
             }
-            if (Body == oldNode)
+
+            if (Value == oldNode)
             {
-                Body = ForceToBlock(newNode);
+                Value = newNode;
                 return true;
             }
+
             return false;
-        }
-
-        internal override bool RequiresSeparator
-        {
-            get
-            {
-                // requires a separator if the body does
-                return Body == null || Body.Count == 0 ? false : Body.RequiresSeparator;
-            }
-        }
-
-        internal override bool EncloseBlock(EncloseBlockType type)
-        {
-            // pass the query on to the body
-            return Body == null ? false : Body.EncloseBlock(type);
         }
     }
 }

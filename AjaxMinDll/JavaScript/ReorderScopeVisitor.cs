@@ -222,13 +222,10 @@ namespace Microsoft.Ajax.Utilities
                                 if (varDecl.IsCCSpecialCase)
                                 {
                                     // create a vardecl with the same name and no initializer
-                                    var copyDecl = new VariableDeclaration(
-                                        varDecl.Context,
-                                        varDecl.Parser,
-                                        varDecl.Identifier,
-                                        varDecl.VariableField.OriginalContext,
-                                        null)
+                                    var copyDecl = new VariableDeclaration(varDecl.Context, varDecl.Parser)
                                         {
+                                            Identifier = varDecl.Identifier,
+                                            NameContext = varDecl.VariableField.OriginalContext,
                                             VariableField = varDecl.VariableField
                                         };
 
@@ -248,15 +245,17 @@ namespace Microsoft.Ajax.Utilities
 
                                     // create an assignment operator for a lookup to the name
                                     // as the left, and the initializer as the right, and add it to the list
-                                    assignments.Add(new BinaryOperator(
-                                        varDecl.Context,
-                                        varDecl.Parser,
-                                        new Lookup(varDecl.Identifier, varDecl.VariableField.OriginalContext, varDecl.Parser) 
-                                        { 
-                                            VariableField = varDecl.VariableField,
-                                        },
-                                        initializer,
-                                        JSToken.Assign));
+                                    assignments.Add(new BinaryOperator(varDecl.Context, varDecl.Parser)
+                                        {
+                                            Operand1 = new Lookup(varDecl.VariableField.OriginalContext, varDecl.Parser)
+                                                {
+                                                    Name = varDecl.Identifier,
+                                                    VariableField = varDecl.VariableField,
+                                                },
+                                            Operand2 = initializer,
+                                            OperatorToken = JSToken.Assign,
+                                            OperatorContext = varDecl.AssignContext
+                                        });
                                 }
                             }
                         }
@@ -270,11 +269,7 @@ namespace Microsoft.Ajax.Utilities
                             var expression = assignments[0];
                             for (var ndx = 1; ndx < assignments.Count; ++ndx)
                             {
-                                expression = new CommaOperator(
-                                    null,
-                                    expression.Parser,
-                                    expression,
-                                    assignments[ndx]);
+                                expression = new CommaOperator(null, expression.Parser, expression, assignments[ndx]);
                             }
 
                             // replace the var with the expression.
@@ -294,8 +289,9 @@ namespace Microsoft.Ajax.Utilities
                                 var varDecl = varStatement[0];
                                 varStatement.Parent.ReplaceChild(
                                     varStatement,
-                                    new Lookup(varDecl.Identifier, varDecl.VariableField.OriginalContext, varStatement.Parser) 
+                                    new Lookup(varDecl.VariableField.OriginalContext, varStatement.Parser) 
                                     { 
+                                        Name = varDecl.Identifier,
                                         VariableField = varDecl.VariableField 
                                     });
                             }

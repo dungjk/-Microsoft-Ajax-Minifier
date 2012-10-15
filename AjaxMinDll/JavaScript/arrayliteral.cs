@@ -22,13 +22,22 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class ArrayLiteral : Expression
     {
-        public AstNodeList Elements { get; private set; }
+        private AstNodeList m_elements;
 
-        public ArrayLiteral(Context context, JSParser parser, AstNodeList elements)
+        public AstNodeList Elements 
+        {
+            get { return m_elements; }
+            set
+            {
+                m_elements.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_elements = value;
+                m_elements.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public ArrayLiteral(Context context, JSParser parser)
             : base(context, parser)
         {
-            Elements = elements;
-            if (Elements != null) { Elements.Parent = this; }
         }
 
         public override IEnumerable<AstNode> Children
@@ -66,7 +75,6 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // replace it
                         Elements = newList;
-                        newList.Parent = this;
                         return true;
                     }
                 }

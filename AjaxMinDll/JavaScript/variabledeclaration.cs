@@ -22,11 +22,24 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class VariableDeclaration : AstNode, INameDeclaration, INameReference
     {
-        public string Identifier { get; private set; }
-        public Context IdentifierContext { get; private set; }
-        public Context NameContext { get { return IdentifierContext; } }
+        private AstNode m_initializer;
 
-        public AstNode Initializer { get; private set; }
+        public AstNode Initializer
+        {
+            get { return m_initializer; }
+            set
+            {
+                m_initializer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_initializer = value;
+                m_initializer.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public string Identifier { get; set; }
+        public Context NameContext { get; set; }
+
+        public Context AssignContext { get; set; }
+
         public bool HasInitializer { get { return Initializer != null; } }
 
         public JSVariableField VariableField { get; set; }
@@ -60,16 +73,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public VariableDeclaration(Context context, JSParser parser, string identifier, Context idContext, AstNode initializer)
+        public VariableDeclaration(Context context, JSParser parser)
             : base(context, parser)
         {
-            // identifier cannot be null
-            Identifier = identifier;
-            IdentifierContext = idContext;
-
-            // initializer may be null
-            Initializer = initializer;
-            if (Initializer != null) { Initializer.Parent = this; }
         }
 
         public override void Accept(IVisitor visitor)
@@ -109,7 +115,6 @@ namespace Microsoft.Ajax.Utilities
             if (Initializer == oldNode)
             {
                 Initializer = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             return false;

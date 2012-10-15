@@ -230,6 +230,11 @@ namespace Microsoft.Ajax.Utilities
             Debug.Fail("shouldn't get here");
         }
 
+        public void Visit(ObjectLiteralProperty node)
+        {
+            Debug.Fail("shouldn't get here");
+        }
+
         //
         // statements (we should only hit expressions)
         //

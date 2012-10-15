@@ -795,7 +795,8 @@ namespace Microsoft.Ajax.Utilities
                 // create a function scope, assign it to the function object,
                 // and push it on the stack
                 var parentScope = CurrentLexicalScope;
-                if (node.FunctionType == FunctionType.Expression && node.Identifier != null)
+                if (node.FunctionType == FunctionType.Expression 
+                    && !string.IsNullOrEmpty(node.Name))
                 {
                     // function expressions have an intermediate scope between the parent and the
                     // function's scope that contains just the function name so the function can
@@ -840,7 +841,8 @@ namespace Microsoft.Ajax.Utilities
                 // nothing to add to the var-decl list.
                 // but add the function name to the current lex-decl list
                 // IF it is a declaration and it has a name (and it SHOULD unless there was an error)
-                if (node.FunctionType == FunctionType.Declaration && node.Identifier != null)
+                if (node.FunctionType == FunctionType.Declaration && 
+                    !string.IsNullOrEmpty(node.Name))
                 {
                     CurrentLexicalScope.LexicallyDeclaredNames.Add(node);
                 }
@@ -945,11 +947,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                foreach (var item in node.Values)
-                {
-                    item.Accept(this);
-                }
-
+                node.Properties.Accept(this);
                 node.Index = NextOrderIndex;
             }
         }
@@ -957,6 +955,20 @@ namespace Microsoft.Ajax.Utilities
         public void Visit(ObjectLiteralField node)
         {
             // nothing to do
+        }
+
+        public void Visit(ObjectLiteralProperty node)
+        {
+            if (node != null)
+            {
+                // don't care about the property names; just recurse the values
+                if (node.Value != null)
+                {
+                    node.Value.Accept(this);
+                }
+
+                node.Index = NextOrderIndex;
+            }
         }
 
         public void Visit(ParameterDeclaration node)

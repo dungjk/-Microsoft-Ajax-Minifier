@@ -24,10 +24,32 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class FunctionObject : AstNode, INameDeclaration
     {
-        public Block Body { get; private set; }
-        public AstNodeList ParameterDeclarations { get; private set; }
+        private Block m_body;
+        private AstNodeList m_parameters;
 
-        public FunctionType FunctionType { get; private set; }
+        public Block Body
+        {
+            get { return m_body; }
+            set
+            {
+                m_body.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_body = value;
+                m_body.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public AstNodeList ParameterDeclarations
+        {
+            get { return m_parameters; }
+            set
+            {
+                m_parameters.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_parameters = value;
+                m_parameters.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public FunctionType FunctionType { get; set; }
 
         public bool HasInitializer { get { return false; } }
 
@@ -54,27 +76,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public Lookup Identifier { get; private set; }
-        private string m_name;
         public string Name
         {
-            get
-            {
-                return (Identifier != null ? Identifier.Name : m_name);
-            }
-            set
-            {
-                if (Identifier != null)
-                {
-                    Identifier.Name = value;
-                }
-                else
-                {
-                    m_name = value;
-                }
-            }
+            get;
+            set;
         }
-        public Context IdContext { get { return (Identifier == null ? null : Identifier.Context); } }
+
+        public Context IdContext { get; set; }
+        public Context ParametersContext { get; set; }
 
         public override bool IsExpression
         {
@@ -116,18 +125,9 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public FunctionObject(Lookup identifier, JSParser parser, FunctionType functionType, AstNodeList parameterDeclarations, Block bodyBlock, Context functionContext)
+        public FunctionObject(Context functionContext, JSParser parser)
             : base(functionContext, parser)
         {
-            FunctionType = functionType;
-            m_name = string.Empty;
-            Identifier = identifier;
-            if (Identifier != null) { Identifier.Parent = this; }
-
-            ParameterDeclarations = parameterDeclarations;
-
-            Body = bodyBlock;
-            if (bodyBlock != null) { bodyBlock.Parent = this; }
         }
 
         public override void Accept(IVisitor visitor)
@@ -135,20 +135,6 @@ namespace Microsoft.Ajax.Utilities
             if (visitor != null)
             {
                 visitor.Visit(this);
-            }
-        }
-
-        public void SetBody(Block body)
-        {
-            if (Body != null && body != Body)
-            {
-                Body.Parent = null;
-            }
-
-            Body = body;
-            if (Body != null)
-            {
-                Body.Parent = this;
             }
         }
 
@@ -224,44 +210,19 @@ namespace Microsoft.Ajax.Utilities
         {
             if (Body == oldNode)
             {
-                if (newNode == null)
-                {
-                    // just remove it
-                    Body = null;
-                    return true;
-                }
-                else
-                {
-                    // if the new node isn't a block, ignore it
-                    Block newBlock = newNode as Block;
-                    if (newBlock != null)
-                    {
-                        Body = newBlock;
-                        newNode.Parent = this;
-                        return true;
-                    }
-                }
+                Body = ForceToBlock(newNode);
+                return true;
             }
             else if (ParameterDeclarations == oldNode)
             {
-                if (newNode == null)
+                var newList = newNode as AstNodeList;
+                if (newNode == null || newList != null)
                 {
-                    // just remove it
-                    ParameterDeclarations = null;
+                    ParameterDeclarations = newList;
                     return true;
                 }
-                else
-                {
-                    // if the new node isn't a block, ignore it
-                    var newList = newNode as AstNodeList;
-                    if (newList != null)
-                    {
-                        ParameterDeclarations = newList;
-                        newList.Parent = this;
-                        return true;
-                    }
-                }
             }
+
             return false;
         }
 

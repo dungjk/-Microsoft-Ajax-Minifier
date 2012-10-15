@@ -21,11 +21,55 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class TryNode : AstNode
     {
-		public Block TryBlock { get; private set; }
-		public Block CatchBlock { get; private set; }
-		public Block FinallyBlock { get; private set; }
+        private Block m_tryBlock;
+        private Block m_catchBlock;
+        private Block m_finallyBlock;
+        private ParameterDeclaration m_catchParameter;
 
-        public ParameterDeclaration CatchParameter { get; private set; }
+		public Block TryBlock
+        {
+            get { return m_tryBlock; }
+            set
+            {
+                m_tryBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_tryBlock = value;
+                m_tryBlock.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+		public Block CatchBlock
+        {
+            get { return m_catchBlock; }
+            set
+            {
+                m_catchBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_catchBlock = value;
+                m_catchBlock.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+		public Block FinallyBlock
+        {
+            get { return m_finallyBlock; }
+            set
+            {
+                m_finallyBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_finallyBlock = value;
+                m_finallyBlock.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public ParameterDeclaration CatchParameter
+        {
+            get { return m_catchParameter; }
+            set
+            {
+                m_catchParameter.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_catchParameter = value;
+                m_catchParameter.IfNotNull(n => n.Parent = this);
+            }
+        }
+
         public string CatchVarName
         {
             get
@@ -33,6 +77,9 @@ namespace Microsoft.Ajax.Utilities
                 return CatchParameter.IfNotNull(v => v.Name);
             }
         }
+
+        public Context CatchContext { get; set; }
+
         public Context CatchVarContext
         {
             get
@@ -41,20 +88,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public TryNode(Context context, JSParser parser, AstNode tryBlock, ParameterDeclaration catchParameter, AstNode catchBlock, AstNode finallyBlock)
+        public Context FinallyContext { get; set; }
+
+        public TryNode(Context context, JSParser parser)
             : base(context, parser)
         {
-            CatchParameter = catchParameter;
-            if (CatchParameter != null) { CatchParameter.Parent = this; }
-
-            TryBlock = ForceToBlock(tryBlock);
-            if (TryBlock != null) { TryBlock.Parent = this; }
-
-            CatchBlock = ForceToBlock(catchBlock);
-            if (CatchBlock != null) { CatchBlock.Parent = this; }
-
-            FinallyBlock = ForceToBlock(finallyBlock);
-            if (FinallyBlock != null) { FinallyBlock.Parent = this; }
         }
 
         public void SetCatchVariable(JSVariableField field)
@@ -83,25 +121,21 @@ namespace Microsoft.Ajax.Utilities
             if (TryBlock == oldNode)
             {
                 TryBlock = ForceToBlock(newNode);
-                if (TryBlock != null) { TryBlock.Parent = this; }
                 return true;
             }
             if (CatchParameter == oldNode)
             {
                 CatchParameter = newNode as ParameterDeclaration;
-                if (CatchParameter != null) { CatchParameter.Parent = this; }
                 return true;
             }
             if (CatchBlock == oldNode)
             {
                 CatchBlock = ForceToBlock(newNode);
-                if (CatchBlock != null) { CatchBlock.Parent = this; }
                 return true;
             }
             if (FinallyBlock == oldNode)
             {
                 FinallyBlock = ForceToBlock(newNode);
-                if (FinallyBlock != null) { FinallyBlock.Parent = this; }
                 return true;
             }
             return false;

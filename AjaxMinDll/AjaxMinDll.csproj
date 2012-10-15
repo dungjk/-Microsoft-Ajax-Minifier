@@ -183,7 +183,6 @@
     <Compile Include="JavaScript\ISourceMap.cs" />
     <Compile Include="JavaScript\IterationStatement.cs" />
     <Compile Include="JavaScript\IVisitor.cs" />
-    <Compile Include="JavaScript\JavaScriptSymbol.cs" />
     <Compile Include="JavaScript\JScript.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -208,6 +207,7 @@
     <Compile Include="JavaScript\NewParensVisitor.cs" />
     <Compile Include="JavaScript\objectliteral.cs" />
     <Compile Include="JavaScript\objectliteralfield.cs" />
+    <Compile Include="JavaScript\ObjectLiteralProperty.cs" />
     <Compile Include="JavaScript\opprec.cs" />
     <Compile Include="JavaScript\OutputVisitor.cs" />
     <Compile Include="JavaScript\parameterdeclaration.cs" />

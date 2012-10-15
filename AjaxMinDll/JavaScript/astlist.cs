@@ -68,6 +68,8 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_list[ndx] == oldNode)
                 {
+                    oldNode.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+
                     if (newNode == null)
                     {
                         // remove it
@@ -79,9 +81,11 @@ namespace Microsoft.Ajax.Utilities
                         m_list[ndx] = newNode;
                         newNode.Parent = this;
                     }
+
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -160,6 +164,7 @@ namespace Microsoft.Ajax.Utilities
 
         internal void RemoveAt(int position)
         {
+            m_list[position].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
             m_list.RemoveAt(position);
         }
 
@@ -168,6 +173,12 @@ namespace Microsoft.Ajax.Utilities
             get
             {
                 return m_list[index];
+            }
+            set
+            {
+                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_list[index] = value;
+                m_list[index].IfNotNull(n => n.Parent = this);
             }
         }
 

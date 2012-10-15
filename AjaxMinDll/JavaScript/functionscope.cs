@@ -80,7 +80,6 @@ namespace Microsoft.Ajax.Utilities
             functionField.OriginalContext = FunctionObject.IdContext.Clone();
 
             FunctionObject.VariableField = functionField;
-            FunctionObject.Identifier.VariableField = functionField;
 
             this.AddField(functionField);
         }

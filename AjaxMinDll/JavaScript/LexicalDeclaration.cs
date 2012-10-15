@@ -24,12 +24,11 @@ namespace Microsoft.Ajax.Utilities
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "AST statement")]
     public class LexicalDeclaration : Declaration
     {
-        public JSToken StatementToken { get; private set; }
+        public JSToken StatementToken { get; set; }
 
-        public LexicalDeclaration(Context context, JSParser parser, JSToken statementToken)
+        public LexicalDeclaration(Context context, JSParser parser)
             : base(context, parser)
         {
-            StatementToken = statementToken;
         }
 
         public override void Accept(IVisitor visitor)

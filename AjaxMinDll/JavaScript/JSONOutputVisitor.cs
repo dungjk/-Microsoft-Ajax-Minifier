@@ -172,32 +172,9 @@ namespace Microsoft.Ajax.Utilities
             if (node != null)
             {
                 m_writer.Write('{');
-                for (var ndx = 0; ndx < node.Count; ++ndx)
+                if (node.Properties != null)
                 {
-                    if (ndx > 0)
-                    {
-                        m_writer.Write(',');
-                    }
-
-                    if (node.Keys[ndx] != null)
-                    {
-                        node.Keys[ndx].Accept(this);
-                    }
-                    else
-                    {
-                        m_writer.Write("\"\"");
-                    }
-
-                    m_writer.Write(':');
-
-                    if (node.Values[ndx] != null)
-                    {
-                        node.Values[ndx].Accept(this);
-                    }
-                    else
-                    {
-                        m_writer.Write("0");
-                    }
+                    node.Properties.Accept(this);
                 }
 
                 m_writer.Write('}');
@@ -220,6 +197,24 @@ namespace Microsoft.Ajax.Utilities
                     m_writer.Write('"');
                     Visit(node as ConstantWrapper);
                     m_writer.Write('"');
+                }
+            }
+        }
+
+        public void Visit(ObjectLiteralProperty node)
+        {
+            if (node != null)
+            {
+                if (node.Name != null)
+                {
+                    node.Name.Accept(this);
+                }
+
+                m_writer.Write(':');
+
+                if (node.Value != null)
+                {
+                    node.Value.Accept(this);
                 }
             }
         }

@@ -241,9 +241,6 @@
     <Compile Include="..\AjaxMinDll\JavaScript\IVisitor.cs">
       <Link>JavaScript\IVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMinDll\JavaScript\JavaScriptSymbol.cs">
-      <Link>JavaScript\JavaScriptSymbol.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\JScript.Designer.cs">
       <Link>JavaScript\JScript.Designer.cs</Link>
       <AutoGen>True</AutoGen>
@@ -303,6 +300,9 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\objectliteralfield.cs">
       <Link>JavaScript\objectliteralfield.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ObjectLiteralProperty.cs">
+      <Link>JavaScript\ObjectLiteralProperty.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\opprec.cs">
       <Link>JavaScript\opprec.cs</Link>

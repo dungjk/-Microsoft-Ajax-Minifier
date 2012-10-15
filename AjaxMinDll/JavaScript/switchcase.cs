@@ -21,28 +21,41 @@ namespace Microsoft.Ajax.Utilities
 {
     public sealed class SwitchCase : AstNode
     {
-        public AstNode CaseValue { get; private set; }
-        public Block Statements { get; private set; }
+        private AstNode m_caseValue;
+        private Block m_statements;
+
+        public AstNode CaseValue
+        {
+            get { return m_caseValue; }
+            set
+            {
+                m_caseValue.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_caseValue = value;
+                m_caseValue.IfNotNull(n => n.Parent = this);
+            }
+        }
+
+        public Block Statements
+        {
+            get { return m_statements; }
+            set
+            {
+                m_statements.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_statements = value;
+                m_statements.IfNotNull(n => n.Parent = this);
+            }
+        }
 
         internal bool IsDefault
         {
             get { return (CaseValue == null); }
         }
 
-        public SwitchCase(Context context, JSParser parser, AstNode caseValue, Block statements)
+        public Context ColonContext { get; set; }
+
+        public SwitchCase(Context context, JSParser parser)
             : base(context, parser)
         {
-            CaseValue = caseValue;
-            if (caseValue != null)
-            {
-                caseValue.Parent = this;
-            }
-
-            Statements = statements;
-            if (statements != null)
-            {
-                statements.Parent = this;
-            }
         }
 
         public override void Accept(IVisitor visitor)
@@ -71,27 +84,15 @@ namespace Microsoft.Ajax.Utilities
             if (CaseValue == oldNode)
             {
                 CaseValue = newNode;
-                if (newNode != null) { newNode.Parent = this; }
                 return true;
             }
             if (Statements == oldNode)
             {
-                if (newNode == null)
+                var newBlock = newNode as Block;
+                if (newNode == null || newBlock != null)
                 {
-                    // remove it
-                    Statements = null;
+                    Statements = newBlock;
                     return true;
-                }
-                else
-                {
-                    // if the new node isn't a block, ignore the call
-                    Block newBlock = newNode as Block;
-                    if (newBlock != null)
-                    {
-                        Statements = newBlock;
-                        newNode.Parent = this;
-                        return true;
-                    }
                 }
             }
             return false;

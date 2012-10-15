@@ -50,6 +50,10 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public JSParser Parser { get; private set; }
 
+        /// <summary>the context of any terminating character parsed after this node
+        /// e.g. the semicolon after a statement or a comma in a parameter list</summary>
+        public Context TerminatingContext { get; set; }
+
         protected AstNode(Context context, JSParser parser)
         {
             Parser = parser;
@@ -92,20 +96,19 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        protected Block ForceToBlock(AstNode astNode)
+        public static Block ForceToBlock(AstNode astNode)
         {
             // if the node is null or already a block, then we're 
             // good to go -- just return it.
-            Block block = astNode as Block;
-            if (astNode == null || block != null)
+            var block = astNode as Block;
+            if (block == null && astNode != null)
             {
-                return block;
+                // it's not a block, so create a new block, append the astnode
+                // and return the block
+                block = new Block(astNode.Context.Clone(), astNode.Parser);
+                block.Append(astNode);
             }
 
-            // it's not a block, so create a new block, append the astnode
-            // and return the block
-            block = new Block(null, Parser);
-            block.Append(astNode);
             return block;
         }
 

@@ -35,11 +35,9 @@ namespace Microsoft.Ajax.Utilities
             get { return m_list[index]; }
             set
             {
+                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
                 m_list[index] = value;
-                if (value != null)
-                { 
-                    value.Parent = this; 
-                }
+                m_list[index].IfNotNull(n => n.Parent = this);
             }
         }
 
@@ -178,6 +176,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_list[ndx] == oldNode)
                 {
+                    m_list[ndx].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
                     if (newNode == null)
                     {
                         // just remove it
@@ -191,7 +190,7 @@ namespace Microsoft.Ajax.Utilities
                             // the new "statement" is a block. That means we need to insert all
                             // the statements from the new block at the location of the old item.
                             m_list.RemoveAt(ndx);
-                            m_list.InsertRange(ndx, newBlock.m_list);
+                            InsertRange(ndx, newBlock.m_list);
                         }
                         else
                         {
@@ -200,9 +199,11 @@ namespace Microsoft.Ajax.Utilities
                             newNode.Parent = this;
                         }
                     }
+
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -284,7 +285,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public void RemoveLast()
         {
-            m_list.RemoveAt(m_list.Count - 1);
+            RemoveAt(m_list.Count - 1);
         }
 
         /// <summary>
@@ -295,6 +296,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (0 <= index && index < m_list.Count)
             {
+                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
                 m_list.RemoveAt(index);
             }
         }
@@ -321,6 +323,11 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public void Clear()
         {
+            foreach (var item in m_list)
+            {
+                item.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+            }
+
             m_list.Clear();
         }
     }

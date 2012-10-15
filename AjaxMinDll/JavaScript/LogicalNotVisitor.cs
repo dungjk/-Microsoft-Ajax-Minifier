@@ -44,13 +44,12 @@ namespace Microsoft.Ajax.Utilities
         private void WrapWithLogicalNot(AstNode operand)
         {
             operand.Parent.ReplaceChild(
-                operand, 
-                new UnaryOperator(
-                    null,
-                    m_parser,
-                    operand,
-                    JSToken.LogicalNot,
-                    false));
+                operand,
+                new UnaryOperator(null, m_parser)
+                    {
+                        Operand = operand,
+                        OperatorToken = JSToken.LogicalNot
+                    });
         }
 
         private void TypicalHandler(AstNode node)

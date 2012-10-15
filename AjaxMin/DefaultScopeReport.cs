@@ -212,7 +212,7 @@ namespace Microsoft.Ajax.Utilities
                 // if this is a named function expression, we still want to know if it's
                 // referenced by anyone
                 if (funcObj.FunctionType == FunctionType.Expression
-                    && funcObj.Identifier != null)
+                    && !string.IsNullOrEmpty(funcObj.Name))
                 {
                     // output a comma separator if not the first item, otherwise 
                     // open the square bracket

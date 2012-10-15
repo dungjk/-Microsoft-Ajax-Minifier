@@ -33,6 +33,12 @@ namespace Microsoft.Ajax.Utilities
         public VariableDeclaration this[int index]
         {
             get { return m_list[index]; }
+            set
+            {
+                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                m_list[index] = value;
+                m_list[index].IfNotNull(n => n.Parent = this);
+            }
         }
 
         public ActivationObject Scope { get; set; }
@@ -57,24 +63,17 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_list[ndx] == oldNode)
                 {
-                    if (newNode == null)
+                    // if the new node isn't a variabledeclaration, ignore the call
+                    VariableDeclaration newDecl = newNode as VariableDeclaration;
+                    if (newNode == null || newDecl != null)
                     {
-                        // remove it
-                        m_list.RemoveAt(ndx);
+                        m_list[ndx].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                        m_list[ndx] = newDecl;
+                        m_list[ndx].IfNotNull(n => n.Parent = this);
                         return true;
                     }
-                    else
-                    {
-                        // if the new node isn't a variabledeclaration, ignore the call
-                        VariableDeclaration newDecl = newNode as VariableDeclaration;
-                        if (newDecl != null)
-                        {
-                            m_list[ndx] = newDecl;
-                            newNode.Parent = this;
-                            return true;
-                        }
-                        break;
-                    }
+
+                    break;
                 }
             }
             return false;
@@ -167,6 +166,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                     else
                     {
+                        varDecl.Parent = null;
                         m_list.RemoveAt(ndx);
                     }
                 }
@@ -179,6 +179,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (0 <= index & index < m_list.Count)
             {
+                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
                 m_list.RemoveAt(index);
             }
         }
