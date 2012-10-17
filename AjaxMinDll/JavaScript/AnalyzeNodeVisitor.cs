@@ -198,17 +198,50 @@ namespace Microsoft.Ajax.Utilities
                         // see if the return node has an expression operand
                         if (returnNode.Operand != null && returnNode.Operand.IsExpression)
                         {
-                            // check for expr1[ASSIGN]expr2;return expr1 and replace with return expr1[ASSIGN]expr2
+                            // check for lookup[ASSIGN]expr2;return lookup.
+                            // if lookup is a local variable in the current scope, we can replace with return expr2;
+                            // if lookup is an outer reference, we can replace with return lookup[ASSIGN]expr2
                             var beforeExpr = node[ndx - 1] as BinaryOperator;
-                            if (beforeExpr != null && beforeExpr.IsAssign
-                                && beforeExpr.Operand1.IsEquivalentTo(returnNode.Operand))
+                            Lookup lookup;
+                            if (beforeExpr != null && beforeExpr.IsAssign 
+                                && ((lookup = beforeExpr.Operand1 as Lookup) != null) 
+                                && returnNode.Operand.IsEquivalentTo(lookup))
                             {
-                                // tranaform: expr1[ASSIGN]expr2;return expr1 and replace with return expr1[ASSIGN]expr2
-                                // replace the operand on the return node with the previous expression and
-                                // delete the previous node
-                                if (returnNode.ReplaceChild(returnNode.Operand, beforeExpr))
+                                // check to see if lookup is in the current scope from which we are returning
+                                if (lookup.VariableField == null || lookup.VariableField.OuterField != null)
                                 {
+                                    // transform: lookup[ASSIGN]expr2;return lookup => return lookup[ASSIGN]expr2
+                                    // lookup points to outer field (or we don't know)
+                                    // replace the operand on the return node with the previous expression and
+                                    // delete the previous node.
+                                    // first be sure to remove the lookup in the return operand from the references
+                                    // to field.
+                                    if (lookup.VariableField != null)
+                                    {
+                                        lookup.VariableField.References.Remove(returnNode.Operand as INameReference);
+                                    }
+
+                                    returnNode.Operand = beforeExpr;
                                     node.ReplaceChild(node[ndx - 1], null);
+                                }
+                                else
+                                {
+                                    // transform: lookup[ASSIGN]expr2;return lookup => return expr2
+                                    // lookup is a variable local to the current scope, so when we return, the
+                                    // variable won't exists anymore anyway.
+                                    // replace the operand on the return node oprand with the right-hand operand of the
+                                    // previous expression and delete the previous node.
+                                    // we're eliminating the two lookups altogether, so remove them both from the
+                                    // field's reference table.
+                                    lookup.VariableField.References.Remove(lookup);
+                                    lookup.VariableField.References.Remove(returnNode.Operand as INameReference);
+
+                                    returnNode.Operand = beforeExpr.Operand2;
+                                    node.ReplaceChild(node[ndx - 1], null);
+
+                                    // TODO: now that we've eliminated the two lookups, see if the local variable isn't
+                                    // referenced anymore. If it isn't, we might be able to remove the variable, too.
+                                    // (need to pick up those changes to keep track of a field's declarations, though)
                                 }
                             }
                             else

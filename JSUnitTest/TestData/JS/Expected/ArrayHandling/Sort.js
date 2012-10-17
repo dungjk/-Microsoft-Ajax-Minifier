@@ -1,1 +1,1 @@
-function Func(){var a,l;return a=["X","y","d","Z","v","m","r"],l=a.sort()}
+function Func(){var a,l;return a=["X","y","d","Z","v","m","r"],a.sort()}

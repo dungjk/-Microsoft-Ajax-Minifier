@@ -1,1 +1,1 @@
-function Func(){var a,l;return a=[0,1,2,3,4],l=a.reverse()}
+function Func(){var a,l;return a=[0,1,2,3,4],a.reverse()}
