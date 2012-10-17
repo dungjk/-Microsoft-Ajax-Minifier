@@ -106,8 +106,10 @@ namespace Microsoft.Ajax.Utilities
                         this.AddField(argumentField);
                     }
 
-                    // make the parameter reference the field
+                    // make the parameter reference the field and the field reference
+                    // the parameter as its declaration
                     parameter.VariableField = argumentField;
+                    argumentField.Declarations.Add(parameter);
                 }
             }
         }

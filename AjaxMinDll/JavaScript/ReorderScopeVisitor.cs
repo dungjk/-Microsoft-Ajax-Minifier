@@ -234,6 +234,11 @@ namespace Microsoft.Ajax.Utilities
 
                                     // add the original vardecl to the list of "assignments"
                                     assignments.Add(varDecl);
+
+                                    // add the new decl to the field's declaration list, and remove the old one
+                                    // because we're going to change that to an assignment.
+                                    varDecl.VariableField.Declarations.Add(copyDecl);
+                                    varDecl.VariableField.Declarations.Remove(varDecl);
                                 }
                                 else
                                 {
@@ -241,21 +246,25 @@ namespace Microsoft.Ajax.Utilities
                                     var initializer = varDecl.Initializer;
 
                                     // remove it from the vardecl
-                                    varDecl.ReplaceChild(initializer, null);
+                                    varDecl.Initializer = null;
 
                                     // create an assignment operator for a lookup to the name
                                     // as the left, and the initializer as the right, and add it to the list
+                                    var lookup = new Lookup(varDecl.VariableField.OriginalContext, varDecl.Parser)
+                                        {
+                                            Name = varDecl.Identifier,
+                                            VariableField = varDecl.VariableField,
+                                        };
                                     assignments.Add(new BinaryOperator(varDecl.Context, varDecl.Parser)
                                         {
-                                            Operand1 = new Lookup(varDecl.VariableField.OriginalContext, varDecl.Parser)
-                                                {
-                                                    Name = varDecl.Identifier,
-                                                    VariableField = varDecl.VariableField,
-                                                },
+                                            Operand1 = lookup,
                                             Operand2 = initializer,
                                             OperatorToken = JSToken.Assign,
                                             OperatorContext = varDecl.AssignContext
                                         });
+
+                                    // add the new lookup to the field's references
+                                    varDecl.VariableField.References.Add(lookup);
                                 }
                             }
                         }
@@ -287,13 +296,13 @@ namespace Microsoft.Ajax.Utilities
                                 // we want to replace the var statement with a lookup for the var
                                 // there should be only one vardecl
                                 var varDecl = varStatement[0];
-                                varStatement.Parent.ReplaceChild(
-                                    varStatement,
-                                    new Lookup(varDecl.VariableField.OriginalContext, varStatement.Parser) 
-                                    { 
+                                var lookup = new Lookup(varDecl.VariableField.OriginalContext, varStatement.Parser)
+                                    {
                                         Name = varDecl.Identifier,
-                                        VariableField = varDecl.VariableField 
-                                    });
+                                        VariableField = varDecl.VariableField
+                                    };
+                                varStatement.Parent.ReplaceChild(varStatement, lookup);
+                                varDecl.VariableField.References.Add(lookup);
                             }
                             else
                             {

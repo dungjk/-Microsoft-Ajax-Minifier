@@ -25,6 +25,9 @@ function bar(foo)
   var h = - -g;           // h=- -g
   var i = +0;             // i=0
   var j = -0;             // i=-0
+
+  // use a read to make sure we don't combine the assignments)
+  foo(a,b,c,d,e,f,g,h,i,j);
   
   f = - +g; // don't need any spaces, since -+ isn't a separate operator
   f = - +4; // negating a positive numeric literal is just the negative of the signless literal

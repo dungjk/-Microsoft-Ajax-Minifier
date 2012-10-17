@@ -233,15 +233,65 @@ namespace Microsoft.Ajax.Utilities
                                     // previous expression and delete the previous node.
                                     // we're eliminating the two lookups altogether, so remove them both from the
                                     // field's reference table.
-                                    lookup.VariableField.References.Remove(lookup);
-                                    lookup.VariableField.References.Remove(returnNode.Operand as INameReference);
+                                    var varField = lookup.VariableField;
+                                    varField.References.Remove(lookup);
+                                    varField.References.Remove(returnNode.Operand as INameReference);
 
                                     returnNode.Operand = beforeExpr.Operand2;
                                     node.ReplaceChild(node[ndx - 1], null);
 
-                                    // TODO: now that we've eliminated the two lookups, see if the local variable isn't
+                                    // now that we've eliminated the two lookups, see if the local variable isn't
                                     // referenced anymore. If it isn't, we might be able to remove the variable, too.
                                     // (need to pick up those changes to keep track of a field's declarations, though)
+                                    if (varField.RefCount == 0)
+                                    {
+                                        // it's not. if there's only one declaration and it either has no initializer or
+                                        // is initialized to a constant, get rid of it.
+                                        INameDeclaration nameDecl = null;
+                                        foreach (var decl in varField.Declarations)
+                                        {
+                                            if (nameDecl == null)
+                                            {
+                                                // first declaration.
+                                                nameDecl = decl;
+                                            }
+                                            else
+                                            {
+                                                // not the first! there's more than one, so
+                                                // let's not mess around with it. null the reference
+                                                // and break out of the loop so we leave them all alone.
+                                                nameDecl = null;
+                                                break;
+                                            }
+                                        }
+
+                                        if (nameDecl != null)
+                                        {
+                                            // we only had one declaration.
+                                            if (nameDecl.Initializer == null || nameDecl.Initializer.IsConstant)
+                                            {
+                                                // and it either had no initializer or it was initialized to a constant.
+                                                // but it has no references, so let's whack it. Actually, only if it was
+                                                // a var-decl (leave parameter and function decls alone).
+                                                var varDecl = nameDecl as VariableDeclaration;
+                                                if (varDecl != null)
+                                                {
+                                                    // save the declaration parent (var, const, or let) and remove the
+                                                    // child vardecl from its list
+                                                    var declStatement = varDecl.Parent as Declaration;
+                                                    declStatement.Remove(varDecl);
+                                                    varField.WasRemoved = true;
+
+                                                    // if the parent statement is now empty, remove it, too. this will
+                                                    // move everything up one index, but that'll just mean an extra loop.
+                                                    if (declStatement.Count == 0)
+                                                    {
+                                                        declStatement.Parent.ReplaceChild(declStatement, null);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             else
@@ -571,6 +621,8 @@ namespace Microsoft.Ajax.Utilities
                                         if (binaryOp != null && AreAssignmentsInVar(binaryOp, previousVar))
                                         {
                                             // transform: var decls;for(expr1;...) to for(var decls,expr1;...)
+                                            // WHERE expr1 only consists of assignments to variables that are declared
+                                            // in that previous var-statement.
                                             // create a list and fill it with all the var-decls created from the assignment
                                             // operators in the expression
                                             var varDecls = new List<VariableDeclaration>();
@@ -2860,10 +2912,10 @@ namespace Microsoft.Ajax.Utilities
                             // other vardecl with the same name (whether or not it has an initializer)
                             if (VarDeclExists(node, ndx + 1, thisName))
                             {
-                                node.RemoveAt(ndx);
-
                                 // don't increment the index; we just deleted the current item,
                                 // so the next item just slid into this position
+                                node[ndx].VariableField.Declarations.Remove(node[ndx]);
+                                node.RemoveAt(ndx);
                             }
                             else
                             {
@@ -3067,6 +3119,7 @@ namespace Microsoft.Ajax.Utilities
                                 Initializer = binaryOp.Operand2,
                                 VariableField = lookup.VariableField
                             };
+                        varDecl.VariableField.Declarations.Add(varDecl);
                         varDecls.Add(varDecl);
                     }
                 }
@@ -3115,12 +3168,15 @@ namespace Microsoft.Ajax.Utilities
             // walk backwards from the end of the list down to (and including) the minimum index
             for (int ndx = node.Count - 1; ndx >= min; --ndx)
             {
+                var varDecl = node[ndx];
+
                 // if the name matches and there is no initializer...
-                if (string.CompareOrdinal(node[ndx].Identifier, name) == 0
-                    && node[ndx].Initializer == null)
+                if (string.CompareOrdinal(varDecl.Identifier, name) == 0
+                    && varDecl.Initializer == null)
                 {
-                    // ...remove it from the list
+                    // ...remove it from the list and from the field's declarations
                     node.RemoveAt(ndx);
+                    varDecl.VariableField.Declarations.Remove(varDecl);
                 }
             }
         }

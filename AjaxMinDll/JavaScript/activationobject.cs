@@ -209,7 +209,7 @@ namespace Microsoft.Ajax.Utilities
                         nameDecl.NameContext.HandleError(JSError.DuplicateLexicalDeclaration, true);
                     }
 
-                    if (nameDecl.HasInitializer)
+                    if (nameDecl.Initializer != null)
                     {
                         // if this is an initialized declaration, then the var part is
                         // superfluous and the "initializer" is really a lookup assignment. 
@@ -232,6 +232,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             nameDecl.VariableField = field;
+            field.Declarations.Add(nameDecl);
 
             // if this scope is within a with-statement, or if the declaration was flagged
             // as not being renamable, then mark the field as not crunchable
@@ -255,7 +256,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // not referenced, not generated, and has an original context so not added after the fact.
                     // and we don't care if catch-error fields are unreferenced.
-                    if (!variableField.IsReferenced 
+                    if (!variableField.IsReferenced
                         && !variableField.IsGenerated
                         && variableField.OuterField == null
                         && variableField.FieldType != FieldType.CatchError
@@ -312,15 +313,24 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 if (functionScope.FunctionObject.IfNotNull(func => func.IsArgumentTrimmable(variableField)))
                                 {
+                                    // if we are planning on removing unreferenced function parameters, mark it as removed
+                                    // so we don't waste a perfectly good auto-rename name on it later.
+                                    if (m_settings.RemoveUnneededCode
+                                        && m_settings.IsModificationAllowed(TreeModifications.RemoveUnusedParameters))
+                                    {
+                                        variableField.WasRemoved = true;
+                                    }
+
                                     variableField.OriginalContext.HandleError(
                                         JSError.ArgumentNotReferenced,
                                         false);
                                 }
                             }
                         }
-                        else
+                        else if (!variableField.WasRemoved)
                         {
-                            // not referenced -- throw a warning.
+                            // not referenced -- throw a warning, assuming it hasn't been "removed" 
+                            // via an optimization or something.
                             variableField.OriginalContext.HandleError(
                                 JSError.VariableDefinedNotReferenced,
                                 false);
@@ -534,9 +544,9 @@ namespace Microsoft.Ajax.Utilities
             foreach (var variableField in NameTable.Values)
             {
                 // if the field is defined in this scope and hasn't been crunched
-                // AND can still be crunched
+                // AND can still be crunched AND wasn't removed during the optimization process
                 if (variableField != null && variableField.OuterField == null && variableField.CrunchedName == null
-                    && variableField.CanCrunch)
+                    && variableField.CanCrunch && !variableField.WasRemoved)
                 {
                     // if local renaming is not crunch all, then it must be crunch all but localization
                     // (we don't get called if we aren't crunching anything). 

@@ -73,6 +73,23 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public bool IsAssignment
+        {
+            get
+            {
+                // if there is an initializer, we are an assignment
+                return Initializer != null;
+            }
+        }
+
+        public AstNode AssignmentValue
+        {
+            get
+            {
+                return Initializer;
+            }
+        }
+
         public VariableDeclaration(Context context, JSParser parser)
             : base(context, parser)
         {

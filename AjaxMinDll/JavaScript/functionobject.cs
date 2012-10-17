@@ -51,7 +51,7 @@ namespace Microsoft.Ajax.Utilities
 
         public FunctionType FunctionType { get; set; }
 
-        public bool HasInitializer { get { return false; } }
+        public AstNode Initializer { get { return null; } }
 
         public Context NameContext { get { return IdContext; } }
 

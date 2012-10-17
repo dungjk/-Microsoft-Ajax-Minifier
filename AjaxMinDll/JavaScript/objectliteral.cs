@@ -34,6 +34,28 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                // we are NOT constant if any one property value isn't constant.
+                // no properties means an empty object literal, which is constant.
+                if (Properties != null)
+                {
+                    foreach (var property in Properties)
+                    {
+                        if (!property.IsConstant)
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                // if we got here, they're all constant
+                return true;
+            }
+        }
+
         public ObjectLiteral(Context context, JSParser parser)
             : base(context, parser)
         {

@@ -34,6 +34,53 @@ namespace Microsoft.Ajax.Utilities
         public ReferenceType RefType { get; set; }
         public string Name { get; set; }
 
+        public bool IsAssignment
+        {
+            get
+            {
+                var isAssign = false;
+
+                // see if our parent is a binary operator.
+                var binaryOp = Parent as BinaryOperator;
+                if (binaryOp != null)
+                {
+                    // if we are, we are an assignment lookup if the binary operator parent is an assignment
+                    // and we are the left-hand side.
+                    isAssign = binaryOp.IsAssign && binaryOp.Operand1 == this;
+                }
+                else
+                {
+                    // not a binary op -- but we might still be an "assignment" if we are an increment or decrement operator.
+                    // otherwise we are not an assignment
+                    var unaryOp = Parent as UnaryOperator;
+                    isAssign = unaryOp != null
+                        && (unaryOp.OperatorToken == JSToken.Increment || unaryOp.OperatorToken == JSToken.Decrement);
+                }
+
+                return isAssign;
+            }
+        }
+
+        public AstNode AssignmentValue
+        {
+            get
+            {
+                AstNode value = null;
+
+                // see if our parent is a binary operator.
+                var binaryOp = Parent as BinaryOperator;
+                if (binaryOp != null)
+                {
+                    // the parent is a binary operator. If it is an assignment operator 
+                    // (not including any of the op-assign which depend on an initial value)
+                    // then the value we are assigning is the right-hand side of the = operator.
+                    value = binaryOp.OperatorToken == JSToken.Assign && binaryOp.Operand1 == this ? binaryOp.Operand2 : null;
+                }
+
+                return value;
+            }
+        }
+
         public Lookup(Context context, JSParser parser)
             : base(context, parser)
         {

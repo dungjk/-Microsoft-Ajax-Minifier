@@ -42,6 +42,8 @@ namespace Microsoft.Ajax.Utilities
     {
         private ActivationObject m_owningScope; 
         private HashSet<INameReference> m_referenceTable;
+        private HashSet<INameDeclaration> m_declarationTable;
+
         private bool m_canCrunch;// = false;
         private bool m_isDeclared; //= false;
         private bool m_isGenerated;
@@ -58,6 +60,7 @@ namespace Microsoft.Ajax.Utilities
         public bool IsPlaceholder { get; set; }
         public bool InitializationOnly { get; set; }
         public int Position { get; set; }
+        public bool WasRemoved { get; set; }
 
         public JSVariableField OuterField { get; set; }
 
@@ -91,6 +94,11 @@ namespace Microsoft.Ajax.Utilities
         public ICollection<INameReference> References
         {
             get { return m_referenceTable; }
+        }
+
+        public ICollection<INameDeclaration> Declarations
+        {
+            get { return m_declarationTable; }
         }
 
         public bool IsLiteral
@@ -203,6 +211,7 @@ namespace Microsoft.Ajax.Utilities
         public JSVariableField(FieldType fieldType, string name, FieldAttributes fieldAttributes, object value)
         {
             m_referenceTable = new HashSet<INameReference>();
+            m_declarationTable = new HashSet<INameDeclaration>();
 
             Name = name;
             Attributes = fieldAttributes;
@@ -218,6 +227,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             m_referenceTable = new HashSet<INameReference>();
+            m_declarationTable = new HashSet<INameDeclaration>();
 
             // set values based on the outer field
             OuterField = outerField;

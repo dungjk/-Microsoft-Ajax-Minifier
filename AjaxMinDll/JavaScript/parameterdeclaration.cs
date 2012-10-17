@@ -30,7 +30,7 @@ namespace Microsoft.Ajax.Utilities
 
         public JSVariableField VariableField { get; set; }
 
-        public bool HasInitializer { get { return false; } }
+        public AstNode Initializer { get { return null; } }
 
         public Context NameContext { get { return Context; } }
 

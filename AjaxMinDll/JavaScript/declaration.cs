@@ -184,6 +184,17 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public void Remove(VariableDeclaration varDecl)
+        {
+            // remove the vardecl from the list. If it was there and was
+            // successfully remove, Remove will return true. At that point, if the
+            // vardecl still thinks we are the parent, reset the parent pointer.
+            if (m_list.Remove(varDecl) && varDecl.Parent == this)
+            {
+                varDecl.Parent = null;
+            }
+        }
+
         public bool Contains(string name)
         {
             // look at each vardecl in our list
