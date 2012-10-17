@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 
 namespace Microsoft.Ajax.Utilities
 {
@@ -25,6 +26,7 @@ namespace Microsoft.Ajax.Utilities
         object StartSymbol(AstNode astNode, int startLine, int startColumn);
         void MarkSegment(AstNode node, int startLine, int startColumn, string name, Context context);
         void EndSymbol(object symbol, int endLine, int endColumn, string parentContext);
+        void EndFile(TextWriter writer, string outputPath, string mapFilePath, string newLine);
         string Name { get; }
     }
 }

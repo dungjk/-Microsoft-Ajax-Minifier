@@ -82,22 +82,6 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        internal override string GetFunctionGuess(AstNode target)
-        {
-            // find the index of the target item
-            for (int ndx = 0; ndx < Elements.Count; ++ndx)
-            {
-                if (Elements[ndx] == target)
-                {
-                    // we'll append the index to the guess for this array
-                    string parentGuess = Parent.GetFunctionGuess(this);
-                    return "{0}_{1}".FormatInvariant(parentGuess, ndx);
-                }
-            }
-            // didn't find it
-            return string.Empty;
-        }
-
         public override bool IsConstant
         {
             get

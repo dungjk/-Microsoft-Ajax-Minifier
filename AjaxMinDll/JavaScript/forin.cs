@@ -50,6 +50,15 @@ namespace Microsoft.Ajax.Utilities
 
         public BlockScope BlockScope { get; set; }
 
+        public override Context TerminatingContext
+        {
+            get
+            {
+                // if we have one, return it. If not, return what the body has (if any)
+                return base.TerminatingContext ?? Body.IfNotNull(b => b.TerminatingContext);
+            }
+        }
+
         public ForIn(Context context, JSParser parser)
             : base(context, parser)
         {

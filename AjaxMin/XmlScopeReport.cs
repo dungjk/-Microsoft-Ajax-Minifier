@@ -110,14 +110,14 @@ namespace Microsoft.Ajax.Utilities
 
                     if (string.IsNullOrEmpty(functionObject.Name))
                     {
-                        if (functionObject.Name.StartsWith("\"", StringComparison.Ordinal))
+                        if (functionObject.NameGuess.StartsWith("\"", StringComparison.Ordinal))
                         {
                             // strip enclosing quotes
-                            m_writer.WriteAttributeString("guess", functionObject.Name.Substring(1, functionObject.Name.Length - 2));
+                            m_writer.WriteAttributeString("guess", functionObject.NameGuess.Substring(1, functionObject.NameGuess.Length - 2));
                         }
                         else
                         {
-                            m_writer.WriteAttributeString("guess", functionObject.Name);
+                            m_writer.WriteAttributeString("guess", functionObject.NameGuess);
                         }
                     }
                     else

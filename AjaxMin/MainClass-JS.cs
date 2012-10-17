@@ -128,7 +128,7 @@ namespace Microsoft.Ajax.Utilities
             return 0;
         }
 
-        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
+        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder, string outputPath)
         {
             var returnCode = 0;
 
@@ -182,6 +182,16 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         OutputVisitor.Apply(writer, scriptBlock, switchParser.JSSettings);
+
+                        // give the symbols map a chance to write something at the bottom of the source file
+                        if (switchParser.JSSettings.SymbolsMap != null)
+                        {
+                            switchParser.JSSettings.SymbolsMap.EndFile(
+                                writer, 
+                                outputPath, 
+                                m_symbolsMapFile,
+                                switchParser.JSSettings.OutputMode == OutputMode.SingleLine ? "\n" : "\r\n");
+                        }
                     }
                 }
             }

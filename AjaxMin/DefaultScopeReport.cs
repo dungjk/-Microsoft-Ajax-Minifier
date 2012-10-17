@@ -211,8 +211,7 @@ namespace Microsoft.Ajax.Utilities
                 // global function.
                 // if this is a named function expression, we still want to know if it's
                 // referenced by anyone
-                if (funcObj.FunctionType == FunctionType.Expression
-                    && !string.IsNullOrEmpty(funcObj.Name))
+                if (funcObj.FunctionType == FunctionType.Expression && !string.IsNullOrEmpty(funcObj.Name))
                 {
                     // output a comma separator if not the first item, otherwise 
                     // open the square bracket
@@ -272,11 +271,13 @@ namespace Microsoft.Ajax.Utilities
                     break;
             }
 
+            var functionName = funcObj.Name.IfNullOrWhiteSpace(funcObj.NameGuess);
+
             // output
             WriteProgress();
             WriteProgress(AjaxMin.FunctionHeader.FormatInvariant(
                 AjaxMin.ResourceManager.GetString(functionType, AjaxMin.Culture),
-                funcObj.Name,
+                functionName ?? AjaxMin.AnonymousFunction,
                 funcObj.Context.StartLineNumber,
                 funcObj.Context.StartColumn + 1,
                 status,

@@ -69,21 +69,7 @@ namespace Microsoft.Ajax.Utilities
 
         internal override string GetFunctionGuess(AstNode target)
         {
-            // MSN VOODOO: treat the as and ns methods as special if the expression is the root,
-            // the parent is the call, and there is one string parameter -- use the string parameter
-            if (Root == target && (Name == "as" || Name == "ns"))
-            {
-                CallNode call = Parent as CallNode;
-                if (call != null && call.Arguments.Count == 1)
-                {
-                    ConstantWrapper firstParam = call.Arguments[0] as ConstantWrapper;
-                    if (firstParam != null)
-                    {
-                        return firstParam.ToString();
-                    }
-                }
-            }
-            return Name;
+            return Root.GetFunctionGuess(this) + '.' + Name;
         }
 
         internal override bool IsDebuggerStatement

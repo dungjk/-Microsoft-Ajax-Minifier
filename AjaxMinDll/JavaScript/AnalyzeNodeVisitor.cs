@@ -25,26 +25,9 @@ namespace Microsoft.Ajax.Utilities
     internal class AnalyzeNodeVisitor : TreeVisitor
     {
         private JSParser m_parser;
-        private uint m_uniqueNumber;// = 0;
         private bool m_encounteredCCOn;// = false;
         private MatchPropertiesVisitor m_matchVisitor;// == null;
         private Stack<ActivationObject> m_scopeStack;
-
-        private uint UniqueNumber
-        {
-            get
-            {
-                lock (this)
-                {
-                    // we'll want to roll over if for some reason we ever hit the max
-                    if (m_uniqueNumber == int.MaxValue)
-                    {
-                        m_uniqueNumber = 0;
-                    }
-                    return m_uniqueNumber++;
-                }
-            }
-        }
 
         public AnalyzeNodeVisitor(JSParser parser)
         {
@@ -977,7 +960,8 @@ namespace Microsoft.Ajax.Utilities
                                     {
                                         Operand1 = condition1,
                                         Operand2 = condition2,
-                                        OperatorToken = JSToken.LogicalOr
+                                        OperatorToken = JSToken.LogicalOr,
+                                        TerminatingContext = ifNode.TerminatingContext ?? node.TerminatingContext
                                     });
                                 node.RemoveAt(ndx);
                             }
@@ -1580,7 +1564,8 @@ namespace Microsoft.Ajax.Utilities
                                     FalseExpression = falseAssign.Operand2
                                 },
                                 OperatorContext = trueAssign.OperatorContext,
-                                OperatorToken = trueAssign.OperatorToken
+                                OperatorToken = trueAssign.OperatorToken,
+                                TerminatingContext = node.TerminatingContext
                             };
 
                         node.Parent.ReplaceChild(node, binaryOp);
@@ -1885,10 +1870,15 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // get the name of this function, calculate something if it's anonymous
-                if (string.IsNullOrEmpty(node.Name))
+                // get the name of this function, calculate something if it's anonymous or if
+                // the name isn't actually referenced
+                if (node.Name.IsNullOrWhiteSpace()
+                    || (node.IsExpression
+                        && node.RefCount == 0
+                        && m_parser.Settings.RemoveFunctionExpressionNames
+                        && m_parser.Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames)))
                 {
-                    node.Name = GuessAtName(node);
+                    node.NameGuess = GuessAtName(node);
                 }
 
                 // don't analyze the identifier or we'll add an extra reference to it.
@@ -2132,7 +2122,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 Operand1 = node.Condition,
                                 Operand2 = node.FalseBlock[0],
-                                OperatorToken = newOperator
+                                OperatorToken = newOperator,
                             };
 
                         // we don't need to analyse this new node because we've already analyzed
@@ -2234,7 +2224,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Operand1 = ifNode.Condition,
                     Operand2 = expression,
-                    OperatorToken = newOperator
+                    OperatorToken = newOperator,
                 };
 
             // we don't need to analyse this new node because we've already analyzed
@@ -3030,9 +3020,11 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private string GuessAtName(AstNode node)
+        private static string GuessAtName(AstNode node)
         {
+            string guess = string.Empty;
             var parent = node.Parent;
+
             if (parent != null)
             {
                 if (parent is AstNodeList)
@@ -3041,6 +3033,7 @@ namespace Microsoft.Ajax.Utilities
                     // in our parent's parent (probably a call)
                     parent = parent.Parent;
                 }
+
                 CallNode call = parent as CallNode;
                 if (call != null && call.IsConstructor)
                 {
@@ -3048,24 +3041,10 @@ namespace Microsoft.Ajax.Utilities
                     parent = parent.Parent;
                 }
 
-                string guess = parent.GetFunctionGuess(node);
-                if (guess != null && guess.Length > 0)
-                {
-                    if (guess.StartsWith("\"", StringComparison.Ordinal)
-                      && guess.EndsWith("\"", StringComparison.Ordinal))
-                    {
-                        // don't need to wrap it in quotes -- it already is
-                        return guess;
-                    }
-                    // wrap the guessed name in quotes
-                    return "\"{0}\"".FormatInvariant(guess);
-                }
-                else
-                {
-                    return "anonymous_{0}".FormatInvariant(UniqueNumber);
-                }
+                guess = parent.GetFunctionGuess(node);
             }
-            return string.Empty;
+
+            return guess;
         }
 
         private static bool AreAssignmentsInVar(BinaryOperator binaryOp, Var varStatement)

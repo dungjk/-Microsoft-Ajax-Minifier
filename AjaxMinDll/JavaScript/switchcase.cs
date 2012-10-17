@@ -66,11 +66,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        internal override string GetFunctionGuess(AstNode target)
-        {
-            return CaseValue.GetFunctionGuess(target);
-        }
-
         public override IEnumerable<AstNode> Children
         {
             get

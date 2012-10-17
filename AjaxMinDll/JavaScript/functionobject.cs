@@ -82,6 +82,12 @@ namespace Microsoft.Ajax.Utilities
             set;
         }
 
+        public string NameGuess
+        {
+            get;
+            set;
+        }
+
         public Context IdContext { get; set; }
         public Context ParametersContext { get; set; }
 

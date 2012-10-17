@@ -184,14 +184,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public void Remove(VariableDeclaration varDecl)
+        public void Remove(VariableDeclaration variableDeclaration)
         {
             // remove the vardecl from the list. If it was there and was
             // successfully remove, Remove will return true. At that point, if the
             // vardecl still thinks we are the parent, reset the parent pointer.
-            if (m_list.Remove(varDecl) && varDecl.Parent == this)
+            if (variableDeclaration != null && m_list.Remove(variableDeclaration) && variableDeclaration.Parent == this)
             {
-                varDecl.Parent = null;
+                variableDeclaration.Parent = null;
             }
         }
 

@@ -1104,7 +1104,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder);
+                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder, crunchGroup.Output.Path);
                         }
                     }
                     catch (JScriptException e)

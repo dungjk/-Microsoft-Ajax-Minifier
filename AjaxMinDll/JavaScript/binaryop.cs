@@ -52,6 +52,15 @@ namespace Microsoft.Ajax.Utilities
         public JSToken OperatorToken { get; set; }
         public Context OperatorContext { get; set; }
 
+        public override Context TerminatingContext
+        {
+            get
+            {
+                // if we have one, return it. If not, see ifthe right-hand side has one
+                return base.TerminatingContext ?? Operand2.IfNotNull(n => n.TerminatingContext);
+            }
+        }
+
         public BinaryOperator(Context context, JSParser parser)
             : base(context, parser)
         {
@@ -303,7 +312,9 @@ namespace Microsoft.Ajax.Utilities
 
         internal override string GetFunctionGuess(AstNode target)
         {
-            return Operand1.GetFunctionGuess(target);
+            return IsAssign && Operand2 == target
+                ? Operand1.GetFunctionGuess(this)
+                : string.Empty;
         }
 
         /// <summary>

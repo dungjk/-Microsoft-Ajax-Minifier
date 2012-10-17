@@ -619,4 +619,7 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   <data name="MemberInfoTypeCatchEror" xml:space="preserve">
     <value>catch error</value>
   </data>
+  <data name="AnonymousFunction" xml:space="preserve">
+    <value>[Anonymous]</value>
+  </data>
 </root>

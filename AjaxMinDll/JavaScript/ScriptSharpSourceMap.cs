@@ -147,6 +147,11 @@ namespace Microsoft.Ajax.Utilities
             javaScriptSymbol.WriteTo(m_writer);
         }
 
+        public void EndFile(TextWriter writer, string outputPath, string mapFilePath, string newLine)
+        {
+            // do nothing.
+        }
+
         public void Dispose()
         {
             EndPackage();

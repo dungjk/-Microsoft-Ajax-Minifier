@@ -24,7 +24,7 @@ namespace Microsoft.Ajax.Utilities
     /// <summary>
     /// Standard JSON source map format, version 3
     /// </summary>
-    public sealed class V3SourceMap : ISourceMap, IVisitor
+    public sealed class V3SourceMap : ISourceMap
     {
         #region private fields 
 
@@ -39,9 +39,15 @@ namespace Microsoft.Ajax.Utilities
 
         private HashSet<string> m_sourceFiles;
 
+        private List<string> m_sourceFileList;
+
         private HashSet<string> m_names;
 
+        private List<string> m_nameList;
+
         private List<Segment> m_segments;
+
+        private int m_lastDestinationLine;
 
         private int m_lastDestinationColumn;
 
@@ -61,17 +67,23 @@ namespace Microsoft.Ajax.Utilities
         {
             m_writer = writer;
 
-            // source files are not case sensitive?
-            m_sourceFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // source files normally aren't duplicated, so this is a bit of over-kill.
+            // if we do get duplicated source files in the code, let's treat different
+            // cases as different files for those folks who work on operating systems that care
+            // about file-path case.
+            m_sourceFiles = new HashSet<string>();
+            m_sourceFileList = new List<string>();
 
-            // names are definitely case-sensitive (JavaScript identifiers)
+            // names are case-sensitive
             m_names = new HashSet<string>();
+            m_nameList = new List<string>();
 
             // segments is a list
             m_segments = new List<Segment>();
 
             // set all the "last" values to -1 to indicate that
             // we don't have a value from which to generate an offset.
+            m_lastDestinationLine = -1;
             m_lastDestinationColumn = -1;
             m_lastSourceLine = -1;
             m_lastSourceColumn = -1;
@@ -105,15 +117,10 @@ namespace Microsoft.Ajax.Utilities
             // line number comes in zero-based, so add one to get the line count
             WriteProperty("lineCount", m_maxMinifiedLine + 1);
 
-            // generate the lists for the names and the source files from the
-            // hashsets we built up while traversing the tree
-            var fileList = new List<string>(m_sourceFiles);
-            var nameList = new List<string>(m_names);
+            WriteProperty("mappings", GenerateMappings(m_sourceFileList, m_nameList));
 
-            WriteProperty("mappings", GenerateMappings(fileList, nameList));
-
-            WriteProperty("sources", fileList);
-            WriteProperty("names", nameList);
+            WriteProperty("sources", m_sourceFileList);
+            WriteProperty("names", m_nameList);
 
             // close the JSON object
             m_writer.WriteLine();
@@ -122,28 +129,8 @@ namespace Microsoft.Ajax.Utilities
 
         public object StartSymbol(AstNode astNode, int startLine, int startColumn)
         {
-            if (astNode != null)
-            {
-                // if this is a newline, the startline will be bigger than the largest line we've had so far
-                m_maxMinifiedLine = Math.Max(m_maxMinifiedLine, startLine);
-
-                // save the file context in our list of files
-                if (astNode.Context != null && astNode.Context.Document != null
-                    && astNode.Context.Document.FileContext != null)
-                {
-                    m_sourceFiles.Add(astNode.Context.Document.FileContext);
-                }
-
-                // perform any node-specific operation. We implement IVisitor, so
-                // we can pass ourselves to the Accept method of the node to get the
-                // proper typed Visit function called.
-                astNode.Accept(this);
-
-                // TODO: create a list node for this item that will translate to a segment
-                // in the mapping portion of our
-            }
-
-            return astNode;
+            // we don't care about the start/end methods -- we only care about segments
+            return null;
         }
 
         public void MarkSegment(AstNode node, int startLine, int startColumn, string name, Context context)
@@ -153,24 +140,69 @@ namespace Microsoft.Ajax.Utilities
                 throw new ArgumentOutOfRangeException("startLine");
             }
 
-            // create the segment object and add it to the list.
-            // the destination line/col numbers are zero-based. The format expects line to be 1-based and col 0-based.
-            // the context line is one-based; col is zero-based. The format expected line to be 1-based and col to be 0-based.
-            var segment = CreateSegment(
-                startLine + 1, 
-                startColumn, 
-                context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber,
-                context == null || context.StartColumn < 0 ? -1 : context.StartColumn, 
-                context.IfNotNull(c => c.Document.FileContext), 
-                name);
+            if (context != null && context.Document != null && context.Document.FileContext != null && context.StartLineNumber > 0 && context.StartColumn >= 0)
+            {
+                // if we have a name, try adding it to the hash set of names. If it already exists, the call to Add
+                // will return false. If it doesn't already exist, Add will return true and we'll append it to the list
+                // of names. That way we have a nice list of names ordered by their first occurrence in the minified file.
+                if (!string.IsNullOrEmpty(name) && m_names.Add(name))
+                {
+                    m_nameList.Add(name);
+                }
 
-            m_segments.Add(segment);
+                // if this is a newline, the startline will be bigger than the largest line we've had so far
+                m_maxMinifiedLine = Math.Max(m_maxMinifiedLine, startLine);
+
+                // save the file context in our list of files
+                if (context != null && context.Document != null && context.Document.FileContext != null)
+                {
+                    // if this is the first instance of this file...
+                    if (m_sourceFiles.Add(context.Document.FileContext))
+                    {
+                        // ...add it to the list, so we end up with a list of unique files
+                        // sorted by their first occurence in the minified file.
+                        m_sourceFileList.Add(context.Document.FileContext);
+                    }
+                }
+
+                // create the segment object and add it to the list.
+                // the destination line/col numbers are zero-based. The format expects line to be 1-based and col 0-based.
+                // the context line is one-based; col is zero-based. The format expected line to be 1-based and col to be 0-based.
+                var segment = CreateSegment(
+                    startLine + 1,
+                    startColumn,
+                    context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber,
+                    context == null || context.StartColumn < 0 ? -1 : context.StartColumn,
+                    context.IfNotNull(c => c.Document.FileContext),
+                    name);
+
+                m_segments.Add(segment);
+            }
         }
 
         public void EndSymbol(object symbol, int endLine, int endColumn, string parentContext)
         {
-            //var astNode = symbol as AstNode;
-            m_maxMinifiedLine = Math.Max(m_maxMinifiedLine, endLine);
+            // not important
+        }
+
+        public void EndFile(TextWriter writer, string outputPath, string mapFilePath, string newLine)
+        {
+            // we want to output to the text stream a comment in the format of:
+            //      //@ sourceMappingURL=<uri>
+            // where the URI is the relative uri from the output to the map file
+            if (writer != null && !outputPath.IsNullOrWhiteSpace() && !mapFilePath.IsNullOrWhiteSpace())
+            {
+                try
+                {
+                    // TODO: make relative to output, don't just output the mapfile as-is
+                    writer.Write(newLine);
+                    writer.Write("//@ sourceMappingURL={0}", mapFilePath);
+                }
+                catch (UriFormatException)
+                {
+                    // guess we're not writing anything
+                }
+            }
         }
 
         public string Name
@@ -190,6 +222,34 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region GenerateMappings method
+
+        private Segment CreateSegment(int destinationLine, int destinationColumn, int sourceLine, int sourceColumn, string fileName, string symbolName)
+        {
+            // create the segment with relative offsets for the destination column, source line, and source column.
+            // destination line should be absolute. Destination column resets to absolute whenever the destination line advances.
+            var segment = new Segment()
+            {
+                DestinationLine = destinationLine,
+                DestinationColumn = m_lastDestinationColumn < 0 || m_lastDestinationLine < destinationLine ? destinationColumn : destinationColumn - m_lastDestinationColumn,
+                SourceLine = fileName == null ? -1 : m_lastSourceLine < 0 ? sourceLine : sourceLine - m_lastSourceLine,
+                SourceColumn = fileName == null ? -1 : m_lastSourceColumn < 0 ? sourceColumn : sourceColumn - m_lastSourceColumn,
+                FileName = fileName,
+                SymbolName = symbolName
+            };
+
+            // set the new "last" values
+            m_lastDestinationLine = destinationLine;
+            m_lastDestinationColumn = destinationColumn;
+
+            // if there was a source location, set the last source line/col
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                m_lastSourceLine = sourceLine;
+                m_lastSourceColumn = sourceColumn;
+            }
+
+            return segment;
+        }
 
         private string GenerateMappings(IList<string> fileList, IList<string> nameList)
         {
@@ -226,7 +286,7 @@ namespace Microsoft.Ajax.Utilities
             EncodeNumber(sb, segment.DestinationColumn);
 
             // if there's a source file...
-            if (!string.IsNullOrEmpty(segment.FileName))
+            if (!segment.FileName.IsNullOrWhiteSpace())
             {
                 // get the index from the list and encode it into the builder
                 // relative to the last file index.
@@ -277,33 +337,6 @@ namespace Microsoft.Ajax.Utilities
                 sb.Append(s_base64[digit]);
             }
             while (value > 0);
-        }
-
-        private Segment CreateSegment(int destinationLine, int destinationColumn, int sourceLine, int sourceColumn, string fileName, string symbolName)
-        {
-            // create the segment with relative offsets for the destination column, source line, and source column.
-            // destination line should be absolute.
-            var segment = new Segment()
-            {
-                DestinationLine = destinationLine,
-                DestinationColumn = m_lastDestinationColumn < 0 ? destinationColumn : destinationColumn - m_lastDestinationColumn,
-                SourceLine = fileName == null ? -1 : m_lastSourceLine < 0 ? sourceLine : sourceLine - m_lastSourceLine,
-                SourceColumn = fileName == null ? -1 : m_lastSourceColumn < 0 ? sourceColumn : sourceColumn - m_lastSourceColumn,
-                FileName = fileName,
-                SymbolName = symbolName
-            };
-
-            // set the new "last" values
-            m_lastDestinationColumn = destinationColumn;
-
-            // if there was a source location, set the last source line/col
-            if (!string.IsNullOrEmpty(fileName))
-            {
-                m_lastSourceLine = sourceLine;
-                m_lastSourceColumn = sourceColumn;
-            }
-
-            return segment;
         }
 
         #endregion
@@ -405,228 +438,6 @@ namespace Microsoft.Ajax.Utilities
             }
 
             m_writer.Write('"');
-        }
-
-        #endregion
-
-        #region IVisitor methods 
-
-        public void Visit(ArrayLiteral node)
-        {
-        }
-
-        public void Visit(AspNetBlockNode node)
-        {
-        }
-
-        public void Visit(AstNodeList node)
-        {
-        }
-
-        public void Visit(BinaryOperator node)
-        {
-        }
-
-        public void Visit(Block node)
-        {
-        }
-
-        public void Visit(Break node)
-        {
-        }
-
-        public void Visit(CallNode node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationComment node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationElse node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationElseIf node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationEnd node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationIf node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationOn node)
-        {
-        }
-
-        public void Visit(ConditionalCompilationSet node)
-        {
-        }
-
-        public void Visit(Conditional node)
-        {
-        }
-
-        public void Visit(ConstantWrapper node)
-        {
-        }
-
-        public void Visit(ConstantWrapperPP node)
-        {
-        }
-
-        public void Visit(ConstStatement node)
-        {
-        }
-
-        public void Visit(ContinueNode node)
-        {
-        }
-
-        public void Visit(CustomNode node)
-        {
-        }
-
-        public void Visit(DebuggerNode node)
-        {
-        }
-
-        public void Visit(DirectivePrologue node)
-        {
-        }
-
-        public void Visit(DoWhile node)
-        {
-        }
-
-        public void Visit(ForIn node)
-        {
-        }
-
-        public void Visit(ForNode node)
-        {
-        }
-
-        public void Visit(FunctionObject node)
-        {
-            if (node != null)
-            {
-                m_names.Add(node.Name);
-            }
-        }
-
-        public void Visit(GetterSetter node)
-        {
-        }
-
-        public void Visit(IfNode node)
-        {
-        }
-
-        public void Visit(ImportantComment node)
-        {
-        }
-
-        public void Visit(LabeledStatement node)
-        {
-        }
-
-        public void Visit(LexicalDeclaration node)
-        {
-        }
-
-        public void Visit(Lookup node)
-        {
-            if (node != null)
-            {
-                // add the lookup to the names list
-                m_names.Add(node.Name);
-            }
-        }
-
-        public void Visit(Member node)
-        {
-            if (node != null)
-            {
-                // add the name to the names list
-                m_names.Add(node.Name);
-            }
-        }
-
-        public void Visit(ObjectLiteral node)
-        {
-        }
-
-        public void Visit(ObjectLiteralField node)
-        {
-        }
-
-        public void Visit(ObjectLiteralProperty node)
-        {
-        }
-
-        public void Visit(ParameterDeclaration node)
-        {
-            if (node != null)
-            {
-                m_names.Add(node.Name);
-            }
-        }
-
-        public void Visit(RegExpLiteral node)
-        {
-        }
-
-        public void Visit(ReturnNode node)
-        {
-        }
-
-        public void Visit(Switch node)
-        {
-        }
-
-        public void Visit(SwitchCase node)
-        {
-        }
-
-        public void Visit(ThisLiteral node)
-        {
-        }
-
-        public void Visit(ThrowNode node)
-        {
-        }
-
-        public void Visit(TryNode node)
-        {
-        }
-
-        public void Visit(Var node)
-        {
-        }
-
-        public void Visit(VariableDeclaration node)
-        {
-            if (node != null)
-            {
-                m_names.Add(node.Name);
-            }
-        }
-
-        public void Visit(UnaryOperator node)
-        {
-        }
-
-        public void Visit(WhileNode node)
-        {
-        }
-
-        public void Visit(WithNode node)
-        {
         }
 
         #endregion

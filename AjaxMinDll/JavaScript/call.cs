@@ -175,28 +175,5 @@ namespace Microsoft.Ajax.Utilities
                 return ((Function is Member || Function is CallNode || Function is Lookup) && Function.IsDebuggerStatement);
             }
         }
-
-        internal override string GetFunctionGuess(AstNode target)
-        {
-            // get our guess from the function call
-            string funcName = Function.GetFunctionGuess(target);
-
-            // MSN VOODOO: if this is the addMethod method, then the
-            // name of the function is the first parameter. 
-            // The syntax of the add method call is: obj.addMethod("name",function(){...})
-            // so there should be two parameters....
-            if (funcName == "addMethod" && Arguments.Count == 2)
-            {
-                // the first one should be a string constant....
-                ConstantWrapper firstParam = Arguments[0] as ConstantWrapper;
-                // and the second one should be the function expression we're looking for
-                if ((firstParam != null) && (firstParam.Value is string) && (Arguments[1] == target))
-                {
-                    // use that first parameter as the guess
-                    funcName = firstParam.ToString();
-                }
-            }
-            return funcName;
-        }
     }
 }

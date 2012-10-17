@@ -35,6 +35,7 @@ namespace Microsoft.Ajax.Utilities
         private bool m_outputCCOn;
         private bool m_doneWithGlobalDirectives;
         private bool m_needsStrictDirective;
+        private bool m_noLineBreaks;
 
         private int m_indentLevel;
         private int m_lineLength;
@@ -102,12 +103,13 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Indent();
 
+                    AstNode element = null;
                     for (var ndx = 0; ndx < node.Elements.Count; ++ndx)
                     {
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, null); // V3: astnodelist comma
+                            MarkSegment(node, null, element.IfNotNull(e => e.TerminatingContext));
 
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
@@ -115,7 +117,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
-                        var element = node.Elements[ndx];
+                        element = node.Elements[ndx];
                         if (element != null)
                         {
                             AcceptNodeWithParens(element, element.Precedence == OperatorPrecedence.Comma);
@@ -177,7 +179,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // output a comma
                     OutputPossibleLineBreak(',');
-                    MarkSegment(node, null, null); // V3: astnodelist comma context
+                    MarkSegment(node, null, node[ndx-1].IfNotNull(n => n.TerminatingContext));
 
                     if (addNewLines)
                     {
@@ -219,7 +221,7 @@ namespace Microsoft.Ajax.Utilities
                         if (node.Operand2 != null)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, null); // V3: start of the next statement
+                            MarkSegment(node, null, node.Operand1.TerminatingContext);
                             m_startOfStatement = false;
 
                             // if the parent is a block, then the comma operator is separating
@@ -424,15 +426,18 @@ namespace Microsoft.Ajax.Utilities
                     m_needsStrictDirective = node.EnclosingScope.UseStrict && !m_doneWithGlobalDirectives;
                 }
 
-                var mightNeedSemicolon = false;
+                AstNode prevStatement = null;
                 for (var ndx = 0; ndx < node.Count; ++ndx)
                 {
                     var statement = node[ndx];
                     if (statement != null && !statement.HideFromOutput)
                     {
-                        if (mightNeedSemicolon)
+                        if (prevStatement != null && prevStatement.RequiresSeparator)
                         {
-                            ReplaceableSemicolon();
+                            if (ReplaceableSemicolon())
+                            {
+                                MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
+                            }
                         }
 
                         if (!(statement is DirectivePrologue))
@@ -451,7 +456,7 @@ namespace Microsoft.Ajax.Utilities
                         NewLine();
                         m_startOfStatement = true;
                         statement.Accept(this);
-                        mightNeedSemicolon = statement.RequiresSeparator;
+                        prevStatement = statement;
                     }
                 }
 
@@ -469,11 +474,12 @@ namespace Microsoft.Ajax.Utilities
                     OutputPossibleLineBreak('}');
                     MarkSegment(node, null, node.Context);
                 }
-                else if (mightNeedSemicolon && Settings.TermSemicolons)
+                else if (prevStatement != null && prevStatement.RequiresSeparator && Settings.TermSemicolons)
                 {
                     // this is the root block (parent is null) and we want to make sure we end
                     // with a terminating semicolon, so don't replace it
                     OutputPossibleLineBreak(';');
+                    MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
                 }
 
                 if (symbol != null)
@@ -495,6 +501,10 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
+                    // NO PAGE BREAKS ALLOWED HERE, so don't rely on the automatic
+                    // space-inserting code to separate the break from the label.
+                    // insert a space now.
+                    Output(' ');
                     if (Settings.LocalRenaming != LocalRenaming.KeepAll
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
@@ -574,12 +584,13 @@ namespace Microsoft.Ajax.Utilities
                     OutputPossibleLineBreak(node.InBrackets ? '[' : '(');
                     MarkSegment(node, null, node.Arguments.Context);
 
+                    AstNode argument = null;
                     for (var ndx = 0; ndx < node.Arguments.Count; ++ndx)
                     {
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, null); // V3: comma context from AstNodeList 
+                            MarkSegment(node, null, argument.IfNotNull(a => a.TerminatingContext));
 
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
@@ -587,7 +598,7 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
 
-                        var argument = node.Arguments[ndx];
+                        argument = node.Arguments[ndx];
                         if (argument != null)
                         {
                             AcceptNodeWithParens(argument, argument.Precedence <= OperatorPrecedence.Comma);
@@ -650,21 +661,24 @@ namespace Microsoft.Ajax.Utilities
                     }
 
                     // go through the rest of the statements (if any)
-                    var mightRequireSemicolon = statement.RequiresSeparator;
+                    AstNode prevStatement = statement;
                     while (++ndx < node.Statements.Count)
                     {
                         statement = node.Statements[ndx];
                         if (statement != null && !statement.HideFromOutput)
                         {
-                            if (mightRequireSemicolon)
+                            if (prevStatement != null && prevStatement.RequiresSeparator)
                             {
-                                ReplaceableSemicolon();
+                                if (ReplaceableSemicolon())
+                                {
+                                    MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
+                                }
                             }
 
                             NewLine();
                             m_startOfStatement = true;
                             statement.Accept(this);
-                            mightRequireSemicolon = statement.RequiresSeparator;
+                            prevStatement = statement;
                         }
                     }
 
@@ -988,6 +1002,9 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
+                    // NO PAGE BREAKS ALLOWED HERE, so don't rely on the automatic-space
+                    // insertion mode or it might insert a newline
+                    Output(' ');
                     if (Settings.LocalRenaming != LocalRenaming.KeepAll
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
@@ -1000,7 +1017,7 @@ namespace Microsoft.Ajax.Utilities
                         Output(node.Label);
                     }
 
-                    MarkSegment(node, null, node.LabelContext); 
+                    MarkSegment(node, null, node.LabelContext);
                 }
 
                 EndSymbol(symbol);
@@ -1086,7 +1103,10 @@ namespace Microsoft.Ajax.Utilities
 
                     if (node.Body[0].RequiresSeparator)
                     {
-                        ReplaceableSemicolon();
+                        if (ReplaceableSemicolon())
+                        {
+                            MarkSegment(node.Body[0], null, node.Body[0].TerminatingContext);
+                        }
                     }
 
                     Unindent();
@@ -1251,27 +1271,39 @@ namespace Microsoft.Ajax.Utilities
                     OutputPossibleLineBreak('(');
                 }
 
+                // get the function name we will use for symbol references.
+                // use the function's real name if:
+                //    1. there is one AND
+                //      2a. the function is a declaration OR
+                //      2b. the refcount is greater than zero OR
+                //      2c. we aren't going to remove function expression names
+                // otherwise use the name guess.
+                var hasName = !node.Name.IsNullOrWhiteSpace()
+                        && (!node.IsExpression
+                        || node.RefCount > 0
+                        || !Settings.RemoveFunctionExpressionNames
+                        || !Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames));
+                var fullFunctionName = hasName
+                        ? node.Name
+                        : node.NameGuess;
+
                 Output("function");
-                MarkSegment(node, node.Name, node.Context);
+                MarkSegment(node, fullFunctionName, node.Context);
 
                 m_startOfStatement = false;
                 bool isAnonymous = true;
-                if (node.VariableField != null)
+                if (!node.Name.IsNullOrWhiteSpace())
                 {
                     isAnonymous = false;
-                    var funcName = node.VariableField.ToString();
-
+                    var minFunctionName = node.VariableField != null
+                        ? node.VariableField.ToString()
+                        : node.Name;
                     if (Settings.SymbolsMap != null)
                     {
-                        m_functionStack.Push(funcName);
+                        m_functionStack.Push(minFunctionName);
                     }
 
-                    // if this is a function expression, check to see if the field
-                    // if not referenced, in which case we won't output it (depending on switches)
-                    if (!node.IsExpression
-                        || node.RefCount > 0
-                        || !Settings.RemoveFunctionExpressionNames
-                        || !Settings.IsModificationAllowed(TreeModifications.RemoveFunctionExpressionNames))
+                    if (hasName)
                     {
                         // all identifier should be treated as if they start with a valid
                         // identifier character. That might not always be the case, like when
@@ -1282,7 +1314,7 @@ namespace Microsoft.Ajax.Utilities
                             Output(' ');
                         }
 
-                        Output(funcName);
+                        Output(minFunctionName);
                         MarkSegment(node, node.Name, node.IdContext);
                     }
                 }
@@ -1390,7 +1422,10 @@ namespace Microsoft.Ajax.Utilities
                         // we have only one statement, we did not wrap it in braces,
                         // and we have an else-block, and the one true-statement needs
                         // a semicolon; add it now
-                        ReplaceableSemicolon();
+                        if (ReplaceableSemicolon())
+                        {
+                            MarkSegment(node.TrueBlock[0], null, node.TrueBlock[0].TerminatingContext);
+                        }
                     }
 
                     Unindent();
@@ -1463,10 +1498,59 @@ namespace Microsoft.Ajax.Utilities
                 // of whether or not we are in multi- or single-line mode, and the statement after
                 // should also be on a new line.
                 BreakLine(true);
-                Output(node.Comment);
-                MarkSegment(node, null, node.Context);
-                BreakLine(true);
 
+                // the output method assumes any text we send it's way doesn't contain any line feed
+                // characters. The important comment, however, may contain some. We don't want to count
+                // the entire comment as a single line, AND we want to normalize the line-feed characters,
+                // so lets process the comment line-by-line
+                var lineFeedChars = new[] { '\n', '\r', '\u2028', '\u2029' };
+                var startIndex = 0;
+                var firstLF = node.Comment.IndexOfAny(lineFeedChars, startIndex);
+                if (firstLF < 0)
+                {
+                    // no line-breaks at all!
+                    Output(node.Comment);
+                }
+                else
+                {
+                    // output the first segment -- from start to first line break
+                    Output(node.Comment.Substring(0, firstLF));
+                    while (true)
+                    {
+                        // advance the next segment pointer
+                        if (node.Comment[firstLF] == '\r'
+                            && firstLF < node.Comment.Length - 1
+                            && node.Comment[firstLF + 1] == '\n')
+                        {
+                            startIndex = firstLF + 2;
+                        }
+                        else
+                        {
+                            startIndex = firstLF + 1;
+                        }
+
+                        // force the line-break in the output
+                        BreakLine(true);
+
+                        // look for the next line break
+                        firstLF = node.Comment.IndexOfAny(lineFeedChars, startIndex);
+
+                        if (firstLF > startIndex)
+                        {
+                            // only output something if there was something before the next line break
+                            Output(node.Comment.Substring(startIndex, firstLF - startIndex));
+                        }
+                        else if (firstLF < 0)
+                        {
+                            // no more line-breaks -- output the last segment and break out of the loop
+                            Output(node.Comment.Substring(startIndex));
+                            break;
+                        }
+                    }
+                }
+
+                // force a line-break AFTER teh important comment as well
+                BreakLine(true);
                 EndSymbol(symbol);
             }
         }
@@ -1830,9 +1914,11 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (Settings.OutputMode == OutputMode.MultipleLines)
                     {
-                        OutputPossibleLineBreak(' ');
+                        Output(' ');
                     }
 
+                    // no page breaks allowed here
+                    m_noLineBreaks = true;
                     Indent();
                     node.Operand.Accept(this);
                     Unindent();
@@ -1876,20 +1962,23 @@ namespace Microsoft.Ajax.Utilities
                 MarkSegment(node, null, node.BraceContext); 
                 Indent();
 
-                var mightNeedSemicolon = false;
+                AstNode prevSwitchCase = null;
                 for (var ndx = 0; ndx < node.Cases.Count; ++ndx)
                 {
                     var switchCase = node.Cases[ndx];
                     if (switchCase != null)
                     {
-                        if (mightNeedSemicolon)
+                        if (prevSwitchCase != null && prevSwitchCase.RequiresSeparator)
                         {
-                            ReplaceableSemicolon();
+                            if (ReplaceableSemicolon())
+                            {
+                                MarkSegment(prevSwitchCase, null, prevSwitchCase.TerminatingContext);
+                            }
                         }
 
                         NewLine();
                         switchCase.Accept(this);
-                        mightNeedSemicolon = switchCase.RequiresSeparator;
+                        prevSwitchCase = switchCase;
                     }
                 }
 
@@ -1927,21 +2016,24 @@ namespace Microsoft.Ajax.Utilities
                 if (node.Statements != null && node.Statements.Count > 0)
                 {
                     Indent();
-                    bool mightNeedSemicolon = false;
+                    AstNode prevStatement = null;
                     for (var ndx = 0; ndx < node.Statements.Count; ++ndx)
                     {
                         var statement = node.Statements[ndx];
                         if (statement != null && !statement.HideFromOutput)
                         {
-                            if (mightNeedSemicolon)
+                            if (prevStatement != null && prevStatement.RequiresSeparator)
                             {
-                                ReplaceableSemicolon();
+                                if (ReplaceableSemicolon())
+                                {
+                                    MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
+                                }
                             }
 
                             NewLine();
                             m_startOfStatement = true;
                             statement.Accept(this);
-                            mightNeedSemicolon = statement.RequiresSeparator;
+                            prevStatement = statement;
                         }
                     }
 
@@ -1981,6 +2073,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // force the statement ending with a semicolon
                     OutputPossibleLineBreak(';');
+                    MarkSegment(node, null, node.TerminatingContext);
                 }
 
                 EndSymbol(symbol);
@@ -2289,6 +2382,7 @@ namespace Microsoft.Ajax.Utilities
 
                 m_outputStream.Write(text);
                 m_lineLength += text.Length;
+                m_noLineBreaks = false;
 
                 // if it ends in a newline, we're still on a newline
                 m_onNewLine = (text[text.Length - 1] == '\n' || text[text.Length - 1] == '\r'); ;
@@ -2309,6 +2403,7 @@ namespace Microsoft.Ajax.Utilities
 
             m_outputStream.Write(ch);
             ++m_lineLength;
+            m_noLineBreaks = false;
 
             // determine if this was a newline character
             m_onNewLine = (ch == '\n' || ch == '\r');
@@ -2317,34 +2412,52 @@ namespace Microsoft.Ajax.Utilities
             SetLastCharState(ch);
         }
 
+        private void OutputSpaceOrLineBreak()
+        {
+            if (m_noLineBreaks)
+            {
+                m_outputStream.Write(' ');
+                m_lastCharacter = ' ';
+                ++m_lineLength;
+            }
+            else
+            {
+                OutputPossibleLineBreak(' ');
+            }
+        }
+
         private void InsertSpaceIfNeeded(char ch)
         {
-            if (m_addSpaceIfTrue != null)
+            // shortcut a space character -- we never need a space before a space!
+            if (ch != ' ')
             {
-                if (m_addSpaceIfTrue(ch))
+                if (m_addSpaceIfTrue != null)
                 {
-                    OutputPossibleLineBreak(' ');
-                }
+                    if (m_addSpaceIfTrue(ch))
+                    {
+                        OutputSpaceOrLineBreak();
+                    }
 
-                // reset the function
-                m_addSpaceIfTrue = null;
-            }
-            else if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
-            {
-                // if the current character is a + or - and the last character was the same.
-                // if the previous character was an ODD number of the same character, 
-                // then we need to add a space so it doesn't get read as ++ (or --)
-                if (m_lastCountOdd)
-                {
-                    OutputPossibleLineBreak(' ');
+                    // reset the function
+                    m_addSpaceIfTrue = null;
                 }
-            }
-            else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(ch))
-            {
-                // either the last character is a valid part of an identifier and the current character is, too;
-                // OR the last part was numeric and the current character is a .
-                // we need to separate those with spaces as well
-                OutputPossibleLineBreak(' ');
+                else if ((ch == '+' || ch == '-') && m_lastCharacter == ch)
+                {
+                    // if the current character is a + or - and the last character was the same.
+                    // if the previous character was an ODD number of the same character, 
+                    // then we need to add a space so it doesn't get read as ++ (or --)
+                    if (m_lastCountOdd)
+                    {
+                        OutputSpaceOrLineBreak();
+                    }
+                }
+                else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(ch))
+                {
+                    // either the last character is a valid part of an identifier and the current character is, too;
+                    // OR the last part was numeric and the current character is a .
+                    // we need to separate those with spaces as well
+                    OutputSpaceOrLineBreak();
+                }
             }
         }
 
@@ -2356,7 +2469,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_addSpaceIfTrue(ch))
                 {
-                    OutputPossibleLineBreak(' ');
+                    OutputSpaceOrLineBreak();
                 }
 
                 // reset the function
@@ -2369,7 +2482,7 @@ namespace Microsoft.Ajax.Utilities
                 // get read as ++ (or --)
                 if (m_lastCountOdd)
                 {
-                    OutputPossibleLineBreak(' ');
+                    OutputSpaceOrLineBreak();
                 }
             }
             else if ((m_lastCharacter == '@' || JSScanner.IsValidIdentifierPart(m_lastCharacter)) && JSScanner.IsValidIdentifierPart(text))
@@ -2377,7 +2490,7 @@ namespace Microsoft.Ajax.Utilities
                 // either the last character is a valid part of an identifier and the current character is, too;
                 // OR the last part was numeric and the current character is a .
                 // we need to separate those with spaces as well
-                OutputPossibleLineBreak(' ');
+                OutputSpaceOrLineBreak();
             }
         }
 
@@ -2507,8 +2620,10 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private void ReplaceableSemicolon()
+        private bool ReplaceableSemicolon()
         {
+            var outputSemicolon = false;
+
             // this is a terminating semicolon that might be replaced with a line-break
             // if needed. Semicolon-insertion would suffice to reconstitute it.
             if (m_lineLength < Settings.LineBreakThreshold)
@@ -2522,10 +2637,12 @@ namespace Microsoft.Ajax.Utilities
                 m_onNewLine = false;
                 m_lastCharacter = ';';
                 ++m_lineLength;
+                outputSemicolon = true;
             }
 
             // break the line if it's too long, but don't force it
             BreakLine(false);
+            return outputSemicolon;
         }
 
         private void BreakLine(bool forceBreak)
@@ -2710,7 +2827,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         Output(OperatorString(node.OperatorToken));
-                        MarkSegment(node, null, node.OperatorContext);
+                        MarkSegment(node, null, node.OperatorContext ?? node.Context);
                     }
 
                     m_startOfStatement = false;
@@ -2766,19 +2883,20 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
+                    AstNode paramDecl = null;
                     for (var ndx = 0; ndx <= lastRef; ++ndx)
                     {
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, null); // V3: astnodelist comma context
+                            MarkSegment(node, null, paramDecl.IfNotNull(p => p.TerminatingContext));
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
                                 OutputPossibleLineBreak(' ');
                             }
                         }
 
-                        var paramDecl = node.ParameterDeclarations[ndx];
+                        paramDecl = node.ParameterDeclarations[ndx];
                         if (paramDecl != null)
                         {
                             paramDecl.Accept(this);

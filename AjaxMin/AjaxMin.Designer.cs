@@ -61,6 +61,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [Anonymous].
+        /// </summary>
+        internal static string AnonymousFunction {
+            get {
+                return ResourceManager.GetString("AnonymousFunction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} Scope - starts at line {1}, col {2} {3}.
         /// </summary>
         internal static string BlockScopeHeader {

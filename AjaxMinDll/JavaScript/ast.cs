@@ -52,7 +52,12 @@ namespace Microsoft.Ajax.Utilities
 
         /// <summary>the context of any terminating character parsed after this node
         /// e.g. the semicolon after a statement or a comma in a parameter list</summary>
-        public Context TerminatingContext { get; set; }
+        private Context m_terminatingContext;
+        public virtual Context TerminatingContext 
+        {
+            get { return m_terminatingContext; }
+            set { m_terminatingContext = value; }
+        }
 
         protected AstNode(Context context, JSParser parser)
         {
@@ -266,6 +271,21 @@ namespace Microsoft.Ajax.Utilities
 
                 // if we get here, we didn'thave any in-operators
                 return false;
+            }
+        }
+
+        public void UpdateWith(Context context)
+        {
+            if (context != null)
+            {
+                if (this.Context == null)
+                {
+                    this.Context = context;
+                }
+                else
+                {
+                    this.Context.UpdateWith(context);
+                }
             }
         }
     }

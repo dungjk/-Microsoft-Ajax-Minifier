@@ -997,6 +997,7 @@ namespace Microsoft.Ajax.Utilities
                         aspNetBlock.IsTerminatedByExplicitSemicolon = true;
                     }
 
+                    statement.IfNotNull(s => s.TerminatingContext = m_currentToken.Clone());
                     GetNextToken();
                 }
                 else if (!m_foundEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
@@ -1203,18 +1204,15 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private AstNode ParseDebuggerStatement()
         {
-            // clone the current context
-            Context context = m_currentToken.Clone();
-
-            // move to the next token
+            // clone the current context and skip it
+            var node = new DebuggerNode(m_currentToken.Clone(), this);
             GetNextToken();
 
             // this token can only be a stand-alone statement
             if (JSToken.Semicolon == m_currentToken.Token)
             {
-                // add the semicolon to the cloned context
-                context.UpdateWith(m_currentToken);
-                // and skip it
+                // add the semicolon to the cloned context and skip it
+                node.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
             else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
@@ -1222,8 +1220,9 @@ namespace Microsoft.Ajax.Utilities
                 // if it is anything else, it's an error
                 ReportError(JSError.NoSemicolon, true);
             }
+
             // return the new AST object
-            return new DebuggerNode(context, this);
+            return node;
         }
 
         //---------------------------------------------------------------------------------------
@@ -1322,7 +1321,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (JSToken.Semicolon == m_currentToken.Token)
                     {
-                        vdecl.Context.UpdateWith(m_currentToken);
+                        varList.TerminatingContext = m_currentToken.Clone();
                         GetNextToken();
                     }
                     break;
@@ -1331,6 +1330,7 @@ namespace Microsoft.Ajax.Utilities
                 if (JSToken.Comma == m_currentToken.Token)
                 {
                     single = false;
+                    vdecl.IfNotNull(d => d.TerminatingContext = m_currentToken.Clone());
                     continue;
                 }
                 
@@ -1655,6 +1655,11 @@ namespace Microsoft.Ajax.Utilities
                 }
                 finally
                 {
+                    if (trueBranch != null)
+                    {
+                        ifCtx.UpdateWith(trueBranch.Context);
+                    }
+
                     m_noSkipTokenSet.Remove(NoSkipTokenSet.s_IfBodyNoSkipTokenSet);
                 }
 
@@ -1691,6 +1696,13 @@ namespace Microsoft.Ajax.Utilities
                                 FalseBlock = AstNode.ForceToBlock(falseBranch)
                             };
                         throw;
+                    }
+                    finally
+                    {
+                        if (falseBranch != null)
+                        {
+                            ifCtx.UpdateWith(falseBranch.Context);
+                        }
                     }
                 }
             }
@@ -1800,9 +1812,12 @@ namespace Microsoft.Ajax.Utilities
                         {
                             bool isLHS;
                             initializer = ParseUnaryExpression(out isLHS, false);
-                            if (isLHS && JSToken.In == m_currentToken.Token)
+                            if (isLHS && (JSToken.In == m_currentToken.Token
+                                || (m_currentToken.Token == JSToken.Identifier && string.CompareOrdinal(m_currentToken.Code, "of") == 0)))
                             {
                                 isForIn = true;
+                                operatorContext = m_currentToken.Clone();
+
                                 lhs = initializer;
                                 initializer = null;
                                 GetNextToken();
@@ -1837,7 +1852,9 @@ namespace Microsoft.Ajax.Utilities
                                 }
                             }
                             else
+                            {
                                 initializer = ParseExpression(initializer, false, isLHS, JSToken.In);
+                            }
                         }
                     }
                 }
@@ -2042,6 +2059,7 @@ namespace Microsoft.Ajax.Utilities
         {
             var doCtx = m_currentToken.Clone();
             Context whileContext = null;
+            Context terminatorContext = null;
             AstNode body = null;
             AstNode condition = null;
             m_blockType.Add(BlockType.Loop);
@@ -2149,7 +2167,7 @@ namespace Microsoft.Ajax.Utilities
                     // even though that does not strictly follow the automatic semicolon insertion
                     // rules for the required semi after the while().  For backwards compatibility
                     // we should continue to support this.
-                    doCtx.UpdateWith(m_currentToken);
+                    terminatorContext = m_currentToken.Clone();
                     GetNextToken();
                 }
             }
@@ -2162,7 +2180,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Body = AstNode.ForceToBlock(body),
                     WhileContext = whileContext,
-                    Condition = condition
+                    Condition = condition,
+                    TerminatingContext = terminatorContext
                 };
         }
 
@@ -2280,36 +2299,32 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private ContinueNode ParseContinueStatement()
         {
-            Context context = m_currentToken.Clone();
-            Context labelCtx = null;
-            int blocks = 0;
-            int nestLevel = 0;
+            var continueNode = new ContinueNode(m_currentToken.Clone(), this);
             GetNextToken();
+
+            var blocks = 0;
             string label = null;
             if (!m_foundEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
             {
-                context.UpdateWith(m_currentToken);
-                labelCtx = m_currentToken.Clone();
+                continueNode.UpdateWith(m_currentToken);
+                continueNode.LabelContext = m_currentToken.Clone();
+                continueNode.Label = label ?? m_scanner.Identifier;
 
                 // get the label block
-                if (label == null)
-                {
-                    label = m_scanner.Identifier;
-                }
-
-                if (!m_labelTable.ContainsKey(label))
+                if (!m_labelTable.ContainsKey(continueNode.Label))
                 {
                     // the label does not exist. Continue anyway
                     ReportError(JSError.NoLabel, true);
                 }
                 else
                 {
-                    LabelInfo labelInfo = m_labelTable[label];
+                    var labelInfo = m_labelTable[continueNode.Label];
+                    continueNode.NestLevel = labelInfo.NestLevel;
+
                     blocks = labelInfo.BlockIndex;
-                    nestLevel = labelInfo.NestLevel;
                     if (m_blockType[blocks] != BlockType.Loop)
                     {
-                        ReportError(JSError.BadContinue, context.Clone(), true);
+                        ReportError(JSError.BadContinue, continueNode.Context, true);
                     }
                 }
 
@@ -2322,14 +2337,14 @@ namespace Microsoft.Ajax.Utilities
                 if (blocks < 0)
                 {
                     // the continue is malformed. Continue as if there was no continue at all
-                    ReportError(JSError.BadContinue, context, true);
+                    ReportError(JSError.BadContinue, continueNode.Context, true);
                     return null;
                 }
             }
 
             if (JSToken.Semicolon == m_currentToken.Token)
             {
-                context.UpdateWith(m_currentToken);
+                continueNode.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
             else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
@@ -2338,7 +2353,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // must ignore the Finally block
-            int finallyNum = 0;
+            var finallyNum = 0;
             for (int i = blocks, n = m_blockType.Count; i < n; i++)
             {
                 if (m_blockType[i] == BlockType.Finally)
@@ -2353,12 +2368,7 @@ namespace Microsoft.Ajax.Utilities
                 m_finallyEscaped = finallyNum;
             }
 
-            return new ContinueNode(context, this)
-                {
-                    NestLevel = nestLevel,
-                    LabelContext = labelCtx,
-                    Label = label
-                };
+            return continueNode;
         }
 
         //---------------------------------------------------------------------------------------
@@ -2374,33 +2384,28 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private Break ParseBreakStatement()
         {
-            Context context = m_currentToken.Clone();
-            Context labelCtx = null;
-            int blocks = 0;
-            int nestLevel = 0;
+            var breakNode = new Break(m_currentToken.Clone(), this);
             GetNextToken();
+
+            var blocks = 0;
             string label = null;
             if (!m_foundEndOfLine && (JSToken.Identifier == m_currentToken.Token || (label = JSKeyword.CanBeIdentifier(m_currentToken.Token)) != null))
             {
-                context.UpdateWith(m_currentToken);
-                labelCtx = m_currentToken.Clone();
+                breakNode.UpdateWith(m_currentToken);
+                breakNode.LabelContext = m_currentToken.Clone();
+                breakNode.Label = label ?? m_scanner.Identifier;
 
                 // get the label block
-                if (label == null)
-                {
-                    label = m_scanner.Identifier;
-                }
-
-                if (!m_labelTable.ContainsKey(label))
+                if (!m_labelTable.ContainsKey(breakNode.Label))
                 {
                     // as if it was a non label case
                     ReportError(JSError.NoLabel, true);
                 }
                 else
                 {
-                    LabelInfo labelInfo = m_labelTable[label];
+                    LabelInfo labelInfo = m_labelTable[breakNode.Label];
+                    breakNode.NestLevel = labelInfo.NestLevel;
                     blocks = labelInfo.BlockIndex - 1; // the outer block
-                    nestLevel = labelInfo.NestLevel;
                     Debug.Assert(m_blockType[blocks] != BlockType.Finally);
                 }
 
@@ -2414,14 +2419,14 @@ namespace Microsoft.Ajax.Utilities
                 --blocks;
                 if (blocks < 0)
                 {
-                    ReportError(JSError.BadBreak, context, true);
+                    ReportError(JSError.BadBreak, breakNode.Context, true);
                     return null;
                 }
             }
 
             if (JSToken.Semicolon == m_currentToken.Token)
             {
-                context.UpdateWith(m_currentToken);
+                breakNode.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
             else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
@@ -2430,7 +2435,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // must ignore the Finally block
-            int finallyNum = 0;
+            var finallyNum = 0;
             for (int i = blocks, n = m_blockType.Count; i < n; i++)
             {
                 if (m_blockType[i] == BlockType.Finally)
@@ -2439,17 +2444,13 @@ namespace Microsoft.Ajax.Utilities
                     finallyNum++;
                 }
             }
+
             if (finallyNum > m_finallyEscaped)
             {
                 m_finallyEscaped = finallyNum;
             }
 
-            return new Break(context, this)
-                {
-                    NestLevel = nestLevel,
-                    LabelContext = labelCtx,
-                    Label = label
-                };
+            return breakNode;
         }
 
         //---------------------------------------------------------------------------------------
@@ -2465,9 +2466,9 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private ReturnNode ParseReturnStatement()
         {
-            Context retCtx = m_currentToken.Clone();
-            AstNode expr = null;
+            var returnNode = new ReturnNode(m_currentToken.Clone(), this);
             GetNextToken();
+
             if (!m_foundEndOfLine)
             {
                 if (JSToken.Semicolon != m_currentToken.Token && JSToken.RightCurly != m_currentToken.Token)
@@ -2475,45 +2476,40 @@ namespace Microsoft.Ajax.Utilities
                     m_noSkipTokenSet.Add(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet);
                     try
                     {
-                        expr = ParseExpression();
+                        returnNode.Operand = ParseExpression();
                     }
                     catch (RecoveryTokenException exc)
                     {
-                        expr = exc._partiallyComputedNode;
+                        returnNode.Operand = exc._partiallyComputedNode;
                         if (IndexOfToken(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet, exc) == -1)
                         {
-                            if (expr != null)
-                                retCtx.UpdateWith(expr.Context);
-                            exc._partiallyComputedNode = new ReturnNode(retCtx, this)
-                                {
-                                    Operand = expr
-                                };
+                            exc._partiallyComputedNode = returnNode;
                             throw;
                         }
                     }
                     finally
                     {
+                        if (returnNode.Operand != null)
+                        {
+                            returnNode.UpdateWith(returnNode.Operand.Context);
+                        }
+
                         m_noSkipTokenSet.Remove(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet);
                     }
-                    if (JSToken.Semicolon != m_currentToken.Token
-                        && JSToken.RightCurly != m_currentToken.Token
-                        && !m_foundEndOfLine)
-                    {
-                        ReportError(JSError.NoSemicolon, true);
-                    }
                 }
+
                 if (JSToken.Semicolon == m_currentToken.Token)
                 {
-                    retCtx.UpdateWith(m_currentToken);
+                    returnNode.TerminatingContext = m_currentToken.Clone();
                     GetNextToken();
                 }
-                else if (expr != null)
-                    retCtx.UpdateWith(expr.Context);
-            }
-            return new ReturnNode(retCtx, this)
+                else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
                 {
-                    Operand = expr
-                };
+                    ReportError(JSError.NoSemicolon, true);
+                }
+            }
+
+            return returnNode;
         }
 
         //---------------------------------------------------------------------------------------
@@ -2910,9 +2906,9 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private AstNode ParseThrowStatement()
         {
-            Context throwCtx = m_currentToken.Clone();
+            var throwNode = new ThrowNode(m_currentToken.Clone(), this);
             GetNextToken();
-            AstNode operand = null;
+
             if (!m_foundEndOfLine)
             {
                 if (JSToken.Semicolon != m_currentToken.Token)
@@ -2920,36 +2916,40 @@ namespace Microsoft.Ajax.Utilities
                     m_noSkipTokenSet.Add(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet);
                     try
                     {
-                        operand = ParseExpression();
+                        throwNode.Operand = ParseExpression();
                     }
                     catch (RecoveryTokenException exc)
                     {
-                        operand = exc._partiallyComputedNode;
+                        throwNode.Operand = exc._partiallyComputedNode;
                         if (IndexOfToken(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet, exc) == -1)
                         {
-                            if (operand != null)
-                            {
-                                exc._partiallyComputedNode = new ThrowNode(throwCtx, this)
-                                    {
-                                        Operand = exc._partiallyComputedNode
-                                    };
-                            }
+                            exc._partiallyComputedNode = throwNode;
                             throw;
                         }
                     }
                     finally
                     {
+                        if (throwNode.Operand != null)
+                        {
+                            throwNode.UpdateWith(throwNode.Operand.Context);
+                        }
+
                         m_noSkipTokenSet.Remove(NoSkipTokenSet.s_EndOfStatementNoSkipTokenSet);
                     }
                 }
+
+                if (m_currentToken.Token == JSToken.Semicolon)
+                {
+                    throwNode.TerminatingContext = m_currentToken.Clone();
+                    GetNextToken();
+                }
+                else if (m_currentToken.Token != JSToken.RightCurly && !m_foundEndOfLine)
+                {
+                    ReportError(JSError.NoSemicolon, false);
+                }
             }
 
-            if (operand != null)
-                throwCtx.UpdateWith(operand.Context);
-            return new ThrowNode(throwCtx, this)
-                {
-                    Operand = operand
-                };
+            return throwNode;
         }
 
         //---------------------------------------------------------------------------------------
@@ -3304,6 +3304,7 @@ namespace Microsoft.Ajax.Utilities
                         m_noSkipTokenSet.Add(NoSkipTokenSet.s_FunctionDeclNoSkipTokenSet);
                         try
                         {
+                            ParameterDeclaration paramDecl = null;
                             if (JSToken.Identifier != m_currentToken.Token && (id = JSKeyword.CanBeIdentifier(m_currentToken.Token)) == null)
                             {
                                 if (JSToken.LeftCurly == m_currentToken.Token)
@@ -3331,11 +3332,12 @@ namespace Microsoft.Ajax.Utilities
                                     id = m_scanner.Identifier;
                                 }
 
-                                formalParameters.Append(new ParameterDeclaration(m_currentToken.Clone(), this)
+                                paramDecl = new ParameterDeclaration(m_currentToken.Clone(), this)
                                     {
                                         Name = id,
                                         Position = formalParameters.Count
-                                    });
+                                    };
+                                formalParameters.Append(paramDecl);
                                 GetNextToken();
                             }
 
@@ -3344,7 +3346,12 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 break;
                             }
-                            else if (JSToken.Comma != m_currentToken.Token)
+                            else if (JSToken.Comma == m_currentToken.Token)
+                            {
+                                // append the comma context as the terminator for the parameter
+                                paramDecl.IfNotNull(p => p.TerminatingContext = m_currentToken.Clone());
+                            }
+                            else
                             {
                                 // deal with error in some "intelligent" way
                                 if (JSToken.LeftCurly == m_currentToken.Token)
@@ -4352,16 +4359,22 @@ namespace Microsoft.Ajax.Utilities
                             m_noSkipTokenSet.Add(NoSkipTokenSet.s_ArrayInitNoSkipTokenSet);
                             try
                             {
-                                list.Append(ParseExpression(true));
+                                var expression = ParseExpression(true);
+                                list.Append(expression);
                                 if (JSToken.Comma != m_currentToken.Token)
                                 {
                                     if (JSToken.RightBracket != m_currentToken.Token)
+                                    {
                                         ReportError(JSError.NoRightBracket);
+                                    }
+
                                     break;
                                 }
                                 else
                                 {
-                                    // we have a comma -- skip it
+                                    // we have a comma -- skip it after adding it as a terminator
+                                    // on the previous expression
+                                    expression.IfNotNull(e => e.TerminatingContext = m_currentToken.Clone());
                                     GetNextToken();
 
                                     // if the next token is the closing brackets, then we need to
@@ -4401,7 +4414,10 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             // comma -- missing array item in the list
-                            list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this));
+                            list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this)
+                                {
+                                    TerminatingContext = m_currentToken.Clone()
+                                });
 
                             // skip over the comma
                             GetNextToken();
@@ -4587,7 +4603,8 @@ namespace Microsoft.Ajax.Utilities
                                     {
                                         if (JSToken.Comma == m_currentToken.Token)
                                         {
-                                            // skip the comma
+                                            // skip the comma after adding it to the property as a terminating context
+                                            property.IfNotNull(p => p.TerminatingContext = m_currentToken.Clone());
                                             GetNextToken();
 
                                             // if the next token is the right-curly brace, then we ended 
@@ -4872,13 +4889,18 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 (newContexts[newContexts.Count - 1]).UpdateWith(expression.Context);
                                 if (!(expression is CallNode))
+                                {
                                     expression = new CallNode(newContexts[newContexts.Count - 1], this)
                                         {
                                             Function = expression,
                                             Arguments = new AstNodeList(CurrentPositionContext(), this)
                                         };
+                                }
                                 else
+                                {
                                     expression.Context = newContexts[newContexts.Count - 1];
+                                }
+
                                 ((CallNode)expression).IsConstructor = true;
                                 newContexts.RemoveAt(newContexts.Count - 1);
                             }
@@ -5051,22 +5073,33 @@ namespace Microsoft.Ajax.Utilities
                     m_noSkipTokenSet.Add(NoSkipTokenSet.s_ExpressionListNoSkipTokenSet);
                     try
                     {
+                        AstNode item;
                         if (JSToken.Comma == m_currentToken.Token)
                         {
-                            list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this));
+                            item = new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this);
+                            list.Append(item);
                         }
                         else if (terminator == m_currentToken.Token)
                         {
                             break;
                         }
                         else
-                            list.Append(ParseExpression(true));
+                        {
+                            item = ParseExpression(true);
+                            list.Append(item);
+                        }
 
                         if (terminator == m_currentToken.Token)
+                        {
                             break;
+                        }
                         else
                         {
-                            if (JSToken.Comma != m_currentToken.Token)
+                            if (JSToken.Comma == m_currentToken.Token)
+                            {
+                                item.IfNotNull(n => n.TerminatingContext = m_currentToken.Clone());
+                            }
+                            else
                             {
                                 if (terminator == JSToken.RightParenthesis)
                                 {
@@ -5082,10 +5115,14 @@ namespace Microsoft.Ajax.Utilities
                                             break;
                                         }
                                     }
+
                                     ReportError(JSError.NoRightParenthesisOrComma);
                                 }
                                 else
+                                {
                                     ReportError(JSError.NoRightBracketOrComma);
+                                }
+
                                 SkipTokensAndThrow();
                             }
                         }

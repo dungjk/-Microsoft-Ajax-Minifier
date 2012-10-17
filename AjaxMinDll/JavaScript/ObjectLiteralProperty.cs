@@ -97,5 +97,10 @@ namespace Microsoft.Ajax.Utilities
 
             return false;
         }
+
+        internal override string GetFunctionGuess(AstNode target)
+        {
+            return Name.ToString();
+        }
     }
 }

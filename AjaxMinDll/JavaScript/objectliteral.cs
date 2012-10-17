@@ -89,14 +89,6 @@ namespace Microsoft.Ajax.Utilities
             }
             return false;
         }
-
-        internal override string GetFunctionGuess(AstNode target)
-        {
-            // walk the values until we find the target, then return the key
-
-            // if we get this far, we didn't find it
-            return string.Empty;
-        }
     }
 }
 
