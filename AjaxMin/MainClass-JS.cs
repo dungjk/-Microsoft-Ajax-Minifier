@@ -128,7 +128,7 @@ namespace Microsoft.Ajax.Utilities
             return 0;
         }
 
-        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder, string outputPath)
+        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             var returnCode = 0;
 
@@ -188,7 +188,6 @@ namespace Microsoft.Ajax.Utilities
                         {
                             switchParser.JSSettings.SymbolsMap.EndFile(
                                 writer, 
-                                outputPath, 
                                 m_symbolsMapFile,
                                 switchParser.JSSettings.OutputMode == OutputMode.SingleLine ? "\n" : "\r\n");
                         }

@@ -292,6 +292,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         Output(OperatorString(node.OperatorToken));
+                        MarkSegment(node, null, node.OperatorContext);
                         BreakLine(false);
                     }
 
@@ -590,7 +591,7 @@ namespace Microsoft.Ajax.Utilities
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, argument.IfNotNull(a => a.TerminatingContext));
+                            MarkSegment(node.Arguments, null, argument.IfNotNull(a => a.TerminatingContext) ?? node.Arguments.Context);
 
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
@@ -816,7 +817,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     OutputPossibleLineBreak(' ');
                     OutputPossibleLineBreak('?');
-                    MarkSegment(node, null, node.QuestionContext);
+                    MarkSegment(node, null, node.QuestionContext ?? node.Context);
                     BreakLine(false);
                     if (!m_onNewLine)
                     {
@@ -826,7 +827,7 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     OutputPossibleLineBreak('?');
-                    MarkSegment(node, null, node.QuestionContext);
+                    MarkSegment(node, null, node.QuestionContext ?? node.Context);
                 }
 
                 m_startOfStatement = false;
@@ -840,7 +841,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     OutputPossibleLineBreak(' ');
                     OutputPossibleLineBreak(':');
-                    MarkSegment(node, null, node.ColonContext);
+                    MarkSegment(node, null, node.ColonContext ?? node.Context);
                     BreakLine(false);
                     if (!m_onNewLine)
                     {
@@ -850,7 +851,7 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     OutputPossibleLineBreak(':');
-                    MarkSegment(node, null, node.ColonContext);
+                    MarkSegment(node, null, node.ColonContext ?? node.Context);
                 }
 
                 if (node.FalseExpression != null)
@@ -1195,6 +1196,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(')');
+                MarkSegment(node, null, node.Context);
                 OutputBlock(node.Body);
 
                 EndSymbol(symbol);
@@ -1226,7 +1228,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // NEVER do without these semicolons
                 OutputPossibleLineBreak(';');
-                MarkSegment(node, null, node.Separator1Context); 
+                MarkSegment(node, null, node.Separator1Context ?? node.Context); 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -1238,7 +1240,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(';');
-                MarkSegment(node, null, node.Separator2Context);
+                MarkSegment(node, null, node.Separator2Context ?? node.Context);
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -1250,8 +1252,9 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 OutputPossibleLineBreak(')');
-                OutputBlock(node.Body);
+                MarkSegment(node, null, node.Context);
 
+                OutputBlock(node.Body);
                 EndSymbol(symbol);
             }
         }
@@ -2310,9 +2313,62 @@ namespace Microsoft.Ajax.Utilities
 
         public void Visit(UnaryOperator node)
         {
-            var symbol = StartSymbol(node);
-            OutputUnaryOperator(node);
-            EndSymbol(symbol);
+            if (node != null)
+            {
+                var symbol = StartSymbol(node);
+                var isNoIn = m_noIn;
+                m_noIn = false;
+
+                if (node.IsPostfix)
+                {
+                    if (node.Operand != null)
+                    {
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                    }
+
+                    Output(OperatorString(node.OperatorToken));
+                    MarkSegment(node, null, node.OperatorContext);
+                    m_startOfStatement = false;
+                }
+                else
+                {
+                    if (node.OperatorInConditionalCompilationComment)
+                    {
+                        // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
+                        // sources had one. Otherwise, we only only want to output one if we had one and we aren't
+                        // removing unneccesary ones.
+                        if (!m_outputCCOn
+                            || (node.ConditionalCommentContainsOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
+                        {
+                            // output it now and set the flag that we have output them
+                            Output("/*@cc_on");
+                            m_outputCCOn = true;
+                        }
+                        else
+                        {
+                            Output("/*@");
+                        }
+
+                        Output(OperatorString(node.OperatorToken));
+                        MarkSegment(node, null, node.OperatorContext);
+                        Output("@*/");
+                    }
+                    else
+                    {
+                        Output(OperatorString(node.OperatorToken));
+                        MarkSegment(node, null, node.OperatorContext ?? node.Context);
+                    }
+
+                    m_startOfStatement = false;
+                    if (node.Operand != null)
+                    {
+                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                    }
+                }
+
+                m_noIn = isNoIn;
+                EndSymbol(symbol);
+            }
         }
 
         public void Visit(WhileNode node)
@@ -2783,64 +2839,6 @@ namespace Microsoft.Ajax.Utilities
             m_startOfStatement = false;
         }
 
-        private void OutputUnaryOperator(UnaryOperator node)
-        {
-            if (node != null)
-            {
-                var isNoIn = m_noIn;
-                m_noIn = false;
-
-                if (node.IsPostfix)
-                {
-                    if (node.Operand != null)
-                    {
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
-                    }
-
-                    Output(OperatorString(node.OperatorToken));
-                    MarkSegment(node, null, node.OperatorContext); 
-                    m_startOfStatement = false;
-                }
-                else
-                {
-                    if (node.OperatorInConditionalCompilationComment)
-                    {
-                        // if we haven't output a cc_on yet, we ALWAYS want to do it now, whether or not the 
-                        // sources had one. Otherwise, we only only want to output one if we had one and we aren't
-                        // removing unneccesary ones.
-                        if (!m_outputCCOn
-                            || (node.ConditionalCommentContainsOn && !Settings.IsModificationAllowed(TreeModifications.RemoveUnnecessaryCCOnStatements)))
-                        {
-                            // output it now and set the flag that we have output them
-                            Output("/*@cc_on");
-                            m_outputCCOn = true;
-                        }
-                        else
-                        {
-                            Output("/*@");
-                        }
-
-                        Output(OperatorString(node.OperatorToken));
-                        MarkSegment(node, null, node.OperatorContext); 
-                        Output("@*/");
-                    }
-                    else
-                    {
-                        Output(OperatorString(node.OperatorToken));
-                        MarkSegment(node, null, node.OperatorContext ?? node.Context);
-                    }
-
-                    m_startOfStatement = false;
-                    if (node.Operand != null)
-                    {
-                        AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
-                    }
-                }
-
-                m_noIn = isNoIn;
-            }
-        }
-
         /// <summary>
         /// Output everything for a function except the initial keyword
         /// </summary>
@@ -2889,7 +2887,7 @@ namespace Microsoft.Ajax.Utilities
                         if (ndx > 0)
                         {
                             OutputPossibleLineBreak(',');
-                            MarkSegment(node, null, paramDecl.IfNotNull(p => p.TerminatingContext));
+                            MarkSegment(node, null, paramDecl.IfNotNull(p => p.TerminatingContext) ?? node.ParametersContext);
                             if (Settings.OutputMode == OutputMode.MultipleLines)
                             {
                                 OutputPossibleLineBreak(' ');

@@ -759,7 +759,9 @@ namespace Microsoft.Ajax.Utilities
                         retVal = this.ClobberFileAndExecuteOperation(
                             crunchGroup.SymbolMapPath, (path) =>
                             {
-                                symbolMapWriter = new StreamWriter(path, false, Encoding.UTF8);
+                                // the spec says UTF-8, but Chrome fails to load the map if there's a BOM.
+                                // So make sure the BOM doesn't get written.
+                                symbolMapWriter = new StreamWriter(path, false, new UTF8Encoding(false));
                             });
 
                         if (retVal != 0)
@@ -1104,7 +1106,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder, crunchGroup.Output.Path);
+                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder);
                         }
                     }
                     catch (JScriptException e)

@@ -168,7 +168,7 @@ namespace Microsoft.Ajax.Utilities
                 throw new ArgumentNullException("action");
             }
 
-            if (obj == null)
+            if (obj != null)
             {
                 action(obj);
             }

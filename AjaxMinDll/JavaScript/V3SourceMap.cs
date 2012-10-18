@@ -140,44 +140,41 @@ namespace Microsoft.Ajax.Utilities
                 throw new ArgumentOutOfRangeException("startLine");
             }
 
-            if (context != null && context.Document != null && context.Document.FileContext != null && context.StartLineNumber > 0 && context.StartColumn >= 0)
+            // if we have a name, try adding it to the hash set of names. If it already exists, the call to Add
+            // will return false. If it doesn't already exist, Add will return true and we'll append it to the list
+            // of names. That way we have a nice list of names ordered by their first occurrence in the minified file.
+            if (!string.IsNullOrEmpty(name) && m_names.Add(name))
             {
-                // if we have a name, try adding it to the hash set of names. If it already exists, the call to Add
-                // will return false. If it doesn't already exist, Add will return true and we'll append it to the list
-                // of names. That way we have a nice list of names ordered by their first occurrence in the minified file.
-                if (!string.IsNullOrEmpty(name) && m_names.Add(name))
-                {
-                    m_nameList.Add(name);
-                }
-
-                // if this is a newline, the startline will be bigger than the largest line we've had so far
-                m_maxMinifiedLine = Math.Max(m_maxMinifiedLine, startLine);
-
-                // save the file context in our list of files
-                if (context != null && context.Document != null && context.Document.FileContext != null)
-                {
-                    // if this is the first instance of this file...
-                    if (m_sourceFiles.Add(context.Document.FileContext))
-                    {
-                        // ...add it to the list, so we end up with a list of unique files
-                        // sorted by their first occurence in the minified file.
-                        m_sourceFileList.Add(context.Document.FileContext);
-                    }
-                }
-
-                // create the segment object and add it to the list.
-                // the destination line/col numbers are zero-based. The format expects line to be 1-based and col 0-based.
-                // the context line is one-based; col is zero-based. The format expected line to be 1-based and col to be 0-based.
-                var segment = CreateSegment(
-                    startLine + 1,
-                    startColumn,
-                    context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber,
-                    context == null || context.StartColumn < 0 ? -1 : context.StartColumn,
-                    context.IfNotNull(c => c.Document.FileContext),
-                    name);
-
-                m_segments.Add(segment);
+                m_nameList.Add(name);
             }
+
+            // if this is a newline, the startline will be bigger than the largest line we've had so far
+            m_maxMinifiedLine = Math.Max(m_maxMinifiedLine, startLine);
+
+            // save the file context in our list of files
+            if (context != null && context.Document != null && context.Document.FileContext != null)
+            {
+                // if this is the first instance of this file...
+                if (m_sourceFiles.Add(context.Document.FileContext))
+                {
+                    // ...add it to the list, so we end up with a list of unique files
+                    // sorted by their first occurence in the minified file.
+                    m_sourceFileList.Add(context.Document.FileContext);
+                }
+            }
+
+            // create the segment object and add it to the list.
+            // the destination line/col numbers are zero-based. The format expects line to be 1-based and col 0-based.
+            // the context line is one-based; col is zero-based. The format expects both to be zero-based.
+            var segment = CreateSegment(
+                startLine + 1,
+                startColumn,
+                context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber - 1,
+                context == null || context.StartColumn < 0 ? -1 : context.StartColumn,
+                context.IfNotNull(c => c.Document.FileContext),
+                name);
+
+            m_segments.Add(segment);
         }
 
         public void EndSymbol(object symbol, int endLine, int endColumn, string parentContext)
@@ -185,12 +182,12 @@ namespace Microsoft.Ajax.Utilities
             // not important
         }
 
-        public void EndFile(TextWriter writer, string outputPath, string mapFilePath, string newLine)
+        public void EndFile(TextWriter writer, string mapFilePath, string newLine)
         {
             // we want to output to the text stream a comment in the format of:
             //      //@ sourceMappingURL=<uri>
-            // where the URI is the relative uri from the output to the map file
-            if (writer != null && !outputPath.IsNullOrWhiteSpace() && !mapFilePath.IsNullOrWhiteSpace())
+            // where the URI is the relative uri from m_minifiedPath to the map file
+            if (writer != null && !mapFilePath.IsNullOrWhiteSpace())
             {
                 try
                 {

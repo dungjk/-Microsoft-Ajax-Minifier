@@ -52,6 +52,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         private string m_symbolsMapFile;
 
         /// <summary>
+        /// An optional file mapping implementation name
+        /// </summary>
+        private string m_symbolsMapName;
+
+        /// <summary>
         /// A collection of other input files we will use, as specified by swithc parameters
         /// </summary>
         private ICollection<string> m_otherInputFiles;
@@ -229,6 +234,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     if (ea.Index < ea.Arguments.Count - 1)
                     {
                         m_symbolsMapFile = ea.Arguments[++ea.Index];
+                    }
+
+                    if (!ea.ParameterPart.IsNullOrWhiteSpace())
+                    {
+                        m_symbolsMapName = ea.ParameterPart.ToUpperInvariant();
                     }
                     break;
             }
@@ -647,10 +657,21 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             Encoding.UTF8);
                         try
                         {
-                            using (m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                            if (string.CompareOrdinal(m_symbolsMapName, "V3") == 0)
                             {
-                                writer = null;
-                                MinifyJavaScript();
+                                using (m_switchParser.JSSettings.SymbolsMap = new V3SourceMap(writer))
+                                {
+                                    writer = null;
+                                    MinifyJavaScript();
+                                }
+                            }
+                            else
+                            {
+                                using (m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
+                                {
+                                    writer = null;
+                                    MinifyJavaScript();
+                                }
                             }
                         }
                         finally
@@ -941,7 +962,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     try
                     {
-                        File.WriteAllText(outputPath, minifiedJs);
+                        using (var writer = new StreamWriter(outputPath, false, Encoding.UTF8))
+                        {
+                            // output the minified code
+                            writer.Write(minifiedJs);
+
+                            // give the symbol map a chance to add a little something, if we have one
+                            m_switchParser.JSSettings.SymbolsMap.IfNotNull( m => m.EndFile(
+                                writer, 
+                                m_symbolsMapFile, 
+                                m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
+                        }
                     }
                     catch (UnauthorizedAccessException)
                     {

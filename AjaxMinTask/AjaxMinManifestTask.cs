@@ -329,7 +329,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     {
                         using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
                         {
+                            // write the minified code
                             writer.Write(minifiedCode);
+
+                            // give the map (if any) a chance to add something
+                            settings.SymbolsMap.IfNotNull(m => m.EndFile(
+                                writer,
+                                symbolMap.Path,
+                                settings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
                         }
                     }
                     else
