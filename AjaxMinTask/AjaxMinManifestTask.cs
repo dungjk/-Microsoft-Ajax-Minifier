@@ -296,7 +296,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     {
                         // create the map writer and the source map implementation.
                         // look at the Name attribute and implement the proper one.
-                        mapWriter = new StreamWriter(GetRootedOutput(symbolMap.Path, manifestFolder), false, Encoding.UTF8);
+                        mapWriter = new StreamWriter(GetRootedOutput(symbolMap.Path, manifestFolder), false, new UTF8Encoding(false));
                         if (string.Compare(symbolMap.Name, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             settings.SymbolsMap = new V3SourceMap(mapWriter);
@@ -672,11 +672,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         private static Encoding DefaultEncoding(EncoderFallback fallback)
         {
-            // default is a clone of UTF8 (so we can set the fallback)
-            // with the encoder set
-            var encoding = (Encoding)Encoding.UTF8.Clone();
-            encoding.EncoderFallback = fallback;
-            return encoding;
+            // default to UTF-8 with no BOM; don't need the encoder fallback since
+            // it should be able to output all UNICODE characters as-is.
+            return new UTF8Encoding(false);
         }
 
         #endregion

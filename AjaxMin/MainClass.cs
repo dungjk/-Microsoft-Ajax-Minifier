@@ -879,10 +879,10 @@ namespace Microsoft.Ajax.Utilities
             Encoding encoding = null;
             if (string.IsNullOrEmpty(encodingName))
             {
-                // nothing specified -- use our default encoding of UTF-8.
-                // clone the utf-8 encoder so we can change the fallback handler
-                encoding = (Encoding)Encoding.UTF8.Clone();
-                encoding.EncoderFallback = fallback;
+                // nothing specified -- use our default encoding of UTF-8 with no BOM.
+                // don't need to set the JS encoder fallback because UTF-8 should be able
+                // to output all UNICODE characters.
+                encoding = new UTF8Encoding(false);
             }
             else
             {
@@ -930,7 +930,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // just get the JS encoding; we're not going to be outputting anything with this encoding
             // object, so it doesn't matter which output encoding fallback object we have on it.
-            var encoding = GetJSEncoding(encodingName ?? "UTF-8");
+            var encoding = GetJSEncoding(encodingName);
             if (encoding == null)
             {
                 throw new UsageException(m_outputMode, AjaxMin.InvalidInputEncoding.FormatInvariant(encodingName));
@@ -1136,7 +1136,7 @@ namespace Microsoft.Ajax.Utilities
             Encoding encodingOutput = GetOutputEncoding(
                 crunchGroup.InputType,
                 crunchGroup.Output.EncodingName ?? switchParser.EncodingOutputName
-                ?? (string.IsNullOrEmpty(crunchGroup.Output.Path) ? "ASCII" : "UTF-8"));
+                ?? (string.IsNullOrEmpty(crunchGroup.Output.Path) ? "ASCII" : null));
 
             // now write the final output file
             if (string.IsNullOrEmpty(crunchGroup.Output.Path))

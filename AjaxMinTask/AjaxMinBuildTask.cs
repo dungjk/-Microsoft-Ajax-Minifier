@@ -890,7 +890,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     {
                         try
                         {
-                            using (var outputWriter = new StreamWriter(outputPath, false, Encoding.UTF8))
+                            using (var outputWriter = new StreamWriter(outputPath, false, new UTF8Encoding(false)))
                             {
                                 // output the minified code
                                 outputWriter.Write(minifiedJs);

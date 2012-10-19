@@ -347,7 +347,7 @@ namespace Microsoft.Ajax.Utilities
                     // report path specified -- write to the file.
                     // don't append; use UTF-8 as the output format.
                     // let any exceptions bubble up.
-                    using (var writer = new StreamWriter(switchParser.ReportPath, false, Encoding.UTF8))
+                    using (var writer = new StreamWriter(switchParser.ReportPath, false, new UTF8Encoding(false)))
                     {
                         writer.Write(reportText);
                     }
