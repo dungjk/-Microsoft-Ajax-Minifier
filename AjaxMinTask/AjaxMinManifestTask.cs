@@ -296,7 +296,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     {
                         // create the map writer and the source map implementation.
                         // look at the Name attribute and implement the proper one.
-                        mapWriter = new StreamWriter(GetRootedOutput(symbolMap.Path, manifestFolder), false, new UTF8Encoding(false));
+                        var mapPath = GetRootedOutput(symbolMap.Path, manifestFolder);
+                        mapWriter = new StreamWriter(mapPath, false, new UTF8Encoding(false));
                         if (string.Compare(symbolMap.Name, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             settings.SymbolsMap = new V3SourceMap(mapWriter);
@@ -311,7 +312,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         mapWriter = null;
 
                         // start the package
-                        settings.SymbolsMap.StartPackage(outputPath);
+                        settings.SymbolsMap.StartPackage(outputPath, mapPath);
                     }
 
                     // if we want to use resource strings, set them up now
@@ -335,7 +336,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             // give the map (if any) a chance to add something
                             settings.SymbolsMap.IfNotNull(m => m.EndFile(
                                 writer,
-                                symbolMap.Path,
                                 settings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
                         }
                     }
@@ -646,7 +646,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             Encoding encoding;
             if (string.IsNullOrEmpty(encodingName))
             {
-                encoding = DefaultEncoding(fallback);
+                encoding = DefaultEncoding();
             }
             else
             {
@@ -663,14 +663,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     Log.LogError(Strings.InvalidEncodingName, e.Message);
 
                     // just use the default
-                    encoding = DefaultEncoding(fallback);
+                    encoding = DefaultEncoding();
                 }
             }
 
             return encoding;
         }
 
-        private static Encoding DefaultEncoding(EncoderFallback fallback)
+        private static Encoding DefaultEncoding()
         {
             // default to UTF-8 with no BOM; don't need the encoder fallback since
             // it should be able to output all UNICODE characters as-is.

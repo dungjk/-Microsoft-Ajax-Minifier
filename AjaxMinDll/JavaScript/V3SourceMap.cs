@@ -30,6 +30,8 @@ namespace Microsoft.Ajax.Utilities
 
         private string m_minifiedPath;
 
+        private string m_mapPath;
+
         private TextWriter m_writer;
 
         private int m_maxMinifiedLine;
@@ -107,9 +109,10 @@ namespace Microsoft.Ajax.Utilities
         /// Called when we start a new minified output file
         /// </summary>
         /// <param name="sourcePath">output file path</param>
-        public void StartPackage(string sourcePath)
+        public void StartPackage(string sourcePath, string mapPath)
         {
             m_minifiedPath = sourcePath;
+            m_mapPath = mapPath;
         }
 
         /// <summary>
@@ -122,7 +125,7 @@ namespace Microsoft.Ajax.Utilities
             m_writer.WriteLine("{");
 
             WriteProperty("version", 3);
-            WriteProperty("file", m_minifiedPath);
+            WriteProperty("file", MakeRelative(m_minifiedPath, m_mapPath));
 
             // line number comes in zero-based, so add one to get the line count
             WriteProperty("lineCount", m_maxMinifiedLine + 1);
@@ -169,7 +172,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // ...add it to the list, so we end up with a list of unique files
                     // sorted by their first occurence in the minified file.
-                    m_sourceFileList.Add(context.Document.FileContext);
+                    m_sourceFileList.Add(MakeRelative(context.Document.FileContext, m_mapPath));
                 }
             }
 
@@ -181,7 +184,7 @@ namespace Microsoft.Ajax.Utilities
                 startColumn,
                 context == null || context.StartLineNumber < 1 ? -1 : context.StartLineNumber - 1,
                 context == null || context.StartColumn < 0 ? -1 : context.StartColumn,
-                context.IfNotNull(c => c.Document.FileContext),
+                context.IfNotNull(c => MakeRelative(c.Document.FileContext, m_mapPath)),
                 name);
 
             m_segments.Add(segment);
@@ -192,23 +195,17 @@ namespace Microsoft.Ajax.Utilities
             // not important
         }
 
-        public void EndFile(TextWriter writer, string mapFilePath, string newLine)
+        public void EndFile(TextWriter writer, string newLine)
         {
             // we want to output to the text stream a comment in the format of:
             //      //@ sourceMappingURL=<uri>
             // where the URI is the relative uri from m_minifiedPath to the map file
-            if (writer != null && !mapFilePath.IsNullOrWhiteSpace())
+            if (writer != null && !m_mapPath.IsNullOrWhiteSpace())
             {
-                try
-                {
-                    // TODO: make relative to output, don't just output the mapfile as-is
-                    writer.Write(newLine);
-                    writer.Write("//@ sourceMappingURL={0}", mapFilePath);
-                }
-                catch (UriFormatException)
-                {
-                    // guess we're not writing anything
-                }
+                // make relative to output, don't just output the mapfile path as-is.
+                // and it's supposed to be a URL anyway
+                writer.Write(newLine);
+                writer.Write("//@ sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
             }
         }
 
@@ -344,6 +341,33 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region private helper methods
+
+        private static string MakeRelative(string path, string relativeFrom)
+        {
+            // if either one is null or blank, just return the original path
+            if (!path.IsNullOrWhiteSpace() && !relativeFrom.IsNullOrWhiteSpace())
+            {
+                try
+                {
+                    var fromUri = new Uri(Normalize(relativeFrom));
+                    var toUri = new Uri(Normalize(path));
+                    var relativeUrl = fromUri.MakeRelativeUri(toUri);
+
+                    return relativeUrl.ToString();
+                }
+                catch (UriFormatException)
+                {
+                    // catch and return the original path
+                }
+            }
+
+            return path;
+        }
+
+        private static string Normalize(string path)
+        {
+            return Path.IsPathRooted(path) ? path : Path.Combine(Environment.CurrentDirectory, path);
+        }
 
         private void WriteProperty(string name, int number)
         {

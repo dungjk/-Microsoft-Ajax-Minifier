@@ -347,8 +347,9 @@
     <Content Include="TestData\JS\Expected\ScannerErrors\StringEOL.js" />
     <Content Include="TestData\JS\Expected\ScannerErrors\UnexpectedNull.js" />
     <Content Include="TestData\JS\Expected\SourceMap\MapArgNotSpecified.js" />
-    <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap.xml" />
+    <None Include="TestData\JS\Expected\SourceMap\ScriptSharpMap_TwoInputs.js.map" />
     <Content Include="TestData\JS\Expected\SourceMap\ScriptSharpMap_TwoInputs.js" />
+    <Content Include="TestData\JS\Expected\SourceMap\SourceMapV3.js" />
     <Content Include="TestData\JS\Expected\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Expected\Strict\DupArg.js" />
     <Content Include="TestData\JS\Expected\Strict\DupProperty.js" />
@@ -589,6 +590,7 @@
     <Content Include="TestData\JS\Input\ScannerErrors\UnexpectedNull.js" />
     <Content Include="TestData\JS\Input\SourceMap\ScriptSharpMap.js" />
     <Content Include="TestData\JS\Input\SourceMap\MapArgNotSpecified.js" />
+    <Content Include="TestData\JS\Input\SourceMap\SourceMapV3.js" />
     <Content Include="TestData\JS\Input\StdIn\StdInTest.js" />
     <Content Include="TestData\JS\Input\Strict\DupArg.js" />
     <Content Include="TestData\JS\Input\Strict\DupProperty.js" />
@@ -656,6 +658,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <None Include="TestData\JS\Expected\SourceMap\SourceMapV3.js.map" />
     <None Include="TestData\JS\Input\ResourceMerge\ResourceResx.resx" />
   </ItemGroup>
   <ItemGroup>

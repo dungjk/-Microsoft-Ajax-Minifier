@@ -274,12 +274,12 @@ namespace JSUnitTest
                         }
                         else if (option.StartsWith("-map", StringComparison.OrdinalIgnoreCase))
                         {
-                            outputMapFile = BuildFullPath(
+                            outputMapFile = GetJsPath(
                                 m_outputFolder,
                                 testClass,
-                                inputFile,
-                                ".xml",
-                                false);
+                                outputFile,
+                                false
+                                ) + ".map";
 
                             if (File.Exists(outputMapFile))
                             {
@@ -481,8 +481,8 @@ namespace JSUnitTest
                     string expectedMapFile = this.BuildFullPath(
                         m_expectedFolder,
                         testClass,
-                        Path.GetFileNameWithoutExtension(outputMapFile),
-                        ".xml",
+                        Path.GetFileName(outputMapFile),
+                        ".map",
                         true
                         );
 
@@ -950,51 +950,8 @@ namespace JSUnitTest
             Trace.WriteLine(string.Format("odd \"{0}\" \"{1}\"", rightPath, leftPath));
             Trace.WriteLine(string.Empty);
             Trace.WriteLine("-");
-            var xmlReaderSettings = new XmlReaderSettings()
-                {
-                    IgnoreWhitespace = true
-                };
-            using (XmlReader leftReader = XmlReader.Create(leftPath, xmlReaderSettings))
-            using (XmlReader rightReader = XmlReader.Create(rightPath, xmlReaderSettings))
-            {
-                bool leftHasMoreNodes = leftReader.Read();
-                bool rightHasMoreNodes = rightReader.Read();
 
-                while (leftHasMoreNodes && rightHasMoreNodes)
-                {
-                    bool leftIsScriptTag = leftReader.IsStartElement(ScriptFileTag);
-                    bool rightIsScriptTag = rightReader.IsStartElement(ScriptFileTag);
-
-                    if (leftIsScriptTag && rightIsScriptTag)
-                    {
-                        string leftScriptName = Path.GetFileName(leftReader.GetAttribute(FilePathAttribute));
-                        string rightScriptName = Path.GetFileName(rightReader.GetAttribute(FilePathAttribute));
-
-                        Assert.AreEqual(leftScriptName, rightScriptName, "Script names don't match");
-
-                        var leftInner = leftReader.ReadInnerXml();
-                        var rightInner = rightReader.ReadInnerXml();
-                        Assert.AreEqual(leftInner, rightInner, "Script symbols don't match");
-                    }
-                    else if (leftReader.Name == SourceFileTag && rightReader.Name == SourceFileTag)
-                    {
-                        int leftFileId = int.Parse(leftReader.GetAttribute(FileIdAttribute));
-                        int rightFileId = int.Parse(rightReader.GetAttribute(FileIdAttribute));
-                        string leftScriptName = Path.GetFileName(leftReader.GetAttribute(FilePathAttribute));
-                        string rightScriptName = Path.GetFileName(rightReader.GetAttribute(FilePathAttribute));
-
-                        Assert.AreEqual(leftFileId, rightFileId, "Source file ids don't match");
-                        Assert.AreEqual(leftScriptName, rightScriptName, "Source file names don't match");
-                    }
-
-                    Assert.AreEqual(leftReader.Name, rightReader.Name, "Left and Right files have elements in different order");
-
-                    leftHasMoreNodes = leftReader.Read();
-                    rightHasMoreNodes = rightReader.Read();
-                }
-
-                Assert.AreEqual(leftReader.EOF, rightReader.EOF, "Files length don't match");
-            }
+            Assert.IsTrue(CompareTextFiles(leftPath, rightPath), "The expected map file ({1}) and actual map file ({0}) do not match!", leftPath, rightPath);
         }
 
         private class XmlOutputData

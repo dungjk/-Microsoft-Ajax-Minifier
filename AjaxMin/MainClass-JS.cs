@@ -188,7 +188,6 @@ namespace Microsoft.Ajax.Utilities
                         {
                             switchParser.JSSettings.SymbolsMap.EndFile(
                                 writer, 
-                                m_symbolsMapFile,
                                 switchParser.JSSettings.OutputMode == OutputMode.SingleLine ? "\n" : "\r\n");
                         }
                     }

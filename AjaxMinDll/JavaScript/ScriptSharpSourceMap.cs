@@ -27,6 +27,7 @@ namespace Microsoft.Ajax.Utilities
     {
         private readonly XmlWriter m_writer;
         private string m_currentPackagePath;
+        private string m_mapPath;
         private Dictionary<string, int> m_sourceFileIndexMap = new Dictionary<string, int>();
         private int currentIndex;
 
@@ -60,7 +61,7 @@ namespace Microsoft.Ajax.Utilities
             m_writer.WriteStartElement("scriptFiles");
         }
 
-        public void StartPackage(string sourcePath)
+        public void StartPackage(string sourcePath, string mapPath)
         {
             if (sourcePath.IsNullOrWhiteSpace())
             {
@@ -68,8 +69,10 @@ namespace Microsoft.Ajax.Utilities
             }
 
             m_currentPackagePath = sourcePath;
+            m_mapPath = mapPath;
+
             m_writer.WriteStartElement("scriptFile");
-            m_writer.WriteAttributeString("path", sourcePath);
+            m_writer.WriteAttributeString("path", MakeRelative(sourcePath, m_mapPath));
         }
 
         public void EndPackage()
@@ -152,7 +155,7 @@ namespace Microsoft.Ajax.Utilities
             javaScriptSymbol.WriteTo(m_writer);
         }
 
-        public void EndFile(TextWriter writer, string mapFilePath, string newLine)
+        public void EndFile(TextWriter writer, string newLine)
         {
             // do nothing.
         }
@@ -168,7 +171,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_writer.WriteStartElement("sourceFile");
                 m_writer.WriteAttributeString("id", kvp.Value.ToStringInvariant());
-                m_writer.WriteAttributeString("path", kvp.Key);
+                m_writer.WriteAttributeString("path", MakeRelative(kvp.Key, m_mapPath));
                 m_writer.WriteEndElement(); //file
             }
 
@@ -188,6 +191,33 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return index;
+        }
+
+        private static string MakeRelative(string path, string relativeFrom)
+        {
+            // if either one is null or blank, just return the original path
+            if (!path.IsNullOrWhiteSpace() && !relativeFrom.IsNullOrWhiteSpace())
+            {
+                try
+                {
+                    var fromUri = new Uri(Normalize(relativeFrom));
+                    var toUri = new Uri(Normalize(path));
+                    var relativeUrl = fromUri.MakeRelativeUri(toUri);
+
+                    return relativeUrl.ToString();
+                }
+                catch (UriFormatException)
+                {
+                    // catch and return the original path
+                }
+            }
+
+            return path;
+        }
+
+        private static string Normalize(string path)
+        {
+            return Path.IsPathRooted(path) ? path : Path.Combine(Environment.CurrentDirectory, path);
         }
 
         #region internal symbol object class

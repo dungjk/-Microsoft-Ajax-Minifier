@@ -787,7 +787,7 @@ namespace Microsoft.Ajax.Utilities
                         symbolMapWriter = null;
 
                         // start off the package
-                        switchParser.JSSettings.SymbolsMap.StartPackage(crunchGroup.Output.Path);
+                        switchParser.JSSettings.SymbolsMap.StartPackage(crunchGroup.Output.Path, crunchGroup.SymbolMapPath);
                     }
 
                     // process the crunch group

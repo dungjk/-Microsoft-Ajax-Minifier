@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <map>
   <headers>DstStartLine,DstStartColumn,DstEndLine,DstEndColumn,SrcStartPosition,SrcEndPosition,SrcStartLine,SrcStartColumn,SrcEndLine,SrcEndColumn,SrcFileId,SymbolType,ParentFunction</headers>
   <scriptFiles>
-    <scriptFile path="C:\codeplex\ajaxmin\TestResults\ronlo_RONLOMAC 2012-08-28 07_48_32\Out\JS\Input\XmlInput\..\..\Output\XmlInput\SecondOutputFile.js">
+    <scriptFile path="SecondOutputFile.js">
       <s>1,9,1,11,10,12,1,10,1,12,1,ConstantWrapper,</s>
       <s>1,4,1,11,4,12,1,4,1,12,1,VariableDeclaration,</s>
       <s>1,1,1,11,0,12,1,0,1,12,1,Var,</s>
@@ -22,8 +22,8 @@
     </scriptFile>
   </scriptFiles>
   <sourceFiles>
-    <sourceFile id="1" path="C:\codeplex\ajaxmin\TestResults\ronlo_RONLOMAC 2012-08-28 07_48_32\Out\JS\Input\XmlInput\input2.js" />
-    <sourceFile id="2" path="C:\codeplex\ajaxmin\TestResults\ronlo_RONLOMAC 2012-08-28 07_48_32\Out\JS\Input\XmlInput\input1.js" />
-    <sourceFile id="3" path="C:\codeplex\ajaxmin\TestResults\ronlo_RONLOMAC 2012-08-28 07_48_32\Out\JS\Input\XmlInput\input3.js" />
+    <sourceFile id="1" path="../../Input/XmlInput/input2.js" />
+    <sourceFile id="2" path="../../Input/XmlInput/input1.js" />
+    <sourceFile id="3" path="../../Input/XmlInput/input3.js" />
   </sourceFiles>
 </map>

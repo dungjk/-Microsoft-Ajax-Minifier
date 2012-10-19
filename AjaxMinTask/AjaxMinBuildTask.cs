@@ -867,7 +867,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             }
 
                             // start the package off
-                            m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath);
+                            m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath, mapFilePath);
                         }
                         else
                         {
@@ -898,7 +898,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                 // give the symbol map a chance to add a little something, if we have one
                                 m_switchParser.JSSettings.SymbolsMap.IfNotNull(m => m.EndFile(
                                     outputWriter,
-                                    mapFilePath,
                                     m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
                             }
                         }

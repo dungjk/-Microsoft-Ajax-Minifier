@@ -35,6 +35,12 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-map", "MapArgNotSpecified.js");
         }
+
+        [TestMethod]
+        public void SourceMapV3()
+        {
+            TestHelper.Instance.RunTest("-map:v3", "ScriptSharpMap.js", "MapArgNotSpecified.js");
+        }
     }
 }
 
