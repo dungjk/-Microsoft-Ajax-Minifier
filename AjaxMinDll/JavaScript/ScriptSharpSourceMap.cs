@@ -26,13 +26,18 @@ namespace Microsoft.Ajax.Utilities
     public sealed class ScriptSharpSourceMap : ISourceMap
     {
         private readonly XmlWriter m_writer;
-        private string m_currentPackage;
+        private string m_currentPackagePath;
         private Dictionary<string, int> m_sourceFileIndexMap = new Dictionary<string, int>();
         private int currentIndex;
 
+        public static string ImplementationName
+        {
+            get { return "XML"; }
+        }
+
         public string Name
         {
-            get { return "ScriptSharp"; }
+            get { return ImplementationName; }
         }
 
         public ScriptSharpSourceMap(TextWriter writer)
@@ -57,19 +62,19 @@ namespace Microsoft.Ajax.Utilities
 
         public void StartPackage(string sourcePath)
         {
-            if (string.IsNullOrEmpty(sourcePath))
+            if (sourcePath.IsNullOrWhiteSpace())
             {
-                throw new ArgumentException("path cannot be null or empty", "sourcePath");
+                throw new ArgumentException("path cannot be null or whitespace", "sourcePath");
             }
 
-            m_currentPackage = sourcePath;
+            m_currentPackagePath = sourcePath;
             m_writer.WriteStartElement("scriptFile");
             m_writer.WriteAttributeString("path", sourcePath);
         }
 
         public void EndPackage()
         {
-            if (m_currentPackage == null)
+            if (m_currentPackagePath == null)
             {
                 return;
             }
@@ -77,7 +82,7 @@ namespace Microsoft.Ajax.Utilities
             // Compute and print the output script checksum and close the scriptFile element
             // the checksum can be used to determine whether the symbols map file is still valid
             // or if the script has been tempered with
-            using (FileStream stream = new FileStream(m_currentPackage, FileMode.Open))
+            using (FileStream stream = new FileStream(m_currentPackagePath, FileMode.Open))
             {
                 using (MD5 md5 = MD5.Create())
                 {
@@ -90,7 +95,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            m_currentPackage = null;
+            m_currentPackagePath = null;
         }
 
         public object StartSymbol(AstNode astNode, int startLine, int startColumn)

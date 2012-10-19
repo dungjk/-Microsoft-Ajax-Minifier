@@ -47,11 +47,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
         private SwitchParser m_switchParser;
 
         /// <summary>
-        /// An optional file mapping the source and destination files.
-        /// </summary>
-        private string m_symbolsMapFile;
-
-        /// <summary>
         /// An optional file mapping implementation name
         /// </summary>
         private string m_symbolsMapName;
@@ -229,18 +224,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         }
                     }
                     break;
-
-                case "MAP":
-                    if (ea.Index < ea.Arguments.Count - 1)
-                    {
-                        m_symbolsMapFile = ea.Arguments[++ea.Index];
-                    }
-
-                    if (!ea.ParameterPart.IsNullOrWhiteSpace())
-                    {
-                        m_symbolsMapName = ea.ParameterPart.ToUpperInvariant();
-                    }
-                    break;
             }
         }
 
@@ -291,6 +274,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 this.m_switchParser.JSSettings.IgnoreErrorList = value;
                 this.m_switchParser.CssSettings.IgnoreErrorList = value;
             }
+        }
+
+        /// <summary>
+        /// Source map implementation name. If maps to one of the available source map implementations,
+        /// will cause source maps to be generated for the output source. Possible values so far
+        /// are XML and V3.
+        /// </summary>
+        public string SourceMapType
+        {
+            get { return this.m_symbolsMapName; }
+            set { this.m_symbolsMapName = value; }
         }
 
         #endregion
@@ -604,6 +598,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
             this.JsEnsureFinalSemicolon = true;
         }
 
+        #region Execute method
+
         /// <summary>
         /// Executes the Ajax Minifier build task
         /// </summary>
@@ -647,54 +643,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                 }
 
-                if (m_symbolsMapFile != null)
-                {
-                    if (FileIsWritable(m_symbolsMapFile))
-                    {
-                        var writer = new StreamWriter(
-                            m_symbolsMapFile,
-                            false,
-                            Encoding.UTF8);
-                        try
-                        {
-                            if (string.CompareOrdinal(m_symbolsMapName, "V3") == 0)
-                            {
-                                using (m_switchParser.JSSettings.SymbolsMap = new V3SourceMap(writer))
-                                {
-                                    writer = null;
-                                    MinifyJavaScript();
-                                }
-                            }
-                            else
-                            {
-                                using (m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(writer))
-                                {
-                                    writer = null;
-                                    MinifyJavaScript();
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (writer != null)
-                            {
-                                writer.Close();
-                                writer = null;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // log a WARNING that the symbol map generation was skipped -- don't break the build
-                        Log.LogWarning(Strings.MapDestinationIsReadOnly, m_symbolsMapFile);
-                        MinifyJavaScript();
-                    }
-                }
-                else
-                {
-                    // No symbol map. Just minify it.
-                    MinifyJavaScript();
-                }
+                MinifyJavaScript();
             }
 
             // Deal with CSS minification
@@ -735,6 +684,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
             return !Log.HasLoggedErrors;
         }
 
+        #endregion
+
+        #region JavaScript methods
+
         /// <summary>
         /// Minifies JS files provided by the caller of the build task.
         /// </summary>
@@ -756,21 +709,48 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // individually-minified files
                 foreach (ITaskItem item in this.JsSourceFiles)
                 {
+                    // construct the output JS file path
                     string outputPath = Regex.Replace(item.ItemSpec, this.JsSourceExtensionPattern, this.JsTargetExtension,
                                                 RegexOptions.IgnoreCase);
 
+                    // if we want a symbol map, validate the name and return the map output path 
+                    // based on this output file path
+                    var symbolMapPath = GetMapFilePath(outputPath);
+                    var wantSymbolMap = !symbolMapPath.IsNullOrWhiteSpace();
                     if (FileIsWritable(outputPath))
                     {
-                        var outputTime = File.Exists(outputPath)
-                            ? File.GetLastWriteTimeUtc(outputPath)
-                            : DateTime.MinValue;
+                        // if the output file doesn't exist, we need to minify the sources.
+                        // or if we want a map file and IT doesn't exist, we need to minify the sources.
+                        // but if they both exists, check the last-write time; and if any input file is
+                        // newer than the output, we need to re-minify.
+                        var needToMinify = !File.Exists(outputPath) || (wantSymbolMap && !File.Exists(symbolMapPath));
+                        if (!needToMinify)
+                        {
+                            // get the time of the output file
+                            var outputTime = File.GetLastWriteTimeUtc(outputPath);
+                            if (wantSymbolMap)
+                            {
+                                // if the mapfile is more recent than the output file, use that time instead
+                                var mapFileTime = File.GetCreationTimeUtc(symbolMapPath);
+                                if (mapFileTime < outputTime)
+                                {
+                                    outputTime = mapFileTime;
+                                }
+                            }
 
-                        if (!File.Exists(outputPath)
-                            || outputTime <= mostRecentOtherInput
-                            || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                            // check the output time against the most-recent other-input files
+                            // and the one input file.
+                            if (outputTime <= mostRecentOtherInput
+                                || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                            {
+                                needToMinify = true;
+                            }
+                        }
+
+                        if (needToMinify)
                         {
                             string source = File.ReadAllText(item.ItemSpec);
-                            MinifyJavaScript(source, item.ItemSpec, outputPath);
+                            MinifyJavaScript(source, item.ItemSpec, outputPath, symbolMapPath);
                         }
                         else
                         {
@@ -786,16 +766,32 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
             else
             {
+                // if we want a symbol map, validate the name and return the map output path 
+                // based on the combined output file
+                var symbolMapPath = GetMapFilePath(this.JsCombinedFileName);
+                var wantSymbolMap = !symbolMapPath.IsNullOrWhiteSpace();
+
                 // combine the sources into a single file and minify the results
                 if (FileIsWritable(this.JsCombinedFileName))
                 {
                     // if the output file doesn't exist, we need to minify the sources.
-                    // but if it does, check the last-write time; and if any input file is
+                    // or if we want a map file and IT doesn't exist, we need to minify the sources.
+                    // but if they both exists, check the last-write time; and if any input file is
                     // newer than the output, we need to re-minify.
-                    var needToMinify = !File.Exists(this.JsCombinedFileName);
+                    var needToMinify = !File.Exists(this.JsCombinedFileName) || (wantSymbolMap && !File.Exists(symbolMapPath));
                     if (!needToMinify)
                     {
                         var outputTime = File.GetLastWriteTimeUtc(this.JsCombinedFileName);
+                        if (wantSymbolMap)
+                        {
+                            // if the mapfile is more recent than the output file, use that time instead
+                            var mapFileTime = File.GetCreationTimeUtc(symbolMapPath);
+                            if (mapFileTime < outputTime)
+                            {
+                                outputTime = mapFileTime;
+                            }
+                        }
+
                         if (outputTime <= mostRecentOtherInput)
                         {
                             needToMinify = true;
@@ -815,7 +811,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                     if (needToMinify)
                     {
-                        MinifyAndConcatenateJavaScript();
+                        ConcatenateAndMinifyJavaScript(symbolMapPath);
                     }
                     else
                     {
@@ -829,6 +825,137 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
             }
         }
+
+        /// <summary>
+        /// Minify the given source code from the given named source, to the given output path
+        /// </summary>
+        /// <param name="sourceCode">source code to minify</param>
+        /// <param name="sourceName">name of the source</param>
+        /// <param name="outputPath">destination path for resulting minified code</param>
+        private void MinifyJavaScript(string sourceCode, string sourceName, string outputPath, string mapFilePath)
+        {
+            TextWriter mapWriter = null;
+            try
+            {
+                try
+                {
+                    if (mapFilePath.IsNullOrWhiteSpace())
+                    {
+                        // just in case, make darn-sure the settings is null-out
+                        m_switchParser.JSSettings.SymbolsMap = null;
+                    }
+                    else
+                    {
+                        // we want to generate a map file for this output. Create the proper implementation
+                        // and set it on the settings object
+                        if (FileIsWritable(mapFilePath))
+                        {
+                            // be sure to use a UTF-8 encoding that does NOT output a BOM or Chrome won't read it!
+                            mapWriter = new StreamWriter(
+                                mapFilePath,
+                                false,
+                                new UTF8Encoding(false));
+                            if (string.CompareOrdinal(m_symbolsMapName, V3SourceMap.ImplementationName) == 0)
+                            {
+                                m_switchParser.JSSettings.SymbolsMap = new V3SourceMap(mapWriter);
+                                mapWriter = null;
+                            }
+                            else
+                            {
+                                m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);
+                                mapWriter = null;
+                            }
+
+                            // start the package off
+                            m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath);
+                        }
+                        else
+                        {
+                            // log a WARNING that the symbol map generation was skipped -- don't break the build
+                            Log.LogWarning(Strings.MapDestinationIsReadOnly, mapFilePath);
+                        }
+                    }
+
+                    this.m_minifier.FileName = sourceName;
+                    string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
+                    if (this.m_minifier.ErrorList.Count > 0)
+                    {
+                        foreach (var error in this.m_minifier.ErrorList)
+                        {
+                            LogContextError(error);
+                        }
+                    }
+
+                    if (!Log.HasLoggedErrors)
+                    {
+                        try
+                        {
+                            using (var outputWriter = new StreamWriter(outputPath, false, Encoding.UTF8))
+                            {
+                                // output the minified code
+                                outputWriter.Write(minifiedJs);
+
+                                // give the symbol map a chance to add a little something, if we have one
+                                m_switchParser.JSSettings.SymbolsMap.IfNotNull(m => m.EndFile(
+                                    outputWriter,
+                                    mapFilePath,
+                                    m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
+                            }
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            LogFileError(sourceName, Strings.NoWritePermission, outputPath);
+                        }
+                    }
+                    else
+                    {
+                        Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
+                    throw;
+                }
+                finally
+                {
+                    if (m_switchParser.JSSettings.SymbolsMap != null)
+                    {
+                        // close shut it down and close it out
+                        m_switchParser.JSSettings.SymbolsMap.EndPackage();
+                        m_switchParser.JSSettings.SymbolsMap.Dispose();
+                        m_switchParser.JSSettings.SymbolsMap = null;
+                    }
+                }
+            }
+            finally
+            {
+                // make sure we clean up the writer if anything went wrong
+                if (mapWriter != null)
+                {
+                    mapWriter.Close();
+                    mapWriter = null;
+                }
+            }
+        }
+
+        private void ConcatenateAndMinifyJavaScript(string mapFilePath)
+        {
+            // concatenate all the input files together, with each one prefaced by the
+            // special #SOURCE comment so the errors and warnings turn out right.
+            var inputBuilder = new StringBuilder();
+            foreach (var itemSpec in this.JsSourceFiles)
+            {
+                inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
+                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
+            }
+
+            MinifyJavaScript(inputBuilder.ToString(), string.Empty, this.JsCombinedFileName, mapFilePath);
+        }
+
+        #endregion
+
+        #region Stylesheet methods
 
         /// <summary>
         /// Minifies CSS files provided by the caller of the build task.
@@ -854,13 +981,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     string outputPath = Regex.Replace(item.ItemSpec, this.CssSourceExtensionPattern, this.CssTargetExtension, RegexOptions.IgnoreCase);
                     if (FileIsWritable(outputPath))
                     {
-                        var outputTime = File.Exists(outputPath)
-                            ? File.GetLastWriteTimeUtc(outputPath)
-                            : DateTime.MinValue;
+                        var needToMinify = !File.Exists(outputPath);
+                        if (!needToMinify)
+                        {
+                            var outputTime = File.GetLastWriteTimeUtc(outputPath);
+                            if (outputTime <= mostRecentOtherInput
+                                || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                            {
+                                needToMinify = true;
+                            }
+                        }
 
-                        if (!File.Exists(outputPath)
-                            || outputTime <= mostRecentOtherInput
-                            || outputTime <= File.GetLastWriteTimeUtc(item.ItemSpec))
+                        if (needToMinify)
                         {
                             try
                             {
@@ -916,7 +1048,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                     if (needToMinify)
                     {
-                        MinifyAndConcatenateStyleSheet();
+                        ConcatenateAndMinifyStyleSheet();
                     }
                     else
                     {
@@ -929,87 +1061,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     Log.LogWarning(Strings.DestinationIsReadOnly, Path.GetFileName(this.CssCombinedFileName), this.CssCombinedFileName);
                 }
             }
-        }
-
-        #region methods to minify source code
-
-        /// <summary>
-        /// Minify the given source code from the given named source, to the given output path
-        /// </summary>
-        /// <param name="sourceCode">source code to minify</param>
-        /// <param name="sourceName">name of the source</param>
-        /// <param name="outputPath">destination path for resulting minified code</param>
-        private void MinifyJavaScript(string sourceCode, string sourceName, string outputPath)
-        {
-            try
-            {
-                if (m_switchParser.JSSettings.SymbolsMap != null)
-                {
-                    m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath);
-                }
-
-                this.m_minifier.FileName = sourceName;
-                string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
-                if (this.m_minifier.ErrorList.Count > 0)
-                {
-                    foreach (var error in this.m_minifier.ErrorList)
-                    {
-                        LogContextError(error);
-                    }
-                }
-
-                if (!Log.HasLoggedErrors)
-                {
-                    try
-                    {
-                        using (var writer = new StreamWriter(outputPath, false, Encoding.UTF8))
-                        {
-                            // output the minified code
-                            writer.Write(minifiedJs);
-
-                            // give the symbol map a chance to add a little something, if we have one
-                            m_switchParser.JSSettings.SymbolsMap.IfNotNull( m => m.EndFile(
-                                writer, 
-                                m_symbolsMapFile, 
-                                m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
-                        }
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        LogFileError(sourceName, Strings.NoWritePermission, outputPath);
-                    }
-                }
-                else
-                {
-                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
-                }
-            }
-            catch (Exception e)
-            {
-                LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
-                throw;
-            }
-            finally
-            {
-                if (m_switchParser.JSSettings.SymbolsMap != null)
-                {
-                    m_switchParser.JSSettings.SymbolsMap.EndPackage();
-                }
-            }
-        }
-
-        private void MinifyAndConcatenateJavaScript()
-        {
-            // concatenate all the input files together, with each one prefaced by the
-            // special #SOURCE comment so the errors and warnings turn out right.
-            var inputBuilder = new StringBuilder();
-            foreach (var itemSpec in this.JsSourceFiles)
-            {
-                inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
-                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
-            }
-
-            MinifyJavaScript(inputBuilder.ToString(), string.Empty, this.JsCombinedFileName);
         }
 
         /// <summary>
@@ -1055,7 +1106,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private void MinifyAndConcatenateStyleSheet()
+        private void ConcatenateAndMinifyStyleSheet()
         {
             // concatenate all the input files together, with each one prefaced by the
             // special #SOURCE comment so the errors and warnings turn out right.
@@ -1135,6 +1186,42 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region Utility methods
 
+        /// <summary>
+        /// Validate the symbol map implementation name and return the
+        /// map file path based on the output JS file if valid.
+        /// </summary>
+        /// <param name="outputPath">output JS file path</param>
+        /// <returns>output symbol map path, if the implementation name is valid. Otherwise returns empty string.</returns>
+        private string GetMapFilePath(string outputPath)
+        {
+            var symbolMapPath = string.Empty;
+            if (!m_symbolsMapName.IsNullOrWhiteSpace())
+            {
+                // we want to provide a symbol map
+                if (string.Compare(m_symbolsMapName, ScriptSharpSourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0
+                    || string.Compare(m_symbolsMapName, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    // valid implementations. See if the symbol map exists -- if not, then we
+                    // need to minify. The map file is the output file with the extension ".map" added
+                    // (don't replace the .js extension)
+                    symbolMapPath = outputPath + ".map";
+                }
+                else
+                {
+                    // not valid implementations! no symbol map will be generated
+                    Log.LogWarning(Strings.InvalidSymbolMapName, m_symbolsMapName);
+                }
+            }
+
+            return symbolMapPath;
+        }
+
+        /// <summary>
+        /// Determine if the supplied path is writable. If the clobber flag is set, this method
+        /// will MAKE the file writable if it isn't.
+        /// </summary>
+        /// <param name="path">file path to be written</param>
+        /// <returns>true if the file is writable</returns>
         private bool FileIsWritable(string path)
         {
             // the file is writable if it doesn't exist, or is NOT marked readonly

@@ -773,7 +773,7 @@ namespace Microsoft.Ajax.Utilities
                     if (symbolMapWriter != null)
                     {
                         // which implementation to instantiate?
-                        if (string.Compare(crunchGroup.SymbolMapName, "V3", StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(crunchGroup.SymbolMapName, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             switchParser.JSSettings.SymbolsMap = new V3SourceMap(symbolMapWriter);
                         }

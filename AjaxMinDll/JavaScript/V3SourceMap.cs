@@ -63,6 +63,16 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
+        public static string ImplementationName
+        {
+            get { return "V3"; }
+        }
+
+        public string Name
+        {
+            get { return ImplementationName; }
+        }
+
         public V3SourceMap(TextWriter writer)
         {
             m_writer = writer;
@@ -200,11 +210,6 @@ namespace Microsoft.Ajax.Utilities
                     // guess we're not writing anything
                 }
             }
-        }
-
-        public string Name
-        {
-            get { return "V3"; }
         }
 
         public void Dispose()

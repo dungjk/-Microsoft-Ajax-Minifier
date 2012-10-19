@@ -297,7 +297,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         // create the map writer and the source map implementation.
                         // look at the Name attribute and implement the proper one.
                         mapWriter = new StreamWriter(GetRootedOutput(symbolMap.Path, manifestFolder), false, Encoding.UTF8);
-                        if (string.Compare(symbolMap.Name, "V3", StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(symbolMap.Name, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             settings.SymbolsMap = new V3SourceMap(mapWriter);
                         }
