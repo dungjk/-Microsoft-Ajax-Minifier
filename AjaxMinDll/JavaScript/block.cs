@@ -36,8 +36,15 @@ namespace Microsoft.Ajax.Utilities
             set
             {
                 m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_list[index] = value;
-                m_list[index].IfNotNull(n => n.Parent = this);
+                if (value != null)
+                {
+                    m_list[index] = value;
+                    m_list[index].Parent = this;
+                }
+                else
+                {
+                    m_list.RemoveAt(index);
+                }
             }
         }
 

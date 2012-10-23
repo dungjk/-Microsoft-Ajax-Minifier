@@ -230,7 +230,7 @@ namespace Microsoft.Ajax.Utilities
                                         };
 
                                     // replace the special vardecl with the copy
-                                    varStatement.ReplaceChild(varDecl, copyDecl);
+                                    varStatement[ndx] = copyDecl;
 
                                     // add the original vardecl to the list of "assignments"
                                     assignments.Add(varDecl);

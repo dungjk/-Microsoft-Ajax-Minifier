@@ -171,10 +171,8 @@ namespace Microsoft.Ajax.Utilities
                         var binOp = new CommaOperator(node[ndx - 1].Context.Clone().CombineWith(node[ndx].Context), m_parser, node[ndx - 1], node[ndx]);
 
                         // replace the current node and delete the previous
-                        if (node.ReplaceChild(node[ndx], binOp))
-                        {
-                            node.ReplaceChild(node[ndx - 1], null);
-                        }
+                        node[ndx] = binOp;
+                        node[ndx - 1] = null;
                     }
                     else if ((returnNode = node[ndx] as ReturnNode) != null)
                     {
@@ -205,7 +203,7 @@ namespace Microsoft.Ajax.Utilities
                                     }
 
                                     returnNode.Operand = beforeExpr;
-                                    node.ReplaceChild(node[ndx - 1], null);
+                                    node[ndx - 1] = null;
                                 }
                                 else
                                 {
@@ -221,7 +219,7 @@ namespace Microsoft.Ajax.Utilities
                                     varField.References.Remove(returnNode.Operand as INameReference);
 
                                     returnNode.Operand = beforeExpr.Operand2;
-                                    node.ReplaceChild(node[ndx - 1], null);
+                                    node[ndx - 1] = null;
 
                                     // now that we've eliminated the two lookups, see if the local variable isn't
                                     // referenced anymore. If it isn't, we might be able to remove the variable, too.
@@ -284,10 +282,8 @@ namespace Microsoft.Ajax.Utilities
 
                                 // replace the operand on the return node with the new expression and
                                 // delete the previous node
-                                if (returnNode.ReplaceChild(returnNode.Operand, binOp))
-                                {
-                                    node.ReplaceChild(node[ndx - 1], null);
-                                }
+                                returnNode.Operand = binOp;
+                                node[ndx - 1] = null;
                             }
                         }
                     }
@@ -304,7 +300,7 @@ namespace Microsoft.Ajax.Utilities
                                 // transform: expr1;for(;...) to for(expr1;...)
                                 // simply move the previous expression to the for-statement's initializer
                                 forNode.Initializer = node[ndx - 1];
-                                node.ReplaceChild(node[ndx - 1], null);
+                                node[ndx - 1] = null;
                             }
                             else if (forNode.Initializer.IsExpression)
                             {
@@ -312,10 +308,8 @@ namespace Microsoft.Ajax.Utilities
                                 var binOp = new CommaOperator(null, m_parser, node[ndx - 1], forNode.Initializer);
 
                                 // replace the initializer with the new binary operator and remove the previous node
-                                if (forNode.ReplaceChild(forNode.Initializer, binOp))
-                                {
-                                    node.ReplaceChild(node[ndx - 1], null);
-                                }
+                                forNode.Initializer = binOp;
+                                node[ndx - 1] = null;
                             }
                         }
                     }
@@ -324,8 +318,7 @@ namespace Microsoft.Ajax.Utilities
                         // transform: expr;if(cond)... => if(expr,cond)...
                         // combine the previous expression with the if-condition via comma, then delete
                         // the previous statement.
-                        ifNode.ReplaceChild(ifNode.Condition,
-                            new CommaOperator(null, m_parser, node[ndx - 1], ifNode.Condition));
+                        ifNode.Condition = new CommaOperator(null, m_parser, node[ndx - 1], ifNode.Condition);
                         node.RemoveAt(ndx - 1);
                     }
                     else if ((whileNode = node[ndx] as WhileNode) != null
@@ -335,13 +328,13 @@ namespace Microsoft.Ajax.Utilities
                         // zero-sum, and maybe a little worse for performance because of the nop iterator,
                         // but combines two statements into one, which may have savings later on.
                         var initializer = node[ndx - 1];
-                        node.RemoveAt(ndx - 1);
-                        node.ReplaceChild(whileNode, new ForNode(null, m_parser)
+                        node[ndx] = new ForNode(null, m_parser)
                             {
                                 Initializer = initializer,
                                 Condition = whileNode.Condition,
                                 Body = whileNode.Body
-                            });
+                            };
+                        node.RemoveAt(ndx - 1);
                     }
                 }
             }
@@ -454,7 +447,7 @@ namespace Microsoft.Ajax.Utilities
                                 node.InsertRange(ndx + 1, ifNode.FalseBlock.Children);
 
                                 // and then remove the false block altogether
-                                ifNode.ReplaceChild(ifNode.FalseBlock, null);
+                                ifNode.FalseBlock = null;
                             }
                         }
                         else if (node[ndx] is ReturnNode
@@ -489,7 +482,7 @@ namespace Microsoft.Ajax.Utilities
                                             {
                                                 if (varStatement[ndxDecl].Initializer != null)
                                                 {
-                                                    varStatement[ndxDecl].ReplaceChild(varStatement[ndxDecl].Initializer, null);
+                                                    varStatement[ndxDecl].Initializer = null;
                                                 }
                                             }
                                         }
@@ -618,7 +611,7 @@ namespace Microsoft.Ajax.Utilities
                                             }
 
                                             // move the previous var-statement into our initializer
-                                            forNode.ReplaceChild(forNode.Initializer, previousVar);
+                                            forNode.Initializer = previousVar;
 
                                             // and remove the previous var-statement from the list.
                                             node.RemoveAt(ndx - 1);
@@ -646,13 +639,13 @@ namespace Microsoft.Ajax.Utilities
                             && m_parser.Settings.IsModificationAllowed(TreeModifications.ChangeWhileToFor))
                         {
                             // transform: var ...;while(cond)... => for(var ...;cond;)...
-                            node.RemoveAt(ndx - 1);
-                            node.ReplaceChild(whileNode, new ForNode(null, m_parser)
+                            node[ndx] = new ForNode(null, m_parser)
                                 {
                                     Initializer = previousVar,
                                     Condition = whileNode.Condition,
                                     Body = whileNode.Body
-                                });
+                                };
+                            node.RemoveAt(ndx - 1);
                         }
                     }
                 }
@@ -694,14 +687,14 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // transform: ...;var name=expr;return name} to ...;return expr}
                                     // there's only one vardecl in the var, so get rid of the entire statement
-                                    lastReturn.ReplaceChild(lookup, varDecl.Initializer);
+                                    lastReturn.Operand = varDecl.Initializer;
                                     node.RemoveAt(indexPrevious);
                                 }
                                 else
                                 {
                                     // multiple vardecls are in the statement; we only need to get rid of the last one
-                                    lastReturn.ReplaceChild(lookup, varDecl.Initializer);
-                                    varStatement.ReplaceChild(varDecl, null);
+                                    lastReturn.Operand = varDecl.Initializer;
+                                    varStatement[varStatement.Count - 1] = null;
                                 }
                             }
                         }
@@ -735,7 +728,7 @@ namespace Microsoft.Ajax.Utilities
                                     if (!isFunctionLevel)
                                     {
                                         // transform: if(cond)return;return} to cond;return}
-                                        node.ReplaceChild(previousIf, previousIf.Condition);
+                                        node[indexPrevious] = previousIf.Condition;
                                     }
                                     else
                                     {
@@ -799,12 +792,9 @@ namespace Microsoft.Ajax.Utilities
                                     // create a new binary op with the condition and the final-return operand,
                                     // replace the operand on the final-return with the new binary operator,
                                     // and then delete the previous if-statement
-                                    if (lastReturn.ReplaceChild(lastReturn.Operand,
-                                        new CommaOperator(null, m_parser, previousIf.Condition, lastReturn.Operand)))
-                                    {
-                                        node.RemoveAt(indexPrevious);
-                                        somethingChanged = true;
-                                    }
+                                    lastReturn.Operand = new CommaOperator(null, m_parser, previousIf.Condition, lastReturn.Operand);
+                                    node.RemoveAt(indexPrevious);
+                                    somethingChanged = true;
                                 }
                                 else
                                 {
@@ -822,12 +812,10 @@ namespace Microsoft.Ajax.Utilities
 
                                     // replace the operand on the final-return with the new conditional operator,
                                     // and then delete the previous if-statement
-                                    if (lastReturn.ReplaceChild(lastReturn.Operand, conditional))
-                                    {
-                                        node.RemoveAt(indexPrevious);
-                                        Optimize(conditional);
-                                        somethingChanged = true;
-                                    }
+                                    lastReturn.Operand = conditional;
+                                    node.RemoveAt(indexPrevious);
+                                    Optimize(conditional);
+                                    somethingChanged = true;
                                 }
                             }
                         }
@@ -955,14 +943,13 @@ namespace Microsoft.Ajax.Utilities
                                 // let's combine them -- we'll add the current condition to the
                                 // previous condition with a logical-or and delete the current statement.
                                 // transform: if(cond1)return expr;if(cond2)return expr; to if(cond1||cond2)return expr;
-                                ifNode.ReplaceChild(ifNode.Condition,
-                                    new BinaryOperator(null, m_parser)
+                                ifNode.Condition = new BinaryOperator(null, m_parser)
                                     {
                                         Operand1 = condition1,
                                         Operand2 = condition2,
                                         OperatorToken = JSToken.LogicalOr,
                                         TerminatingContext = ifNode.TerminatingContext ?? node.TerminatingContext
-                                    });
+                                    };
                                 node.RemoveAt(ndx);
                             }
                         }
@@ -990,7 +977,7 @@ namespace Microsoft.Ajax.Utilities
                                 // logical-not the condition, remove the return statement,
                                 // and move all subsequent sibling statements inside the if-statement.
                                 LogicalNot.Apply(ifNode.Condition, m_parser);
-                                ifNode.TrueBlock.ReplaceChild(returnNode, null);
+                                ifNode.TrueBlock.Clear();
 
                                 var ndxMove = ndx + 1;
                                 if (node.Count == ndxMove + 1)
@@ -1007,14 +994,14 @@ namespace Microsoft.Ajax.Utilities
                                         // move all secondIf statements inside the if-node,
                                         // remove the secondIf node.
                                         node.RemoveAt(ndxMove);
-                                        ifNode.ReplaceChild(ifNode.Condition, new BinaryOperator(null, m_parser)
+                                        ifNode.Condition = new BinaryOperator(null, m_parser)
                                             {
                                                 Operand1 = ifNode.Condition,
                                                 Operand2 = secondIfNode.Condition,
                                                 OperatorToken = JSToken.LogicalAnd
-                                            });
+                                            };
 
-                                        ifNode.ReplaceChild(ifNode.TrueBlock, secondIfNode.TrueBlock);
+                                        ifNode.TrueBlock = secondIfNode.TrueBlock;
                                     }
                                     else if (node[ndxMove].IsExpression
                                         && m_parser.Settings.IsModificationAllowed(TreeModifications.IfConditionCallToConditionAndCall))
@@ -1073,7 +1060,7 @@ namespace Microsoft.Ajax.Utilities
                                         // logical-not the condition, remove the continue statement,
                                         // and move all subsequent sibling statements inside the if-statement.
                                         LogicalNot.Apply(ifNode.Condition, m_parser);
-                                        ifNode.TrueBlock.ReplaceChild(continueNode, null);
+                                        ifNode.TrueBlock.Clear();
 
                                         // TODO: if we removed a labeled continue, do we need to fix up some label references?
 
@@ -1091,14 +1078,14 @@ namespace Microsoft.Ajax.Utilities
                                                 // combine cond2 with cond1 via a logical-and,
                                                 // move all secondIf statements inside the if-node,
                                                 // remove the secondIf node.
-                                                ifNode.ReplaceChild(ifNode.Condition, new BinaryOperator(null, m_parser)
+                                                ifNode.Condition = new BinaryOperator(null, m_parser)
                                                     {
                                                         Operand1 = ifNode.Condition,
                                                         Operand2 = secondIfNode.Condition,
                                                         OperatorToken = JSToken.LogicalAnd
-                                                    });
+                                                    };
 
-                                                ifNode.ReplaceChild(ifNode.TrueBlock, secondIfNode.TrueBlock);
+                                                ifNode.TrueBlock = secondIfNode.TrueBlock;
                                                 node.RemoveAt(ndxMove);
                                             }
                                             else if (node[ndxMove].IsExpression
@@ -1124,7 +1111,7 @@ namespace Microsoft.Ajax.Utilities
                                         // we have if(cond)continue} -- nothing after the if.
                                         // the loop is going to continue anyway, so replace the if-statement
                                         // with the condition and be done
-                                        ifNode.Parent.ReplaceChild(ifNode, ifNode.Condition);
+                                        node[ndx] = ifNode.Condition;
                                     }
                                 }
                             }
@@ -1447,7 +1434,7 @@ namespace Microsoft.Ajax.Utilities
                                 // nope; can't convert to a dot-operator. 
                                 // we're just going to replace the first argument with a new string literal
                                 // and continue along our merry way.
-                                node.Arguments.ReplaceChild(node.Arguments[0], new ConstantWrapper(newName, PrimitiveType.String, node.Arguments[0].Context, m_parser));
+                                node.Arguments[0] = new ConstantWrapper(newName, PrimitiveType.String, node.Arguments[0].Context, m_parser);
                             }
                         }
                         else if (m_parser.Settings.IsModificationAllowed(TreeModifications.BracketMemberToDotMember)
@@ -1532,11 +1519,9 @@ namespace Microsoft.Ajax.Utilities
                 && m_parser.Settings.IsModificationAllowed(TreeModifications.IfNotTrueFalseToIfFalseTrue))
             {
                 // get rid of the not by replacing it with its operand
-                if (node.ReplaceChild(node.Condition, unary.Operand))
-                {
-                    // and swap the branches
-                    node.SwapBranches();
-                }
+                // and swap the branches
+                node.Condition = unary.Operand;
+                node.SwapBranches();
             }
 
             // see if the two branches are both assignment operations to the same variable.
@@ -1714,7 +1699,7 @@ namespace Microsoft.Ajax.Utilities
                      && node.Body != null
                      && node.Body.IsDebuggerStatement)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // recurse
@@ -1723,7 +1708,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the body is now empty, make it null
                 if (node.Body != null && node.Body.Count == 0)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
             }
         }
@@ -1783,7 +1768,7 @@ namespace Microsoft.Ajax.Utilities
                      && node.Body.IsDebuggerStatement
                      && node.Body.BlockScope == null)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // recurse
@@ -1792,7 +1777,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the body is now empty (and doesn't have its own lexical scope), make it null
                 if (node.Body != null && node.Body.Count == 0 && node.Body.BlockScope == null)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
             }
         }
@@ -1852,7 +1837,7 @@ namespace Microsoft.Ajax.Utilities
                      && node.Body.BlockScope == null
                      && node.Body.IsDebuggerStatement)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // recurse
@@ -1861,7 +1846,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the body is now empty (and doesn't have its own lexical scope), make it null
                 if (node.Body != null && node.Body.Count == 0 && node.Body.BlockScope == null)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
             }
         }
@@ -1986,12 +1971,12 @@ namespace Microsoft.Ajax.Utilities
                 {
                     if (node.TrueBlock != null && node.TrueBlock.IsDebuggerStatement)
                     {
-                        node.ReplaceChild(node.TrueBlock, null);
+                        node.TrueBlock = null;
                     }
 
                     if (node.FalseBlock != null && node.FalseBlock.IsDebuggerStatement)
                     {
-                        node.ReplaceChild(node.FalseBlock, null);
+                        node.FalseBlock = null;
                     }
                 }
 
@@ -2002,11 +1987,11 @@ namespace Microsoft.Ajax.Utilities
                 // if they are, null them out.
                 if (node.TrueBlock != null && node.TrueBlock.Count == 0)
                 {
-                    node.ReplaceChild(node.TrueBlock, null);
+                    node.TrueBlock = null;
                 }
                 if (node.FalseBlock != null && node.FalseBlock.Count == 0)
                 {
-                    node.ReplaceChild(node.FalseBlock, null);
+                    node.FalseBlock = null;
                 }
 
                 if (node.TrueBlock != null && node.FalseBlock != null)
@@ -2191,14 +2176,13 @@ namespace Microsoft.Ajax.Utilities
                         // transform if(cond1)if(cond2){...} to if(cond1&&cond2){...}
                         // change the first if-statement's condition to be cond1&&cond2
                         // move the nested if-statement's true block to the outer if-statement
-                        node.ReplaceChild(node.Condition,
-                            new BinaryOperator(null, m_parser)
+                        node.Condition = new BinaryOperator(null, m_parser)
                             {
                                 Operand1 = node.Condition,
                                 Operand2 = nestedIf.Condition,
                                 OperatorToken = JSToken.LogicalAnd
-                            });
-                        node.ReplaceChild(node.TrueBlock, nestedIf.TrueBlock);
+                            };
+                        node.TrueBlock = nestedIf.TrueBlock;
                     }
                 }
             }
@@ -2722,14 +2706,14 @@ namespace Microsoft.Ajax.Utilities
                 // if the try block is empty, then set it to null
                 if (node.TryBlock != null && node.TryBlock.Count == 0)
                 {
-                    node.ReplaceChild(node.TryBlock, null);
+                    node.TryBlock = null;
                 }
 
                 // eliminate an empty finally block UNLESS there is no catch block.
                 if (node.FinallyBlock != null && node.FinallyBlock.Count == 0 && node.CatchBlock != null
                     && m_parser.Settings.IsModificationAllowed(TreeModifications.RemoveEmptyFinally))
                 {
-                    node.ReplaceChild(node.FinallyBlock, null);
+                    node.FinallyBlock = null;
                 }
 
                 // check strict-mode restrictions
@@ -2959,7 +2943,7 @@ namespace Microsoft.Ajax.Utilities
                      && node.Body != null
                      && node.Body.IsDebuggerStatement)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // recurse
@@ -2968,7 +2952,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the body is now empty, make it null
                 if (node.Body != null && node.Body.Count == 0)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
             }
         }
@@ -2997,7 +2981,7 @@ namespace Microsoft.Ajax.Utilities
                      && node.Body != null
                      && node.Body.IsDebuggerStatement)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // recurse
@@ -3008,7 +2992,7 @@ namespace Microsoft.Ajax.Utilities
                 // running the code. This could throw a whole bunch of 'undefined' errors.
                 if (node.Body != null && node.Body.Count == 0)
                 {
-                    node.ReplaceChild(node.Body, null);
+                    node.Body = null;
                 }
 
                 // we got rid of the block -- tidy up the no-longer-needed scope
