@@ -129,7 +129,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     FileInfo symbolsFileInfo = null;
                     if (outputGroup.SymbolMap != null)
                     {
-                        symbolsFileInfo = new FileInfo(GetRootedOutput(outputGroup.SymbolMap.Path, manifestFolder));
+                        // if we specified the path, use it. Otherwise just use the output path with
+                        // ".map" appended to the end. Eg: output.js => output.js.map
+                        var symbolMapPath = outputGroup.SymbolMap.Path.IsNullOrWhiteSpace()
+                            ? outputGroup.Path + ".map"
+                            : outputGroup.SymbolMap.Path;
+
+                        symbolsFileInfo = new FileInfo(GetRootedOutput(symbolMapPath, manifestFolder));
                     }
 
                     if (!outputFileInfo.Exists
@@ -293,9 +299,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
             {
                 if (symbolMap != null)
                 {
+                    // if we specified the path, use it. Otherwise just use the output path with
+                    // ".map" appended to the end. Eg: output.js => output.js.map
+                    var symbolMapPath = symbolMap.Path.IsNullOrWhiteSpace()
+                        ? outputPath + ".map"
+                        : symbolMap.Path;
+
                     // create the map writer and the source map implementation.
                     // look at the Name attribute and implement the proper one.
-                    var mapPath = GetRootedOutput(symbolMap.Path, manifestFolder);
+                    var mapPath = GetRootedOutput(symbolMapPath, manifestFolder);
                     mapWriter = new StreamWriter(mapPath, false, new UTF8Encoding(false));
                     sourceMap = SourceMapFactory.Create(mapWriter, symbolMap.Name);
                     if (sourceMap != null)
