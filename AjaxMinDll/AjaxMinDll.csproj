@@ -219,6 +219,7 @@
     <Compile Include="JavaScript\ScriptSharpSourceMap.cs" />
     <Compile Include="JavaScript\switch.cs" />
     <Compile Include="JavaScript\switchcase.cs" />
+    <Compile Include="JavaScript\SourceMapFactory.cs" />
     <Compile Include="JavaScript\thisliteral.cs" />
     <Compile Include="JavaScript\throw.cs" />
     <Compile Include="JavaScript\TreeVisitor.cs" />

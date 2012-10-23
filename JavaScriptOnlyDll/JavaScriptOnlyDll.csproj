@@ -306,6 +306,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\ScriptSharpSourceMap.cs">
       <Link>JavaScript\ScriptSharpSourceMap.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\SourceMapFactory.cs">
+      <Link>JavaScript\SourceMapFactory.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\switch.cs">
       <Link>JavaScript\switch.cs</Link>
     </Compile>
@@ -326,6 +329,9 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\unaryop.cs">
       <Link>JavaScript\unaryop.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\V3SourceMap.cs">
+      <Link>JavaScript\V3SourceMap.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\var.cs">
       <Link>JavaScript\var.cs</Link>

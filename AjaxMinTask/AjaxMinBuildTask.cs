@@ -835,105 +835,95 @@ namespace Microsoft.Ajax.Minifier.Tasks
         private void MinifyJavaScript(string sourceCode, string sourceName, string outputPath, string mapFilePath)
         {
             TextWriter mapWriter = null;
+            ISourceMap sourceMap = null;
             try
             {
-                try
+                if (mapFilePath.IsNullOrWhiteSpace())
                 {
-                    if (mapFilePath.IsNullOrWhiteSpace())
+                    // just in case, make darn-sure the settings is null-out
+                    m_switchParser.JSSettings.SymbolsMap = null;
+                }
+                else
+                {
+                    // we want to generate a map file for this output. Create the proper implementation
+                    // and set it on the settings object
+                    if (FileIsWritable(mapFilePath))
                     {
-                        // just in case, make darn-sure the settings is null-out
-                        m_switchParser.JSSettings.SymbolsMap = null;
-                    }
-                    else
-                    {
-                        // we want to generate a map file for this output. Create the proper implementation
-                        // and set it on the settings object
-                        if (FileIsWritable(mapFilePath))
+                        // be sure to use a UTF-8 encoding that does NOT output a BOM or Chrome won't read it!
+                        mapWriter = new StreamWriter(mapFilePath, false, new UTF8Encoding(false));
+                        sourceMap = SourceMapFactory.Create(mapWriter, m_symbolsMapName);
+                        if (sourceMap != null)
                         {
-                            // be sure to use a UTF-8 encoding that does NOT output a BOM or Chrome won't read it!
-                            mapWriter = new StreamWriter(
-                                mapFilePath,
-                                false,
-                                new UTF8Encoding(false));
-                            if (string.CompareOrdinal(m_symbolsMapName, V3SourceMap.ImplementationName) == 0)
-                            {
-                                m_switchParser.JSSettings.SymbolsMap = new V3SourceMap(mapWriter);
-                                mapWriter = null;
-                            }
-                            else
-                            {
-                                m_switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);
-                                mapWriter = null;
-                            }
+                            mapWriter = null;
 
                             // start the package off
-                            m_switchParser.JSSettings.SymbolsMap.StartPackage(outputPath, mapFilePath);
-                        }
-                        else
-                        {
-                            // log a WARNING that the symbol map generation was skipped -- don't break the build
-                            Log.LogWarning(Strings.MapDestinationIsReadOnly, mapFilePath);
-                        }
-                    }
+                            m_switchParser.JSSettings.SymbolsMap = sourceMap;
+                            sourceMap.StartPackage(outputPath, mapFilePath);
 
-                    this.m_minifier.FileName = sourceName;
-                    string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
-                    if (this.m_minifier.ErrorList.Count > 0)
-                    {
-                        foreach (var error in this.m_minifier.ErrorList)
-                        {
-                            LogContextError(error);
-                        }
-                    }
-
-                    if (!Log.HasLoggedErrors)
-                    {
-                        try
-                        {
-                            using (var outputWriter = new StreamWriter(outputPath, false, new UTF8Encoding(false)))
-                            {
-                                // output the minified code
-                                outputWriter.Write(minifiedJs);
-
-                                // give the symbol map a chance to add a little something, if we have one
-                                m_switchParser.JSSettings.SymbolsMap.IfNotNull(m => m.EndFile(
-                                    outputWriter,
-                                    m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
-                            }
-                        }
-                        catch (UnauthorizedAccessException)
-                        {
-                            LogFileError(sourceName, Strings.NoWritePermission, outputPath);
                         }
                     }
                     else
                     {
-                        Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                        // log a WARNING that the symbol map generation was skipped -- don't break the build
+                        Log.LogWarning(Strings.MapDestinationIsReadOnly, mapFilePath);
                     }
                 }
-                catch (Exception e)
+
+                this.m_minifier.FileName = sourceName;
+                string minifiedJs = this.m_minifier.MinifyJavaScript(sourceCode, this.m_switchParser.JSSettings);
+                if (this.m_minifier.ErrorList.Count > 0)
                 {
-                    LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
-                    throw;
-                }
-                finally
-                {
-                    if (m_switchParser.JSSettings.SymbolsMap != null)
+                    foreach (var error in this.m_minifier.ErrorList)
                     {
-                        // close shut it down and close it out
-                        m_switchParser.JSSettings.SymbolsMap.EndPackage();
-                        m_switchParser.JSSettings.SymbolsMap.Dispose();
-                        m_switchParser.JSSettings.SymbolsMap = null;
+                        LogContextError(error);
                     }
                 }
+
+                if (!Log.HasLoggedErrors)
+                {
+                    try
+                    {
+                        using (var outputWriter = new StreamWriter(outputPath, false, new UTF8Encoding(false)))
+                        {
+                            // output the minified code
+                            outputWriter.Write(minifiedJs);
+
+                            // give the symbol map a chance to add a little something, if we have one
+                            sourceMap.IfNotNull(m => m.EndFile(
+                                outputWriter,
+                                m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
+                        }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        LogFileError(sourceName, Strings.NoWritePermission, outputPath);
+                    }
+                }
+                else
+                {
+                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                }
+            }
+            catch (Exception e)
+            {
+                LogFileError(sourceName, Strings.DidNotMinify, outputPath, e.Message);
+                throw;
             }
             finally
             {
+                if (sourceMap != null)
+                {
+                    // close shut it down and close it out
+                    mapWriter = null;
+                    m_switchParser.JSSettings.SymbolsMap = null;
+                    sourceMap.EndPackage();
+                    sourceMap.Dispose();
+                }
+
                 // make sure we clean up the writer if anything went wrong
                 if (mapWriter != null)
                 {
                     mapWriter.Close();
-                    mapWriter = null;
                 }
             }
         }

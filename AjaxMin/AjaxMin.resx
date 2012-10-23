@@ -406,7 +406,8 @@ Valid JSOPTS are zero or more of:
         keep them. Default is eval.
   -mac[:BOOL] &gt; whether to add code to ensure output works in Mac Safari
         browsers. Default is True.
-  -map MFILE &gt; name of the output map file.
+  -map:MAPTYPE MFILE &gt; source map implementation name and the path to
+        the output map file.
   -minify[:BOOL] &gt; whether to run any minification optimizations beyond
         simple white-space and comment-removal on the parsed JavaScript code. 
         Default is True.
@@ -476,6 +477,9 @@ AOPTS is a comma-separated list of analyze options. Currently the only
         output to the AFILE path specified as the next argument.
 AFILE is a valid path to an analyze output file, but is only present if the
         OUT token is specified in the -analyze switch AOPTS.
+MAPTYPE is a valid, case-insensitive source map implementation name.
+        V3  : JSON format that can be used in Firefox and Chrome.
+        XML : (default) - XML format.
 
 XFILE XML format (XML element names and attributes are case-sensitive):
     &lt;root&gt;

@@ -288,78 +288,72 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
             // if we want a symbols map, we need to set it up now
             TextWriter mapWriter = null;
+            ISourceMap sourceMap = null;
             try
             {
-                try
+                if (symbolMap != null)
                 {
-                    if (symbolMap != null)
+                    // create the map writer and the source map implementation.
+                    // look at the Name attribute and implement the proper one.
+                    var mapPath = GetRootedOutput(symbolMap.Path, manifestFolder);
+                    mapWriter = new StreamWriter(mapPath, false, new UTF8Encoding(false));
+                    sourceMap = SourceMapFactory.Create(mapWriter, symbolMap.Name);
+                    if (sourceMap != null)
                     {
-                        // create the map writer and the source map implementation.
-                        // look at the Name attribute and implement the proper one.
-                        var mapPath = GetRootedOutput(symbolMap.Path, manifestFolder);
-                        mapWriter = new StreamWriter(mapPath, false, new UTF8Encoding(false));
-                        if (string.Compare(symbolMap.Name, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            settings.SymbolsMap = new V3SourceMap(mapWriter);
-                        }
-                        else
-                        {
-                            settings.SymbolsMap = new ScriptSharpSourceMap(mapWriter);
-                        }
-
                         // if we get here, the symbol map now owns the stream and we can null it out so
                         // we don't double-close it
                         mapWriter = null;
 
+                        settings.SymbolsMap = sourceMap;
+
                         // start the package
-                        settings.SymbolsMap.StartPackage(outputPath, mapPath);
+                        sourceMap.StartPackage(outputPath, mapPath);
                     }
 
-                    // if we want to use resource strings, set them up now
-                    foreach (var resource in resourceList)
-                    {
-                        settings.AddResourceStrings(ProcessResourceFile(resource.Name, GetRootedInput(resource.Path, manifestFolder)));
-                    }
+                }
 
-                    // minify input
-                    var block = parser.Parse(settings);
-                    var minifiedCode = block.ToCode();
+                // if we want to use resource strings, set them up now
+                foreach (var resource in resourceList)
+                {
+                    settings.AddResourceStrings(ProcessResourceFile(resource.Name, GetRootedInput(resource.Path, manifestFolder)));
+                }
 
-                    // write output
-                    if (!Log.HasLoggedErrors)
-                    {
-                        using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
-                        {
-                            // write the minified code
-                            writer.Write(minifiedCode);
+                // minify input
+                var block = parser.Parse(settings);
+                var minifiedCode = block.ToCode();
 
-                            // give the map (if any) a chance to add something
-                            settings.SymbolsMap.IfNotNull(m => m.EndFile(
-                                writer,
-                                settings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
-                        }
-                    }
-                    else
+                // write output
+                if (!Log.HasLoggedErrors)
+                {
+                    using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
                     {
-                        Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                        // write the minified code
+                        writer.Write(minifiedCode);
+
+                        // give the map (if any) a chance to add something
+                        settings.SymbolsMap.IfNotNull(m => m.EndFile(
+                            writer,
+                            settings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
                     }
                 }
-                finally
+                else
                 {
-                    if (settings.SymbolsMap != null)
-                    {
-                        settings.SymbolsMap.EndPackage();
-                        settings.SymbolsMap.Dispose();
-                        settings.SymbolsMap = null;
-                    }
+                    Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
                 }
             }
             finally
             {
+                if (sourceMap != null)
+                {
+                    mapWriter = null;
+                    settings.SymbolsMap = null;
+                    sourceMap.EndPackage();
+                    sourceMap.Dispose();
+                }
+
                 if (mapWriter != null)
                 {
                     mapWriter.Close();
-                    mapWriter = null;
                 }
             }
         }

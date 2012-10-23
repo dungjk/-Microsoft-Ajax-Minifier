@@ -121,23 +121,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public void EndPackage()
         {
-            // start the JSON object
-            m_writer.WriteLine("{");
-
-            WriteProperty("version", 3);
-            WriteProperty("file", MakeRelative(m_minifiedPath, m_mapPath));
-
-            // line number comes in zero-based, so add one to get the line count
-            WriteProperty("lineCount", m_maxMinifiedLine + 1);
-
-            WriteProperty("mappings", GenerateMappings(m_sourceFileList, m_nameList));
-
-            WriteProperty("sources", m_sourceFileList);
-            WriteProperty("names", m_nameList);
-
-            // close the JSON object
-            m_writer.WriteLine();
-            m_writer.WriteLine("}");
+            // nothing to do
         }
 
         public object StartSymbol(AstNode astNode, int startLine, int startColumn)
@@ -211,8 +195,27 @@ namespace Microsoft.Ajax.Utilities
 
         public void Dispose()
         {
+            // if we have a writer, output the JSON object now
             if (m_writer != null)
             {
+                // start the JSON object
+                m_writer.WriteLine("{");
+
+                WriteProperty("version", 3);
+                WriteProperty("file", MakeRelative(m_minifiedPath, m_mapPath));
+
+                // line number comes in zero-based, so add one to get the line count
+                WriteProperty("lineCount", m_maxMinifiedLine + 1);
+
+                WriteProperty("mappings", GenerateMappings(m_sourceFileList, m_nameList));
+
+                WriteProperty("sources", m_sourceFileList);
+                WriteProperty("names", m_nameList);
+
+                // close the JSON object
+                m_writer.WriteLine();
+                m_writer.WriteLine("}");
+
                 m_writer.Close();
                 m_writer = null;
             }
@@ -378,7 +381,7 @@ namespace Microsoft.Ajax.Utilities
         private void WriteProperty(string name, string text)
         {
             WritePropertyStart(name);
-            OutputEscapedString(text);
+            OutputEscapedString(text ?? string.Empty);
         }
 
         private void WriteProperty(string name, ICollection<string> collection)

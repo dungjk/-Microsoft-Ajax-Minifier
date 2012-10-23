@@ -331,6 +331,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\ScriptSharpSourceMap.cs">
       <Link>JavaScript\ScriptSharpSourceMap.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\SourceMapFactory.cs">
+      <Link>JavaScript\SourceMapFactory.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\switch.cs">
       <Link>JavaScript\switch.cs</Link>
     </Compile>

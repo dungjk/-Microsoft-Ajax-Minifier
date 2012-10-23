@@ -762,6 +762,7 @@ namespace Microsoft.Ajax.Utilities
                 switchParser.Parse(crunchGroup.Arguments);
 
                 TextWriter symbolMapWriter = null;
+                ISourceMap sourceMap = null;
                 try
                 {
                     if (!string.IsNullOrEmpty(crunchGroup.SymbolMapPath))
@@ -783,21 +784,20 @@ namespace Microsoft.Ajax.Utilities
                     if (symbolMapWriter != null)
                     {
                         // which implementation to instantiate?
-                        if (string.Compare(crunchGroup.SymbolMapName, V3SourceMap.ImplementationName, StringComparison.OrdinalIgnoreCase) == 0)
+                        // if we don't know, implement the XML writer, since that was the first one before names
+                        // were introduced.
+                        sourceMap = SourceMapFactory.Create(symbolMapWriter, crunchGroup.SymbolMapName ?? ScriptSharpSourceMap.ImplementationName);
+                        if (sourceMap != null)
                         {
-                            switchParser.JSSettings.SymbolsMap = new V3SourceMap(symbolMapWriter);
-                        }
-                        else
-                        {
-                            switchParser.JSSettings.SymbolsMap = new ScriptSharpSourceMap(symbolMapWriter);
-                        }
+                            // if we get here, the symbol map implementation now owns the stream and we can
+                            // set it to null so we don't double-dispose it.
+                            symbolMapWriter = null;
 
-                        // if we get here, the symbol map implementation now owns the stream and we can
-                        // set it to null so we don't double-dispose it.
-                        symbolMapWriter = null;
 
-                        // start off the package
-                        switchParser.JSSettings.SymbolsMap.StartPackage(crunchGroup.Output.Path, crunchGroup.SymbolMapPath);
+                            // start off the package
+                            switchParser.JSSettings.SymbolsMap = sourceMap;
+                            sourceMap.StartPackage(crunchGroup.Output.Path, crunchGroup.SymbolMapPath);
+                        }
                     }
 
                     // process the crunch group
@@ -805,11 +805,11 @@ namespace Microsoft.Ajax.Utilities
                 }
                 finally
                 {
-                    if (switchParser.JSSettings.SymbolsMap != null)
+                    if (sourceMap != null)
                     {
-                        switchParser.JSSettings.SymbolsMap.EndPackage();
-                        switchParser.JSSettings.SymbolsMap.Dispose();
                         switchParser.JSSettings.SymbolsMap = null;
+                        sourceMap.EndPackage();
+                        sourceMap.Dispose();
                     }
 
                     if (symbolMapWriter != null)

@@ -63,21 +63,16 @@ namespace Microsoft.Ajax.Utilities
 
         public void StartPackage(string sourcePath, string mapPath)
         {
-            if (sourcePath.IsNullOrWhiteSpace())
-            {
-                throw new ArgumentException("path cannot be null or whitespace", "sourcePath");
-            }
-
             m_currentPackagePath = sourcePath;
             m_mapPath = mapPath;
 
             m_writer.WriteStartElement("scriptFile");
-            m_writer.WriteAttributeString("path", MakeRelative(sourcePath, m_mapPath));
+            m_writer.WriteAttributeString("path", MakeRelative(sourcePath, m_mapPath) ?? string.Empty);
         }
 
         public void EndPackage()
         {
-            if (m_currentPackagePath == null)
+            if (m_currentPackagePath.IsNullOrWhiteSpace())
             {
                 return;
             }
@@ -171,7 +166,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_writer.WriteStartElement("sourceFile");
                 m_writer.WriteAttributeString("id", kvp.Value.ToStringInvariant());
-                m_writer.WriteAttributeString("path", MakeRelative(kvp.Key, m_mapPath));
+                m_writer.WriteAttributeString("path", MakeRelative(kvp.Key, m_mapPath) ?? string.Empty);
                 m_writer.WriteEndElement(); //file
             }
 
