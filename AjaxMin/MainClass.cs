@@ -267,7 +267,17 @@ namespace Microsoft.Ajax.Utilities
                     // then throw an exception
                     if (m_inputType == InputType.Unknown)
                     {
-                        throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
+                        // we still don't know -- check the hint from the switches.
+                        if (m_inputTypeHint != InputType.Unknown && m_inputTypeHint != InputType.Mix)
+                        {
+                            // either JS or CSS. use the hint.
+                            m_inputType = m_inputTypeHint;
+                        }
+                        else
+                        {
+                            // no switch hint or it's a mix, and we can't tell from the files. Error.
+                            throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
+                        }
                     }
                 }
                 else
