@@ -1,13 +1,32 @@
 ﻿
+function foo(a,b,c,d,e)
+{
+    // the throw statement can be passed a string, a number, a boolean or an object
+    if (a)
+    {
+        throw "now is the time"; // don't need a space between the statement and the string
+    }
 
-// the throw statement can be passed a string, a number, a boolean or an object
+    if (b)
+    {
+        throw 42; // gotta have a space for the rest of them....
+    }
 
-throw "now is the time"; // don't need a space between the statement and the string
+    if (c)
+    {
+        throw true;
 
-throw 42; // gotta have a space for the rest of them....
+        // this will get removed
+        return a+b+c;
+    }
 
-throw true;
-throw false;
+    if (d)
+    {
+        throw false;
+    }
 
-throw new foobar();
-
+    if (e)
+    {
+        throw new foobar();
+    }
+}

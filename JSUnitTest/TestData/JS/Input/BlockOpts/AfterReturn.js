@@ -16,8 +16,7 @@
     }
 
     // this function declaration's only reference gets removed --
-    // we SHOULD remove it as unreferenced, but we aren't removing reference
-    // counts when we remove code. Something still left to do....
+    // we SHOULD remove it as unreferenced
     function bar(f)
     {
         return f/10;

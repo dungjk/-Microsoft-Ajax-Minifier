@@ -22,6 +22,9 @@ namespace Microsoft.Ajax.Utilities
 {
     public class DetachReferences : TreeVisitor
     {
+        // singleton
+        private static readonly DetachReferences s_instance = new DetachReferences();
+
         private DetachReferences()
         {
         }
@@ -30,8 +33,7 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                var visitor = new DetachReferences();
-                node.Accept(visitor);
+                node.Accept(s_instance); 
             }
         }
 
@@ -39,10 +41,9 @@ namespace Microsoft.Ajax.Utilities
         {
             if (nodes != null)
             {
-                var visitor = new DetachReferences();
                 foreach (var node in nodes)
                 {
-                    node.Accept(visitor);
+                    node.Accept(s_instance);
                 }
             }
         }

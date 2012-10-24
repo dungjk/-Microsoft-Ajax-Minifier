@@ -56,6 +56,7 @@ namespace Microsoft.Ajax.Utilities
                             // okay, so we have "lookup - 0"
                             // this is done frequently to force a value to be numeric. 
                             // There is an easier way: apply the unary + operator to it. 
+                            // transform: lookup - 0   => +lookup
                             var unary = new UnaryOperator(node.Context, m_parser)
                                 {
                                     Operand = lookup,
@@ -86,10 +87,15 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // they are not the same, but they are both known. We can completely remove the operator
                             // and replace it with true (!==) or false (===).
+                            // transform: x !== y   =>   true
+                            // transform: x === y   =>   false
                             node.Context.HandleError(JSError.StrictComparisonIsAlwaysTrueOrFalse, false);
                             node.Parent.ReplaceChild(
                                 node,
                                 new ConstantWrapper(node.OperatorToken == JSToken.StrictNotEqual, PrimitiveType.Boolean, node.Context, m_parser));
+
+                            // because we are essentially removing the node from the AST, be sure to detach any references
+                            DetachReferences.Apply(node);
                         }
                     }
                 }
@@ -148,12 +154,12 @@ namespace Microsoft.Ajax.Utilities
             // the current element with the previous element -- and the first element (0) has no
             // previous element.
             // we will check for:
-            //      1) previous=expr1; this=expr2           ==> expr1,expr2
-            //      2) previous=expr1; this=for(;...)       ==> for(expr1;...)
-            //      3) previous=expr1; this=for(expr2;...)  ==> for(expr1,expr2;...)
-            //      4) previous=expr1; this=return expr2    ==> return expr1,expr2
-            //      5) previous=expr1; this=if(cond)...     ==> if(expr1,cond)...
-            //      6) previous=expr1; this=while(cond)...  ==> for(expr;cond;)...
+            //      1) expr1;expr2           ==> expr1,expr2
+            //      2) expr1;for(;...)       ==> for(expr1;...)
+            //      3) expr1;for(expr2;...)  ==> for(expr1,expr2;...)
+            //      4) expr1;return expr2    ==> return expr1,expr2
+            //      5) expr1;if(cond)...     ==> if(expr1,cond)...
+            //      6) expr1;while(cond)...  ==> for(expr;cond;)...
             for (var ndx = node.Count - 1; ndx > 0; --ndx)
             {
                 // see if the previous statement is an expression
@@ -521,13 +527,15 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (node[ndx] is ReturnNode
                             || node[ndx] is Break
-                            || node[ndx] is ContinueNode)
+                            || node[ndx] is ContinueNode
+                            || node[ndx] is ThrowNode)
                         {
-                            // we have a return node -- no statments afterwards will be executed, so clear them out.
+                            // we have an exit node -- no statments afterwards will be executed, so clear them out.
                             // transform: {...;return;...} to {...;return}
                             // transform: {...;break;...} to {...;break}
                             // transform: {...;continue;...} to {...;continue}
-                            // we've found a return statement, and it's not the last statement in the function.
+                            // transform: {...;throw;...} to {...;throw}
+                            // we've found an exit statement, and it's not the last statement in the function.
                             // walk the rest of the statements and delete anything that isn't a function declaration
                             // or a var- or const-statement.
                             for (var ndxRemove = node.Count - 1; ndxRemove > ndx; --ndxRemove)
@@ -558,6 +566,7 @@ namespace Microsoft.Ajax.Utilities
                                         else
                                         {
                                             // not a function declaration, and not a var statement -- get rid of it
+                                            DetachReferences.Apply(node[ndxRemove]);
                                             node.RemoveAt(ndxRemove);
                                         }
                                     }
@@ -584,12 +593,25 @@ namespace Microsoft.Ajax.Utilities
                         // if the return node doesn't have an operand, then we can just replace the if-statement with its conditional
                         if (returnNode.Operand == null)
                         {
-                            // transform: if(cond)return;} to cond}
-                            // TODO: if the condition is a constant, then eliminate it altogether
-                            node.ReplaceChild(ifNode, ifNode.Condition);
+                            // if the condition is a constant, then eliminate it altogether
+                            if (ifNode.Condition.IsConstant)
+                            {
+                                // delete the node altogether. Because the condition is a constant,
+                                // there is no else-block, and the if-block only contains a return
+                                // with no expression, we don't have anything to detach.
+                                node.ReplaceChild(ifNode, null);
+                            }
+                            else
+                            {
+                                // transform: {...;if(cond)return;} to {...;cond;}
+                                node.ReplaceChild(ifNode, ifNode.Condition);
+                            }
                         }
                         else if (returnNode.Operand.IsExpression)
                         {
+                            // this is a strategic replacement that might pay off later. And if
+                            // it doesn't, we'll eventually back it out after all the other stuff
+                            // if applied on top of it.
                             // transform: if(cond)return expr;} to return cond?expr:void 0}
                             var conditional = new Conditional(null, m_parser)
                                 {
@@ -668,6 +690,9 @@ namespace Microsoft.Ajax.Utilities
                                             // transform: var decls;for(expr1;...) to for(var decls,expr1;...)
                                             // WHERE expr1 only consists of assignments to variables that are declared
                                             // in that previous var-statement.
+                                            // TODO: we *could* also do it is the expr1 assignments are to lookups that are
+                                            // defined in THIS scope (not any outer scopes), because it wouldn't hurt to have
+                                            // then in a var statement again.
                                             // create a list and fill it with all the var-decls created from the assignment
                                             // operators in the expression
                                             var varDecls = new List<VariableDeclaration>();
@@ -796,8 +821,25 @@ namespace Microsoft.Ajax.Utilities
                                     // then we have to leave the return, but we can replace the if with just the condition.
                                     if (!isFunctionLevel)
                                     {
-                                        // transform: if(cond)return;return} to cond;return}
-                                        node[indexPrevious] = previousIf.Condition;
+                                        // not at the function level, so the return must stay.
+                                        if (previousIf.Condition.IsConstant)
+                                        {
+                                            // transform: if(cond)return;return} to return}
+                                            node.RemoveAt(indexPrevious);
+                                            somethingChanged = true;
+                                        }
+                                        else
+                                        {
+                                            // transform: if(cond)return;return} to cond;return}
+                                            node[indexPrevious] = previousIf.Condition;
+                                        }
+                                    }
+                                    else if (previousIf.Condition.IsConstant)
+                                    {
+                                        // transform: remove if(cond)return;return} because cond is a constant
+                                        node.ReplaceChild(lastReturn, null);
+                                        node.RemoveAt(indexPrevious);
+                                        somethingChanged = true;
                                     }
                                     else
                                     {
@@ -857,13 +899,26 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else if (previousReturn.Operand.IsEquivalentTo(lastReturn.Operand))
                                 {
-                                    // transform: if(cond)return expr;return expr} to return cond,expr}
-                                    // create a new binary op with the condition and the final-return operand,
-                                    // replace the operand on the final-return with the new binary operator,
-                                    // and then delete the previous if-statement
-                                    lastReturn.Operand = new CommaOperator(null, m_parser, previousIf.Condition, lastReturn.Operand);
-                                    node.RemoveAt(indexPrevious);
-                                    somethingChanged = true;
+                                    if (previousIf.Condition.IsConstant)
+                                    {
+                                        // the condition is constant, and the returns return the same thing.
+                                        // get rid of the if statement altogether.
+                                        // transform: if(cond)return expr;return expr} to return expr}
+                                        DetachReferences.Apply(previousReturn.Operand);
+                                        node.RemoveAt(indexPrevious);
+                                        somethingChanged = true;
+                                    }
+                                    else
+                                    {
+                                        // transform: if(cond)return expr;return expr} to return cond,expr}
+                                        // create a new binary op with the condition and the final-return operand,
+                                        // replace the operand on the final-return with the new binary operator,
+                                        // and then delete the previous if-statement
+                                        DetachReferences.Apply(previousReturn.Operand);
+                                        lastReturn.Operand = new CommaOperator(null, m_parser, previousIf.Condition, lastReturn.Operand);
+                                        node.RemoveAt(indexPrevious);
+                                        somethingChanged = true;
+                                    }
                                 }
                                 else
                                 {
@@ -998,13 +1053,14 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // see if the current statement is an if-statement with no else block, and a true
                         // block that contains a single return-statement WITH an expression.
-                        AstNode matchedExpression = null;
+                        AstNode currentExpr = null;
                         AstNode condition2;
-                        if (IsIfReturnExpr(node[ndx], out condition2, ref matchedExpression) != null)
+                        if (IsIfReturnExpr(node[ndx], out condition2, ref currentExpr) != null)
                         {
                             // see if the previous statement is also the same pattern, but with
                             // the equivalent expression as its return operand
                             AstNode condition1;
+                            var matchedExpression = currentExpr;
                             var ifNode = IsIfReturnExpr(node[ndx - 1], out condition1, ref matchedExpression);
                             if (ifNode != null)
                             {
@@ -1019,6 +1075,7 @@ namespace Microsoft.Ajax.Utilities
                                         OperatorToken = JSToken.LogicalOr,
                                         TerminatingContext = ifNode.TerminatingContext ?? node.TerminatingContext
                                     };
+                                DetachReferences.Apply(currentExpr);
                                 node.RemoveAt(ndx);
                             }
                         }
@@ -1180,7 +1237,16 @@ namespace Microsoft.Ajax.Utilities
                                         // we have if(cond)continue} -- nothing after the if.
                                         // the loop is going to continue anyway, so replace the if-statement
                                         // with the condition and be done
-                                        node[ndx] = ifNode.Condition;
+                                        if (ifNode.Condition.IsConstant)
+                                        {
+                                            // consition is constant -- get rid of the if-statement altogether
+                                            node.RemoveAt(ndx);
+                                        }
+                                        else
+                                        {
+                                            // condition isn't constant
+                                            node[ndx] = ifNode.Condition;
+                                        }
                                     }
                                 }
                             }
@@ -1318,7 +1384,7 @@ namespace Microsoft.Ajax.Utilities
                             if (node.Arguments == null || node.Arguments.Count == 0)
                             {
                                 // replace our node with an object literal
-                                ObjectLiteral objLiteral = new ObjectLiteral(node.Context, m_parser);
+                                var objLiteral = new ObjectLiteral(node.Context, m_parser);
                                 if (node.Parent.ReplaceChild(node, objLiteral))
                                 {
                                     // and bail now. No need to recurse -- it's an empty literal
@@ -1329,7 +1395,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 // one argument
                                 // check to see if it's an object literal.
-                                ObjectLiteral objectLiteral = node.Arguments[0] as ObjectLiteral;
+                                var objectLiteral = node.Arguments[0] as ObjectLiteral;
                                 if (objectLiteral != null)
                                 {
                                     // the Object constructor with an argument that is a JavaScript object merely returns the
@@ -1369,7 +1435,7 @@ namespace Microsoft.Ajax.Utilities
                               || (constWrapper != null && !constWrapper.IsNumericLiteral))
                             {
                                 // create the new array literal object
-                                ArrayLiteral arrayLiteral = new ArrayLiteral(node.Context, m_parser)
+                                var arrayLiteral = new ArrayLiteral(node.Context, m_parser)
                                     {
                                         Elements = node.Arguments
                                     };
@@ -2686,6 +2752,7 @@ namespace Microsoft.Ajax.Utilities
                                 if (switchCase.Statements.Count == 0 && emptyStatements)
                                 {
                                     // remove this case statement because it falls through to a deleted case
+                                    DetachReferences.Apply(switchCase.CaseValue);
                                     node.Cases.RemoveAt(ndx);
                                 }
                                 else
@@ -2703,6 +2770,7 @@ namespace Microsoft.Ajax.Utilities
                                             deletedBreak = onlyBreak;
 
                                             // remove this case statement
+                                            DetachReferences.Apply(switchCase.CaseValue);
                                             node.Cases.RemoveAt(ndx);
                                             // make sure the flag is set so we delete any other empty
                                             // cases that fell through to this empty case block
@@ -3178,6 +3246,7 @@ namespace Microsoft.Ajax.Utilities
                 if (node[ndx].IsDebuggerStatement)
                 {
                     // just remove it
+                    DetachReferences.Apply(node[ndx]);
                     node.RemoveAt(ndx);
                 }
             }

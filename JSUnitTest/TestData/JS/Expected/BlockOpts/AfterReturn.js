@@ -1,1 +1,1 @@
-﻿function test(a,b){function foo(p){return"FOO"+p}function bar(f){return f/10}var d=foo(c),c;return a+b+d}
+﻿function test(a,b){function foo(p){return"FOO"+p}var d=foo(c),c;return a+b+d}
