@@ -24,6 +24,14 @@ namespace Microsoft.Ajax.Utilities
         public string Pattern { get; set; }
         public string PatternSwitches { get; set; }
 
+        public override bool IsConstant
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public RegExpLiteral(Context context, JSParser parser)
             : base(context, parser)
         {

@@ -96,9 +96,45 @@ namespace Microsoft.Ajax.Utilities
             get { return m_referenceTable; }
         }
 
+        /// <summary>
+        /// returns the only reference IF there is only ONE reference
+        /// in the collection; otherwise returns false.
+        /// </summary>
+        public INameReference OnlyReference
+        {
+            get
+            {
+                var array = new INameReference[1];
+                if (m_referenceTable.Count == 1)
+                {
+                    m_referenceTable.CopyTo(array, 0, 1);
+                }
+
+                return array[0];
+            }
+        }
+
         public ICollection<INameDeclaration> Declarations
         {
             get { return m_declarationTable; }
+        }
+
+        /// <summary>
+        /// returns the only declaration IF there is only ONE name declaration
+        /// in the collection; otherwise returns false.
+        /// </summary>
+        public INameDeclaration OnlyDeclaration
+        {
+            get
+            {
+                var array = new INameDeclaration[1];
+                if (m_declarationTable.Count == 1)
+                {
+                    m_declarationTable.CopyTo(array, 0, 1);
+                }
+
+                return array[0];
+            }
         }
 
         public bool IsLiteral

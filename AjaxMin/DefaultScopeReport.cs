@@ -271,13 +271,19 @@ namespace Microsoft.Ajax.Utilities
                     break;
             }
 
-            var functionName = funcObj.Name.IfNullOrWhiteSpace(funcObj.NameGuess);
+            var functionName = funcObj.Name;
+            if (functionName.IsNullOrWhiteSpace())
+            {
+                functionName = !funcObj.NameGuess.IsNullOrWhiteSpace()
+                    ? '"' + funcObj.NameGuess + '"'
+                    : AjaxMin.AnonymousFunction;
+            }
 
             // output
             WriteProgress();
             WriteProgress(AjaxMin.FunctionHeader.FormatInvariant(
                 AjaxMin.ResourceManager.GetString(functionType, AjaxMin.Culture),
-                functionName ?? AjaxMin.AnonymousFunction,
+                functionName,
                 funcObj.Context.StartLineNumber,
                 funcObj.Context.StartColumn + 1,
                 status,

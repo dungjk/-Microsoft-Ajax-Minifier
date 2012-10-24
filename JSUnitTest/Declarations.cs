@@ -40,7 +40,7 @@ namespace JSUnitTest
         [TestMethod()]
         public void Var()
         {
-            TestHelper.Instance.RunTest("-enc:out ascii");
+            TestHelper.Instance.RunTest("-enc:out ascii -unused:keep");
         }
 
         [TestMethod()]

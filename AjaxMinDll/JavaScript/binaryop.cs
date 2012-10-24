@@ -312,8 +312,8 @@ namespace Microsoft.Ajax.Utilities
 
         internal override string GetFunctionGuess(AstNode target)
         {
-            return IsAssign && Operand2 == target
-                ? Operand1.GetFunctionGuess(this)
+            return Operand2 == target
+                ? IsAssign ? Operand1.GetFunctionGuess(this) : Parent.GetFunctionGuess(this)
                 : string.Empty;
         }
 

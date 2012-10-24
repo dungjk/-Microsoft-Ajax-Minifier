@@ -3,7 +3,7 @@
     // Block is explicitly terminated by semi-colon. The semi-colon should be output
     // when compressing.
     <%= test %>; 
-    return bar;
+    return bar(x);
 }
 
 function bar() {

@@ -234,24 +234,7 @@ namespace Microsoft.Ajax.Utilities
                                             {
                                                 // it's not. if there's only one declaration and it either has no initializer or
                                                 // is initialized to a constant, get rid of it.
-                                                INameDeclaration nameDecl = null;
-                                                foreach (var decl in varField.Declarations)
-                                                {
-                                                    if (nameDecl == null)
-                                                    {
-                                                        // first declaration.
-                                                        nameDecl = decl;
-                                                    }
-                                                    else
-                                                    {
-                                                        // not the first! there's more than one, so
-                                                        // let's not mess around with it. null the reference
-                                                        // and break out of the loop so we leave them all alone.
-                                                        nameDecl = null;
-                                                        break;
-                                                    }
-                                                }
-
+                                                var nameDecl = varField.OnlyDeclaration;
                                                 if (nameDecl != null)
                                                 {
                                                     // we only had one declaration.

@@ -44,10 +44,10 @@
     // so it should get crunched just fine.
     function another()
     {
-        // this var should get crunched
-        var delim = " boy-howdy! ";
+        // this var should get crunched, and so should foo
+        var delim = foo + " boy-howdy! ";
         
-        // fo should get crunched, but ack should not
+        // foo should get crunched, but ack should not
         return foo + delim + ack;
     }
 

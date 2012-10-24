@@ -18,41 +18,41 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
 {
-  /// <summary>
-  ///This is a test class for Microsoft.Ajax.Utilities.MainClass and is intended
-  ///to contain all Microsoft.Ajax.Utilities.MainClass Unit Tests
-  ///</summary>
-  [TestClass()]
-  public class Assignments
-  {
-    [TestMethod()]
-    public void Assign()
+    /// <summary>
+    ///This is a test class for Microsoft.Ajax.Utilities.MainClass and is intended
+    ///to contain all Microsoft.Ajax.Utilities.MainClass Unit Tests
+    ///</summary>
+    [TestClass()]
+    public class Assignments
     {
-      TestHelper.Instance.RunTest("-enc:out ascii");
-    }
+        [TestMethod()]
+        public void Assign()
+        {
+            TestHelper.Instance.RunTest("-enc:out ascii");
+        }
 
-    [TestMethod()]
-    public void Assign_utf8()
-    {
-      TestHelper.Instance.RunTest("-enc:out utf-8");
-    }
+        [TestMethod()]
+        public void Assign_utf8()
+        {
+            TestHelper.Instance.RunTest("-enc:out utf-8");
+        }
 
-    [TestMethod()]
-    public void CompoundAssign()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod()]
+        public void CompoundAssign()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod()]
-    public void MultiVars()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod()]
+        public void MultiVars()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-	[TestMethod()]
-	public void AssignAspNetBlock()
-	{
-		TestHelper.Instance.RunTest("-aspnet:true");
-	}
-  }
+        [TestMethod()]
+        public void AssignAspNetBlock()
+        {
+            TestHelper.Instance.RunTest("-aspnet:true");
+        }
+    }
 }

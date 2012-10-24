@@ -40,25 +40,25 @@ namespace JSUnitTest
         [TestMethod]
         public void Strings()
         {
-            TestHelper.Instance.RunTest("-inline:N -enc:out ascii");
+            TestHelper.Instance.RunTest("-inline:N -enc:out ascii -unused:keep");
         }
 
         [TestMethod]
         public void Strings_utf()
         {
-            TestHelper.Instance.RunTest("-inline:F -enc:out utf-8");
+            TestHelper.Instance.RunTest("-inline:F -enc:out utf-8 -unused:keep");
         }
 
         [TestMethod]
         public void Strings_h()
         {
-            TestHelper.Instance.RunTest("-inline:false -rename:all -enc:out ascii");
+            TestHelper.Instance.RunTest("-inline:false -rename:all -enc:out ascii   -unused:keep");
         }
 
         [TestMethod]
         public void Strings_k()
         {
-            TestHelper.Instance.RunTest("-inline:true -enc:out ascii");
+            TestHelper.Instance.RunTest("-inline:true -enc:out ascii -unused:keep");
         }
 
         [TestMethod]

@@ -334,6 +334,107 @@ namespace Microsoft.Ajax.Utilities
                             variableField.OriginalContext.HandleError(
                                 JSError.VariableDefinedNotReferenced,
                                 false);
+
+                            // not a function, not an argument, not a catch-arg, not a global.
+                            // not referenced. If there's a single definition, and it either has no
+                            // initializer or the initializer is constant, get rid of it. 
+                            // (unless we aren't removing unneeded code, or the scope is unknown)
+                            if (variableField.Declarations.Count == 1 
+                                && m_settings.RemoveUnneededCode
+                                && this.IsKnownAtCompileTime)
+                            {
+                                var varDecl = variableField.OnlyDeclaration as VariableDeclaration;
+                                if (varDecl != null)
+                                {
+                                    var declaration = varDecl.Parent as Declaration;
+                                    if (declaration != null
+                                        && (varDecl.Initializer == null || varDecl.Initializer.IsConstant))
+                                    {
+                                        variableField.Declarations.Remove(varDecl);
+
+                                        // don't "remove" the field if it's a ghost to another field
+                                        if (variableField.GhostedField == null)
+                                        {
+                                            variableField.WasRemoved = true;
+                                        }
+
+                                        // remove the vardecl from the declaration list, and if the
+                                        // declaration list is now empty, remove it, too
+                                        declaration.Remove(varDecl);
+                                        if (declaration.Count == 0)
+                                        {
+                                            declaration.Parent.ReplaceChild(declaration, null);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (variableField.RefCount == 1 && this.IsKnownAtCompileTime)
+                    {
+                        // local fields that don't reference an outer field, have only one refcount
+                        // and one declaration
+                        if (variableField.FieldType == FieldType.Local
+                            && variableField.OuterField == null
+                            && variableField.Declarations.Count == 1)
+                        {
+                            // there should only be one, it should be a vardecl, and 
+                            // either no initializer or a constant initializer
+                            var varDecl = variableField.OnlyDeclaration as VariableDeclaration;
+                            if (varDecl != null
+                                && varDecl.Initializer != null
+                                && varDecl.Initializer.IsConstant)
+                            {
+                                // there should only be one
+                                var reference = variableField.OnlyReference;
+                                if (reference != null)
+                                {
+                                    // if the reference is not being assigned to, it is not an outer reference
+                                    // (meaning the lookup is in the same scope as the declaration), and the
+                                    // lookup is after the declaration
+                                    if (!reference.IsAssignment 
+                                        && reference.VariableField.OuterField == null
+                                        && reference.VariableField.CanCrunch
+                                        && varDecl.Index < reference.Index)
+                                    {
+                                        // so we have a declaration assigning a constant value, and only one
+                                        // reference reading that value. replace the reference with the constant
+                                        // and get rid of the declaration.
+                                        // transform: var lookup=constant;lookup   ==>   constant
+                                        // remove the vardecl
+                                        var declaration = varDecl.Parent as Declaration;
+                                        if (declaration != null)
+                                        {
+                                            // replace the reference with the constant
+                                            variableField.References.Remove(reference);
+                                            var refNode = reference as AstNode;
+                                            refNode.Parent.ReplaceChild(refNode, varDecl.Initializer);
+
+                                            if (m_settings.RemoveUnneededCode)
+                                            {
+                                                // we're also going to remove the declaration itself
+                                                variableField.Declarations.Remove(varDecl);
+                                                variableField.WasRemoved = true;
+
+                                                // remove the vardecl from the declaration list
+                                                // and if the declaration is now empty, remove it, too
+                                                declaration.Remove(varDecl);
+                                                if (declaration.Count == 0)
+                                                {
+                                                    declaration.Parent.ReplaceChild(declaration, null);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // don't want to remove the declaration for whatever reason. But we are
+                                                // moving the constant and replacing the reference with it. So just
+                                                // remove the initializer on the decl.
+                                                varDecl.Initializer = null;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

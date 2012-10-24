@@ -14,7 +14,7 @@
         {
             if (ndx == 50)
             {
-                ndx++;
+                ndx += ++x;
 
                 // don't move this function -- it's inside an if-statement
                 // and that means cross-browser differences. So leave it alone

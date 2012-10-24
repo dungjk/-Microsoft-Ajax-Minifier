@@ -1,5 +1,3 @@
-function Func(p1)
-{
     var arrayObj1 = new Array();            // crunch to []
     var arrayObj2 = new Array(1);           // single numeric argument is size, not initializer. Don't crunch to literal.
     var arrayObj3 = new Array(1, 2, 3, 4);  // crunch to [1,2,3,4]
@@ -32,4 +30,3 @@ function Func(p1)
 
     // make sure an array literal with a single missing value is parsed correctly
     var arrayObj15 = [,];
-}

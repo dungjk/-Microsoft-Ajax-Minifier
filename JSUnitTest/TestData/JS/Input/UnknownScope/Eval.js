@@ -18,7 +18,7 @@
     function another()
     {
         // this var should get crunched
-        var delim = " boy-howdy! ";
+        var delim = foo + " boy-howdy! ";
         return foo + delim + ack;
     }
 

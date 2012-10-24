@@ -1,1 +1,1 @@
-﻿(function(){function n(){function n(t){g(t)&&n(t-1)}var t,i,r,u,f,e,o,s,h,c,l,a,v,y,p,w,b,k,d,nt,tt,it,rt,ut,ft,et;n(10)}alert(g),n()})()
+﻿(function(){function n(){function n(t){g(t)&&n(t-1)}var t=location.href;n(10)}alert(g),n()})()

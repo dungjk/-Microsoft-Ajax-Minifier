@@ -1,1 +1,1 @@
-﻿function test1(first,second){var local=first+second;return window.eval("window."+local)}(function(){function doIt(txt){var suffix=";";eval(txt+suffix)}function another(){var n=" boy-howdy! ";return foo+n+ack}var foo="bar",ack="gag";doIt("alert('"+another()+"')")})()
+﻿function test1(first,second){var local=first+second;return window.eval("window."+local)}(function(){function doIt(txt){var suffix=";";eval(txt+suffix)}function another(){var n=foo+" boy-howdy! ";return foo+n+ack}var foo="bar",ack="gag";doIt("alert('"+another()+"')")})()

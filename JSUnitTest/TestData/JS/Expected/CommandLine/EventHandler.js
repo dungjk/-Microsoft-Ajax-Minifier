@@ -1,1 +1,1 @@
-﻿var n=42;return alert(n),event.preventDefault(),!1
+﻿var n=42+event.x;return alert(n),event.preventDefault(),!1

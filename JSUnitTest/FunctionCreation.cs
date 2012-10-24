@@ -46,37 +46,37 @@ namespace JSUnitTest
         [TestMethod()]
         public void NamedFuncExpr_reorder()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-unused:keep");
         }
 
         [TestMethod()]
         public void NamedFuncExpr()
         {
-            TestHelper.Instance.RunTest("-reorder:N");
+            TestHelper.Instance.RunTest("-reorder:N -unused:keep");
         }
 
         [TestMethod()]
         public void NamedFuncExpr_nfe()
         {
-            TestHelper.Instance.RunTest("-reorder:N -fnames:keep");
+            TestHelper.Instance.RunTest("-reorder:N -fnames:keep -unused:keep");
         }
 
         [TestMethod()]
         public void NamedFuncExpr_h()
         {
-            TestHelper.Instance.RunTest("-reorder:N -rename:all");
+            TestHelper.Instance.RunTest("-reorder:N -rename:all -unused:keep");
         }
 
         [TestMethod()]
         public void NamedFuncExpr_hnfe()
         {
-            TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:keep");
+            TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:keep -unused:keep");
         }
 
         [TestMethod()]
         public void NamedFuncExpr_hlock()
         {
-            TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:lock");
+            TestHelper.Instance.RunTest("-reorder:N -rename:all -fnames:lock -unused:keep");
         }
 
         [TestMethod()]

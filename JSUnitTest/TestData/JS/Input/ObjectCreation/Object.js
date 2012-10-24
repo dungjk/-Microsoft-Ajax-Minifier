@@ -24,18 +24,20 @@ function Func(p1)
     obj.foo = "bar";
 
     // this is NOT mozilla getter/setter. It should still parse properly.
-    var b = 
+    foo.b = 
     {
       get : 42,
       set:  "x"
     };
 
     // end the list with a comma. We should remove it because it doesn't add anything to the object
-    var c = {
+    bar.c = {
         one: 1,
         two: 2,
     };
 
     // make sure empty object literal is parsed properly
-    var d = {};
+    ack.d = {};
+
+    return p1(foo,bar,ack);
 }

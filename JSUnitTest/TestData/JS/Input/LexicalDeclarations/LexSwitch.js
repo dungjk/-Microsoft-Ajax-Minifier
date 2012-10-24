@@ -7,7 +7,7 @@ switch(foo)
         break;
 
     default:
-        const foobar = "bat";
+        const foobar = "bat" + foo.x;
         foo += foobar + foo;
         break;
 }

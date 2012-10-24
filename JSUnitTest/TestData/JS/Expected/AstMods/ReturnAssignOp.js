@@ -1,1 +1,1 @@
-﻿function foo(cond){var text="START ";return text+(cond?"TRUE":"FALSE")+" END"}
+﻿function foo(cond){return"START "+(cond?"TRUE":"FALSE")+" END"}

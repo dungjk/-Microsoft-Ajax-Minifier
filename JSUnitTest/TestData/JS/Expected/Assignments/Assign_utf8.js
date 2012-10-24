@@ -1,1 +1,1 @@
-﻿function Func(){var _a=1,$b=1,C=1,d=1,你好=2;你好+=18}
+﻿function Func(p1){var _a=1+p1,$b=2,你好=5;return 你好+=18,a+$b*$b+3+4}

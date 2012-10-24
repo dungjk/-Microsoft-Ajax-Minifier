@@ -1,1 +1,1 @@
-﻿function foo(){var x;<%= test %>;return bar}function bar(){var x;<%= test %>return x}
+﻿function foo(){var x;<%= test %>;return bar(x)}function bar(){var x;<%= test %>return x}

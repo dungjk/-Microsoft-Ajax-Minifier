@@ -142,7 +142,7 @@ namespace JSUnitTest
         public void StrictToRegular()
         {
             // turn off the "EvaluateNumericExpressions" feature
-            TestHelper.Instance.RunTest("-kill:0x0000000020000000");
+            TestHelper.Instance.RunTest("-kill:0x0000000020000000 -unused:keep");
         }
 
         [TestMethod]
