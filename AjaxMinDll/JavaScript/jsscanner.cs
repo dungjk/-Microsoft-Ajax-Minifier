@@ -2998,6 +2998,35 @@ namespace Microsoft.Ajax.Utilities
             m_currentToken.HandleError(error);
         }
 
+        /// <summary>
+        /// Given an assignment operator (=, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, >>>=), strip
+        /// the assignment to return (+, -, *, /, %, &, |, ^, <<, >>, >>>). For all other operators,
+        /// include the normal assign (=), just return the same operator token.
+        /// This only works if the two groups of tokens are actually defined in those orders!!! 
+        /// </summary>
+        /// <param name="assignOp"></param>
+        /// <returns></returns>
+        internal static JSToken StripAssignment(JSToken assignOp)
+        {
+            // gotta be an assignment operator
+            if (IsAssignmentOperator(assignOp))
+            {
+                // get the delta from assign (=), which is the first assignment operator
+                int delta = assignOp - JSToken.Assign;
+
+                // assign (=) will be zero -- we don't want to modify that one, so if
+                // the delta is GREATER than zero...
+                if (delta > 0)
+                {
+                    // add it to the plus token, less one since the delta for +=
+                    // will be one.
+                    assignOp = JSToken.Plus + delta - 1;
+                }
+            }
+
+            return assignOp;
+        }
+
         internal static bool IsAssignmentOperator(JSToken token)
         {
             return JSToken.Assign <= token && token <= JSToken.LastAssign;

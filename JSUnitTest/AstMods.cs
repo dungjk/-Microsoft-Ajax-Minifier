@@ -198,5 +198,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void ReturnAssignOp()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

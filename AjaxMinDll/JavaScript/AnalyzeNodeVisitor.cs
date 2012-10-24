@@ -179,99 +179,168 @@ namespace Microsoft.Ajax.Utilities
                         // see if the return node has an expression operand
                         if (returnNode.Operand != null && returnNode.Operand.IsExpression)
                         {
-                            // check for lookup[ASSIGN]expr2;return lookup.
-                            // if lookup is a local variable in the current scope, we can replace with return expr2;
-                            // if lookup is an outer reference, we can replace with return lookup[ASSIGN]expr2
+                            // check for lookup[ASSIGN]expr2;return expr1.
                             var beforeExpr = node[ndx - 1] as BinaryOperator;
                             Lookup lookup;
-                            if (beforeExpr != null && beforeExpr.IsAssign 
-                                && ((lookup = beforeExpr.Operand1 as Lookup) != null) 
-                                && returnNode.Operand.IsEquivalentTo(lookup))
+                            if (beforeExpr != null
+                                && beforeExpr.IsAssign
+                                && (lookup = beforeExpr.Operand1 as Lookup) != null)
                             {
-                                // check to see if lookup is in the current scope from which we are returning
-                                if (lookup.VariableField == null || lookup.VariableField.OuterField != null)
+                                if (returnNode.Operand.IsEquivalentTo(lookup))
                                 {
-                                    // transform: lookup[ASSIGN]expr2;return lookup => return lookup[ASSIGN]expr2
-                                    // lookup points to outer field (or we don't know)
-                                    // replace the operand on the return node with the previous expression and
-                                    // delete the previous node.
-                                    // first be sure to remove the lookup in the return operand from the references
-                                    // to field.
-                                    if (lookup.VariableField != null)
+                                    // we have lookup[ASSIGN]expr2;return lookup.
+                                    // if lookup is a local variable in the current scope, we can replace with return expr2;
+                                    // if lookup is an outer reference, we can replace with return lookup[ASSIGN]expr2
+                                    if (beforeExpr.OperatorToken == JSToken.Assign)
                                     {
-                                        lookup.VariableField.References.Remove(returnNode.Operand as INameReference);
-                                    }
-
-                                    returnNode.Operand = beforeExpr;
-                                    node[ndx - 1] = null;
-                                }
-                                else
-                                {
-                                    // transform: lookup[ASSIGN]expr2;return lookup => return expr2
-                                    // lookup is a variable local to the current scope, so when we return, the
-                                    // variable won't exists anymore anyway.
-                                    // replace the operand on the return node oprand with the right-hand operand of the
-                                    // previous expression and delete the previous node.
-                                    // we're eliminating the two lookups altogether, so remove them both from the
-                                    // field's reference table.
-                                    var varField = lookup.VariableField;
-                                    varField.References.Remove(lookup);
-                                    varField.References.Remove(returnNode.Operand as INameReference);
-
-                                    returnNode.Operand = beforeExpr.Operand2;
-                                    node[ndx - 1] = null;
-
-                                    // now that we've eliminated the two lookups, see if the local variable isn't
-                                    // referenced anymore. If it isn't, we might be able to remove the variable, too.
-                                    // (need to pick up those changes to keep track of a field's declarations, though)
-                                    if (varField.RefCount == 0)
-                                    {
-                                        // it's not. if there's only one declaration and it either has no initializer or
-                                        // is initialized to a constant, get rid of it.
-                                        INameDeclaration nameDecl = null;
-                                        foreach (var decl in varField.Declarations)
+                                        // check to see if lookup is in the current scope from which we are returning
+                                        if (lookup.VariableField == null || lookup.VariableField.OuterField != null)
                                         {
-                                            if (nameDecl == null)
-                                            {
-                                                // first declaration.
-                                                nameDecl = decl;
-                                            }
-                                            else
-                                            {
-                                                // not the first! there's more than one, so
-                                                // let's not mess around with it. null the reference
-                                                // and break out of the loop so we leave them all alone.
-                                                nameDecl = null;
-                                                break;
-                                            }
+                                            // transform: lookup[ASSIGN]expr2;return lookup => return lookup[ASSIGN]expr2
+                                            // lookup points to outer field (or we don't know)
+                                            // replace the operand on the return node with the previous expression and
+                                            // delete the previous node.
+                                            // first be sure to remove the lookup in the return operand from the references
+                                            // to field.
+                                            DetachReferences.Apply(returnNode.Operand);
+                                            returnNode.Operand = beforeExpr;
+                                            node[ndx - 1] = null;
                                         }
-
-                                        if (nameDecl != null)
+                                        else
                                         {
-                                            // we only had one declaration.
-                                            if (nameDecl.Initializer == null || nameDecl.Initializer.IsConstant)
-                                            {
-                                                // and it either had no initializer or it was initialized to a constant.
-                                                // but it has no references, so let's whack it. Actually, only if it was
-                                                // a var-decl (leave parameter and function decls alone).
-                                                var varDecl = nameDecl as VariableDeclaration;
-                                                if (varDecl != null)
-                                                {
-                                                    // save the declaration parent (var, const, or let) and remove the
-                                                    // child vardecl from its list
-                                                    var declStatement = varDecl.Parent as Declaration;
-                                                    declStatement.Remove(varDecl);
-                                                    varField.WasRemoved = true;
+                                            // transform: lookup[ASSIGN]expr2;return lookup => return expr2
+                                            // lookup is a variable local to the current scope, so when we return, the
+                                            // variable won't exists anymore anyway.
+                                            // replace the operand on the return node oprand with the right-hand operand of the
+                                            // previous expression and delete the previous node.
+                                            // we're eliminating the two lookups altogether, so remove them both from the
+                                            // field's reference table.
+                                            var varField = lookup.VariableField;
+                                            DetachReferences.Apply(lookup, returnNode.Operand);
 
-                                                    // if the parent statement is now empty, remove it, too. this will
-                                                    // move everything up one index, but that'll just mean an extra loop.
-                                                    if (declStatement.Count == 0)
+                                            returnNode.Operand = beforeExpr.Operand2;
+                                            node[ndx - 1] = null;
+
+                                            // now that we've eliminated the two lookups, see if the local variable isn't
+                                            // referenced anymore. If it isn't, we might be able to remove the variable, too.
+                                            // (need to pick up those changes to keep track of a field's declarations, though)
+                                            if (varField.RefCount == 0)
+                                            {
+                                                // it's not. if there's only one declaration and it either has no initializer or
+                                                // is initialized to a constant, get rid of it.
+                                                INameDeclaration nameDecl = null;
+                                                foreach (var decl in varField.Declarations)
+                                                {
+                                                    if (nameDecl == null)
                                                     {
-                                                        declStatement.Parent.ReplaceChild(declStatement, null);
+                                                        // first declaration.
+                                                        nameDecl = decl;
+                                                    }
+                                                    else
+                                                    {
+                                                        // not the first! there's more than one, so
+                                                        // let's not mess around with it. null the reference
+                                                        // and break out of the loop so we leave them all alone.
+                                                        nameDecl = null;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (nameDecl != null)
+                                                {
+                                                    // we only had one declaration.
+                                                    if (nameDecl.Initializer == null || nameDecl.Initializer.IsConstant)
+                                                    {
+                                                        // and it either had no initializer or it was initialized to a constant.
+                                                        // but it has no references, so let's whack it. Actually, only if it was
+                                                        // a var-decl (leave parameter and function decls alone).
+                                                        var varDecl = nameDecl as VariableDeclaration;
+                                                        if (varDecl != null)
+                                                        {
+                                                            // save the declaration parent (var, const, or let) and remove the
+                                                            // child vardecl from its list
+                                                            var declStatement = varDecl.Parent as Declaration;
+                                                            declStatement.Remove(varDecl);
+                                                            varField.WasRemoved = true;
+
+                                                            // if the parent statement is now empty, remove it, too. this will
+                                                            // move everything up one index, but that'll just mean an extra loop.
+                                                            if (declStatement.Count == 0)
+                                                            {
+                                                                declStatement.Parent.ReplaceChild(declStatement, null);
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
+                                    }
+                                    else
+                                    {
+                                        // it's an assignment, but it's not =. That means it's one of the OP= operators.
+                                        // we can't remove the field altogether. But we can move the assignment into the 
+                                        // return statement and get rid of the lone lookup.
+                                        // transform: lookup OP= expr;return lookup   =>   return lookup OP= expr;
+                                        if (lookup.VariableField != null)
+                                        {
+                                            // we're getting rid of the lookup, so remove it from the field's list of references
+                                            DetachReferences.Apply(returnNode.Operand);
+                                        }
+
+                                        // remove the expression from the block and put it in the operand of
+                                        // the return statement.
+                                        node.RemoveAt(ndx - 1);
+                                        returnNode.Operand = beforeExpr;
+
+                                        // is this field scoped to this function?
+                                        if (lookup.VariableField != null && lookup.VariableField.OuterField == null)
+                                        {
+                                            // in fact, the lookup is in the current scope, so assigning to it is a waste
+                                            // because we're going to return (this is a return statement, after all).
+                                            // we can get rid of the assignment part and just keep the operator:
+                                            // transform: lookup OP= expr;return lookup   =>   return lookup OP expr;
+                                            beforeExpr.OperatorToken = JSScanner.StripAssignment(beforeExpr.OperatorToken);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // see if the return itself is a binary operator on the same lookup.
+                                    var returnBinary = returnNode.Operand as BinaryOperator;
+                                    if (returnBinary != null
+                                        && returnBinary.Operand1.IsEquivalentTo(lookup))
+                                    {
+                                        // transform: lookup [ASSIGN] expr1;return lookup OP expr2;   =>   return (lookup [ASSIGN] expr1) OP expr2;
+                                        if (lookup.VariableField != null)
+                                        {
+                                            // remove the lookup reference from the field
+                                            DetachReferences.Apply(returnBinary.Operand1);
+                                        }
+
+                                        // replace the looup in the return operator with the previous expression
+                                        // after removing it from the block
+                                        node.RemoveAt(ndx - 1);
+                                        returnBinary.Operand1 = beforeExpr;
+
+                                        // is this field scoped to this function?
+                                        if (lookup.VariableField != null && lookup.VariableField.OuterField == null)
+                                        {
+                                            // in fact, the lookup is in the current scope, so assigning to it is a waste
+                                            // because we're just going to return anyway.
+                                            // we can get rid of the assignment part and just keep the operator:
+                                            // transform: lookup OP= expr;return lookup   =>   return lookup OP expr;
+                                            beforeExpr.OperatorToken = JSScanner.StripAssignment(beforeExpr.OperatorToken);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // transform: expr1;return expr2 to return expr1,expr2
+                                        var binOp = new CommaOperator(null, m_parser, node[ndx - 1], returnNode.Operand);
+
+                                        // replace the operand on the return node with the new expression and
+                                        // delete the previous node
+                                        returnNode.Operand = binOp;
+                                        node[ndx - 1] = null;
                                     }
                                 }
                             }
@@ -1536,6 +1605,10 @@ namespace Microsoft.Ajax.Utilities
                     // see if the left-hand-side is equivalent
                     if (trueAssign.Operand1.IsEquivalentTo(falseAssign.Operand1))
                     {
+                        // we're going to be getting rid of the left-hand side in the false-block, 
+                        // so we need to remove any references it may represent
+                        DetachReferences.Apply(falseAssign.Operand1);
+
                         // transform: cond?lhs=expr1:lhs=expr2 to lhs=cond?expr1:expr2s
                         var binaryOp = new BinaryOperator(node.Context, m_parser)
                             {

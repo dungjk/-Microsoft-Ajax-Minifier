@@ -133,6 +133,7 @@
     <Content Include="TestData\JS\Expected\AstMods\MoveFunctions.js" />
     <Content Include="TestData\JS\Expected\AstMods\NegShortcutIf.js" />
     <Content Include="TestData\JS\Expected\AstMods\NestedIf.js" />
+    <Content Include="TestData\JS\Expected\AstMods\ReturnAssignOp.js" />
     <Content Include="TestData\JS\Expected\AstMods\SimplifyStrToNum.js" />
     <Content Include="TestData\JS\Expected\AstMods\SimplifyStrToNum_noeval.js" />
     <Content Include="TestData\JS\Expected\AstMods\StrictToRegular.js" />
@@ -435,6 +436,7 @@
     <Content Include="TestData\JS\Input\AstMods\MoveFunctions.js" />
     <Content Include="TestData\JS\Input\AstMods\NegShortcutIf.js" />
     <Content Include="TestData\JS\Input\AstMods\NestedIf.js" />
+    <Content Include="TestData\JS\Input\AstMods\ReturnAssignOp.js" />
     <Content Include="TestData\JS\Input\AstMods\SimplifyStrToNum.js" />
     <Content Include="TestData\JS\Input\AstMods\StrictToRegular.js" />
     <Content Include="TestData\JS\Input\AstMods\VerticalTab.js" />

@@ -162,6 +162,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\declaration.cs">
       <Link>JavaScript\declaration.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\DetachReferences.cs">
+      <Link>JavaScript\DetachReferences.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\directiveprologue.cs">
       <Link>JavaScript\directiveprologue.cs</Link>
     </Compile>
