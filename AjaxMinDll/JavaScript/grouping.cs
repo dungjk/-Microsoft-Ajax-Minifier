@@ -1,6 +1,6 @@
-// unaryop.cs
+﻿// grouping.cs
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright 2012 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-
 namespace Microsoft.Ajax.Utilities
 {
-    public class UnaryOperator : Expression
+    using System.Collections.Generic;
+
+    /// <summary>
+    /// Implementation of parenthetical '(' expr ')' operators
+    /// </summary>
+    public class GroupingOperator : Expression
     {
         private AstNode m_operand;
 
@@ -34,14 +36,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        public Context OperatorContext { get; set; }
-
-        public JSToken OperatorToken { get; set; }
-        public bool IsPostfix { get; set; }
-        public bool OperatorInConditionalCompilationComment { get; set; }
-        public bool ConditionalCommentContainsOn { get; set; }
-
-        public UnaryOperator(Context context, JSParser parser)
+        public GroupingOperator(Context context, JSParser parser)
             : base(context, parser)
         {
         }
@@ -56,34 +51,16 @@ namespace Microsoft.Ajax.Utilities
 
         public override PrimitiveType FindPrimitiveType()
         {
-            switch (OperatorToken)
-            {
-                case JSToken.TypeOf:
-                    // typeof ALWAYS returns type string
-                    return PrimitiveType.String;
-
-                case JSToken.LogicalNot:
-                    // ! always return boolean
-                    return PrimitiveType.Boolean;
-
-                case JSToken.Void:
-                case JSToken.Delete:
-                    // void returns undefined.
-                    // delete returns number, but just return other
-                    return PrimitiveType.Other;
-
-                default:
-                    // all other unary operators return a number
-                    return PrimitiveType.Number;
-            }
+            return Operand != null
+                ? Operand.FindPrimitiveType()
+                : PrimitiveType.Other;
         }
 
         public override OperatorPrecedence Precedence
         {
             get
             {
-                // assume unary precedence
-                return OperatorPrecedence.Unary;
+                return OperatorPrecedence.Primary;
             }
         }
 
@@ -102,15 +79,18 @@ namespace Microsoft.Ajax.Utilities
                 Operand = newNode;
                 return true;
             }
+
             return false;
         }
 
         public override bool IsEquivalentTo(AstNode otherNode)
         {
-            var otherUnary = otherNode as UnaryOperator;
-            return otherUnary != null
-                && OperatorToken == otherUnary.OperatorToken
-                && Operand.IsEquivalentTo(otherUnary.Operand);
+            // we be equivalent if the other node is the
+            // equivalent of the operand, right? The only difference would be the
+            // parentheses, so maybe it'd still be the equivalent, no?
+            var otherGroup = otherNode as GroupingOperator;
+            return (otherGroup != null && Operand.IsEquivalentTo(otherGroup.Operand))
+                || Operand.IsEquivalentTo(otherNode);
         }
 
         public override bool IsConstant
@@ -123,8 +103,7 @@ namespace Microsoft.Ajax.Utilities
 
         public override string ToString()
         {
-            return OutputVisitor.OperatorString(OperatorToken)
-                + (Operand == null ? "<null>" : Operand.ToString());
+            return '(' + (Operand == null ? "<null>" : Operand.ToString()) + ')';
         }
     }
 }

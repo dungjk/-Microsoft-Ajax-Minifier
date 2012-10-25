@@ -162,6 +162,12 @@ namespace Microsoft.Ajax.Utilities
             // we're good
         }
 
+        public virtual void Visit(GroupingOperator node)
+        {
+            // definitely does NOT need parens, because we will
+            // output parens ourselves. And don't bother recursing.
+        }
+
         public void Visit(ImportantComment node)
         {
             // don't recurse

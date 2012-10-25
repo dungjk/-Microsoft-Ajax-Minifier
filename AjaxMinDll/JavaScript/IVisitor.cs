@@ -45,6 +45,7 @@ namespace Microsoft.Ajax.Utilities
         void Visit(ForNode node);
         void Visit(FunctionObject node);
         void Visit(GetterSetter node);
+        void Visit(GroupingOperator node);
         void Visit(IfNode node);
         void Visit(ImportantComment node);
         void Visit(LabeledStatement node);

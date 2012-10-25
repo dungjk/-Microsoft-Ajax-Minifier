@@ -127,6 +127,15 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public virtual void Visit(GroupingOperator node)
+        {
+            if (node != null && node.Operand != null)
+            {
+                // just totally ignore any parentheses
+                node.Operand.Accept(this);
+            }
+        }
+
         #region IVisitor Members
 
         public void Visit(ArrayLiteral node)

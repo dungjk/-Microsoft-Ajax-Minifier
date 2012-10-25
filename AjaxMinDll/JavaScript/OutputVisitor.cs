@@ -1372,6 +1372,25 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public virtual void Visit(GroupingOperator node)
+        {
+            if (node != null)
+            {
+                // don't output a possible line-break here.
+                Output('(');
+                MarkSegment(node, null, node.Context);
+                m_startOfStatement = false;
+
+                if (node.Operand != null)
+                {
+                    node.Operand.Accept(this);
+                }
+
+                OutputPossibleLineBreak(')');
+                MarkSegment(node, null, node.Context);
+            }
+        }
+
         public void Visit(IfNode node)
         {
             if (node != null)

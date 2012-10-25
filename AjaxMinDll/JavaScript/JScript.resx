@@ -241,10 +241,10 @@
     <value>Too many errors. The file might not be a JavaScript file</value>
   </data>
   <data name="SuspectAssignment" xml:space="preserve">
-    <value>Did you intend to write an assignment here?</value>
+    <value>Suspect assignment operator</value>
   </data>
   <data name="SuspectSemicolon" xml:space="preserve">
-    <value>Did you intend to have an empty statement for this branch of the if statement?</value>
+    <value>Suspect semicolon</value>
   </data>
   <data name="ParameterListNotLast" xml:space="preserve">
     <value>A variable argument list must be the last argument</value>

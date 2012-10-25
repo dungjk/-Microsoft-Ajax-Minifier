@@ -178,6 +178,7 @@
     <Compile Include="JavaScript\functionscope.cs" />
     <Compile Include="JavaScript\gettersetter.cs" />
     <Compile Include="JavaScript\globalscope.cs" />
+    <Compile Include="JavaScript\grouping.cs" />
     <Compile Include="JavaScript\if.cs" />
     <Compile Include="JavaScript\importantcomment.cs" />
     <Compile Include="JavaScript\INameReference.cs" />

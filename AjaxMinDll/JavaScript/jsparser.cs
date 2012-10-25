@@ -1608,13 +1608,9 @@ namespace Microsoft.Ajax.Utilities
 
                 // if this is an assignment, throw a warning in case the developer
                 // meant to use == instead of =
-                // but no warning if the condition is wrapped in parens. We can know if it's wrapped in parens
-                // if the first character of the context is a paren and it's BEFORE the context of the leftmost
-                // context of the condition.
-                BinaryOperator binOp = condition as BinaryOperator;
-                if (binOp != null && binOp.OperatorToken == JSToken.Assign
-                    && condition.Context != null && condition.Context.Code != null 
-                    && !(condition.Context.Code.StartsWith("(", StringComparison.Ordinal) && condition.Context.IsBefore(binOp.LeftHandSide.Context)))
+                // but no warning if the condition is wrapped in parens.
+                var binOp = condition as BinaryOperator;
+                if (binOp != null && binOp.OperatorToken == JSToken.Assign)
                 {
                     condition.Context.HandleError(JSError.SuspectAssignment);
                 }
@@ -1622,7 +1618,7 @@ namespace Microsoft.Ajax.Utilities
                 m_noSkipTokenSet.Add(NoSkipTokenSet.s_IfBodyNoSkipTokenSet);
                 if (JSToken.Semicolon == m_currentToken.Token)
                 {
-                    ForceReportInfo(JSError.SuspectSemicolon);
+                    m_currentToken.HandleError(JSError.SuspectSemicolon);
                 }
                 else if (JSToken.LeftCurly != m_currentToken.Token)
                 {
@@ -1669,13 +1665,16 @@ namespace Microsoft.Ajax.Utilities
                     elseCtx = m_currentToken.Clone();
                     GetNextToken();
                     if (JSToken.Semicolon == m_currentToken.Token)
-                        ForceReportInfo(JSError.SuspectSemicolon);
-                    // if the statements aren't withing curly-braces, throw a possible error
-                    if (JSToken.LeftCurly != m_currentToken.Token
+                    {
+                        m_currentToken.HandleError(JSError.SuspectSemicolon);
+                    }
+                    else if (JSToken.LeftCurly != m_currentToken.Token
                       && JSToken.If != m_currentToken.Token)
                     {
+                        // if the statements aren't withing curly-braces (or start another if-statement), throw a possible error
                         ReportError(JSError.StatementBlockExpected, elseCtx, true);
                     }
+
                     try
                     {
                         // parse a Statement, not a SourceElement
@@ -2002,6 +2001,15 @@ namespace Microsoft.Ajax.Utilities
                         m_noSkipTokenSet.Remove(NoSkipTokenSet.s_BlockConditionNoSkipTokenSet);
                     }
 
+                    // if this is an assignment, throw a warning in case the developer
+                    // meant to use == instead of =
+                    // but no warning if the condition is wrapped in parens.
+                    var binOp = condOrColl as BinaryOperator;
+                    if (binOp != null && binOp.OperatorToken == JSToken.Assign)
+                    {
+                        condOrColl.Context.HandleError(JSError.SuspectAssignment);
+                    }
+
                     AstNode body = null;
                     // if the statements aren't withing curly-braces, throw a possible error
                     if (JSToken.LeftCurly != m_currentToken.Token)
@@ -2176,6 +2184,15 @@ namespace Microsoft.Ajax.Utilities
                 m_blockType.RemoveAt(m_blockType.Count - 1);
             }
 
+            // if this is an assignment, throw a warning in case the developer
+            // meant to use == instead of =
+            // but no warning if the condition is wrapped in parens.
+            var binOp = condition as BinaryOperator;
+            if (binOp != null && binOp.OperatorToken == JSToken.Assign)
+            {
+                condition.Context.HandleError(JSError.SuspectAssignment);
+            }
+
             return new DoWhile(doCtx, this)
                 {
                     Body = AstNode.ForceToBlock(body),
@@ -2242,6 +2259,15 @@ namespace Microsoft.Ajax.Utilities
                 finally
                 {
                     m_noSkipTokenSet.Remove(NoSkipTokenSet.s_BlockConditionNoSkipTokenSet);
+                }
+
+                // if this is an assignment, throw a warning in case the developer
+                // meant to use == instead of =
+                // but no warning if the condition is wrapped in parens.
+                var binOp = condition as BinaryOperator;
+                if (binOp != null && binOp.OperatorToken == JSToken.Assign)
+                {
+                    condition.Context.HandleError(JSError.SuspectAssignment);
                 }
 
                 // if the statements aren't withing curly-braces, throw a possible error
@@ -3660,8 +3686,17 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // pop term stack
                             AstNode condition = termStack.Pop();
-                            var questionCtx = m_currentToken.Clone();
 
+                            // if this is an assignment, throw a warning in case the developer
+                            // meant to use == instead of =
+                            // but no warning if the condition is wrapped in parens.
+                            var binOp = condition as BinaryOperator;
+                            if (binOp != null && binOp.OperatorToken == JSToken.Assign)
+                            {
+                                condition.Context.HandleError(JSError.SuspectAssignment);
+                            }
+
+                            var questionCtx = m_currentToken.Clone();
                             GetNextToken();
 
                             // get expr1 in logOrExpr ? expr1 : expr2
@@ -4310,17 +4345,14 @@ namespace Microsoft.Ajax.Utilities
                 // expression
                 case JSToken.LeftParenthesis:
                     {
-                        // save the current context reference
-                        Context openParenContext = m_currentToken.Clone();
+                        var groupingOp = new GroupingOperator(m_currentToken.Clone(), this);
+                        ast = groupingOp;
                         GetNextToken();
                         m_noSkipTokenSet.Add(NoSkipTokenSet.s_ParenExpressionNoSkipToken);
                         try
                         {
                             // parse an expression
-                            ast = ParseExpression();
-                            
-                            // update the expression's context with the context of the open paren
-                            ast.Context.UpdateWith(openParenContext);
+                            groupingOp.Operand = ParseExpression();
                             if (JSToken.RightParenthesis != m_currentToken.Token)
                             {
                                 ReportError(JSError.NoRightParenthesis);
@@ -4336,14 +4368,12 @@ namespace Microsoft.Ajax.Utilities
                             if (IndexOfToken(NoSkipTokenSet.s_ParenExpressionNoSkipToken, exc) == -1)
                                 throw;
                             else
-                                ast = exc._partiallyComputedNode;
+                                groupingOp.Operand = exc._partiallyComputedNode;
                         }
                         finally
                         {
                             m_noSkipTokenSet.Remove(NoSkipTokenSet.s_ParenExpressionNoSkipToken);
                         }
-                        if (ast == null) //this can only happen when catching the exception and nothing was sent up by the caller
-                            SkipTokensAndThrow();
                     }
                     break;
 
@@ -5402,27 +5432,6 @@ namespace Microsoft.Ajax.Utilities
         }
 
         //---------------------------------------------------------------------------------------
-        // ForceReportInfo
-        //
-        //  Generate a parser error (info), does not change the error state in the parse
-        //---------------------------------------------------------------------------------------
-        private void ForceReportInfo(JSError errorId)
-        {
-            ForceReportInfo(m_currentToken.Clone(), errorId);
-        }
-
-        //---------------------------------------------------------------------------------------
-        // ForceReportInfo
-        //
-        //  Generate a parser error (info), does not change the error state in the parse
-        //---------------------------------------------------------------------------------------
-        private static void ForceReportInfo(Context context, JSError errorId)
-        {
-            Debug.Assert(context != null);
-            context.HandleError(errorId);
-        }
-
-        //---------------------------------------------------------------------------------------
         // EOFError
         //
         //  Create a context for EOF error. The created context points to the end of the source
@@ -5469,7 +5478,7 @@ namespace Microsoft.Ajax.Utilities
                 GetNextToken();
                 if (++m_tokensSkipped > c_MaxSkippedTokenNumber)
                 {
-                    ForceReportInfo(JSError.TooManyTokensSkipped);
+                    m_currentToken.HandleError(JSError.TooManyTokensSkipped);
                     throw new EndOfFileException();
                 }
                 if (JSToken.EndOfFile == m_currentToken.Token)

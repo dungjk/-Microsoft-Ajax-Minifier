@@ -165,6 +165,18 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        private static void MakeExpectedGlobal(JSVariableField varField)
+        {
+            // to make this an expected global, we're going to change the type of this field, 
+            // then just keep walking up the outer field references doing the same
+            do
+            {
+                varField.FieldType = FieldType.Global;
+                varField = varField.OuterField;
+            }
+            while (varField != null);
+        }
+
         private static void ResolveLookup(ActivationObject scope, Lookup lookup, CodeSettings settings)
         {
             // resolve lookup via the lexical scope
@@ -174,18 +186,27 @@ namespace Microsoft.Ajax.Utilities
                 // couldn't find it.
                 // if the lookup isn't generated and isn't the object of a typeof operator,
                 // then we want to throw an error.
-                UnaryOperator unaryOperator;
-                if (!lookup.IsGenerated
-                    && ((unaryOperator = lookup.Parent as UnaryOperator) == null || unaryOperator.OperatorToken != JSToken.TypeOf))
+                if (!lookup.IsGenerated)
                 {
-                    // report this undefined reference
-                    lookup.Context.ReportUndefined(lookup);
+                    var parentUnaryOp = lookup.Parent as UnaryOperator;
+                    if (parentUnaryOp != null && parentUnaryOp.OperatorToken == JSToken.TypeOf)
+                    {
+                        // this undefined lookup is the target of a typeof operator.
+                        // I think it's safe to assume we're going to use it. Don't throw an error
+                        // and instead add it to the "known" expected globals of the global scope
+                        MakeExpectedGlobal(lookup.VariableField);
+                    }
+                    else
+                    {
+                        // report this undefined reference
+                        lookup.Context.ReportUndefined(lookup);
 
-                    // possibly undefined global (but definitely not local).
-                    // see if this is a function or a variable.
-                    var callNode = lookup.Parent as CallNode;
-                    var isFunction = callNode != null && callNode.Function == lookup;
-                    lookup.Context.HandleError((isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable), false);
+                        // possibly undefined global (but definitely not local).
+                        // see if this is a function or a variable.
+                        var callNode = lookup.Parent as CallNode;
+                        var isFunction = callNode != null && callNode.Function == lookup;
+                        lookup.Context.HandleError((isFunction ? JSError.UndeclaredFunction : JSError.UndeclaredVariable), false);
+                    }
                 }
             }
             else if (lookup.VariableField.FieldType == FieldType.Predefined)
@@ -852,6 +873,19 @@ namespace Microsoft.Ajax.Utilities
         public void Visit(GetterSetter node)
         {
             // nothing to do
+        }
+
+        public void Visit(GroupingOperator node)
+        {
+            if (node != null)
+            {
+                if (node.Operand != null)
+                {
+                    node.Operand.Accept(this);
+                }
+
+                node.Index = NextOrderIndex;
+            }
         }
 
         public void Visit(IfNode node)

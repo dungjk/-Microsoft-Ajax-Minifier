@@ -112,6 +112,74 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// replace the node with a literal. If the node was wrapped in a grouping operator
+        /// before (parentheses around it), then we can get rid of the parentheses too, since
+        /// we are replacing the node with a single literal entity.
+        /// </summary>
+        /// <param name="node">node to replace</param>
+        /// <param name="newLiteral">literal to replace the node with</param>
+        private static void ReplaceNodeWithLiteral(AstNode node, ConstantWrapper newLiteral)
+        {
+            var grouping = node.Parent as GroupingOperator;
+            if (grouping != null)
+            {
+                // because we are replacing the operator with a literal, the parentheses
+                // the grouped this operator are now superfluous. Replace them, too
+                grouping.Parent.ReplaceChild(grouping, newLiteral);
+            }
+            else
+            {
+                // just replace the node with the literal
+                node.Parent.ReplaceChild(node, newLiteral);
+            }
+        }
+
+        private static void ReplaceNodeCheckParens(AstNode oldNode, AstNode newNode)
+        {
+            var grouping = oldNode.Parent as GroupingOperator;
+            if (grouping != null)
+            {
+                if (newNode != null)
+                {
+                    var targetPrecedence = grouping.Parent.Precedence;
+                    var conditional = grouping.Parent as Conditional;
+                    if (conditional != null)
+                    {
+                        // the conditional is weird in that the different parts need to be
+                        // compared against different precedences, not the precedence of the
+                        // conditional itself. The condition should be compared to logical-or,
+                        // and the true/false expressions against assignment.
+                        targetPrecedence = conditional.Condition == grouping
+                            ? OperatorPrecedence.LogicalOr
+                            : OperatorPrecedence.Assignment;
+                    }
+
+                    if (newNode.Precedence >= targetPrecedence)
+                    {
+                        // don't need the parens anymore, so replace the grouping operator
+                        // with the new node, thereby eliminating the parens
+                        grouping.Parent.ReplaceChild(grouping, newNode);
+                    }
+                    else
+                    {
+                        // still need the parens; just replace the node with the literal
+                        oldNode.Parent.ReplaceChild(oldNode, newNode);
+                    }
+                }
+                else
+                {
+                    // eliminate the parens
+                    grouping.Parent.ReplaceChild(grouping, null);
+                }
+            }
+            else
+            {
+                // just replace the node with the literal
+                oldNode.Parent.ReplaceChild(oldNode, newNode);
+            }
+        }
+
+        /// <summary>
         /// Both the operands of this operator are constants. See if we can evaluate them
         /// </summary>
         /// <param name="left">left-side operand</param>
@@ -235,7 +303,7 @@ namespace Microsoft.Ajax.Utilities
                 // expression
                 if (!ReplaceMemberBracketWithDot(node, newLiteral))
                 {
-                    node.Parent.ReplaceChild(node, newLiteral);
+                    ReplaceNodeWithLiteral(node, newLiteral);
                 }
             }
         }
@@ -1750,8 +1818,8 @@ namespace Microsoft.Ajax.Utilities
                                 if (leftType != rightType)
                                 {
                                     // they are not the same type -- replace with a boolean and bail
-                                    node.Parent.ReplaceChild(
-                                        node,
+                                    ReplaceNodeWithLiteral(
+                                        node, 
                                         new ConstantWrapper(node.OperatorToken == JSToken.StrictEqual ? false : true, PrimitiveType.Boolean, node.Context, m_parser));
                                     return;
                                 }
@@ -1781,7 +1849,7 @@ namespace Microsoft.Ajax.Utilities
                                 // the comma with the right-hand operand.
                                 if (!ReplaceMemberBracketWithDot(node, rightConstant))
                                 {
-                                    node.Parent.ReplaceChild(node, rightConstant);
+                                    ReplaceNodeWithLiteral(node, rightConstant);
                                 }
                             }
                             else if (node is CommaOperator)
@@ -1793,19 +1861,19 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // not a list, just a single item, so we can just
                                     // replace this entire node with the one element
-                                    node.Parent.ReplaceChild(node, node.Operand2);
+                                    ReplaceNodeCheckParens(node, node.Operand2);
                                 }
                                 else if (list.Count == 1)
                                 {
                                     // If the list has a single element, then we can just
                                     // replace this entire node with the one element
-                                    node.Parent.ReplaceChild(node, list[0]);
+                                    ReplaceNodeCheckParens(node, list[0]);
                                 }
                                 else if (list.Count == 0)
                                 {
                                     // the recursion ended up emptying the list, so we can just delete
                                     // this node altogether
-                                    node.Parent.ReplaceChild(node, null);
+                                    ReplaceNodeCheckParens(node, null);
                                 }
                                 else
                                 {
@@ -1828,7 +1896,7 @@ namespace Microsoft.Ajax.Utilities
                             else
                             {
                                 // replace the comma operator with the right-hand operand
-                                node.Parent.ReplaceChild(node, node.Operand2);
+                                ReplaceNodeCheckParens(node, node.Operand2);
                             }
                         }
                         else
@@ -1904,7 +1972,7 @@ namespace Microsoft.Ajax.Utilities
                                             Operand = lookup,
                                             OperatorToken = JSToken.Plus
                                         };
-                                    node.Parent.ReplaceChild(node, unary);
+                                    ReplaceNodeCheckParens(node, unary);
                                 }
                             }
                         }
@@ -1949,7 +2017,7 @@ namespace Microsoft.Ajax.Utilities
                                         if (combinedJoin.Length + 2 < node.ToCode().Length)
                                         {
                                             // transform: [c,c,c].join(s) => "cscsc"
-                                            node.Parent.ReplaceChild(node,
+                                            ReplaceNodeWithLiteral(node, 
                                                 new ConstantWrapper(combinedJoin, PrimitiveType.String, node.Context, node.Parser));
                                         }
                                     }
@@ -1985,7 +2053,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // if the boolean represenation of the literal is true, we can replace the condition operator
                         // with the true expression; otherwise we can replace it with the false expression
-                        node.Parent.ReplaceChild(node, literalCondition.ToBoolean() ? node.TrueExpression : node.FalseExpression);
+                        ReplaceNodeCheckParens(node, literalCondition.ToBoolean() ? node.TrueExpression : node.FalseExpression);
                     }
                     catch (InvalidCastException)
                     {
@@ -2240,12 +2308,12 @@ namespace Microsoft.Ajax.Utilities
 
                             if (!string.IsNullOrEmpty(typeName))
                             {
-                                node.Parent.ReplaceChild(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
+                                ReplaceNodeWithLiteral(node, new ConstantWrapper(typeName, PrimitiveType.String, node.Context, m_parser));
                             }
                         }
                         else if (node.Operand is ObjectLiteral)
                         {
-                            node.Parent.ReplaceChild(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
+                            ReplaceNodeWithLiteral(node, new ConstantWrapper("object", PrimitiveType.String, node.Context, m_parser));
                         }
                         break;
 
@@ -2255,7 +2323,7 @@ namespace Microsoft.Ajax.Utilities
                             try
                             {
                                 // replace with a constant representing operand.ToNumber,
-                                node.Parent.ReplaceChild(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                ReplaceNodeWithLiteral(node, new ConstantWrapper(literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
                             }
                             catch (InvalidCastException)
                             {
@@ -2271,7 +2339,7 @@ namespace Microsoft.Ajax.Utilities
                             try
                             {
                                 // replace with a constant representing the negative of operand.ToNumber
-                                node.Parent.ReplaceChild(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
+                                ReplaceNodeWithLiteral(node, new ConstantWrapper(-literalOperand.ToNumber(), PrimitiveType.Number, node.Context, m_parser));
                             }
                             catch (InvalidCastException)
                             {
@@ -2287,7 +2355,7 @@ namespace Microsoft.Ajax.Utilities
                             try
                             {
                                 // replace with a constant representing the bitwise-not of operant.ToInt32
-                                node.Parent.ReplaceChild(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
+                                ReplaceNodeWithLiteral(node, new ConstantWrapper(Convert.ToDouble(~literalOperand.ToInt32()), PrimitiveType.Number, node.Context, m_parser));
                             }
                             catch (InvalidCastException)
                             {
@@ -2303,7 +2371,7 @@ namespace Microsoft.Ajax.Utilities
                             // replace with a constant representing the opposite of operand.ToBoolean
                             try
                             {
-                                node.Parent.ReplaceChild(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
+                                ReplaceNodeWithLiteral(node, new ConstantWrapper(!literalOperand.ToBoolean(), PrimitiveType.Boolean, node.Context, m_parser));
                             }
                             catch (InvalidCastException)
                             {

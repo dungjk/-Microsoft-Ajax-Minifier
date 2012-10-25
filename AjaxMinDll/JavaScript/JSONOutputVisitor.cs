@@ -355,6 +355,17 @@ namespace Microsoft.Ajax.Utilities
             IsValid = false;
         }
 
+        public void Visit(GroupingOperator node)
+        {
+            // not TECHNICALLY valid! set the invalid flag, but
+            // still recurse the operand, just in case
+            IsValid = false;
+            if (node != null && node.Operand != null)
+            {
+                node.Operand.Accept(this);
+            }
+        }
+
         public void Visit(IfNode node)
         {
             // invalid! ignore

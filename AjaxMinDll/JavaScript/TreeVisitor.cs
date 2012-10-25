@@ -309,6 +309,14 @@ namespace Microsoft.Ajax.Utilities
             // no children
         }
 
+        public virtual void Visit(GroupingOperator node)
+        {
+            if (node != null && node.Operand != null)
+            {
+                node.Operand.Accept(this);
+            }
+        }
+
         public virtual void Visit(IfNode node)
         {
             if (node != null)

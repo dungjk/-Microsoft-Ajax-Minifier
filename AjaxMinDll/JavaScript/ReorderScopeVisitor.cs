@@ -557,5 +557,88 @@ namespace Microsoft.Ajax.Utilities
                 base.Visit(node);
             }
         }
+
+        public override void Visit(GroupingOperator node)
+        {
+            if (node != null)
+            {
+                // if the parent isn't null, we need to run some checks
+                // to see if we can be removed for being superfluous.
+                if (node.Parent != null)
+                {
+                    var deleteParens = false;
+                    if (node.Operand == null)
+                    {
+                        // delete self - no operand make the parens superfluous
+                        // TODO: or should we leave them to preserve the "error"?
+                        deleteParens = true;
+                    }
+                    else if (node.Parent is Block)
+                    {
+                        // function expressions and object literals need to keep the parens 
+                        // or they'll be mistaken for function delcarations and blocks, respectively.
+                        // all others get axed.
+                        if (!(node.Operand is FunctionObject) && !(node.Operand is ObjectLiteral))
+                        {
+                            // delete self
+                            deleteParens = true;
+                        }
+                    }
+                    else if (node.Parent is AstNodeList)
+                    {
+                        // keep the parens if the node is itself a comma-operator
+                        // question: do we need to check for ANY comma-operators in the entire expression,
+                        // or will precedence rules dictate that there will be parens lower down if this
+                        // expression isn't a comma-operator?
+                        var binOp = node.Operand as BinaryOperator;
+                        if (binOp == null || binOp.OperatorToken != JSToken.Comma)
+                        {
+                            // delete self
+                            deleteParens = true;
+                        }
+                    }
+                    else if (node.Parent.IsExpression)
+                    {
+                        var targetPrecedence = node.Parent.Precedence;
+                        var conditional = node.Parent as Conditional;
+                        if (conditional != null)
+                        {
+                            // the conditional is weird in that the different parts need to be
+                            // compared against different precedences, not the precedence of the
+                            // conditional itself. The condition should be compared to logical-or,
+                            // and the true/false expressions against assignment.
+                            targetPrecedence = conditional.Condition == node
+                                ? OperatorPrecedence.LogicalOr
+                                : OperatorPrecedence.Assignment;
+                        }
+                        
+                        if (targetPrecedence <= node.Operand.Precedence)
+                        {
+                            // if the target precedence is less than or equal to the 
+                            // precedence of the operand, then the parens are superfluous.
+                            deleteParens = true;
+                        }
+                    }
+                    else
+                    {
+                        // delete self
+                        deleteParens = true;
+                    }
+
+                    if (deleteParens)
+                    {
+                        // delete the parens by replacing the grouping opertor node
+                        // with its own operand
+                        node.Parent.ReplaceChild(node, node.Operand);
+                    }
+                }
+                
+                // always recurse the operand
+                if (node.Operand != null)
+                {
+                    node.Operand.Accept(this);
+                }
+            }
+        }
     }
 }

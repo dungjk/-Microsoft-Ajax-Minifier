@@ -223,6 +223,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\globalscope.cs">
       <Link>JavaScript\globalscope.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\grouping.cs">
+      <Link>JavaScript\grouping.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\if.cs">
       <Link>JavaScript\if.cs</Link>
     </Compile>
