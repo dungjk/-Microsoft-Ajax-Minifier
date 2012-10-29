@@ -54,6 +54,18 @@ namespace Microsoft.Ajax.Utilities
             Token = JSToken.None;
         }
 
+        public Context(DocumentContext document, int startLineNumber, int startLinePoisition, int startPosition, int endLineNumber, int endLinePosition, int endPosition, JSToken token)
+            : this(document)
+        {
+            StartLineNumber = startLineNumber;
+            StartLinePosition = startLinePoisition;
+            StartPosition = startPosition;
+            EndLineNumber = endLineNumber;
+            EndLinePosition = endLinePosition;
+            EndPosition = endPosition;
+            Token = token;
+        }
+
         public Context Clone()
         {
             return new Context(this.Document)
