@@ -91,6 +91,7 @@
     <Content Include="TestData\Dll\Input\AjaxMinTask\file2.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test1.css" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test2.css" />
+    <Content Include="TestData\Dll\Input\Frameworks\bootstrap-dropdown.js" />
     <Content Include="TestData\Dll\Input\Frameworks\jquery-1.3.2.js" />
     <Content Include="TestData\Dll\Input\Frameworks\jquery-1.4.1.js" />
     <Content Include="TestData\Dll\Input\Frameworks\jquery-1.4.2.js" />
