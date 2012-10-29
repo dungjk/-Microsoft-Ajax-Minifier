@@ -414,4 +414,7 @@
   <data name="SuspectEquality" xml:space="preserve">
     <value>Suspect equality comparison</value>
   </data>
+  <data name="SemicolonInsertion" xml:space="preserve">
+    <value>Semicolon insertion rules applied</value>
+  </data>
 </root>

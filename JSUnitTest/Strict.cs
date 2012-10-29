@@ -49,7 +49,8 @@ namespace JSUnitTest
                 JSError.StrictModeArgumentName,
                 JSError.StrictModeFunctionName,
                 JSError.StrictModeFunctionName,
-                JSError.UndeclaredFunction);
+                JSError.UndeclaredFunction,
+                JSError.SemicolonInsertion);
         }
 
         [TestMethod]
@@ -57,13 +58,14 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunErrorTest("-rename:none",
                 JSError.StrictModeDuplicateArgument,
-                JSError.DuplicateName);
+                JSError.DuplicateName,
+                JSError.SemicolonInsertion);
         }
 
         [TestMethod]
         public void With()
         {
-            TestHelper.Instance.RunErrorTest("-rename:none", JSError.StrictModeNoWith);
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.StrictModeNoWith, JSError.SemicolonInsertion);
         }
 
         [TestMethod]
@@ -76,7 +78,9 @@ namespace JSUnitTest
                 JSError.StrictModeDuplicateProperty,
                 JSError.StrictModeDuplicateProperty,
                 JSError.StrictModeDuplicateProperty,
-                JSError.StrictModeDuplicateProperty);
+                JSError.StrictModeDuplicateProperty,
+                JSError.SemicolonInsertion,
+                JSError.SemicolonInsertion);
         }
 
         [TestMethod]

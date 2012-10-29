@@ -50,10 +50,31 @@ namespace DllUnitTest
             // get the source code
             string source;
             var inputPath = Path.Combine(InputFolder, FileName);
+            Trace.Write("Source: ");
+            Trace.WriteLine(inputPath);
             using (var reader = new StreamReader(inputPath))
             {
                 source = reader.ReadToEnd();
             }
+            Trace.WriteLine(source);
+            Trace.WriteLine("");
+            Trace.WriteLine("-----------------------");
+            Trace.WriteLine("");
+
+            // get the expected results
+            string expected;
+            var expectedPath = new FileInfo(Path.Combine(ExpectedFolder, FileName));
+            Trace.Write("Expected: ");
+            Trace.WriteLine(inputPath);
+            using (var reader = new StreamReader(expectedPath.FullName))
+            {
+                expected = reader.ReadToEnd();
+            }
+
+            Trace.WriteLine(expected);
+            Trace.WriteLine("");
+            Trace.WriteLine("-----------------------");
+            Trace.WriteLine("");
 
             // parse the source, keeping track of the errors
             var errors = new List<ContextError>();
@@ -80,20 +101,18 @@ namespace DllUnitTest
             }
 
             var actualPath = new FileInfo(Path.Combine(OutputFolder, FileName));
+            Trace.Write("Actual: ");
+            Trace.WriteLine(actualPath);
             using (var writer = new StreamWriter(actualPath.FullName, false, Encoding.UTF8))
             {
                 writer.Write(minified);
             }
 
-            // get the expected results
-            string expected;
-            var expectedPath = new FileInfo(Path.Combine(ExpectedFolder, FileName));
-            using (var reader = new StreamReader(expectedPath.FullName))
-            {
-                expected = reader.ReadToEnd();
-            }
-
+            Trace.WriteLine(minified);
             Trace.WriteLine("");
+            Trace.WriteLine("-----------------------");
+            Trace.WriteLine("");
+
             Trace.WriteLine("Output Comparison:");
             Trace.WriteLine(string.Format("odd.exe \"{0}\" \"{1}\"", expectedPath.FullName, actualPath.FullName));
             Trace.WriteLine("");

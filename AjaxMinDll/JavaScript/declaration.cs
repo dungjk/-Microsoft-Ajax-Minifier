@@ -102,6 +102,7 @@ namespace Microsoft.Ajax.Utilities
                     // set the parent and add it to the list
                     decl.Parent = this;
                     m_list.Add(decl);
+                    UpdateWith(decl.Context);
                 }
             }
             else

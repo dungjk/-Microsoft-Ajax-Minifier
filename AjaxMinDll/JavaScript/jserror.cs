@@ -109,6 +109,7 @@ namespace Microsoft.Ajax.Utilities
         DuplicateLexicalDeclaration = 1307, // duplicate lexical declaration
         DuplicateCatch = 1308, // variable declaration duplicates catch error name
         SuspectEquality = 1309, // suspect equality comparison
+        SemicolonInsertion = 1310, // semicolon insertion
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

@@ -82,6 +82,26 @@ namespace Microsoft.Ajax.Utilities
             };
         }
 
+        public Context FlattenToStart()
+        {
+            // clone the context and flatten the end to be the start position
+            var clone = Clone();
+            clone.EndLineNumber = clone.StartLineNumber;
+            clone.EndLinePosition = clone.StartLinePosition;
+            clone.EndPosition = clone.StartPosition;
+            return clone;
+        }
+
+        public Context FlattenToEnd()
+        {
+            // clone the context and flatten the start to the end position
+            var clone = Clone();
+            clone.StartLineNumber = clone.EndLineNumber;
+            clone.StartLinePosition = clone.EndLinePosition;
+            clone.StartPosition = clone.EndPosition;
+            return clone;
+        }
+
         public Context CombineWith(Context other)
         {
             return other == null

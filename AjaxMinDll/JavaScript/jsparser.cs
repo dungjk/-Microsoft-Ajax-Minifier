@@ -125,9 +125,9 @@ namespace Microsoft.Ajax.Utilities
                     string context = se.ErrorSegment;
 
                     // if the context is empty, use the whole line
-                    if (string.IsNullOrEmpty(context))
+                    if (!context.IsNullOrWhiteSpace())
                     {
-                        context = line;
+                        context = ": " + context;
                     }
 
                     CompilerError(this, new JScriptExceptionEventArgs(se, new ContextError(
@@ -141,7 +141,7 @@ namespace Microsoft.Ajax.Utilities
                         se.Column,
                         se.EndLine,
                         se.EndColumn,
-                        se.Message + ": " + context)));
+                        se.Message + context)));
                 }
             }
 
@@ -985,7 +985,16 @@ namespace Microsoft.Ajax.Utilities
                                 statement.IfNotNull(s => s.TerminatingContext = m_currentToken.Clone());
                                 GetNextToken();
                             }
-                            else if (!m_foundEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                            else if (m_foundEndOfLine || JSToken.RightCurly == m_currentToken.Token || JSToken.EndOfFile == m_currentToken.Token)
+                            {
+                                // semicolon insertion rules
+                                // (if there was no statement parsed, then don't fire a warning)
+                                if (statement != null)
+                                {
+                                    ReportError(JSError.SemicolonInsertion, statement.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                                }
+                            }
+                            else
                             {
                                 ReportError(JSError.NoSemicolon, true);
                             }
@@ -1227,7 +1236,12 @@ namespace Microsoft.Ajax.Utilities
                 node.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
+            else if (m_foundEndOfLine || JSToken.RightCurly == m_currentToken.Token || JSToken.EndOfFile == m_currentToken.Token)
+            {
+                // semicolon insertion rules applied
+                ReportError(JSError.SemicolonInsertion, node.Context.IfNotNull(c => c.FlattenToEnd()), true);
+            }
+            else
             {
                 // if it is anything else, it's an error
                 ReportError(JSError.NoSemicolon, true);
@@ -1328,32 +1342,27 @@ namespace Microsoft.Ajax.Utilities
                     varList.Append(vdecl);
                 }
 
-                if (JSToken.Semicolon == m_currentToken.Token
-                    || JSToken.RightCurly == m_currentToken.Token)
-                {
-                    if (JSToken.Semicolon == m_currentToken.Token)
-                    {
-                        varList.TerminatingContext = m_currentToken.Clone();
-                        GetNextToken();
-                    }
-                    break;
-                }
-                
-                if (JSToken.Comma == m_currentToken.Token)
+                if (m_currentToken.Token == JSToken.Comma)
                 {
                     single = false;
                     vdecl.IfNotNull(d => d.TerminatingContext = m_currentToken.Clone());
-                    continue;
                 }
-                
-                if (m_foundEndOfLine)
+                else if (m_currentToken.Token == JSToken.Semicolon)
                 {
+                    varList.TerminatingContext = m_currentToken.Clone();
+                    GetNextToken();
                     break;
                 }
-
-                // assume the variable statement was terminated and move on
-                ReportError(JSError.NoSemicolon, true);
-                break;
+                else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
+                {
+                    ReportError(JSError.SemicolonInsertion, varList.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    break;
+                }
+                else
+                {
+                    ReportError(JSError.NoSemicolon, false);
+                    break;
+                }
             }
 
             if (vdecl != null)
@@ -1635,7 +1644,7 @@ namespace Microsoft.Ajax.Utilities
                 else if (JSToken.LeftCurly != m_currentToken.Token)
                 {
                     // if the statements aren't withing curly-braces, throw a possible error
-                    ReportError(JSError.StatementBlockExpected, ifCtx, true);
+                    ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                 }
 
                 try
@@ -1684,7 +1693,7 @@ namespace Microsoft.Ajax.Utilities
                       && JSToken.If != m_currentToken.Token)
                     {
                         // if the statements aren't withing curly-braces (or start another if-statement), throw a possible error
-                        ReportError(JSError.StatementBlockExpected, elseCtx, true);
+                        ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                     }
 
                     try
@@ -1891,7 +1900,7 @@ namespace Microsoft.Ajax.Utilities
                     // if the statements aren't withing curly-braces, throw a possible error
                     if (JSToken.LeftCurly != m_currentToken.Token)
                     {
-                        ReportError(JSError.StatementBlockExpected, forCtx, true);
+                        ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                     }
                     try
                     {
@@ -2026,7 +2035,7 @@ namespace Microsoft.Ajax.Utilities
                     // if the statements aren't withing curly-braces, throw a possible error
                     if (JSToken.LeftCurly != m_currentToken.Token)
                     {
-                        ReportError(JSError.StatementBlockExpected, forCtx, true);
+                        ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                     }
                     try
                     {
@@ -2090,7 +2099,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the statements aren't withing curly-braces, throw a possible error
                 if (JSToken.LeftCurly != m_currentToken.Token)
                 {
-                    ReportError(JSError.StatementBlockExpected, m_currentToken.Clone(), true);
+                    ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                 }
                 try
                 {
@@ -2285,7 +2294,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the statements aren't withing curly-braces, throw a possible error
                 if (JSToken.LeftCurly != m_currentToken.Token)
                 {
-                    ReportError(JSError.StatementBlockExpected, whileCtx, true);
+                    ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                 }
                 try
                 {
@@ -2385,9 +2394,13 @@ namespace Microsoft.Ajax.Utilities
                 continueNode.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
+            else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
             {
-                ReportError(JSError.NoSemicolon, true);
+                ReportError(JSError.SemicolonInsertion, continueNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+            }
+            else
+            {
+                ReportError(JSError.NoSemicolon, false);
             }
 
             // must ignore the Finally block
@@ -2467,9 +2480,13 @@ namespace Microsoft.Ajax.Utilities
                 breakNode.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
-            else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
+            else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
             {
-                ReportError(JSError.NoSemicolon, true);
+                ReportError(JSError.SemicolonInsertion, breakNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+            }
+            else
+            {
+                ReportError(JSError.NoSemicolon, false);
             }
 
             // must ignore the Finally block
@@ -2541,9 +2558,13 @@ namespace Microsoft.Ajax.Utilities
                     returnNode.TerminatingContext = m_currentToken.Clone();
                     GetNextToken();
                 }
-                else if (JSToken.RightCurly != m_currentToken.Token && !m_foundEndOfLine)
+                else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
                 {
-                    ReportError(JSError.NoSemicolon, true);
+                    ReportError(JSError.SemicolonInsertion, returnNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                }
+                else
+                {
+                    ReportError(JSError.NoSemicolon, false);
                 }
             }
 
@@ -2609,7 +2630,7 @@ namespace Microsoft.Ajax.Utilities
                 // if the statements aren't withing curly-braces, throw a possible error
                 if (JSToken.LeftCurly != m_currentToken.Token)
                 {
-                    ReportError(JSError.StatementBlockExpected, withCtx, true);
+                    ReportError(JSError.StatementBlockExpected, m_currentToken.FlattenToStart(), true);
                 }
 
                 try
@@ -2981,7 +3002,11 @@ namespace Microsoft.Ajax.Utilities
                     throwNode.TerminatingContext = m_currentToken.Clone();
                     GetNextToken();
                 }
-                else if (m_currentToken.Token != JSToken.RightCurly && !m_foundEndOfLine)
+                else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
+                {
+                    ReportError(JSError.SemicolonInsertion, throwNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                }
+                else
                 {
                     ReportError(JSError.NoSemicolon, false);
                 }

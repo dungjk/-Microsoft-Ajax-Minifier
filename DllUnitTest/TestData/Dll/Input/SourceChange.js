@@ -37,7 +37,7 @@ function addClass( value ) {
 ///#source 2 11 anonfunc.js
 function () 
 {
-  alert("Hi!")
+  alert("Hi!");
 }();
 
 

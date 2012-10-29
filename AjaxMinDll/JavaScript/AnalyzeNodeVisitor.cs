@@ -486,7 +486,7 @@ namespace Microsoft.Ajax.Utilities
                                 // and expanding the context to include the initializer.
                                 binaryOp.OperatorToken = JSScanner.StripAssignment(binaryOp.OperatorToken);
                                 binaryOp.Operand1 = varDecl.Initializer;
-                                binaryOp.Context.CombineWith(binaryOp.Operand1.Context);
+                                binaryOp.UpdateWith(binaryOp.Operand1.Context);
 
                                 // set the adjusted binary op to the vardecl initializer and remove the
                                 // current statement (that points to the binary op)

@@ -166,13 +166,13 @@ namespace JSUnitTest
         [TestMethod]
         public void IgnoreErrors()
         {
-            TestHelper.Instance.RunErrorTest("-rename:none", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.VariableDefinedNotReferenced, JSError.NoRightParenthesis);
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.SemicolonInsertion, JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.VariableDefinedNotReferenced, JSError.NoRightParenthesis);
         }
 
         [TestMethod]
         public void IgnoreErrors_some()
         {
-            TestHelper.Instance.RunErrorTest("-rename:none -ignore:js1138,JS1135,Js1268", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.NoRightParenthesis);
+            TestHelper.Instance.RunErrorTest("-rename:none -ignore:js1138,JS1135,Js1268,jS1310", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.NoRightParenthesis);
         }
 
         [TestMethod]

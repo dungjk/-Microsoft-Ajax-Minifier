@@ -118,7 +118,7 @@ namespace JSUnitTest
         [TestMethod]
         public void Collision()
         {
-            TestHelper.Instance.RunErrorTest("-rename:all", JSError.AmbiguousCatchVar);
+            TestHelper.Instance.RunErrorTest("-rename:all", JSError.AmbiguousCatchVar, JSError.SemicolonInsertion);
         }
     }
 }

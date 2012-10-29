@@ -31,13 +31,13 @@ namespace JSUnitTest
     [TestMethod()]
     public void StringEOF()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
+      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString, JSError.SemicolonInsertion);
     }
 
     [TestMethod()]
     public void StringEOL()
     {
-        TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
+        TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString, JSError.SemicolonInsertion);
     }
 
     [TestMethod()]

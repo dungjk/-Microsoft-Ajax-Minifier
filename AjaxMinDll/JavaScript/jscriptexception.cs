@@ -145,7 +145,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_context != null)
                 {
-                    if (m_context.EndColumn > m_context.StartColumn)
+                    if (m_context.EndColumn >= m_context.StartColumn)
                     {
                         // normal condition - one-based
                         return m_context.EndColumn + 1;
@@ -246,7 +246,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // special case some errors with contextual information
                 return JScript.ResourceManager.GetString(code, JScript.Culture).FormatInvariant(
-                    m_context == null ? string.Empty : m_context.Code);
+                    m_context.IfNotNull(c => c.HasCode) ? string.Empty : m_context.Code);
             }
         }
 
@@ -374,6 +374,7 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.NumericMinimum:
                 case JSError.OctalLiteralsDeprecated:
                 case JSError.FunctionNameMustBeIdentifier:
+                case JSError.SemicolonInsertion:
                     return 4;
 
                 default:

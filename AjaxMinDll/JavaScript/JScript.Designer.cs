@@ -655,6 +655,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Semicolon insertion rules applied.
+        /// </summary>
+        internal static string SemicolonInsertion {
+            get {
+                return ResourceManager.GetString("SemicolonInsertion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to run-time.
         /// </summary>
         internal static string Severity0 {
