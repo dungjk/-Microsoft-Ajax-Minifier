@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="CommandLine.cs" />
     <Compile Include="AjaxMinTask.cs" />
+    <Compile Include="Frameworks.cs" />
     <Compile Include="ManifestTask.cs" />
     <Compile Include="MinifiedNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -70,6 +71,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="TestData\Dll\Input\Frameworks\NoErrors.csv" />
     <None Include="TestData\Dll\NotExpressions.csv" />
   </ItemGroup>
   <ItemGroup>
@@ -89,6 +91,20 @@
     <Content Include="TestData\Dll\Input\AjaxMinTask\file2.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test1.css" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test2.css" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.3.2.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.4.1.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.4.2.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.5.1.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.5.2.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.6.1.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.7.1.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.7.2.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.8.0.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-1.8.2.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\jquery-ui-1.8.19.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\modernizr-2.0.6.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\prototype-1.7.1.js" />
+    <Content Include="TestData\Dll\Input\Frameworks\prototype.1.17.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file1.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\file1.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file2.css" />

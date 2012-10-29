@@ -329,17 +329,13 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else if (!variableField.WasRemoved)
                         {
-                            // not referenced -- throw a warning, assuming it hasn't been "removed" 
-                            // via an optimization or something.
-                            variableField.OriginalContext.HandleError(
-                                JSError.VariableDefinedNotReferenced,
-                                false);
+                            var throwWarning = true;
 
                             // not a function, not an argument, not a catch-arg, not a global.
                             // not referenced. If there's a single definition, and it either has no
                             // initializer or the initializer is constant, get rid of it. 
                             // (unless we aren't removing unneeded code, or the scope is unknown)
-                            if (variableField.Declarations.Count == 1 
+                            if (variableField.Declarations.Count == 1
                                 && m_settings.RemoveUnneededCode
                                 && this.IsKnownAtCompileTime)
                             {
@@ -350,23 +346,52 @@ namespace Microsoft.Ajax.Utilities
                                     if (declaration != null
                                         && (varDecl.Initializer == null || varDecl.Initializer.IsConstant))
                                     {
-                                        variableField.Declarations.Remove(varDecl);
-
-                                        // don't "remove" the field if it's a ghost to another field
-                                        if (variableField.GhostedField == null)
+                                        // if the decl parent is a for-in and the decl is the variable part
+                                        // of the statement, then just leave it alone. Don't even throw a warning
+                                        var forInStatement = declaration.Parent as ForIn;
+                                        if (forInStatement != null
+                                            && declaration == forInStatement.Variable)
                                         {
-                                            variableField.WasRemoved = true;
+                                            // just leave it alone, and don't even throw a warning for it.
+                                            // TODO: try to reuse some pre-existing variable, or maybe replace
+                                            // this vardecl with a ref to an unused parameter if this is inside
+                                            // a function.
+                                            throwWarning = false;
                                         }
-
-                                        // remove the vardecl from the declaration list, and if the
-                                        // declaration list is now empty, remove it, too
-                                        declaration.Remove(varDecl);
-                                        if (declaration.Count == 0)
+                                        else
                                         {
-                                            declaration.Parent.ReplaceChild(declaration, null);
+                                            variableField.Declarations.Remove(varDecl);
+
+                                            // don't "remove" the field if it's a ghost to another field
+                                            if (variableField.GhostedField == null)
+                                            {
+                                                variableField.WasRemoved = true;
+                                            }
+
+                                            // remove the vardecl from the declaration list, and if the
+                                            // declaration list is now empty, remove it, too
+                                            declaration.Remove(varDecl);
+                                            if (declaration.Count == 0)
+                                            {
+                                                declaration.Parent.ReplaceChild(declaration, null);
+                                            }
                                         }
                                     }
+                                    else if (varDecl.Parent is ForIn)
+                                    {
+                                        // then this is okay
+                                        throwWarning = false;
+                                    }
                                 }
+                            }
+
+                            if (throwWarning)
+                            {
+                                // not referenced -- throw a warning, assuming it hasn't been "removed" 
+                                // via an optimization or something.
+                                variableField.OriginalContext.HandleError(
+                                    JSError.VariableDefinedNotReferenced,
+                                    false);
                             }
                         }
                     }

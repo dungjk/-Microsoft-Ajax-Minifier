@@ -948,6 +948,38 @@ namespace Microsoft.Ajax.Utilities
                                     }
                                 }
                             }
+
+                            var lookup = statement as Lookup;
+                            if (lookup != null
+                                && lookup.Name.StartsWith("<%=", StringComparison.Ordinal) && lookup.Name.EndsWith("%>", StringComparison.Ordinal))
+                            {
+                                // single lookup, but it's actually one or more ASP.NET blocks.
+                                // convert back to an asp.net block node
+                                statement = new AspNetBlockNode(statement.Context, this)
+                                {
+                                    AspNetBlockText = lookup.Name
+                                };
+                            }
+
+                            var aspNetBlock = statement as AspNetBlockNode;
+                            if (aspNetBlock != null && JSToken.Semicolon == m_currentToken.Token)
+                            {
+                                aspNetBlock.IsTerminatedByExplicitSemicolon = true;
+                                statement.IfNotNull(s => s.TerminatingContext = m_currentToken.Clone());
+                                GetNextToken();
+                            }
+
+                            // we just parsed an expression statement. Now see if we have an appropriate
+                            // semicolon to terminate it.
+                            if (JSToken.Semicolon == m_currentToken.Token)
+                            {
+                                statement.IfNotNull(s => s.TerminatingContext = m_currentToken.Clone());
+                                GetNextToken();
+                            }
+                            else if (!m_foundEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                            {
+                                ReportError(JSError.NoSemicolon, true);
+                            }
                         }
                         catch (RecoveryTokenException exc)
                         {
@@ -974,37 +1006,8 @@ namespace Microsoft.Ajax.Utilities
                         }
                         break;
                 }
-
-                var lookup = statement as Lookup;
-                if (lookup != null
-                    && lookup.Name.StartsWith("<%=", StringComparison.Ordinal) && lookup.Name.EndsWith("%>", StringComparison.Ordinal))
-                {
-                    // single lookup, but it's actually one or more ASP.NET blocks.
-                    // convert back to an asp.net block node
-                    statement = new AspNetBlockNode(statement.Context, this)
-                        {
-                            AspNetBlockText = lookup.Name
-                        };
-                }
-
-                if (JSToken.Semicolon == m_currentToken.Token)
-                {
-                    // if the statement is an asp.net block, then set the property on it that indicates that this
-                    // block was terminated with a semicolon.
-                    var aspNetBlock = statement as AspNetBlockNode;
-                    if (aspNetBlock != null)
-                    {
-                        aspNetBlock.IsTerminatedByExplicitSemicolon = true;
-                    }
-
-                    statement.IfNotNull(s => s.TerminatingContext = m_currentToken.Clone());
-                    GetNextToken();
-                }
-                else if (!m_foundEndOfLine && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
-                {
-                    ReportError(JSError.NoSemicolon, true);
-                }
             }
+
             return statement;
         }
 
@@ -5236,7 +5239,7 @@ namespace Microsoft.Ajax.Utilities
                     // use the special comma-operator class derived from binary operator.
                     // it has special logic to combine adjacent comma operators into a single
                     // node with an ast node list rather than nested binary operators
-                    return new CommaOperator(context, this, operand1, operand2);
+                    return CommaOperator.CombineWithComma(context, this, operand1, operand2);
 
                 default:
                     // shouldn't get here!

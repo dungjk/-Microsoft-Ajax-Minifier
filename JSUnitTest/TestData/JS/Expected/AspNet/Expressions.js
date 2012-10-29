@@ -1,1 +1,1 @@
-﻿var ident=<%= Request("arf") %>;ident+=foo*<%= foo %>+10
+﻿var ident=<%= Request("arf") %>+(foo*<%= foo %>+10)

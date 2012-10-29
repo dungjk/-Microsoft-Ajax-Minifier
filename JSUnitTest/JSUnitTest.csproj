@@ -99,6 +99,7 @@
       <DependentUpon>StringsFooBar.resx</DependentUpon>
     </Compile>
     <Compile Include="UnknownScope.cs" />
+    <Compile Include="VarDecls.cs" />
     <Compile Include="XmlInput.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -141,12 +142,14 @@
     <Content Include="TestData\JS\Expected\BlockOpts\AfterReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\AfterReturn_noreloc.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\AspNetBlock.js" />
+    <Content Include="TestData\JS\Expected\BlockOpts\CombineAssign.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\DirectivePrologue.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ExprReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\IfReturnReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\KillIfReturn.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ReturnIfs.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\ReturnVoid.js" />
+    <Content Include="TestData\JS\Expected\BlockOpts\VarAssign.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\VarIntoFor.js" />
     <Content Include="TestData\JS\Expected\BlockOpts\VarReturn.js" />
     <Content Include="TestData\JS\Expected\Booleans\Boolean.js" />
@@ -398,6 +401,7 @@
     <Content Include="TestData\JS\Expected\UnknownScope\Eval_J.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Expected\VarDecls\UnRefForIn.js" />
     <Content Include="TestData\JS\Expected\XmlInput\Combined.css" />
     <Content Include="TestData\JS\Expected\XmlInput\EncOutputNone.js" />
     <Content Include="TestData\JS\Expected\XmlInput\EncOutputNone_koi8r.js" />
@@ -442,12 +446,14 @@
     <Content Include="TestData\JS\Input\AstMods\VerticalTab.js" />
     <Content Include="TestData\JS\Input\BlockOpts\AfterReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\AspNetBlock.js" />
+    <Content Include="TestData\JS\Input\BlockOpts\CombineAssign.js" />
     <Content Include="TestData\JS\Input\BlockOpts\DirectivePrologue.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ExprReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\IfReturnReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\KillIfReturn.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ReturnIfs.js" />
     <Content Include="TestData\JS\Input\BlockOpts\ReturnVoid.js" />
+    <Content Include="TestData\JS\Input\BlockOpts\VarAssign.js" />
     <Content Include="TestData\JS\Input\BlockOpts\VarIntoFor.js" />
     <Content Include="TestData\JS\Input\BlockOpts\VarReturn.js" />
     <Content Include="TestData\JS\Input\Booleans\Boolean.js" />
@@ -628,6 +634,7 @@
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Input\VarDecls\UnRefForIn.js" />
     <Content Include="TestData\JS\Input\XmlInput\EncInputRussian.xml" />
     <Content Include="TestData\JS\Input\XmlInput\EncInput1.js" />
     <Content Include="TestData\JS\Input\XmlInput\EncInput2.js" />

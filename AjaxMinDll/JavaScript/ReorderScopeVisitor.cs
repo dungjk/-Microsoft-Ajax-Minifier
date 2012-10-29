@@ -278,7 +278,7 @@ namespace Microsoft.Ajax.Utilities
                             var expression = assignments[0];
                             for (var ndx = 1; ndx < assignments.Count; ++ndx)
                             {
-                                expression = new CommaOperator(null, expression.Parser, expression, assignments[ndx]);
+                                expression = CommaOperator.CombineWithComma(null, expression.Parser, expression, assignments[ndx]);
                             }
 
                             // replace the var with the expression.

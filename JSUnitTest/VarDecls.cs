@@ -1,4 +1,4 @@
-﻿// BlockOpts.cs
+﻿// VarDecls.cs
 //
 // Copyright 2010 Microsoft Corporation
 //
@@ -19,14 +19,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace JSUnitTest
 {
     /// <summary>
-    /// Summary description for BlockOpts
+    /// Summary description for VarDecls
     /// </summary>
     [TestClass]
-    public class BlockOpts
+    public class VarDecls
     {
-        #region generated code 
-
-        public BlockOpts()
+        public VarDecls()
         {
         }
 
@@ -47,8 +45,6 @@ namespace JSUnitTest
                 testContextInstance = value;
             }
         }
-
-        #endregion
 
         #region Additional test attributes
         //
@@ -73,82 +69,9 @@ namespace JSUnitTest
         #endregion
 
         [TestMethod]
-        public void VarReturn()
+        public void UnRefForIn()
         {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void ReturnIfs()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void DirectivePrologue()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-		[TestMethod]
-		public void AspNetBlock()
-		{
-			TestHelper.Instance.RunTest("-aspnet:true");
-		}
-
-        [TestMethod]
-        public void AfterReturn()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void AfterReturn_noreloc()
-        {
-            // don't relocate function declarations
-            TestHelper.Instance.RunTest("-kill:0x0000018000000000");
-        }
-
-        [TestMethod]
-        public void VarIntoFor()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void IfReturnReturn()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void ReturnVoid()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void ExprReturn()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void KillIfReturn()
-        {
-            TestHelper.Instance.RunTest("-kill:-1");
-        }
-
-        [TestMethod]
-        public void CombineAssign()
-        {
-            TestHelper.Instance.RunTest();
-        }
-
-        [TestMethod]
-        public void VarAssign()
-        {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-rename:all");
         }
     }
 }
