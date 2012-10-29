@@ -25,16 +25,22 @@ namespace JSUnitTest
     [TestClass()]
     public class GlobalMethods
     {
-      [TestMethod()]
-      public void Eval()
-      {
-        TestHelper.Instance.RunTest();
-      }
+        [TestMethod]
+        public void Eval()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-      [TestMethod()]
-      public void GlobalObject()
-      {
-        TestHelper.Instance.RunTest();
-      }
+        [TestMethod]
+        public void GlobalObject()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void AssumedGlobals()
+        {
+            TestHelper.Instance.RunErrorTest("");
+        }
     }
 }

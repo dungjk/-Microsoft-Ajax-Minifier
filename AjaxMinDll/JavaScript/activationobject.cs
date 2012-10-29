@@ -832,6 +832,25 @@ namespace Microsoft.Ajax.Utilities
             return null;
         }
 
+        public void AddGlobal(string name)
+        {
+            // first, go up to the global scope
+            var scope = this;
+            while (scope.Parent != null)
+            {
+                scope = scope.Parent;
+            }
+
+            // now see if there is a field with that name already; 
+            // will return a non-null field object if there is.
+            var field = scope[name];
+            if (field == null)
+            {
+                // nothing with this name. Add it as a global field
+                scope.AddField(scope.CreateField(name, null, 0));
+            }
+        }
+
         #endregion
     }
 }

@@ -256,6 +256,7 @@
     <Content Include="TestData\JS\Expected\FunctionCreation\NamedFuncExpr_reorder.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\NewFunction.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\VarArgList.js" />
+    <Content Include="TestData\JS\Expected\GlobalMethods\AssumedGlobals.js" />
     <Content Include="TestData\JS\Expected\GlobalMethods\Eval.js" />
     <Content Include="TestData\JS\Expected\GlobalMethods\GlobalObject.js" />
     <Content Include="TestData\JS\Expected\LexicalDeclarations\ConstAssign.js" />
@@ -525,6 +526,7 @@
     <Content Include="TestData\JS\Input\FunctionCreation\NamedFuncExpr.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\NewFunction.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\VarArgList.js" />
+    <Content Include="TestData\JS\Input\GlobalMethods\AssumedGlobals.js" />
     <Content Include="TestData\JS\Input\GlobalMethods\Eval.js" />
     <Content Include="TestData\JS\Input\GlobalMethods\GlobalObject.js" />
     <Content Include="TestData\JS\Input\LexicalDeclarations\ConstAssign.js" />

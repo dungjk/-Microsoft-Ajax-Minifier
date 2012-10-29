@@ -211,8 +211,38 @@ namespace Microsoft.Ajax.Utilities
             }
             else if (lookup.VariableField.FieldType == FieldType.Predefined)
             {
-                // check to see if this is the eval function -- if so, mark the scope as not-known if we aren't ignoring them
-                if (settings.EvalTreatment != EvalTreatment.Ignore
+                if (string.CompareOrdinal(lookup.Name, "window") == 0)
+                {
+                    // it's the global window object
+                    // see if it's the child of a member or call-brackets node
+                    var member = lookup.Parent as Member;
+                    if (member != null)
+                    {
+                        // we have window.XXXX. Add XXXX to the known globals if it
+                        // isn't already a known item.
+                        scope.AddGlobal(member.Name);
+                    }
+                    else
+                    {
+                        var callNode = lookup.Parent as CallNode;
+                        if (callNode != null && callNode.InBrackets
+                            && callNode.Arguments.Count == 1
+                            && callNode.Arguments[0] is ConstantWrapper
+                            && callNode.Arguments[0].FindPrimitiveType() == PrimitiveType.String)
+                        {
+                            // we have window["XXXX"]. See if XXXX is a valid identifier.
+                            // TODO: we could get rid of the ConstantWrapper restriction and use an Evaluate visitor
+                            // to evaluate the argument, since we know for sure that it's a string.
+                            var identifier = callNode.Arguments[0].ToString();
+                            if (JSScanner.IsValidIdentifier(identifier))
+                            {
+                                // Add XXXX to the known globals if it isn't already a known item.
+                                scope.AddGlobal(identifier);
+                            }
+                        }
+                    }
+                }
+                else if (settings.EvalTreatment != EvalTreatment.Ignore
                     && string.CompareOrdinal(lookup.Name, "eval") == 0)
                 {
                     // it's an eval -- but are we calling it?
