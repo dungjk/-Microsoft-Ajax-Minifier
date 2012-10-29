@@ -108,6 +108,7 @@ namespace Microsoft.Ajax.Utilities
         BadNumericLiteral = 1306, // bad numeric literal
         DuplicateLexicalDeclaration = 1307, // duplicate lexical declaration
         DuplicateCatch = 1308, // variable declaration duplicates catch error name
+        SuspectEquality = 1309, // suspect equality comparison
 
         //5000 - 6000 JScript errors that can occur during execution. Typically (also) used in "throw new JScriptException".
         IllegalAssignment = 5008, // "Illegal assignment"

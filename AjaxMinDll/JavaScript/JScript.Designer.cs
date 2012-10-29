@@ -835,6 +835,15 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Suspect equality comparison.
+        /// </summary>
+        internal static string SuspectEquality {
+            get {
+                return ResourceManager.GetString("SuspectEquality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Suspect semicolon.
         /// </summary>
         internal static string SuspectSemicolon {

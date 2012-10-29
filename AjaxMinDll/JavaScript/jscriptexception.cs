@@ -367,6 +367,7 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.StatementBlockExpected:
                 case JSError.SuspectAssignment:
                 case JSError.SuspectSemicolon:
+                case JSError.SuspectEquality:
                 case JSError.WithNotRecommended:
                 case JSError.ObjectConstructorTakesNoArguments:
                 case JSError.NumericMaximum:

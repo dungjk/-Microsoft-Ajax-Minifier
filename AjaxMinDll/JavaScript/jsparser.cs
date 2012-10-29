@@ -949,6 +949,15 @@ namespace Microsoft.Ajax.Utilities
                                 }
                             }
 
+                            var binaryOp = statement as BinaryOperator;
+                            if (binaryOp != null
+                                && (binaryOp.OperatorToken == JSToken.Equal || binaryOp.OperatorToken == JSToken.StrictEqual))
+                            {
+                                // an expression statement with equality operator? Doesn't really do anything.
+                                // Did the developer intend this to be an assignment operator instead? Low-pri warning.
+                                binaryOp.OperatorContext.IfNotNull(c => c.HandleError(JSError.SuspectEquality, false));
+                            }
+
                             var lookup = statement as Lookup;
                             if (lookup != null
                                 && lookup.Name.StartsWith("<%=", StringComparison.Ordinal) && lookup.Name.EndsWith("%>", StringComparison.Ordinal))
