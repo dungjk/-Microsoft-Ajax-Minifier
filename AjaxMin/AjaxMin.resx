@@ -570,7 +570,7 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
     <value>[or {0}{1}]</value>
   </data>
   <data name="SavingsGzipMessage" xml:space="preserve">
-    <value>Gzip of output approximately {0} bytes ({1}% compression)</value>
+    <value>Gzip of minified output approx. {0} bytes ({1}% compression)</value>
   </data>
   <data name="SavingsMessage" xml:space="preserve">
     <value>Original Size: {0} bytes; reduced size: {1} bytes ({2}% minification)</value>
@@ -625,5 +625,8 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   </data>
   <data name="AnonymousFunction" xml:space="preserve">
     <value>[Anonymous]</value>
+  </data>
+  <data name="SavingsGzipSourceMessage" xml:space="preserve">
+    <value>Gzip of source input approx. {0} bytes ({1}% compression)</value>
   </data>
 </root>

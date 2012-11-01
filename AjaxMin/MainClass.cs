@@ -1190,11 +1190,14 @@ namespace Microsoft.Ajax.Utilities
                                 ));
                         }
 
-                        // calculate how much a simple gzip compression would compress the output
-                        long gzipLength = CalculateGzipSize(encodedBytes);
+                        // calculate how much gzip on the unminified, combined original source might be
+                        long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(combinedSourceCode));
+                        percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
+                        WriteProgress(AjaxMin.SavingsGzipSourceMessage.FormatInvariant(gzipLength, percentage));
 
-                        // calculate the savings and display the result
-                        percentage = Math.Round((1 - ((double)gzipLength) / encodedBytes.Length) * 100, 1);
+                        // calculate how much gzip on the minified output might be
+                        gzipLength = CalculateGzipSize(encodedBytes);
+                        percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
                         WriteProgress(AjaxMin.SavingsGzipMessage.FormatInvariant(gzipLength, percentage));
 
                         // blank line after
@@ -1283,11 +1286,14 @@ namespace Microsoft.Ajax.Utilities
                                         ));
                                 }
 
-                                // compute how long a simple gzip might compress the resulting file
-                                long gzipLength = CalculateGzipSize(File.ReadAllBytes(path));
+                                // calculate how much gzip on the unminified, combined original source might be
+                                long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(combinedSourceCode));
+                                percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
+                                WriteProgress(AjaxMin.SavingsGzipSourceMessage.FormatInvariant(gzipLength, percentage));
 
-                                // calculate the percentage of compression and display the results
-                                percentage = Math.Round((1 - ((double)gzipLength) / crunchedLength) * 100, 1);
+                                // calculate how much gzip on the minified output might be
+                                gzipLength = CalculateGzipSize(File.ReadAllBytes(path));
+                                percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
                                 WriteProgress(AjaxMin.SavingsGzipMessage.FormatInvariant(gzipLength, percentage));
 
                                 // blank line after
