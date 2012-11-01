@@ -234,6 +234,34 @@
             Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "CombinedFail.min.css")), "CombinedFail.min.css should not exist");
         }
 
+        [TestMethod]
+        public void TestAjaxMinCombinedKillTask()
+        {
+            // create the task
+            var task = CreateTaskWithInputs();
+
+            // set up the combined file outputs
+            task.JsCombinedFileName = @"Dll\Output\AjaxMinTask\CombinedKill.min.js";
+            task.CssCombinedFileName = @"Dll\Output\AjaxMinTask\CombinedKill.min.css";
+            task.Switches += " -kill:-1";
+
+            var success = ExecuteAndReport(task);
+
+            // check overall success
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "CombinedKill.min.js")), "CombinedKill.min.js does not exist");
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "CombinedKill.min.css")), "CombinedKill.min.css does not exist");
+
+            // verify output file contents
+            var testJSVerify = VerifyFileContents("CombinedKill.min.js", s_outputFolder);
+            var testCssVerify = VerifyFileContents("CombinedKill.min.css", s_outputFolder);
+
+            Assert.IsTrue(testJSVerify, "CombinedKill.min.js output doesn't match");
+            Assert.IsTrue(testCssVerify, "CombinedKill.min.css output doesn't match");
+        }
+
         private AjaxMin CreateTaskWithInputs()
         {
             // create the task, set it up, and execute it

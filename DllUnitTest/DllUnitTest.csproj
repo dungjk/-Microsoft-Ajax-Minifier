@@ -77,6 +77,8 @@
   <ItemGroup>
     <Content Include="TestData\Dll\Expected\AjaxMinTask\Combined.min.css" />
     <Content Include="TestData\Dll\Expected\AjaxMinTask\Combined.min.js" />
+    <Content Include="TestData\Dll\Expected\AjaxMinTask\CombinedKill.min.css" />
+    <Content Include="TestData\Dll\Expected\AjaxMinTask\CombinedKill.min.js" />
     <Content Include="TestData\Dll\Expected\AjaxMinTask\file1.min.js" />
     <Content Include="TestData\Dll\Expected\AjaxMinTask\file2.min.js" />
     <Content Include="TestData\Dll\Expected\AjaxMinTask\test1.min.css" />

@@ -935,6 +935,13 @@ namespace Microsoft.Ajax.Minifier.Tasks
             var inputBuilder = new StringBuilder();
             foreach (var itemSpec in this.JsSourceFiles)
             {
+                // if the term-semicolons switch is set, separate each input file with
+                // a semicolon to terminate the previous statement
+                if (m_switchParser.JSSettings.TermSemicolons)
+                {
+                    inputBuilder.Append(';');
+                }
+
                 inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
                 inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
             }
