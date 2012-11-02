@@ -1712,20 +1712,15 @@ namespace Microsoft.Ajax.Utilities
                             numericText = constantWrapper.Context.Code;
                         }
 
-                        // if there is no period in the number, we need to wrap it in parens
-                        // if it isn't already
+                        // if there is no decimal point in the number, we need to add one at the end
+                        // so the member-dot operator doesn't get mistaken for the decimal point and
+                        // generate a syntax error
+                        Output(numericText);
                         if (numericText.IndexOf('.') < 0
                             && !numericText.StartsWith("(", StringComparison.Ordinal))
                         {
-                            // no period - wrap it in parent
-                            OutputPossibleLineBreak('(');
-                            Output(numericText);
-                            Output(')');
-                        }
-                        else
-                        {
-                            // contains a period -- safe to output directly
-                            Output(numericText);
+                            // no decimal point - make sure to add one
+                            Output('.');
                         }
                     }
                     else
