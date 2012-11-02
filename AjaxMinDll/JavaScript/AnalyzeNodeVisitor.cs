@@ -160,7 +160,8 @@ namespace Microsoft.Ajax.Utilities
             //      4) expr1;return expr2    ==> return expr1,expr2
             //      5) expr1;if(cond)...     ==> if(expr1,cond)...
             //      6) expr1;while(cond)...  ==> for(expr;cond;)...
-            //      7) lookup[ASSIGN]expr1;lookup[OP]=expr2;   ==> lookup[ASSIGN]expr1[OP]expr2
+            //      7) lookup=expr1;lookup[OP]=expr2;   ==> lookup=expr1[OP]expr2
+            //      8) lookup[OP1]=expr1;lookup[OP2]=expr2  ==> lookup=(lookup[OP1]expr1)[OP2]expr2
             for (var ndx = node.Count - 1; ndx > 0; --ndx)
             {
                 // we may have deleted more than 1 statement, in which case we need to loop around
@@ -190,24 +191,38 @@ namespace Microsoft.Ajax.Utilities
                             && (lookup = curBinary.Operand1 as Lookup) != null
                             && prevBinary.Operand1.IsEquivalentTo(curBinary.Operand1))
                         {
-                            // transform: lookup[ASSIGN]expr1;lookup[OP]=expr2  ==> lookup[ASSIGN]expr1[OP]expr2
-                            var binOp = new BinaryOperator(prevBinary.Operand2.Context.Clone().CombineWith(curBinary.Operand2.Context), prevBinary.Parser)
-                                {
-                                    Operand1 = prevBinary.Operand2,
-                                    Operand2 = curBinary.Operand2,
-                                    OperatorToken = JSScanner.StripAssignment(curBinary.OperatorToken),
-                                    OperatorContext = curBinary.OperatorContext
-                                };
-                            prevBinary.Operand2 = binOp;
-
-                            // we are removing the second lookup, so clean up the reference on the field
-                            if (lookup.VariableField != null)
+                            if (prevBinary.OperatorToken == JSToken.Assign)
                             {
-                                lookup.VariableField.References.Remove(lookup);
-                            }
+                                // transform: lookup=expr1;lookup[OP]=expr2;  ==>  lookup=expr1[OP]expr2
+                                var binOp = new BinaryOperator(prevBinary.Operand2.Context.Clone().CombineWith(curBinary.Operand2.Context), prevBinary.Parser)
+                                    {
+                                        Operand1 = prevBinary.Operand2,
+                                        Operand2 = curBinary.Operand2,
+                                        OperatorToken = JSScanner.StripAssignment(curBinary.OperatorToken),
+                                        OperatorContext = curBinary.OperatorContext
+                                    };
+                                prevBinary.Operand2 = binOp;
 
-                            // and remove the current assignment expression (everything was combined into the previous)
-                            node[ndx] = null;
+                                // we are removing the second lookup, so clean up the reference on the field
+                                if (lookup.VariableField != null)
+                                {
+                                    lookup.VariableField.References.Remove(lookup);
+                                }
+
+                                // and remove the current assignment expression (everything was combined into the previous)
+                                node[ndx] = null;
+                            }
+                            else
+                            {
+                                // there's lots of ins-and-outs in terms of strings versus numerics versus precedence and all 
+                                // sorts of stuff. I need to iron this out a little better, but until then, just combine with a comma.
+                                // transform: expr1;expr2  ==>  expr1,expr2
+                                var binOp = CommaOperator.CombineWithComma(prevBinary.Context.Clone().CombineWith(curBinary.Context), m_parser, prevBinary, curBinary);
+
+                                // replace the previous node and delete the current
+                                node[ndx - 1] = binOp;
+                                node[ndx] = null;
+                            }
                         }
                         else
                         {

@@ -3049,6 +3049,11 @@ namespace Microsoft.Ajax.Utilities
             return op == null || op.Token == JSToken.None ? OperatorPrecedence.None : JSScanner.s_OperatorsPrec[op.Token - JSToken.FirstBinaryOperator];
         }
 
+        internal static OperatorPrecedence GetOperatorPrecedence(JSToken op)
+        {
+            return JSScanner.s_OperatorsPrec[op - JSToken.FirstBinaryOperator];
+        }
+
         private static OperatorPrecedence[] InitOperatorsPrec()
         {
             OperatorPrecedence[] operatorsPrec = new OperatorPrecedence[JSToken.LastOperator - JSToken.FirstBinaryOperator + 1];
