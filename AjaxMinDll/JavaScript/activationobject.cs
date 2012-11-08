@@ -418,6 +418,7 @@ namespace Microsoft.Ajax.Utilities
                                     // (meaning the lookup is in the same scope as the declaration), and the
                                     // lookup is after the declaration
                                     if (!reference.IsAssignment 
+                                        && reference.VariableField != null
                                         && reference.VariableField.OuterField == null
                                         && reference.VariableField.CanCrunch
                                         && varDecl.Index < reference.Index)

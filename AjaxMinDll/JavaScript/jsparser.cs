@@ -118,9 +118,6 @@ namespace Microsoft.Ajax.Utilities
                 string errorCode = "JS{0}".FormatInvariant((int)se.ErrorCode);
                 if (m_settings != null && !m_settings.IgnoreErrorCollection.Contains(errorCode))
                 {
-                    // get the offending line
-                    string line = se.LineText;
-
                     // get the offending context
                     string context = se.ErrorSegment;
 
