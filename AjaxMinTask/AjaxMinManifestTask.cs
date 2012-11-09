@@ -74,205 +74,208 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         public override bool Execute()
         {
-            // create the project default settings
-            var projectDefaultSettings = new SwitchParser();
-            projectDefaultSettings.Parse(ProjectDefaultSwitches);
-
-            // each task item represents an ajaxmin manifest file: an XML file that
-            // has settings and one or more output files, each comprised of one or more
-            // input files. To execute this process, we will read the XML manifest and
-            // execute AjaxMin for each output group.
-            // won't bother executing AjaxMin is the file time for the output file
-            // is greater than all its inputs.
-            foreach (var taskItem in Manifests)
+            if (Manifests != null && Manifests.Length > 0)
             {
-                // save the manifest folder - paths within the manifest will be relative to it
-                // if there are no InputFolder or OutputFolder values
-                var manifestFolder = Path.GetDirectoryName(taskItem.ItemSpec);
+                // create the project default settings
+                var projectDefaultSettings = new SwitchParser();
+                projectDefaultSettings.Parse(ProjectDefaultSwitches);
 
-                // process the XML file into objects
-                Manifest manifest = null;
-                var fileReader = new StreamReader(taskItem.ItemSpec);
-                try
+                // each task item represents an ajaxmin manifest file: an XML file that
+                // has settings and one or more output files, each comprised of one or more
+                // input files. To execute this process, we will read the XML manifest and
+                // execute AjaxMin for each output group.
+                // won't bother executing AjaxMin is the file time for the output file
+                // is greater than all its inputs.
+                foreach (var taskItem in Manifests)
                 {
-                    using (var reader = XmlReader.Create(fileReader))
+                    // save the manifest folder - paths within the manifest will be relative to it
+                    // if there are no InputFolder or OutputFolder values
+                    var manifestFolder = Path.GetDirectoryName(taskItem.ItemSpec);
+
+                    // process the XML file into objects
+                    Manifest manifest = null;
+                    var fileReader = new StreamReader(taskItem.ItemSpec);
+                    try
                     {
-                        fileReader = null;
-                        manifest = ManifestFactory.Create(reader);
-                    }
-                }
-                finally
-                {
-                    if (fileReader != null)
-                    {
-                        fileReader.Close();
-                        fileReader = null;
-                    }
-                }
-
-                // create the default settings for this configuration, if there are any, based on
-                // the project default settings.
-                var defaultSettings = ParseConfigSettings(manifest.DefaultArguments, projectDefaultSettings);
-
-                // for each output group
-                foreach (var outputGroup in manifest.Outputs)
-                {
-                    var processGroup = false;
-                    var codeType = outputGroup.CodeType;
-
-                    // get the full path and check for existence
-                    var  outputFileInfo = new FileInfo(GetRootedOutput(outputGroup.Path, manifestFolder));
-
-                    // the symbol map is an OPTIONAL output, so if we don't want one, we ignore it.
-                    // but if we do, we need to check for its existence and filetimes, just like 
-                    // the regular output file
-                    FileInfo symbolsFileInfo = null;
-                    if (outputGroup.SymbolMap != null)
-                    {
-                        // if we specified the path, use it. Otherwise just use the output path with
-                        // ".map" appended to the end. Eg: output.js => output.js.map
-                        var symbolMapPath = outputGroup.SymbolMap.Path.IsNullOrWhiteSpace()
-                            ? outputGroup.Path + ".map"
-                            : outputGroup.SymbolMap.Path;
-
-                        symbolsFileInfo = new FileInfo(GetRootedOutput(symbolMapPath, manifestFolder));
-                    }
-
-                    if (!outputFileInfo.Exists
-                        || (symbolsFileInfo != null && !symbolsFileInfo.Exists))
-                    {
-                        // one or more outputs don't exist, so we need to process this group
-                        processGroup = true;
-                    }
-                    else
-                    {
-                        // output exists. we need to check to see if it's older than
-                        // any of its input files, and if not, there's no need to process
-                        // this group. get the filetime of the output file.
-                        var outputFileTime = outputFileInfo.LastWriteTimeUtc;
-
-                        // if we don't want a symbol map, then ignore that output. But if we
-                        // do and it doesn't exist, then we want to process the group. If we
-                        // do and it does, then check its filetime and set out output filetime
-                        // to be the earliest of the two (output or symbols)
-                        if (symbolsFileInfo != null)
+                        using (var reader = XmlReader.Create(fileReader))
                         {
-                            var symbolsFileTime = symbolsFileInfo.LastWriteTimeUtc;
-                            if (symbolsFileTime < outputFileTime)
-                            {
-                                outputFileTime = symbolsFileTime;
-                            }
+                            fileReader = null;
+                            manifest = ManifestFactory.Create(reader);
+                        }
+                    }
+                    finally
+                    {
+                        if (fileReader != null)
+                        {
+                            fileReader.Close();
+                            fileReader = null;
+                        }
+                    }
+
+                    // create the default settings for this configuration, if there are any, based on
+                    // the project default settings.
+                    var defaultSettings = ParseConfigSettings(manifest.DefaultArguments, projectDefaultSettings);
+
+                    // for each output group
+                    foreach (var outputGroup in manifest.Outputs)
+                    {
+                        var processGroup = false;
+                        var codeType = outputGroup.CodeType;
+
+                        // get the full path and check for existence
+                        var outputFileInfo = new FileInfo(GetRootedOutput(outputGroup.Path, manifestFolder));
+
+                        // the symbol map is an OPTIONAL output, so if we don't want one, we ignore it.
+                        // but if we do, we need to check for its existence and filetimes, just like 
+                        // the regular output file
+                        FileInfo symbolsFileInfo = null;
+                        if (outputGroup.SymbolMap != null)
+                        {
+                            // if we specified the path, use it. Otherwise just use the output path with
+                            // ".map" appended to the end. Eg: output.js => output.js.map
+                            var symbolMapPath = outputGroup.SymbolMap.Path.IsNullOrWhiteSpace()
+                                ? outputGroup.Path + ".map"
+                                : outputGroup.SymbolMap.Path;
+
+                            symbolsFileInfo = new FileInfo(GetRootedOutput(symbolMapPath, manifestFolder));
                         }
 
-                        // check filetime of each input file, and if ANY one is newer, 
-                        // then we will want to set the process-group flag and stop checking
-                        foreach (var input in outputGroup.Inputs)
+                        if (!outputFileInfo.Exists
+                            || (symbolsFileInfo != null && !symbolsFileInfo.Exists))
                         {
-                            var fileInfo = new FileInfo(GetRootedInput(input.Path, manifestFolder));
-                            if (fileInfo.Exists)
+                            // one or more outputs don't exist, so we need to process this group
+                            processGroup = true;
+                        }
+                        else
+                        {
+                            // output exists. we need to check to see if it's older than
+                            // any of its input files, and if not, there's no need to process
+                            // this group. get the filetime of the output file.
+                            var outputFileTime = outputFileInfo.LastWriteTimeUtc;
+
+                            // if we don't want a symbol map, then ignore that output. But if we
+                            // do and it doesn't exist, then we want to process the group. If we
+                            // do and it does, then check its filetime and set out output filetime
+                            // to be the earliest of the two (output or symbols)
+                            if (symbolsFileInfo != null)
                             {
-                                if (fileInfo.LastWriteTimeUtc > outputFileTime)
+                                var symbolsFileTime = symbolsFileInfo.LastWriteTimeUtc;
+                                if (symbolsFileTime < outputFileTime)
                                 {
-                                    processGroup = true;
-                                    break;
+                                    outputFileTime = symbolsFileTime;
                                 }
                             }
-                            else
+
+                            // check filetime of each input file, and if ANY one is newer, 
+                            // then we will want to set the process-group flag and stop checking
+                            foreach (var input in outputGroup.Inputs)
                             {
-                                // file doesn't exist -- check to see if it's a directory
-                                var folderInfo = new DirectoryInfo(fileInfo.FullName);
-                                if (folderInfo.Exists)
+                                var fileInfo = new FileInfo(GetRootedInput(input.Path, manifestFolder));
+                                if (fileInfo.Exists)
                                 {
-                                    // not a FILE, it's a FOLDER of files.
-                                    // in order to specify an input folder, we need to have had the right type attribute
-                                    // on the output group so we know what kind of files to look for
-                                    if (codeType == CodeType.Unknown)
+                                    if (fileInfo.LastWriteTimeUtc > outputFileTime)
                                     {
-                                        Log.LogError(Strings.DirectorySourceRequiresCodeType);
+                                        processGroup = true;
+                                        break;
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    // file doesn't exist -- check to see if it's a directory
+                                    var folderInfo = new DirectoryInfo(fileInfo.FullName);
+                                    if (folderInfo.Exists)
                                     {
-                                        // recursively check all the files in the folder with the proper extension for the code type.
-                                        // if anything pops positive, we know we want to process the group so bail early.
-                                        processGroup = CheckFolderInputFileTimes(folderInfo, ExtensionsFromCodeType(codeType), outputFileTime);
-                                        if (processGroup)
+                                        // not a FILE, it's a FOLDER of files.
+                                        // in order to specify an input folder, we need to have had the right type attribute
+                                        // on the output group so we know what kind of files to look for
+                                        if (codeType == CodeType.Unknown)
                                         {
-                                            break;
+                                            Log.LogError(Strings.DirectorySourceRequiresCodeType);
+                                        }
+                                        else
+                                        {
+                                            // recursively check all the files in the folder with the proper extension for the code type.
+                                            // if anything pops positive, we know we want to process the group so bail early.
+                                            processGroup = CheckFolderInputFileTimes(folderInfo, ExtensionsFromCodeType(codeType), outputFileTime);
+                                            if (processGroup)
+                                            {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // do the same to any resource file, there are any (and we don't already know we
-                        // want to process this group)
-                        if (!processGroup && outputGroup.Resources.Count > 0)
-                        {
-                            foreach (var resource in outputGroup.Resources)
+                            // do the same to any resource file, there are any (and we don't already know we
+                            // want to process this group)
+                            if (!processGroup && outputGroup.Resources.Count > 0)
                             {
-                                var fileInfo = new FileInfo(GetRootedInput(resource.Path, manifestFolder));
-                                if (fileInfo.Exists && fileInfo.LastWriteTimeUtc > outputFileTime)
+                                foreach (var resource in outputGroup.Resources)
                                 {
-                                    processGroup = true;
-                                    break;
+                                    var fileInfo = new FileInfo(GetRootedInput(resource.Path, manifestFolder));
+                                    if (fileInfo.Exists && fileInfo.LastWriteTimeUtc > outputFileTime)
+                                    {
+                                        processGroup = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // we will process this group if the output doesn't exist
-                    // or if any of the inputs are newer than the output
-                    if (processGroup)
-                    {
-                        // get the settings to use -- take the configuration for this output group
-                        // and apply them over the default settings
-                        var settings = ParseConfigSettings(outputGroup.Arguments, defaultSettings);
-
-                        // create combined input source
-                        var inputCode = CombineInputs(outputGroup.Inputs, manifestFolder, settings.EncodingInputName, ref codeType);
-                        if (inputCode.Length > 0)
+                        // we will process this group if the output doesn't exist
+                        // or if any of the inputs are newer than the output
+                        if (processGroup)
                         {
-                            switch (codeType)
+                            // get the settings to use -- take the configuration for this output group
+                            // and apply them over the default settings
+                            var settings = ParseConfigSettings(outputGroup.Arguments, defaultSettings);
+
+                            // create combined input source
+                            var inputCode = CombineInputs(outputGroup.Inputs, manifestFolder, settings.EncodingInputName, ref codeType);
+                            if (inputCode.Length > 0)
                             {
-                                case CodeType.JavaScript:
-                                    ProcessJavaScript(
-                                        inputCode,
-                                        manifestFolder,
-                                        settings.JSSettings,
-                                        outputFileInfo.FullName,
-                                        outputGroup.SymbolMap,
-                                        outputGroup.Resources,
-                                        GetJavaScriptEncoding(outputGroup.EncodingName ?? settings.EncodingOutputName));
-                                    break;
+                                switch (codeType)
+                                {
+                                    case CodeType.JavaScript:
+                                        ProcessJavaScript(
+                                            inputCode,
+                                            manifestFolder,
+                                            settings.JSSettings,
+                                            outputFileInfo.FullName,
+                                            outputGroup.SymbolMap,
+                                            outputGroup.Resources,
+                                            GetJavaScriptEncoding(outputGroup.EncodingName ?? settings.EncodingOutputName));
+                                        break;
 
-                                case CodeType.StyleSheet:
-                                    ProcessStylesheet(
-                                        inputCode,
-                                        manifestFolder,
-                                        settings.CssSettings,
-                                        settings.JSSettings,
-                                        outputFileInfo.FullName,
-                                        GetStylesheetEncoding(outputGroup.EncodingName ?? settings.EncodingOutputName));
-                                    break;
+                                    case CodeType.StyleSheet:
+                                        ProcessStylesheet(
+                                            inputCode,
+                                            manifestFolder,
+                                            settings.CssSettings,
+                                            settings.JSSettings,
+                                            outputFileInfo.FullName,
+                                            GetStylesheetEncoding(outputGroup.EncodingName ?? settings.EncodingOutputName));
+                                        break;
 
-                                case CodeType.Unknown:
-                                    Log.LogError(Strings.UnknownCodeType);
-                                    break;
+                                    case CodeType.Unknown:
+                                        Log.LogError(Strings.UnknownCodeType);
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                // no input! write an empty output file
+                                using (var stream = outputFileInfo.Create())
+                                {
+                                    // write nothing; just create the empty file
+                                }
                             }
                         }
                         else
                         {
-                            // no input! write an empty output file
-                            using (var stream = outputFileInfo.Create())
-                            {
-                                // write nothing; just create the empty file
-                            }
+                            // none of the inputs are newer than the output -- we're good.
+                            Log.LogMessage(Strings.SkippedOutputFile, outputFileInfo.Name);
                         }
-                    }
-                    else
-                    {
-                        // none of the inputs are newer than the output -- we're good.
-                        Log.LogMessage(Strings.SkippedOutputFile, outputFileInfo.Name);
                     }
                 }
             }
