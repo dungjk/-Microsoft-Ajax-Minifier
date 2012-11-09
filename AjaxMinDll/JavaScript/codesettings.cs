@@ -1238,5 +1238,11 @@ namespace Microsoft.Ajax.Utilities
         /// Whether to convert [a,b,c].join(s) to "asbsc" if all items are constants.
         /// </summary>
         EvaluateLiteralJoins                        = 0x0001000000000000,
+
+        /// <summary>
+        /// Whether we should remove unused variable, or variables assigned a constant in their
+        /// initializer and referenced only once.
+        /// </summary>
+        RemoveUnunsedVariables                      = 0x0002000000000000,
     }
 }

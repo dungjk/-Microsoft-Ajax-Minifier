@@ -336,7 +336,6 @@ namespace Microsoft.Ajax.Utilities
                             // initializer or the initializer is constant, get rid of it. 
                             // (unless we aren't removing unneeded code, or the scope is unknown)
                             if (variableField.Declarations.Count == 1
-                                && m_settings.RemoveUnneededCode
                                 && this.IsKnownAtCompileTime)
                             {
                                 var varDecl = variableField.OnlyDeclaration as VariableDeclaration;
@@ -358,7 +357,8 @@ namespace Microsoft.Ajax.Utilities
                                             // a function.
                                             throwWarning = false;
                                         }
-                                        else
+                                        else if (m_settings.RemoveUnneededCode
+                                            && m_settings.IsModificationAllowed(TreeModifications.RemoveUnunsedVariables))
                                         {
                                             variableField.Declarations.Remove(varDecl);
 
@@ -395,7 +395,10 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
                     }
-                    else if (variableField.RefCount == 1 && this.IsKnownAtCompileTime)
+                    else if (variableField.RefCount == 1 
+                        && this.IsKnownAtCompileTime
+                        && m_settings.RemoveUnneededCode
+                        && m_settings.IsModificationAllowed(TreeModifications.RemoveUnunsedVariables))
                     {
                         // local fields that don't reference an outer field, have only one refcount
                         // and one declaration
@@ -436,26 +439,16 @@ namespace Microsoft.Ajax.Utilities
                                             var refNode = reference as AstNode;
                                             refNode.Parent.ReplaceChild(refNode, varDecl.Initializer);
 
-                                            if (m_settings.RemoveUnneededCode)
-                                            {
-                                                // we're also going to remove the declaration itself
-                                                variableField.Declarations.Remove(varDecl);
-                                                variableField.WasRemoved = true;
+                                            // we're also going to remove the declaration itself
+                                            variableField.Declarations.Remove(varDecl);
+                                            variableField.WasRemoved = true;
 
-                                                // remove the vardecl from the declaration list
-                                                // and if the declaration is now empty, remove it, too
-                                                declaration.Remove(varDecl);
-                                                if (declaration.Count == 0)
-                                                {
-                                                    declaration.Parent.ReplaceChild(declaration, null);
-                                                }
-                                            }
-                                            else
+                                            // remove the vardecl from the declaration list
+                                            // and if the declaration is now empty, remove it, too
+                                            declaration.Remove(varDecl);
+                                            if (declaration.Count == 0)
                                             {
-                                                // don't want to remove the declaration for whatever reason. But we are
-                                                // moving the constant and replacing the reference with it. So just
-                                                // remove the initializer on the decl.
-                                                varDecl.Initializer = null;
+                                                declaration.Parent.ReplaceChild(declaration, null);
                                             }
                                         }
                                     }

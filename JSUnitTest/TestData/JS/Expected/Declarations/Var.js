@@ -1,1 +1,1 @@
-function Func(p1){var index,name,answer,counter,numpages=10,\u4f60\u597d="hello",x=index*42,y}
+function Func(){var index,x=index*42}

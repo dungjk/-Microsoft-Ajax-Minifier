@@ -241,6 +241,7 @@
     <Content Include="TestData\JS\Expected\Declarations\New.js" />
     <Content Include="TestData\JS\Expected\Declarations\This.js" />
     <Content Include="TestData\JS\Expected\Declarations\Var.js" />
+    <Content Include="TestData\JS\Expected\Declarations\Var_keep.js" />
     <Content Include="TestData\JS\Expected\Declarations\With.js" />
     <Content Include="TestData\JS\Expected\Declarations\With_H.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\Arguments.js" />
