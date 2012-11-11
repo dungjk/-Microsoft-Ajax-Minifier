@@ -435,10 +435,8 @@ namespace Microsoft.Ajax.Utilities
                     {
                         if (prevStatement != null && prevStatement.RequiresSeparator)
                         {
-                            if (ReplaceableSemicolon())
-                            {
-                                MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
-                            }
+                            OutputPossibleLineBreak(';');
+                            MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
                         }
 
                         if (!(statement is DirectivePrologue))
@@ -670,10 +668,8 @@ namespace Microsoft.Ajax.Utilities
                         {
                             if (prevStatement != null && prevStatement.RequiresSeparator)
                             {
-                                if (ReplaceableSemicolon())
-                                {
-                                    MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
-                                }
+                                OutputPossibleLineBreak(';');
+                                MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
                             }
 
                             NewLine();
@@ -1104,6 +1100,9 @@ namespace Microsoft.Ajax.Utilities
 
                     if (node.Body[0].RequiresSeparator)
                     {
+                        // because the next thing we are going to output is a while keyword, if the
+                        // semicolon would be at the end of a line, we can skip it and just let the
+                        // end of line trigger the semicolon-insertion rules.
                         if (ReplaceableSemicolon())
                         {
                             MarkSegment(node.Body[0], null, node.Body[0].TerminatingContext);
@@ -1443,7 +1442,10 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // we have only one statement, we did not wrap it in braces,
                         // and we have an else-block, and the one true-statement needs
-                        // a semicolon; add it now
+                        // a semicolon; add it now. But because we're going to be outputting
+                        // and ELSE keyword next, if we are at the end of a line, we can omit the
+                        // semicolon and just output the line-break, because semicolon-insertion
+                        // rules will kick in here.
                         if (ReplaceableSemicolon())
                         {
                             MarkSegment(node.TrueBlock[0], null, node.TrueBlock[0].TerminatingContext);
@@ -1987,6 +1989,10 @@ namespace Microsoft.Ajax.Utilities
                     {
                         if (prevSwitchCase != null && prevSwitchCase.RequiresSeparator)
                         {
+                            // because the next switch-case will always start with either the case or default
+                            // keyword, if the semicolon we are about the output would be at the end of a newline,
+                            // we can omit the semicolon altogether and just let the semicolon-insertion rules
+                            // kick in.
                             if (ReplaceableSemicolon())
                             {
                                 MarkSegment(prevSwitchCase, null, prevSwitchCase.TerminatingContext);
@@ -2041,10 +2047,8 @@ namespace Microsoft.Ajax.Utilities
                         {
                             if (prevStatement != null && prevStatement.RequiresSeparator)
                             {
-                                if (ReplaceableSemicolon())
-                                {
-                                    MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
-                                }
+                                OutputPossibleLineBreak(';');
+                                MarkSegment(prevStatement, null, prevStatement.TerminatingContext);
                             }
 
                             NewLine();

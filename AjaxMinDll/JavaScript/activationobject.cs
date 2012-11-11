@@ -358,7 +358,7 @@ namespace Microsoft.Ajax.Utilities
                                             throwWarning = false;
                                         }
                                         else if (m_settings.RemoveUnneededCode
-                                            && m_settings.IsModificationAllowed(TreeModifications.RemoveUnunsedVariables))
+                                            && m_settings.IsModificationAllowed(TreeModifications.RemoveUnusedVariables))
                                         {
                                             variableField.Declarations.Remove(varDecl);
 
@@ -398,7 +398,7 @@ namespace Microsoft.Ajax.Utilities
                     else if (variableField.RefCount == 1 
                         && this.IsKnownAtCompileTime
                         && m_settings.RemoveUnneededCode
-                        && m_settings.IsModificationAllowed(TreeModifications.RemoveUnunsedVariables))
+                        && m_settings.IsModificationAllowed(TreeModifications.RemoveUnusedVariables))
                     {
                         // local fields that don't reference an outer field, have only one refcount
                         // and one declaration

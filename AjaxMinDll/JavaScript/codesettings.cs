@@ -1243,6 +1243,6 @@ namespace Microsoft.Ajax.Utilities
         /// Whether we should remove unused variable, or variables assigned a constant in their
         /// initializer and referenced only once.
         /// </summary>
-        RemoveUnunsedVariables                      = 0x0002000000000000,
+        RemoveUnusedVariables                       = 0x0002000000000000,
     }
 }
