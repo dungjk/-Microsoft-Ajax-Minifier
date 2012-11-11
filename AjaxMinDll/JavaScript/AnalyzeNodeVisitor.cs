@@ -920,6 +920,11 @@ namespace Microsoft.Ajax.Utilities
                                 && varDecl.IsEquivalentTo(lookup)
                                 && varDecl.VariableField.RefCount == 1)
                             {
+                                // clean up the field's references because we're removing both the lookup reference
+                                // in the return statement and the vardecl.
+                                varDecl.VariableField.References.Remove(lookup);
+                                varDecl.VariableField.Declarations.Remove(varDecl);
+
                                 if (varStatement.Count == 1)
                                 {
                                     // transform: ...;var name=expr;return name} to ...;return expr}

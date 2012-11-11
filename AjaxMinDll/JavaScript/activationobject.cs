@@ -437,7 +437,7 @@ namespace Microsoft.Ajax.Utilities
                                             // replace the reference with the constant
                                             variableField.References.Remove(reference);
                                             var refNode = reference as AstNode;
-                                            refNode.Parent.ReplaceChild(refNode, varDecl.Initializer);
+                                            refNode.Parent.IfNotNull(p => p.ReplaceChild(refNode, varDecl.Initializer));
 
                                             // we're also going to remove the declaration itself
                                             variableField.Declarations.Remove(varDecl);
@@ -448,7 +448,7 @@ namespace Microsoft.Ajax.Utilities
                                             declaration.Remove(varDecl);
                                             if (declaration.Count == 0)
                                             {
-                                                declaration.Parent.ReplaceChild(declaration, null);
+                                                declaration.Parent.IfNotNull(p => p.ReplaceChild(declaration, null));
                                             }
                                         }
                                     }

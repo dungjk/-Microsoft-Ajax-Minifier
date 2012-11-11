@@ -51,3 +51,17 @@ function test2(a,b)
     var c = a + b;
     return c;
 }
+
+// the var isn't constant, but it's an expression that can be
+// moved into the return operand. make sure the declarations and 
+// references are cleaned up for the scope field
+var foo = {
+        bar: function(bat) {
+            var ack = {
+                first: bat.childNodes[0],
+                firstName: bat.childNodes[0].nodeName
+            };
+
+            return ack;
+        },
+};
