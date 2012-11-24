@@ -256,7 +256,9 @@ namespace Microsoft.Ajax.Utilities
                                     if (beforeExpr.OperatorToken == JSToken.Assign)
                                     {
                                         // check to see if lookup is in the current scope from which we are returning
-                                        if (lookup.VariableField == null || lookup.VariableField.OuterField != null)
+                                        if (lookup.VariableField == null 
+                                            || lookup.VariableField.OuterField != null
+                                            || lookup.VariableField.IsReferencedInnerScope)
                                         {
                                             // transform: lookup[ASSIGN]expr2;return lookup => return lookup[ASSIGN]expr2
                                             // lookup points to outer field (or we don't know)
@@ -337,8 +339,10 @@ namespace Microsoft.Ajax.Utilities
                                         node.RemoveAt(ndx - 1);
                                         returnNode.Operand = beforeExpr;
 
-                                        // is this field scoped to this function?
-                                        if (lookup.VariableField != null && lookup.VariableField.OuterField == null)
+                                        // is this field scoped only to this function?
+                                        if (lookup.VariableField != null 
+                                            && lookup.VariableField.OuterField == null
+                                            && !lookup.VariableField.IsReferencedInnerScope)
                                         {
                                             // in fact, the lookup is in the current scope, so assigning to it is a waste
                                             // because we're going to return (this is a return statement, after all).
@@ -374,8 +378,10 @@ namespace Microsoft.Ajax.Utilities
                                         node.RemoveAt(ndx - 1);
                                         leftMostOperand.Parent.ReplaceChild(leftMostOperand, beforeExpr);
 
-                                        // is this field scoped to this function?
-                                        if (lookup.VariableField != null && lookup.VariableField.OuterField == null)
+                                        // is this field scoped only to this function?
+                                        if (lookup.VariableField != null 
+                                            && lookup.VariableField.OuterField == null
+                                            && !lookup.VariableField.IsReferencedInnerScope)
                                         {
                                             // in fact, the lookup is in the current scope, so assigning to it is a waste
                                             // because we're just going to return anyway.
@@ -2779,7 +2785,8 @@ namespace Microsoft.Ajax.Utilities
                         && lookup.VariableField != null
                         && lookup.VariableField.OuterField == null
                         && (binaryOp = lookup.Parent as BinaryOperator) != null
-                        && binaryOp.IsAssign)
+                        && binaryOp.IsAssign
+                        && !lookup.VariableField.IsReferencedInnerScope)
                     {
                         if (binaryOp.OperatorToken != JSToken.Assign)
                         {

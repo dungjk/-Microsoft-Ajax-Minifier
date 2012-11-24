@@ -244,6 +244,31 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether this field is ever referenced in a scope
+        /// other than the one in which it is defined
+        /// </summary>
+        public bool IsReferencedInnerScope
+        {
+            get
+            {
+                // walk the list of references for this field. If any of them
+                // have an outer-field reference, then the reference is an inner reference
+                // and we can return true.
+                foreach (var reference in this.References)
+                {
+                    if (reference.VariableField.OuterField != null)
+                    {
+                        return true;
+                    }
+                }
+
+                // if we get here, all the references (if any) are from within
+                // the same scope as it is defined.
+                return false;
+            }
+        }
+
         public JSVariableField(FieldType fieldType, string name, FieldAttributes fieldAttributes, object value)
         {
             m_referenceTable = new HashSet<INameReference>();

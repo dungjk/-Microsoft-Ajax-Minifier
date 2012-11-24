@@ -65,3 +65,17 @@ var foo = {
             return ack;
         },
 };
+
+// the var is referenced elsewhere in another scope, so donʻt removethe assgnment
+function test3(bar)
+{
+    var foo;
+    var img = new Image;
+    img.onload = function()
+    {
+        alert(foo);
+    };
+
+    img.src = bar;
+    return foo = img.src;
+}
