@@ -287,6 +287,24 @@ namespace Microsoft.Ajax.Minifier.Tasks
             set { this.m_symbolsMapName = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the source map root URI for any relative source file paths specified in the generated source map.
+        /// </summary>
+        public string SourceMapRoot
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a flag indicating whether the source map should output an an extra "safe" header string
+        /// </summary>
+        public bool SourceMapSafeHeader
+        {
+            get;
+            set;
+        }
+
         #endregion
 
         #region JavaScript parameters
@@ -858,8 +876,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                             // start the package off
                             m_switchParser.JSSettings.SymbolsMap = sourceMap;
-                            sourceMap.StartPackage(outputPath, mapFilePath);
 
+                            // set some properties used by the V3 implementation
+                            sourceMap.SourceRoot = this.SourceMapRoot;
+                            sourceMap.SafeHeader = this.SourceMapSafeHeader;
+                            sourceMap.StartPackage(outputPath, mapFilePath);
                         }
                     }
                     else

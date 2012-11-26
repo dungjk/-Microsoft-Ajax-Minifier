@@ -122,13 +122,13 @@
     <Content Include="TestData\Dll\Input\ManifestTask\manifest.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AjaxMinDll\AjaxMinDll.csproj">
+      <Project>{DFDB930E-1162-4514-A91D-C8595A807F13}</Project>
+      <Name>AjaxMinDll</Name>
+    </ProjectReference>
     <ProjectReference Include="..\AjaxMinTask\AjaxMinTask.csproj">
       <Project>{0C7BC471-4112-43CA-89AA-B7EBDB5689C1}</Project>
       <Name>AjaxMinTask</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\AjaxMin\AjaxMin.csproj">
-      <Project>{5A0F7031-4728-4E10-BD0C-E07EDDBF5963}</Project>
-      <Name>AjaxMin</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

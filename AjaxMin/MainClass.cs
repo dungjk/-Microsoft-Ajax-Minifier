@@ -128,6 +128,17 @@ namespace Microsoft.Ajax.Utilities
         private string m_symbolsMapFile;
 
         /// <summary>
+        /// An optional symbols map root URI, used by some source map implementations (eg: V3)
+        /// </summary>
+        private string m_symbolsMapRoot;
+
+        /// <summary>
+        /// An optional flag to indicate whether or not we want the source map implementation (eg: V3)
+        /// to add any extra header information to make the map "safe" from a security standpoint.
+        /// </summary>
+        private bool m_symbolsMapSafeHeader;
+
+        /// <summary>
         /// Name of the symbols map implementation to use (if any)
         /// </summary>
         private string m_symbolsMapName;
@@ -431,6 +442,37 @@ namespace Microsoft.Ajax.Utilities
                         if (!ea.ParameterPart.IsNullOrWhiteSpace())
                         {
                             m_symbolsMapName = ea.ParameterPart;
+                        }
+                        break;
+
+                    case "MAPROOT":
+                        if (ea.Index >= ea.Arguments.Count - 1)
+                        {
+                            throw new UsageException(m_outputMode, AjaxMin.MapArgNeedsPath);
+                        }
+
+                        m_symbolsMapRoot = ea.Arguments[++ea.Index];
+                        break;
+
+                    case "MAPSAFE":
+                        if (ea.ParameterPart == null)
+                        {
+                            // default if specified is true
+                            m_symbolsMapSafeHeader = true;
+                        }
+                        else
+                        {
+                            // there is. parse the boolean flag part
+                            bool safeFlag;
+                            if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out safeFlag))
+                            {
+                                m_symbolsMapSafeHeader = safeFlag;
+                            }
+                            else
+                            {
+                                // invalid argument switch
+                                throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                            }
                         }
                         break;
 
@@ -793,6 +835,9 @@ namespace Microsoft.Ajax.Utilities
                             // set it to null so we don't double-dispose it.
                             symbolMapWriter = null;
 
+                            // set some properties used by some of the implementations
+                            sourceMap.SourceRoot = crunchGroup.SymbolMapSourceRoot ?? m_symbolsMapRoot;
+                            sourceMap.SafeHeader = crunchGroup.SymbolMapSafeHeader.GetValueOrDefault(m_symbolsMapSafeHeader);
 
                             // start off the package
                             switchParser.JSSettings.SymbolsMap = sourceMap;
@@ -1448,6 +1493,12 @@ namespace Microsoft.Ajax.Utilities
             // name of the symbol map implementation
             public string SymbolMapName { get; set; }
 
+            // optional source root to add to the map
+            public string SymbolMapSourceRoot { get; set; }
+
+            // flag to indication whether or not to add a "safe" header to the map
+            public bool? SymbolMapSafeHeader { get; set; }
+
             // optional crunch group-specific arguments
             public string Arguments { get; set; }
 
@@ -1555,7 +1606,9 @@ namespace Microsoft.Ajax.Utilities
                             InputType = (InputType)outputNode.CodeType,
                             Arguments = GetConfigArguments(outputNode.Arguments),
                             SymbolMapPath = NormalizePath(outputFolder, rootPath, outputNode.SymbolMap.IfNotNull(s => s.Path)),
-                            SymbolMapName = outputNode.SymbolMap.IfNotNull(s => s.Name)
+                            SymbolMapName = outputNode.SymbolMap.IfNotNull(s => s.Name),
+                            SymbolMapSourceRoot = outputNode.SymbolMap.IfNotNull(s => s.SourceRoot),
+                            SymbolMapSafeHeader = outputNode.SymbolMap.IfNotNull(s => s.SafeHeader)
                         };
 
                         // add resources

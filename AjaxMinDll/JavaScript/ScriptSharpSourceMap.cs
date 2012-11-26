@@ -31,6 +31,25 @@ namespace Microsoft.Ajax.Utilities
         private Dictionary<string, int> m_sourceFileIndexMap = new Dictionary<string, int>();
         private int currentIndex;
 
+        /// <summary>
+        /// Gets or sets an optional source root URI that will be added to the map object as the sourceRoot property if set
+        /// </summary>
+        public string SourceRoot
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a flag indicating whether or not to add a "safe" header to the map output file
+        /// (not used by this implementation)
+        /// </summary>
+        public bool SafeHeader
+        {
+            get;
+            set;
+        }
+
         public static string ImplementationName
         {
             get { return "XML"; }

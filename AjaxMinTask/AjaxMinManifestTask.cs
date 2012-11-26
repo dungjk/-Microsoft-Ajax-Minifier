@@ -318,13 +318,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         // if we get here, the symbol map now owns the stream and we can null it out so
                         // we don't double-close it
                         mapWriter = null;
-
                         settings.SymbolsMap = sourceMap;
+
+                        // copy some property values
+                        sourceMap.SourceRoot = symbolMap.SourceRoot.IfNullOrWhiteSpace(null);
+                        sourceMap.SafeHeader = symbolMap.SafeHeader.GetValueOrDefault(false);
 
                         // start the package
                         sourceMap.StartPackage(outputPath, mapPath);
                     }
-
                 }
 
                 // if we want to use resource strings, set them up now

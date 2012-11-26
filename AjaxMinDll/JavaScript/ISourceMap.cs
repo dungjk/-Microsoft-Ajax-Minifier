@@ -28,5 +28,7 @@ namespace Microsoft.Ajax.Utilities
         void EndSymbol(object symbol, int endLine, int endColumn, string parentContext);
         void EndFile(TextWriter writer, string newLine);
         string Name { get; }
+        string SourceRoot { get; set; }
+        bool SafeHeader { get; set; }
     }
 }

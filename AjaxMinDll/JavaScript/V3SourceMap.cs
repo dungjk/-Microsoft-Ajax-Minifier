@@ -65,6 +65,24 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
+        /// <summary>
+        /// Gets or sets an optional source root URI that will be added to the map object as the sourceRoot property if set
+        /// </summary>
+        public string SourceRoot
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a flag indicating whether or not to prepend the map file with an XSSI (cross-site script injection) protection string
+        /// </summary>
+        public bool SafeHeader
+        {
+            get;
+            set;
+        }
+
         public static string ImplementationName
         {
             get { return "V3"; }
@@ -198,6 +216,13 @@ namespace Microsoft.Ajax.Utilities
             // if we have a writer, output the JSON object now
             if (m_writer != null)
             {
+                // if we want to add the cross-site script injection protection string,
+                // do it now at the top of the file as it's own line
+                if (SafeHeader)
+                {
+                    m_writer.WriteLine(")]}'");
+                }
+
                 // start the JSON object
                 m_writer.WriteLine("{");
 
@@ -208,6 +233,12 @@ namespace Microsoft.Ajax.Utilities
                 WriteProperty("lineCount", m_maxMinifiedLine + 1);
 
                 WriteProperty("mappings", GenerateMappings(m_sourceFileList, m_nameList));
+
+                // if we have a source root, add the property now
+                if (!SourceRoot.IsNullOrWhiteSpace())
+                {
+                    WriteProperty("sourceRoot", SourceRoot);
+                }
 
                 WriteProperty("sources", m_sourceFileList);
                 WriteProperty("names", m_nameList);
