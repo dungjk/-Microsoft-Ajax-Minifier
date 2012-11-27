@@ -20,3 +20,10 @@ while(0);
 // statement block
 ({foo: 42, showMe: function() { document.write("<h1>" + this.foo + "!</h1>") } }).showMe();
 
+function resetTop(elem)
+{
+    var $elem = $(elem);
+    var prev = { marginTop: $elem.css("margin-top") };
+    $elem.css({marginTop: "auto"});
+    return prev;
+}

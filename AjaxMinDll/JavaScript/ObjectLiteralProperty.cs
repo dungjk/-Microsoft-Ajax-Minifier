@@ -52,7 +52,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we are constant if our value is constant.
                 // If we don't have a value, then assume it's constant?
-                return Value == null ? Value.IsConstant : true;
+                return Value != null ? Value.IsConstant : true;
             }
         }
 
