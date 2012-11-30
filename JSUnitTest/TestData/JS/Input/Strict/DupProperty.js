@@ -23,7 +23,7 @@ function test2()
 
 function test3()
 {
-    var bar = 42;
+    var bar = 42
 
     // can't have two sets:
     return {

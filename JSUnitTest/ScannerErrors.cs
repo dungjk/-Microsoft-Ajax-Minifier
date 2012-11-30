@@ -31,7 +31,7 @@ namespace JSUnitTest
     [TestMethod()]
     public void StringEOF()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString, JSError.SemicolonInsertion);
+      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
     }
 
     [TestMethod()]

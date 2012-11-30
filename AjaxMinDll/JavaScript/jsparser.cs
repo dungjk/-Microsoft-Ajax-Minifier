@@ -986,7 +986,10 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 // semicolon insertion rules
                                 // (if there was no statement parsed, then don't fire a warning)
-                                if (statement != null)
+                                // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                                // Just too common and doesn't really warrant a warning (in my opinion)
+                                if (statement != null
+                                    && JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
                                 {
                                     ReportError(JSError.SemicolonInsertion, statement.Context.IfNotNull(c => c.FlattenToEnd()), true);
                                 }
@@ -1236,7 +1239,12 @@ namespace Microsoft.Ajax.Utilities
             else if (m_foundEndOfLine || JSToken.RightCurly == m_currentToken.Token || JSToken.EndOfFile == m_currentToken.Token)
             {
                 // semicolon insertion rules applied
-                ReportError(JSError.SemicolonInsertion, node.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                // Just too common and doesn't really warrant a warning (in my opinion)
+                if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                {
+                    ReportError(JSError.SemicolonInsertion, node.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                }
             }
             else
             {
@@ -1352,7 +1360,13 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
                 {
-                    ReportError(JSError.SemicolonInsertion, varList.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    // semicolon insertion rules
+                    // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                    // Just too common and doesn't really warrant a warning (in my opinion)
+                    if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                    {
+                        ReportError(JSError.SemicolonInsertion, varList.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    }
                     break;
                 }
                 else
@@ -2393,7 +2407,13 @@ namespace Microsoft.Ajax.Utilities
             }
             else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
             {
-                ReportError(JSError.SemicolonInsertion, continueNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                // semicolon insertion rules
+                // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                // Just too common and doesn't really warrant a warning (in my opinion)
+                if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                {
+                    ReportError(JSError.SemicolonInsertion, continueNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                }
             }
             else
             {
@@ -2479,7 +2499,13 @@ namespace Microsoft.Ajax.Utilities
             }
             else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
             {
-                ReportError(JSError.SemicolonInsertion, breakNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                // semicolon insertion rules
+                // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                // Just too common and doesn't really warrant a warning (in my opinion)
+                if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                {
+                    ReportError(JSError.SemicolonInsertion, breakNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                }
             }
             else
             {
@@ -2557,7 +2583,13 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
                 {
-                    ReportError(JSError.SemicolonInsertion, returnNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    // semicolon insertion rules
+                    // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                    // Just too common and doesn't really warrant a warning (in my opinion)
+                    if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                    {
+                        ReportError(JSError.SemicolonInsertion, returnNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    }
                 }
                 else
                 {
@@ -3001,7 +3033,13 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (m_foundEndOfLine || m_currentToken.Token == JSToken.RightCurly || m_currentToken.Token == JSToken.EndOfFile)
                 {
-                    ReportError(JSError.SemicolonInsertion, throwNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    // semicolon insertion rules
+                    // a right-curly or an end of line is something we don't WANT to throw a warning for. 
+                    // Just too common and doesn't really warrant a warning (in my opinion)
+                    if (JSToken.RightCurly != m_currentToken.Token && JSToken.EndOfFile != m_currentToken.Token)
+                    {
+                        ReportError(JSError.SemicolonInsertion, throwNode.Context.IfNotNull(c => c.FlattenToEnd()), true);
+                    }
                 }
                 else
                 {

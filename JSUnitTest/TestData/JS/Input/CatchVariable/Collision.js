@@ -8,7 +8,7 @@
     {
         try
         {
-            foo += bar;
+            foo += bar
             function inner(txt)
             {
                 alert(txt + e)
