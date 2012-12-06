@@ -700,8 +700,8 @@ namespace Microsoft.Ajax.Utilities
 
                             // get the name that we don't want to munge. Null means all. Convert "*"
                             // to null.
-                            var identifier = ndxColon == 0 ? null : section.Substring(0, ndxColon).Trim();
-                            if (string.CompareOrdinal(identifier, "*") == 0)
+                            var identifier = section.Substring(0, ndxColon).Trim();
+                            if (string.IsNullOrEmpty(identifier) || string.CompareOrdinal(identifier, "*") == 0)
                             {
                                 identifier = null;
                             }
