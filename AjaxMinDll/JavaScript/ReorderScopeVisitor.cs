@@ -675,7 +675,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private bool IsMinificationHint(ConstantWrapper node)
+        private static bool IsMinificationHint(ConstantWrapper node)
         {
             var isHint = false;
             if (node.PrimitiveType == PrimitiveType.String)

@@ -2999,8 +2999,8 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
-        /// Given an assignment operator (=, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, >>>=), strip
-        /// the assignment to return (+, -, *, /, %, &, |, ^, <<, >>, >>>). For all other operators,
+        /// Given an assignment operator (=, +=, -=, *=, /=, %=, &amp;=, |=, ^=, &lt;&lt;=, &gt;&gt;=, &gt;&gt;&gt;=), strip
+        /// the assignment to return (+, -, *, /, %, &amp;, |, ^, &lt;&lt;, &gt;&gt;, &gt;&gt;&gt;). For all other operators,
         /// include the normal assign (=), just return the same operator token.
         /// This only works if the two groups of tokens are actually defined in those orders!!! 
         /// </summary>

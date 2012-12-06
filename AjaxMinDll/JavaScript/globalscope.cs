@@ -34,11 +34,11 @@ namespace Microsoft.Ajax.Utilities
             : base(null, settings)
         {
             // define the Global object's properties, and methods
-            m_globalProperties = new HashSet<string>( new [] { 
+            m_globalProperties = new HashSet<string>(new[] { 
                 "Infinity", "NaN", "undefined", "window", "Image", "JSON", "Math", "XMLHttpRequest", "DOMParser",
                 "applicationCache", "clientInformation", "clipboardData", "closed", "console", "document", "event", "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", "opener", "parent", "screen", "self", "sessionStorage", "status", "top"});
 
-            m_globalFunctions = new HashSet<string>( new [] {
+            m_globalFunctions = new HashSet<string>(new[] {
                 "decodeURI", "decodeURIComponent", "encodeURI", "encodeURIComponent", "escape", "eval", "importScripts", "isNaN", "isFinite", "parseFloat", "parseInt", "unescape", "ActiveXObject", "Array", "Boolean", "Date", "Error", "EvalError", "EventSource", "File", "FileList", "FileReader", "Function", "GeckoActiveXObject", "HTMLElement", "Number", "Object", "Proxy", "RangeError", "ReferenceError", "RegExp", "SharedWorker", "String", "SyntaxError", "TypeError", "URIError", "WebSocket", "Worker",
                 "addEventListener", "alert", "attachEvent", "blur", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", "detachEvent", "dispatchEvent", "execScript", "focus", "getComputedStyle", "getSelection", "moveBy", "moveTo", "navigate", "open", "postMessage", "prompt", "removeEventListener", "resizeBy", "resizeTo", "scroll", "scrollBy", "scrollTo", "setActive", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog" });
         }
