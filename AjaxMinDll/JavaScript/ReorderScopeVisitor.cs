@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Ajax.Utilities
@@ -474,15 +475,48 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override void Visit(ConstantWrapper node)
+        {
+            // by default this node has nothing to do and no children to recurse.
+            // but if this node's parent is a block, then this is an expression statement
+            // consisting of a single string literal. Normally we would ignore these -- if
+            // they occured at the top of the block they would be DirectivePrologues. So because
+            // this exists, it must not be at the top. But we still want to check it for the nomunge
+            // hints and respect them if that's what it is.
+            if (node != null && node.Parent is Block)
+            {
+                // if this is a hint, process it as such.
+                if (IsMinificationHint(node))
+                {
+                    // and then remove it. We can do that here, because blocks are processed
+                    // in reverse order.
+                    node.Parent.ReplaceChild(node, null);
+                }
+            }
+        }
+
         public override void Visit(DirectivePrologue node)
         {
-            // no need to call the base, just add it to the list
-            if (m_moduleDirectives == null)
+            if (node != null)
             {
-                m_moduleDirectives = new List<DirectivePrologue>();
-            }
+                // if this is a minification hint, then process it now
+                // and then remove it. Otherwise treat it as a directive prologue that
+                // we need to preserve
+                if (IsMinificationHint(node))
+                {
+                    node.Parent.ReplaceChild(node, null);
+                }
+                else
+                {
+                    // no need to call the base, just add it to the list
+                    if (m_moduleDirectives == null)
+                    {
+                        m_moduleDirectives = new List<DirectivePrologue>();
+                    }
 
-            m_moduleDirectives.Add(node);
+                    m_moduleDirectives.Add(node);
+                }
+            }
         }
 
         public override void Visit(FunctionObject node)
@@ -639,6 +673,59 @@ namespace Microsoft.Ajax.Utilities
                     node.Operand.Accept(this);
                 }
             }
+        }
+
+        private bool IsMinificationHint(ConstantWrapper node)
+        {
+            var isHint = false;
+            if (node.PrimitiveType == PrimitiveType.String)
+            {
+                // try splitting on commas and removing empty items
+                var sections = node.ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var section in sections)
+                {
+                    // valid hints are:
+                    //      name:nomunge    don't automatically rename the field defined in this scope named "name"
+                    //                      if name is missing (colon is the first character) or "*", then don't rename ANY
+                    //                      fields defined in the current scope.
+                    var ndxColon = section.IndexOf(':');
+                    if (ndxColon >= 0)
+                    {
+                        // make sure this is a "nomunge" hint. If it is, then the entire node is treated as a hint and
+                        // will be removed from the AST.
+                        if (string.Compare(section.Substring(ndxColon + 1).Trim(), "nomunge", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            // it is.
+                            isHint = true;
+
+                            // get the name that we don't want to munge. Null means all. Convert "*"
+                            // to null.
+                            var identifier = ndxColon == 0 ? null : section.Substring(0, ndxColon).Trim();
+                            if (string.CompareOrdinal(identifier, "*") == 0)
+                            {
+                                identifier = null;
+                            }
+
+                            // get the current scope and iterate over all the fields within it
+                            // looking for just the ones that are defined here (outer is null)
+                            var currentScope = node.EnclosingScope;
+                            foreach (var field in currentScope.NameTable.Values)
+                            {
+                                if (field.OuterField == null)
+                                {
+                                    // if the identifier is null or matches exactly, mark it as not crunchable
+                                    if (identifier == null || string.CompareOrdinal(identifier, field.Name) == 0)
+                                    {
+                                        field.CanCrunch = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return isHint;
         }
     }
 }
