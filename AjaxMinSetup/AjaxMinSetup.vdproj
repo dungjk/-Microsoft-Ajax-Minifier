@@ -76,7 +76,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
+        "OwnerKey" = "8:_9A90CD18DA631762F9BC55BD81B4F854"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -88,7 +88,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_9A90CD18DA631762F9BC55BD81B4F854"
+        "OwnerKey" = "8:_E663BF78D764444DBD6E2D8CE09CCFEA"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -203,11 +203,6 @@
             "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.75.4713.17598, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_078EC7FE11AE2A35394EC8E911418097"
-                    {
-                    "Name" = "8:AjaxMin.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:AjaxMin.dll"
             "TargetName" = "8:"
@@ -314,11 +309,6 @@
             "AssemblyAsmDisplayName" = "8:AjaxMinifier, Version=4.75.4713.17602, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_9A90CD18DA631762F9BC55BD81B4F854"
-                    {
-                    "Name" = "8:AjaxMinifier.exe"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:AjaxMinifier.exe"
             "TargetName" = "8:"
@@ -458,15 +448,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{545D0275-EAAD-4569-9248-CF45FB6DA2F6}"
-        "PackageCode" = "8:{D226B168-9C5F-4532-895B-DAE485D2F0B9}"
+        "ProductCode" = "8:{69FE09E9-3044-4FAE-8789-A2ED38DA77F0}"
+        "PackageCode" = "8:{38D18A84-06C9-4BF9-9929-C901CD128238}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.76"
+        "ProductVersion" = "8:4.77"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
