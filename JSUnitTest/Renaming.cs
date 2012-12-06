@@ -62,5 +62,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
+
+        [TestMethod]
+        public void NoMunge()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
     }
 }
