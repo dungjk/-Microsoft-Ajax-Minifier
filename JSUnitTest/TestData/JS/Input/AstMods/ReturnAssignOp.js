@@ -1,7 +1,8 @@
 ﻿function foo(cond)
 {
     // ideally we'd even get rid of the var altogether
-    // and just return the string operation
+    // and just return the string operation:
+    // function foo(cond){return"START "+(cond?"TRUE":"FALSE")+" END"}
     var text = "START ";
 
     // 1. this if can be changed to text += cond ? "TRUE" : "FALSE"
