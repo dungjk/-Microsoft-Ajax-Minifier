@@ -27,6 +27,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_32945C779E6D46FDACE25719879A955D"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_38E3116458874D4385ED6FFD98297FFF"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -76,13 +82,19 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_9A90CD18DA631762F9BC55BD81B4F854"
+        "OwnerKey" = "8:_32945C779E6D46FDACE25719879A955D"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_078EC7FE11AE2A35394EC8E911418097"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_9A90CD18DA631762F9BC55BD81B4F854"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -200,9 +212,14 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.75.4713.17598, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMin, Version=4.78.4724.23380, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_078EC7FE11AE2A35394EC8E911418097"
+                    {
+                    "Name" = "8:AjaxMin.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:AjaxMin.dll"
             "TargetName" = "8:"
@@ -306,9 +323,14 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:AjaxMinifier, Version=4.75.4713.17602, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:AjaxMinifier, Version=4.78.4724.23382, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_9A90CD18DA631762F9BC55BD81B4F854"
+                    {
+                    "Name" = "8:AjaxMinifier.exe"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:AjaxMinifier.exe"
             "TargetName" = "8:"
@@ -448,15 +470,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Microsoft Ajax Minifier"
-        "ProductCode" = "8:{69FE09E9-3044-4FAE-8789-A2ED38DA77F0}"
-        "PackageCode" = "8:{38D18A84-06C9-4BF9-9929-C901CD128238}"
+        "ProductCode" = "8:{317F18A6-62B1-4AD1-B2CC-9694E64C3A55}"
+        "PackageCode" = "8:{6800D273-A418-4098-A1EE-DDA8236174C5}"
         "UpgradeCode" = "8:{A82F55C0-675A-4E8D-A988-0C5346CC5509}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:4.77"
+        "ProductVersion" = "8:4.78"
         "Manufacturer" = "8:Microsoft"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -982,6 +1004,34 @@
         }
         "ProjectOutput"
         {
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_32945C779E6D46FDACE25719879A955D"
+            {
+            "SourcePath" = "8:..\\AjaxMinDll\\obj\\Release\\AjaxMin.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3C2DF8B0D1C044B8B9725F722F629969"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{DFDB930E-1162-4514-A91D-C8595A807F13}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_38E3116458874D4385ED6FFD98297FFF"
             {
             "SourcePath" = "8:..\\AjaxMinStub\\obj\\x86\\Release\\AjaxMin.exe"
