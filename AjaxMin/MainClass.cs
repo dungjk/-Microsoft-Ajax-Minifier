@@ -1628,7 +1628,7 @@ namespace Microsoft.Ajax.Utilities
                                     throw new XmlException(AjaxMin.XmlResourceNotExist.FormatInvariant(resourceNode.Path));
                                 }
 
-                                var resourceStrings = ProcessResources(resourcePath);
+                                var resourceStrings = ProcessResourceFile(resourcePath);
                                 resourceStrings.Name = resourceNode.Name.IfNullOrWhiteSpace(c_defaultResourceObjectName);
 
                                 if (crunchGroup.ResourceStrings == null)
