@@ -1118,7 +1118,7 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                ReportError(1, CssErrorCode.ExpectedOpenParen);
+                ReportError(1, CssErrorCode.ExpectedOpenParenthesis);
             }
             return token;
         }

@@ -252,6 +252,7 @@ namespace Microsoft.Ajax.Utilities
             sb.Append(escapedText);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification="big switch-case for special characters")]
         public static string EscapeString(string text, bool isRegExp, bool useW3Strict, bool useStrict)
         {
             // see which kind of delimiter we need.
