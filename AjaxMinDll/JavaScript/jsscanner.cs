@@ -1886,6 +1886,11 @@ namespace Microsoft.Ajax.Utilities
                 }
                 m_decodedString = result.ToString();
             }
+            else if (m_currentPosition == m_currentToken.StartPosition + 1)
+            {
+                // empty unterminated string!
+                m_decodedString = string.Empty;
+            }
             else
             {
                 // might be an unterminated string, so make sure that last character is the terminator

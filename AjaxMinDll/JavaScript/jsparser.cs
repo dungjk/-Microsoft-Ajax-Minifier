@@ -626,7 +626,10 @@ namespace Microsoft.Ajax.Utilities
                                     if (!(constantWrapper is DirectivePrologue))
                                     {
                                         // use a directive prologue node instead
-                                        ast = new DirectivePrologue(constantWrapper.Value.ToString(), ast.Context, ast.Parser);
+                                        ast = new DirectivePrologue(constantWrapper.Value.ToString(), ast.Context, ast.Parser)
+                                            {
+                                                MayHaveIssues = constantWrapper.MayHaveIssues
+                                            };
                                     }
                                 }
                                 else if (!m_newModule)
@@ -937,7 +940,10 @@ namespace Microsoft.Ajax.Utilities
                                     // module. Let's make it a DirectivePrologue if it isn't already
                                     if (!(statement is DirectivePrologue))
                                     {
-                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, this);
+                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, this)
+                                            {
+                                                MayHaveIssues = constantWrapper.MayHaveIssues
+                                            };
                                     }
                                 }
                             }
@@ -3512,7 +3518,10 @@ namespace Microsoft.Ajax.Utilities
                                     if (!(constantWrapper is DirectivePrologue))
                                     {
                                         // make the statement a directive prologue instead of a constant wrapper
-                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser);
+                                        statement = new DirectivePrologue(constantWrapper.Value.ToString(), constantWrapper.Context, constantWrapper.Parser)
+                                            {
+                                                MayHaveIssues = constantWrapper.MayHaveIssues
+                                            };
                                     }
                                 }
                                 else if (!m_newModule)
