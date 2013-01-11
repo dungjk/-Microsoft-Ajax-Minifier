@@ -16,19 +16,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
     /// <summary>
     /// Class used to parse JavaScript source code into an abstract syntax tree.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public class JSParser
     {
         private const int c_MaxSkippedTokenNumber = 50;

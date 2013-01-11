@@ -2030,8 +2030,8 @@ namespace Microsoft.Ajax.Utilities
                 OutputMode = outputMode;
             }
 
-            public UsageException(ConsoleOutputMode outputMode, string msg)
-                : base(msg)
+            public UsageException(ConsoleOutputMode outputMode, string message)
+                : base(message)
             {
                 OutputMode = outputMode;
             }

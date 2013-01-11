@@ -118,10 +118,10 @@ namespace Microsoft.Ajax.Utilities
             m_isMono = Type.GetType("Mono.Runtime") != null;
         }
 
-        public SwitchParser(CodeSettings jsSettings, CssSettings cssSettings)
+        public SwitchParser(CodeSettings scriptSettings, CssSettings cssSettings)
         {
             // apply the switches to these two settings objects
-            JSSettings = jsSettings ?? new CodeSettings();
+            JSSettings = scriptSettings ?? new CodeSettings();
             CssSettings = cssSettings ?? new CssSettings();
         }
 

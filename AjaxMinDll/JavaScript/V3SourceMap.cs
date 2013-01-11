@@ -142,7 +142,7 @@ namespace Microsoft.Ajax.Utilities
             // nothing to do
         }
 
-        public object StartSymbol(AstNode astNode, int startLine, int startColumn)
+        public object StartSymbol(AstNode node, int startLine, int startColumn)
         {
             // we don't care about the start/end methods -- we only care about segments
             return null;

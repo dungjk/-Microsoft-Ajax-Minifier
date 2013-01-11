@@ -85,6 +85,7 @@ namespace Microsoft.Ajax.Utilities
             NextChar();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification="Big case statement")]
         public CssToken NextToken()
         {
             GotEndOfLine = false;

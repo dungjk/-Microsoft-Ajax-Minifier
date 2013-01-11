@@ -312,29 +312,34 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// JavaScript source files to minify.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public ITaskItem[] JsSourceFiles { get; set; }
 
         /// <summary>
         /// Target extension for individually-minified JS files.
         /// Must use wih JsSourceExtensionPattern; cannot be used with JsCombinedFileName.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsTargetExtension { get; set; }
 
         /// <summary>
         /// Source extension pattern for individually-minified JS files.
         /// Must use wih JsTargetExtension; cannot be used with JsCombinedFileName.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsSourceExtensionPattern { get; set; }
 
         /// <summary>
         /// Combine and minify all source files to this name.
         /// Cannot be used with JsTargetExtension/JsSourceExtensionPattern.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsCombinedFileName { get; set; }
 
         /// <summary>
         /// Ensures the final semicolon in minified JS file.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsEnsureFinalSemicolon 
         {
             get { return this.m_switchParser.JSSettings.TermSemicolons; }
@@ -344,6 +349,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.CollapseToLiteral"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsCollapseToLiteral
         {
             get { return this.m_switchParser.JSSettings.CollapseToLiteral;  }
@@ -353,6 +359,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.EvalTreatment"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsEvalTreatment
         {
             get { return this.m_switchParser.JSSettings.EvalTreatment.ToString(); }
@@ -362,6 +369,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.IndentSize"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public int JsIndentSize
         {
             get { return this.m_switchParser.JSSettings.IndentSize; }
@@ -371,6 +379,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.InlineSafeStrings"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsInlineSafeStrings
         {
             get { return this.m_switchParser.JSSettings.InlineSafeStrings; }
@@ -380,6 +389,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.LocalRenaming"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsLocalRenaming
         {
             get { return this.m_switchParser.JSSettings.LocalRenaming.ToString(); }
@@ -389,6 +399,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.AddRenamePairs"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsManualRenamePairs
         {
             get { return this.m_switchParser.JSSettings.RenamePairs; }
@@ -398,6 +409,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.SetNoAutoRename"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsNoAutoRename
         {
             get { return this.m_switchParser.JSSettings.NoAutoRenameList; }
@@ -407,6 +419,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.SetKnownGlobalNames"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsKnownGlobalNames
         {
             get { return this.m_switchParser.JSSettings.KnownGlobalNamesList; }
@@ -416,6 +429,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.SetKnownGlobalNames"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsDebugLookups
         {
             get { return this.m_switchParser.JSSettings.DebugLookupList; }
@@ -425,6 +439,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.MacSafariQuirks"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsMacSafariQuirks
         {
             get { return this.m_switchParser.JSSettings.MacSafariQuirks; }
@@ -434,6 +449,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.IgnoreConditionalCompilation"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsIgnoreConditionalCompilation
         {
             get { return this.m_switchParser.JSSettings.IgnoreConditionalCompilation; }
@@ -443,6 +459,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.MinifyCode"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsMinifyCode
         {
             get { return this.m_switchParser.JSSettings.MinifyCode; }
@@ -452,6 +469,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.OutputMode"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsOutputMode
         {
             get { return this.m_switchParser.JSSettings.OutputMode.ToString(); }
@@ -461,6 +479,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.PreserveFunctionNames"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsPreserveFunctionNames
         {
             get { return this.m_switchParser.JSSettings.PreserveFunctionNames; }
@@ -470,6 +489,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.RemoveFunctionExpressionNames"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsRemoveFunctionExpressionNames
         {
             get { return this.m_switchParser.JSSettings.RemoveFunctionExpressionNames; }
@@ -479,6 +499,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.RemoveUnneededCode"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsRemoveUnneededCode
         {
             get { return this.m_switchParser.JSSettings.RemoveUnneededCode; }
@@ -488,6 +509,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.StripDebugStatements"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsStripDebugStatements
         {
             get { return this.m_switchParser.JSSettings.StripDebugStatements; }
@@ -497,6 +519,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.AllowEmbeddedAspNetBlocks"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public bool JsAllowEmbeddedAspNetBlocks
         {
             get { return this.m_switchParser.JSSettings.AllowEmbeddedAspNetBlocks; }
@@ -506,6 +529,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// <see cref="CodeSettings.PreprocessorDefineList"/> for more information.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Js")]
         public string JsPreprocessorDefines
         {
             get { return this.m_switchParser.JSSettings.PreprocessorDefineList; }

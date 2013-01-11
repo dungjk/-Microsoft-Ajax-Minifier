@@ -24,6 +24,7 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public class OutputVisitor : IVisitor
     {
         private TextWriter m_outputStream;
