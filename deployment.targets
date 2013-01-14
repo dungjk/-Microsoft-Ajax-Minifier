@@ -53,7 +53,7 @@
         <Copy SourceFiles="$(SolutionDir)AjaxMinDll\bin\$(Configuration)\AjaxMin.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.dll" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\bin\$(Configuration)\AjaxMinTask.pdb" DestinationFolder="$(TargetDir)Drop\net40" />
-        <Copy SourceFiles="$(SolutionDir)AjaxMinSetup\$(Configuration)\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop\net40" />
+        <Copy SourceFiles="$(SolutionDir)Setup\bin\$(Configuration)\AjaxMinSetup.msi" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMin.tasks" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinTask\AjaxMinTask.targets" DestinationFolder="$(TargetDir)Drop\net40" />
         <Copy SourceFiles="$(SolutionDir)AjaxMinStub\bin\$(Configuration)\AjaxMin.exe" DestinationFolder="$(TargetDir)Drop\net40" />
