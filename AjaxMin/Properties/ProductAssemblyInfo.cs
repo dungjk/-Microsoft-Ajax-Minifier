@@ -1,6 +1,6 @@
 ﻿// AssemblyInfo.cs
 //
-// Copyright 2010 Microsoft Corporation
+// Copyright 2013 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,4 +35,4 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 
-[assembly: AssemblyVersion("4.79.*")]
+[assembly: AssemblyVersion("4.80.*")]

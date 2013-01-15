@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?define VersionNumber = "4.79"?>
+<!-- update BOTH of these two values for every release -->
+<?define VersionNumber = "4.80"?>
+<?define ProductId = "{F680BDF8-29AF-4617-BB9F-701CEBCB9478}"?>
+
 <?define Manufacturer = "Microsoft"?>
 <?define ProductName = "Microsoft Ajax Minifier"?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <Product Id="*" Name="$(var.ProductName)" Language="1033" Version="$(var.VersionNumber)" Manufacturer="$(var.Manufacturer)" UpgradeCode="{A82F55C0-675A-4E8D-A988-0C5346CC5509}">
+  <Product Id="$(var.ProductId)" Name="$(var.ProductName)" Language="1033" Version="$(var.VersionNumber)" Manufacturer="$(var.Manufacturer)" UpgradeCode="{A82F55C0-675A-4E8D-A988-0C5346CC5509}">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <Icon Id="ApplicationIcon" SourceFile="$(var.SolutionDir)App.ico"/>
