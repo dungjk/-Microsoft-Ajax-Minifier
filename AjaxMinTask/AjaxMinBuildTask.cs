@@ -791,7 +791,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                         if (needToMinify)
                         {
-                            string source = File.ReadAllText(item.ItemSpec);
+                            string source = File.ReadAllText(item.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new JSEncoderFallback()));
                             MinifyJavaScript(source, item.ItemSpec, outputPath, symbolMapPath);
                         }
                         else
@@ -928,7 +928,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     try
                     {
-                        using (var outputWriter = new StreamWriter(outputPath, false, new UTF8Encoding(false)))
+                        var encoding = GetEncoding(m_switchParser.EncodingOutputName, new JSEncoderFallback());
+                        using (var outputWriter = new StreamWriter(outputPath, false, encoding))
                         {
                             // output the minified code
                             outputWriter.Write(minifiedJs);
@@ -988,7 +989,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
 
                 inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
-                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
+                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new JSEncoderFallback())));
             }
 
             MinifyJavaScript(inputBuilder.ToString(), string.Empty, this.JsCombinedFileName, mapFilePath);
@@ -1037,7 +1038,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         {
                             try
                             {
-                                string source = File.ReadAllText(item.ItemSpec);
+                                string source = File.ReadAllText(item.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new CssEncoderFallback()));
                                 MinifyStyleSheet(source, item.ItemSpec, outputPath);
                             }
                             catch (Exception e)
@@ -1128,7 +1129,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     try
                     {
-                        File.WriteAllText(outputPath, results);
+                        var encoding = GetEncoding(m_switchParser.EncodingOutputName, new CssEncoderFallback());
+                        File.WriteAllText(outputPath, results, encoding);
                     }
                     catch (UnauthorizedAccessException)
                     {
@@ -1155,7 +1157,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             foreach (var itemSpec in this.CssSourceFiles)
             {
                 inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
-                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec));
+                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new CssEncoderFallback())));
             }
 
             MinifyStyleSheet(inputBuilder.ToString(), string.Empty, this.CssCombinedFileName);
@@ -1306,6 +1308,29 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // if we cannot parse it for any reason, post the error and stop the task.
             Log.LogError(Strings.InvalidInputParameter, strValue);
             return default(T);
+        }
+
+        private Encoding GetEncoding(string encodingName, EncoderFallback fallbackEncoder)
+        {
+            try
+            {
+                if (!encodingName.IsNullOrWhiteSpace())
+                {
+                    // we have specified a different encoding. Create it from the name with
+                    // the appropriate fallback encoder (in case it's an encoding that can't 
+                    // properly encode ALL possible characters)
+                    return Encoding.GetEncoding(encodingName, fallbackEncoder, new DecoderReplacementFallback("\ufffd"));
+                }
+            }
+            catch (ArgumentException)
+            {
+                // something wrong with the encoding name. log a build warning and use the default
+                Log.LogWarning(Strings.InvalidEncodingName, encodingName);
+            }
+
+            // use a default: UTF-8 with no BOM. Since UTF-8 can encode everything, we
+            // don't need the fallback encoder.
+            return new UTF8Encoding(false);
         }
 
         #endregion

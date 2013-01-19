@@ -336,6 +336,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                     // create the map writer and the source map implementation.
                     // look at the Name attribute and implement the proper one.
+                    // the encoding needs to be UTF-8 WITHOUT a BOM or it won't work.
                     var mapPath = GetRootedOutput(symbolMapPath, manifestFolder);
                     mapWriter = new StreamWriter(mapPath, false, new UTF8Encoding(false));
                     sourceMap = SourceMapFactory.Create(mapWriter, symbolMap.Name);
