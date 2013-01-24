@@ -294,7 +294,7 @@ namespace Microsoft.Ajax.Utilities
                             referencedFields.Add(field);
                             break;
 
-                        case FieldType.GhostFunctionExpression:
+                        case FieldType.GhostFunction:
                         case FieldType.GhostCatch:
                             // ignore the ghost fields when reporting
                             break;
@@ -402,7 +402,7 @@ namespace Microsoft.Ajax.Utilities
                 case FieldType.Global:
                 case FieldType.UndefinedGlobal:
                 case FieldType.GhostCatch:
-                case FieldType.GhostFunctionExpression:
+                case FieldType.GhostFunction:
                 case FieldType.Predefined:
                     break;
             }

@@ -68,5 +68,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
+
+        [TestMethod]
+        public void IfFunction()
+        {
+            TestHelper.Instance.RunTest("-rename:all");
+        }
     }
 }

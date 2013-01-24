@@ -328,10 +328,20 @@ namespace Microsoft.Ajax.Utilities
                     // could POSSIBLY be if the with object doesn't have a property of that name
                     if (variableField.OuterField != null)
                     {
+                        // make sure we get the OUTERMOST outer ield
+                        var outerField = variableField.OuterField;
+                        while (outerField.OuterField != null)
+                        {
+                            outerField = outerField.OuterField;
+                        }
+
                         string outerScope;
                         string outerType;
-                        GetFieldScopeType(variableField.OuterField, immediateScope, out outerScope, out outerType);
-                        crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
+                        GetFieldScopeType(outerField, immediateScope, out outerScope, out outerType);
+                        if (!outerScope.IsNullOrWhiteSpace() || !outerType.IsNullOrWhiteSpace())
+                        {
+                            crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
+                        }
                     }
                     else
                     {
@@ -380,7 +390,7 @@ namespace Microsoft.Ajax.Utilities
                     break;
 
                 case FieldType.GhostCatch:
-                case FieldType.GhostFunctionExpression:
+                case FieldType.GhostFunction:
                 default:
                     // ghost fields -- ignore
                     type = string.Empty;

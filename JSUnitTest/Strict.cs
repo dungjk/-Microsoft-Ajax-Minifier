@@ -95,8 +95,9 @@ namespace JSUnitTest
         [TestMethod]
         public void FuncDeclLoc()
         {
-            // no errors! not in strict mode
-            TestHelper.Instance.RunErrorTest("-rename:none");
+            // throw a warning, even when not in strict mode. 
+            // this is because ES5 is a cross-browser issue.
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.MisplacedFunctionDeclaration);
         }
 
         [TestMethod]

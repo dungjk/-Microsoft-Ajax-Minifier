@@ -34,7 +34,7 @@ namespace Microsoft.Ajax.Utilities
         WithField,
         CatchError,
         GhostCatch,
-        GhostFunctionExpression,
+        GhostFunction,
         UndefinedGlobal,
     }
 
@@ -340,7 +340,7 @@ namespace Microsoft.Ajax.Utilities
                     IsPlaceholder = true;
                     break;
 
-                case FieldType.GhostFunctionExpression:
+                case FieldType.GhostFunction:
                     CanCrunch = OuterField == null ? true : OuterField.CanCrunch;
                     IsFunction = true;
                     IsPlaceholder = true;

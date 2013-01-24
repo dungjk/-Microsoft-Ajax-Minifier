@@ -2159,11 +2159,13 @@ namespace Microsoft.Ajax.Utilities
                     // simply treat it like every other function declaration in this scope. Firefox, however, won't
                     // add this function declaration's name to the containing scope until the function declaration
                     // is actually "executed." So if you try to call it BEFORE, you will get a "not defined" error.
-                    if (!node.IsSourceElement && node.FunctionType == FunctionType.Declaration)
-                    {
-                        node.Context.HandleError(JSError.MisplacedFunctionDeclaration, true);
-                    }
 
+                    // TODO: take this out for now, because we will throw this error in the resolution process
+                    // until we can get this worked out properly.
+                    //if (!node.IsSourceElement && node.FunctionType == FunctionType.Declaration)
+                    //{
+                    //    (node.NameContext ?? node.Context).HandleError(JSError.MisplacedFunctionDeclaration, true);
+                    //}
 
                     // we need to make sure the function isn't named "eval" or "arguments"
                     if (string.CompareOrdinal(node.Name, "eval") == 0
