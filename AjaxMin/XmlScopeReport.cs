@@ -110,14 +110,17 @@ namespace Microsoft.Ajax.Utilities
 
                     if (string.IsNullOrEmpty(functionObject.Name))
                     {
-                        if (functionObject.NameGuess.StartsWith("\"", StringComparison.Ordinal))
+                        if (!functionObject.NameGuess.IsNullOrWhiteSpace())
                         {
-                            // strip enclosing quotes
-                            m_writer.WriteAttributeString("guess", functionObject.NameGuess.Substring(1, functionObject.NameGuess.Length - 2));
-                        }
-                        else
-                        {
-                            m_writer.WriteAttributeString("guess", functionObject.NameGuess);
+                            if (functionObject.NameGuess.StartsWith("\"", StringComparison.Ordinal))
+                            {
+                                // strip enclosing quotes
+                                m_writer.WriteAttributeString("guess", functionObject.NameGuess.Substring(1, functionObject.NameGuess.Length - 2));
+                            }
+                            else
+                            {
+                                m_writer.WriteAttributeString("guess", functionObject.NameGuess);
+                            }
                         }
                     }
                     else
@@ -253,7 +256,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // if the field has no outer field reference, it is defined in this scope.
                 // otherwise we're just referencing a field defined elsewhere
-                if (field.OuterField == null)
+                if (!field.IsOuterReference)
                 {
                     switch (field.FieldType)
                     {
@@ -300,20 +303,11 @@ namespace Microsoft.Ajax.Utilities
                             break;
                     }
                 }
-                else
+                else if (!field.IsPlaceholder)
                 {
-                    // if the outer field is a placeholder, then we actually define it, not the outer scope
-                    if (field.OuterField.IsPlaceholder)
-                    {
-                        if (field.FieldType != FieldType.Argument && field.FieldType != FieldType.CatchError)
-                        {
-                            definedFields.Add(field);
-                        }
-                    }
-                    else
-                    {
-                        referencedFields.Add(field);
-                    }
+                    // we are an outer reference and we are not a placeholder,
+                    // so this scope actually references the outer field.
+                    referencedFields.Add(field);
                 }
             }
 

@@ -160,7 +160,7 @@ namespace Microsoft.Ajax.Utilities
                 if (!variableField.IsPlaceholder
                     && (variableField.Attributes != FieldAttributes.SpecialName || variableField.IsReferenced))
                 {
-                    WriteMemberReport(variableField, scope);
+                    WriteMemberReport(variableField);
                 }
             }
         }
@@ -294,7 +294,7 @@ namespace Microsoft.Ajax.Utilities
         //
         // SCOPE: global, local, outer, ''
         // TYPE: var, function, argument, arguments array, possibly undefined
-        private void WriteMemberReport(JSVariableField variableField, ActivationObject immediateScope)
+        private void WriteMemberReport(JSVariableField variableField)
         {
             // don't report arguments fields that aren't referenced because
             // we add those fields to the function scopes automatically
@@ -320,7 +320,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // get the field's default scope and type
-                GetFieldScopeType(variableField, immediateScope, out scope, out type);
+                GetFieldScopeType(variableField, out scope, out type);
                 if (variableField.FieldType == FieldType.WithField)
                 {
                     // if the field is a with field, we won't be using the crunched field (since
@@ -337,7 +337,7 @@ namespace Microsoft.Ajax.Utilities
 
                         string outerScope;
                         string outerType;
-                        GetFieldScopeType(outerField, immediateScope, out outerScope, out outerType);
+                        GetFieldScopeType(outerField, out outerScope, out outerType);
                         if (!outerScope.IsNullOrWhiteSpace() || !outerType.IsNullOrWhiteSpace())
                         {
                             crunched = AjaxMin.MemberInfoWithPossibly.FormatInvariant(outerScope, outerType);
@@ -354,7 +354,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 var definedLocation = string.Empty;
-                var definedContext = (variableField.OuterField ?? variableField).OriginalContext;
+                var definedContext = GetFirstDeclaration(variableField);
                 if (definedContext != null)
                 {
                     definedLocation = AjaxMin.MemberInfoDefinedLocation.FormatInvariant(definedContext.StartLineNumber, definedContext.StartColumn + 1);
@@ -371,7 +371,32 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private static void GetFieldScopeType(JSVariableField variableField, ActivationObject immediateScope, out string scope, out string type)
+        private static Context GetFirstDeclaration(JSVariableField variableField)
+        {
+            // only local fields that actually correspond to a declaration get the declaration
+            // added to the declarations collection -- inner references don't get the declaration,
+            // and neither do ghosted variables. So starting from this variable, walk up the 
+            // outer-reference chain until we find on with at least one declaration. If we don't
+            // find one, that's fine -- there probably isn't a declaration for it (predefined, for example).
+            while (variableField != null && variableField.Declarations.Count == 0)
+            {
+                variableField = variableField.OuterField;
+            }
+
+            if (variableField != null)
+            {
+                foreach (var declaration in variableField.Declarations)
+                {
+                    // we only care about the FIRST declaration, so return the context of the name
+                    return declaration.NameContext;
+                }
+            }
+
+            // if we get here, there were no declarations
+            return null;
+        }
+
+        private static void GetFieldScopeType(JSVariableField variableField, out string scope, out string type)
         {
             // default scope is blank
             scope = string.Empty;
@@ -379,14 +404,26 @@ namespace Microsoft.Ajax.Utilities
             {
                 case FieldType.Argument:
                     type = AjaxMin.MemberInfoTypeArgument;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
                     break;
 
                 case FieldType.Arguments:
                     type = AjaxMin.MemberInfoTypeArguments;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
                     break;
 
                 case FieldType.CatchError:
                     type = AjaxMin.MemberInfoTypeCatchEror;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
                     break;
 
                 case FieldType.GhostCatch:
@@ -452,19 +489,9 @@ namespace Microsoft.Ajax.Utilities
                     }
 
                     // scope string
-                    // this is a local variable, so there MUST be a non-null function scope passed
-                    // to us. That function scope will be the scope we are expecting local variables
-                    // to be defined in. If the field is defined in that scope, it's local -- otherwise
-                    // it must be an outer variable.
-                    JSVariableField scopeField = immediateScope[variableField.Name];
-                    if (scopeField == null || scopeField.OuterField != null)
-                    {
-                        scope = AjaxMin.MemberInfoScopeOuter;
-                    }
-                    else
-                    {
-                        scope = AjaxMin.MemberInfoScopeLocal;
-                    }
+                    scope = variableField.IsOuterReference
+                        ? AjaxMin.MemberInfoScopeOuter
+                        : AjaxMin.MemberInfoScopeLocal;
                     break;
 
                 case FieldType.Predefined:
@@ -476,6 +503,10 @@ namespace Microsoft.Ajax.Utilities
 
                 case FieldType.WithField:
                     type = AjaxMin.MemberInfoWithField;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
                     break;
             }
         }
@@ -597,12 +628,16 @@ namespace Microsoft.Ajax.Utilities
             #region IComparer<JSVariableField> Members
 
             /// <summary>
-            /// Argument fields first
-            /// Fields defined
-            /// Functions defined
-            /// Globals referenced
+            /// Local Argument fields first
+            /// Local Arguments object
+            /// Local Fields defined
+            /// Local Functions defined
+            /// Outer Argument fields
+            /// Outer Arguments object
             /// Outer fields referenced
-            /// Functions referenced
+            /// Outer Functions referenced
+            /// Global fields referenced
+            /// Global functions referenced
             /// </summary>
             /// <param name="x">left-hand object</param>
             /// <param name="y">right-hand object</param>
@@ -633,11 +668,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (obj.FieldType == FieldType.Argument || obj.FieldType == FieldType.CatchError)
                 {
-                    return FieldOrder.Argument;
+                    return obj.IsOuterReference ? FieldOrder.OuterArgumentReferenced : FieldOrder.LocalArgument;
                 }
                 if (obj.FieldType == FieldType.Arguments)
                 {
-                    return FieldOrder.ArgumentsArray;
+                    return obj.IsOuterReference ? FieldOrder.OuterArgumentsObject : FieldOrder.LocalArgumentsObject;
                 }
 
                 if (obj.FieldType == FieldType.Global)
@@ -649,30 +684,38 @@ namespace Microsoft.Ajax.Utilities
                       );
                 }
 
-                if (obj.OuterField != null)
+                if (obj.FieldType == FieldType.Predefined)
                 {
-                    return (obj.FieldValue is FunctionObject
+                    return FieldOrder.Predefined;
+                }
+
+                if (obj.FieldValue is FunctionObject)
+                {
+                    // function
+                    return obj.IsOuterReference
                         ? FieldOrder.OuterFunctionReferenced
-                        : FieldOrder.OuterFieldReferenced);
+                        : FieldOrder.LocalFunctionDefined;
                 }
-                else
-                {
-                    return (obj.FieldValue is FunctionObject
-                        ? FieldOrder.FunctionDefined
-                        : FieldOrder.FieldDefined);
-                }
+
+                // field
+                return obj.IsOuterReference
+                    ? FieldOrder.OuterFieldReferenced
+                    : FieldOrder.LocalFieldDefined;
             }
 
             private enum FieldOrder : int
             {
-                Argument = 0,
-                ArgumentsArray,
-                FieldDefined,
-                FunctionDefined,
+                LocalArgument = 0,
+                LocalArgumentsObject,
+                LocalFieldDefined,
+                LocalFunctionDefined,
+                OuterArgumentReferenced,
+                OuterArgumentsObject,
                 OuterFieldReferenced,
                 OuterFunctionReferenced,
                 GlobalFieldReferenced,
                 GlobalFunctionReferenced,
+                Predefined,
                 Other
             }
         }
