@@ -755,6 +755,7 @@ namespace Microsoft.Ajax.Utilities
         // ParseStatement deals with the end of statement issue (EOL vs ';') so if any of the
         // ParseXXX routine does it as well, it should return directly from the switch statement
         // without any further execution in the ParseStatement
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode")]
         private AstNode ParseStatement(bool fSourceElement)
         {
             AstNode statement = null;
@@ -1774,6 +1775,7 @@ namespace Microsoft.Ajax.Utilities
         //    <empty> |
         //    InitializerNoIn // same as initializer but does not process 'in' as an operator
         //---------------------------------------------------------------------------------------
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private AstNode ParseForStatement()
         {
             m_blockType.Add(BlockType.Loop);
@@ -2736,6 +2738,7 @@ namespace Microsoft.Ajax.Utilities
         //    <empty> |
         //    'default' ':' OptionalStatements
         //---------------------------------------------------------------------------------------
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private AstNode ParseSwitchStatement()
         {
             Context switchCtx = m_currentToken.Clone();
@@ -3296,6 +3299,7 @@ namespace Microsoft.Ajax.Utilities
         //    <empty> |
         //    Identifier, IdentifierList
         //---------------------------------------------------------------------------------------
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private FunctionObject ParseFunction(FunctionType functionType, Context fncCtx)
         {
             Lookup name = null;
@@ -4247,6 +4251,7 @@ namespace Microsoft.Ajax.Utilities
         //    <empty> |
         //    Identifier
         //---------------------------------------------------------------------------------------
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode")]
         private AstNode ParseLeftHandSideExpression(bool isMinus)
         {
             AstNode ast = null;
@@ -5395,7 +5400,10 @@ namespace Microsoft.Ajax.Utilities
                 }
                 else if (nextToken.Token == JSToken.MultipleLineComment || nextToken.Token == JSToken.SingleLineComment)
                 {
-                    if (nextToken.HasCode && nextToken.Code.Length > 2 && nextToken.Code[2] == '!')
+                    if (nextToken.HasCode 
+                        && ((nextToken.Code.Length > 2 && nextToken.Code[2] == '!') 
+                        || (nextToken.Code.IndexOf("@preserve", StringComparison.OrdinalIgnoreCase) >= 0)
+                        || (nextToken.Code.IndexOf("@license", StringComparison.OrdinalIgnoreCase) >= 0)))
                     {
                         // this is an important comment -- save it for later
                         m_importantComments.Add(nextToken.Clone());

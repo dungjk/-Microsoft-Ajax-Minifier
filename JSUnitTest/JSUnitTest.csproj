@@ -289,6 +289,7 @@
     <Content Include="TestData\JS\Expected\Literals\ObjectLiteral.js" />
     <Content Include="TestData\JS\Expected\Literals\ObjectLiteral_quote.js" />
     <Content Include="TestData\JS\Expected\Literals\Octal.js" />
+    <Content Include="TestData\JS\Expected\Literals\RegExp.js" />
     <Content Include="TestData\JS\Expected\Literals\StrictEncoding.js" />
     <Content Include="TestData\JS\Expected\Literals\Strings.js" />
     <Content Include="TestData\JS\Expected\Literals\Strings_3.js" />
@@ -555,6 +556,7 @@
     <Content Include="TestData\JS\Input\Literals\Number.js" />
     <Content Include="TestData\JS\Input\Literals\ObjectLiteral.js" />
     <Content Include="TestData\JS\Input\Literals\Octal.js" />
+    <Content Include="TestData\JS\Input\Literals\RegExp.js" />
     <Content Include="TestData\JS\Input\Literals\StrictEncoding.js" />
     <Content Include="TestData\JS\Input\Literals\Strings.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\CompareObjects.js" />

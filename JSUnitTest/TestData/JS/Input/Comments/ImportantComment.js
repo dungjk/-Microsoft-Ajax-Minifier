@@ -10,3 +10,9 @@ var a = 12;
  */
 var b = 13;
 
+/** @preserve This is an important comment because of the @preserve token */
+
+/**
+ ** @license  And so is this, because of the @license token
+ */
+

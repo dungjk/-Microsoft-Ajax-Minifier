@@ -1191,6 +1191,7 @@ namespace Microsoft.Ajax.Utilities
             return keyword.GetKeyword(m_currentToken, m_currentPosition - m_currentToken.StartPosition);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private JSToken ScanNumber(char leadChar)
         {
             bool noMoreDot = '.' == leadChar;
@@ -1543,6 +1544,7 @@ namespace Microsoft.Ajax.Utilities
         //  On exit this.currentPos must be at the next char to scan after the string
         //  This method wiil report an error when the string is unterminated or for a bad escape sequence
         //--------------------------------------------------------------------------------------------------
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void ScanString(char delimiter)
         {
             int start = m_currentPosition;
