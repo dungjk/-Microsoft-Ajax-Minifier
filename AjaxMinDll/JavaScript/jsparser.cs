@@ -236,7 +236,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // save the settings
             // if we are passed null, just create a default settings object
-            m_settings = settings ?? new CodeSettings();
+            m_settings = settings = settings ?? new CodeSettings();
 
             // if the settings list is not null, use it to initialize a new list
             // with the same settings. If it is null, initialize an empty list 
@@ -256,6 +256,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_scanner.SetPreprocessorDefines(m_settings.PreprocessorValues);
             }
+
+            // if we want to strip debug statements, let's also strip ///#DEBUG comment
+            // blocks for legacy reasons. ///#DEBUG will get stripped ONLY is this
+            // flag is true AND the name "DEBUG" is not in the preprocessor defines.
+            // Alternately, we will keep those blocks in the output is this flag is
+            // set to false OR we define "DEBUG" in the preprocessor defines.
+            m_scanner.StripDebugCommentBlocks = m_settings.StripDebugStatements;
         }
 
         #region pre-process only

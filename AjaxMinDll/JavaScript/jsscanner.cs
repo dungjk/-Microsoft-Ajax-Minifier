@@ -82,6 +82,8 @@ namespace Microsoft.Ajax.Utilities
 
         public bool IsEndOfFile { get { return m_currentPosition >= m_endPos; } }
 
+        public bool StripDebugCommentBlocks { get; set; }
+
         internal string Identifier
         {
             get
@@ -121,7 +123,9 @@ namespace Microsoft.Ajax.Utilities
             m_endPos = sourceContext.EndPosition;
 
             // by default we want to use preprocessor defines
+            // and strip debug comment blocks
             UsePreprocessorDefines = true;
+            StripDebugCommentBlocks = true;
 
             // create a string builder that we'll keep reusing as we
             // scan identifiers. We'll build the unescaped name into it
@@ -162,6 +166,7 @@ namespace Microsoft.Ajax.Utilities
                 m_startLinePosition = this.m_startLinePosition,
                 m_strSourceCode = this.m_strSourceCode,
                 UsePreprocessorDefines = this.UsePreprocessorDefines,
+                StripDebugCommentBlocks = this.StripDebugCommentBlocks,
             };
         }
 
@@ -2984,11 +2989,11 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
-            else if (m_defines == null || !m_defines.ContainsKey("DEBUG"))
+            else if (StripDebugCommentBlocks && (m_defines == null || !m_defines.ContainsKey("DEBUG")))
             {
                 // NOT a debug namespace assignment comment, so this is the start
                 // of a debug block. If we are skipping debug blocks (the DEBUG name
-                // is not defined), then start skipping now.
+                // is not defined AND StripDebugCommentBlocks is TRUE), then start skipping now.
                 // skip until we hit ///#ENDDEBUG
                 PPSkipToDirective("#ENDDEBUG");
             }

@@ -58,6 +58,7 @@
     <Compile Include="CommandLine.cs" />
     <Compile Include="AjaxMinTask.cs" />
     <Compile Include="CssEncoding.cs" />
+    <Compile Include="DebugBlock.cs" />
     <Compile Include="Frameworks.cs" />
     <Compile Include="ManifestTask.cs" />
     <Compile Include="MinifiedNames.cs" />
