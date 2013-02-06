@@ -2345,6 +2345,10 @@ namespace Microsoft.Ajax.Utilities
                         AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
                     }
 
+                    // the only postfix unary operators are ++ and --, and when in the postfix position,
+                    // line breaks are NOT allowed between the operand and the operator.
+                    // doesn't seem to need this flag set here, but set it anyways just in case.
+                    m_noLineBreaks = true;
                     Output(OperatorString(node.OperatorToken));
                     MarkSegment(node, null, node.OperatorContext);
                     m_startOfStatement = false;

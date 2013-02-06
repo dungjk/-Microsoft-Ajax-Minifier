@@ -204,5 +204,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-line:4");
         }
+
+        [TestMethod]
+        public void NoBreakPostInc()
+        {
+            TestHelper.Instance.RunTest("-line:4");
+        }
+
+        [TestMethod]
+        public void NoBreakPostDec()
+        {
+            TestHelper.Instance.RunTest("-line:4");
+        }
     }
 }

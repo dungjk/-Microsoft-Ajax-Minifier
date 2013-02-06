@@ -390,6 +390,8 @@
     <Content Include="TestData\JS\Expected\Switch\MacQuirks_M.js" />
     <Content Include="TestData\JS\Expected\Switch\NoBreakBreak.js" />
     <Content Include="TestData\JS\Expected\Switch\NoBreakContinue.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakPostDec.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakPostInc.js" />
     <Content Include="TestData\JS\Expected\Switch\NoBreakReturn.js" />
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases.js" />
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases_h.js" />
@@ -637,6 +639,8 @@
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Input\Switch\NoBreakBreak.js" />
     <Content Include="TestData\JS\Input\Switch\NoBreakContinue.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakPostDec.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakPostInc.js" />
     <Content Include="TestData\JS\Input\Switch\NoBreakReturn.js" />
     <Content Include="TestData\JS\Input\Switch\NoDefaultEmptyCases.js" />
     <Content Include="TestData\JS\Input\CommandLine\PreprocessOnly.js" />
