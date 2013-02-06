@@ -502,10 +502,8 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
-                    // NO PAGE BREAKS ALLOWED HERE, so don't rely on the automatic
-                    // space-inserting code to separate the break from the label.
-                    // insert a space now.
-                    Output(' ');
+                    // NO PAGE BREAKS ALLOWED HERE
+                    m_noLineBreaks = true;
                     if (Settings.LocalRenaming != LocalRenaming.KeepAll
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
@@ -1001,9 +999,8 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
                 {
-                    // NO PAGE BREAKS ALLOWED HERE, so don't rely on the automatic-space
-                    // insertion mode or it might insert a newline
-                    Output(' ');
+                    // NO PAGE BREAKS ALLOWED HERE
+                    m_noLineBreaks = true;
                     if (Settings.LocalRenaming != LocalRenaming.KeepAll
                         && Settings.IsModificationAllowed(TreeModifications.LocalRenaming))
                     {
@@ -1672,7 +1669,7 @@ namespace Microsoft.Ajax.Utilities
                 // so let's FORCE the insert-space logic here.
                 if (JSScanner.IsValidIdentifierPart(m_lastCharacter))
                 {
-                    Output(' ');
+                    OutputSpaceOrLineBreak();
                 }
 
                 var symbol = StartSymbol(node);
@@ -2090,6 +2087,7 @@ namespace Microsoft.Ajax.Utilities
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
+                    m_noLineBreaks = true;
                     node.Operand.Accept(this);
                 }
 

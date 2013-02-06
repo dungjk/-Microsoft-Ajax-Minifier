@@ -180,5 +180,29 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunErrorTest("-rename:none -ignore:All");
         }
+
+        [TestMethod]
+        public void NoBreakThrow()
+        {
+            TestHelper.Instance.RunTest("-line:4");
+        }
+
+        [TestMethod]
+        public void NoBreakBreak()
+        {
+            TestHelper.Instance.RunTest("-line:4 -unused:keep");
+        }
+
+        [TestMethod]
+        public void NoBreakContinue()
+        {
+            TestHelper.Instance.RunTest("-line:4 -unused:keep");
+        }
+
+        [TestMethod]
+        public void NoBreakReturn()
+        {
+            TestHelper.Instance.RunTest("-line:4");
+        }
     }
 }

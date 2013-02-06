@@ -388,8 +388,12 @@
     <Content Include="TestData\JS\Expected\Switch\LineBreak_MultiIndent.js" />
     <Content Include="TestData\JS\Expected\Switch\MacQuirks.js" />
     <Content Include="TestData\JS\Expected\Switch\MacQuirks_M.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakBreak.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakContinue.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakReturn.js" />
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases.js" />
     <Content Include="TestData\JS\Expected\Switch\NoDefaultEmptyCases_h.js" />
+    <Content Include="TestData\JS\Expected\Switch\NoBreakThrow.js" />
     <Content Include="TestData\JS\Expected\Switch\PrettyPrint.js" />
     <Content Include="TestData\JS\Expected\Switch\PrettyPrint_P.js" />
     <Content Include="TestData\JS\Expected\Switch\PrettyPrint_same.js" />
@@ -631,8 +635,12 @@
     <Content Include="TestData\JS\Input\Switch\IgnoreErrors.js" />
     <Content Include="TestData\JS\Input\Switch\LineBreak.js" />
     <Content Include="TestData\JS\Input\Switch\MacQuirks.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakBreak.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakContinue.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakReturn.js" />
     <Content Include="TestData\JS\Input\Switch\NoDefaultEmptyCases.js" />
     <Content Include="TestData\JS\Input\CommandLine\PreprocessOnly.js" />
+    <Content Include="TestData\JS\Input\Switch\NoBreakThrow.js" />
     <Content Include="TestData\JS\Input\Switch\PrettyPrint.js" />
     <Content Include="TestData\JS\Input\Switch\PromoteBreak.js" />
     <Content Include="TestData\JS\Input\Switch\SwitchLabels.js" />
