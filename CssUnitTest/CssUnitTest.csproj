@@ -137,6 +137,7 @@
     <Content Include="TestData\CSS\Expected\Declarations\TrailingSemicolon_term.css" />
     <Content Include="TestData\CSS\Expected\EmbeddedAspNetBlock\StringWithBlock.css" />
     <Content Include="TestData\CSS\Expected\EmbeddedAspNetBlock\TopLevel.css" />
+    <Content Include="TestData\CSS\Expected\Encoding\empty.css" />
     <Content Include="TestData\CSS\Expected\Encoding\escaped.css" />
     <Content Include="TestData\CSS\Expected\Encoding\escaped_utf8.css" />
     <Content Include="TestData\CSS\Expected\Errors\BadRGB.css" />
@@ -222,6 +223,7 @@
     <Content Include="TestData\CSS\Input\Declarations\TrailingSemicolon.css" />
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\StringWithBlock.css" />
     <Content Include="TestData\CSS\Input\EmbeddedAspNetBlock\TopLevel.css" />
+    <Content Include="TestData\CSS\Input\Encoding\empty.css" />
     <Content Include="TestData\CSS\Input\Encoding\escaped.css" />
     <Content Include="TestData\CSS\Input\Errors\BadRGB.css" />
     <Content Include="TestData\CSS\Input\Errors\Exponent.css" />

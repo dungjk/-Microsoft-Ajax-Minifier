@@ -81,7 +81,26 @@ namespace DllUnitTest
             // saved as UTF-16; potential problems
             failed = ParseFile("utf16.css", encoding, CssErrorCode.PossibleCharsetError, CssErrorCode.UnexpectedEndOfFile) || failed;
 
+            // empty file with just UTF-8 BOM
+            failed = ParseFile("empty.css", encoding) || failed;
+
             Assert.IsFalse(failed, "at least one test failed");
+        }
+
+        [TestMethod]
+        public void ParseNull()
+        {
+            var errors = new List<CssException>();
+            var cssParser = new CssParser();
+            cssParser.CssError += (sender, ea) =>
+            {
+                errors.Add(ea.Exception);
+            };
+
+            // parse it
+            var results = cssParser.Parse(null);
+            Assert.AreEqual(string.Empty, results);
+            Assert.AreEqual(0, errors.Count);
         }
 
         private bool ParseFile(string fileName, Encoding encoding, params CssErrorCode[] expectedErrors)

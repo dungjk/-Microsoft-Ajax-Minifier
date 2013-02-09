@@ -95,6 +95,7 @@
     <Content Include="TestData\Dll\Input\AjaxMinTask\file2.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test1.css" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\test2.css" />
+    <Content Include="TestData\Dll\Input\CssEncoding\empty.css" />
     <Content Include="TestData\Dll\Input\CssEncoding\utf16.css" />
     <Content Include="TestData\Dll\Input\CssEncoding\utf8none.css" />
     <Content Include="TestData\Dll\Input\CssEncoding\utf8ascii.css" />

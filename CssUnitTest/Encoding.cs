@@ -35,5 +35,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest("-enc:out utf-8");
         }
+
+        [TestMethod]
+        public void Empty()
+        {
+            TestHelper.Instance.RunTest("-enc:in ascii");
+        }
     }
 }
