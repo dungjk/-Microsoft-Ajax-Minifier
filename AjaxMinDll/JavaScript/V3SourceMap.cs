@@ -148,6 +148,7 @@ namespace Microsoft.Ajax.Utilities
             return null;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "startLine+1")]
         public void MarkSegment(AstNode node, int startLine, int startColumn, string name, Context context)
         {
             if (startLine == int.MaxValue)
