@@ -41,5 +41,18 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void EmptyStatement()
+        {
+            // don't change if-statements to expressions
+            TestHelper.Instance.RunTest("-kill:0x800001000");
+        }
+
+        [TestMethod]
+        public void EmptyStatement_P()
+        {
+            TestHelper.Instance.RunTest("-P");
+        }
     }
 }
