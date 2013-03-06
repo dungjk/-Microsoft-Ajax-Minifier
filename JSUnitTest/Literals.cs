@@ -170,5 +170,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Replace()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
