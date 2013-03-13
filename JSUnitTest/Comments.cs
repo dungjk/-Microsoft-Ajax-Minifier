@@ -66,5 +66,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunErrorTest("");
         }
+
+        [TestMethod()]
+        public void ImportantIgnore()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

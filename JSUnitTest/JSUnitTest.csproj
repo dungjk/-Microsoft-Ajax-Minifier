@@ -176,6 +176,7 @@
     <Content Include="TestData\JS\Expected\Comments\Globals.js" />
     <Content Include="TestData\JS\Expected\Comments\ImportantComment.js" />
     <Content Include="TestData\JS\Expected\Comments\ImportantComment_Off.js" />
+    <Content Include="TestData\JS\Expected\Comments\ImportantIgnore.js" />
     <Content Include="TestData\JS\Expected\Comments\OnlyImportantComment.js" />
     <Content Include="TestData\JS\Expected\Comments\TwoImportantComments.js" />
     <Content Include="TestData\JS\Expected\ConditionalCompilation\EndEOF.js" />
@@ -486,6 +487,7 @@
     <Content Include="TestData\JS\Input\Comments\EndWithImportantComment.js" />
     <Content Include="TestData\JS\Input\Comments\Globals.js" />
     <Content Include="TestData\JS\Input\Comments\ImportantComment.js" />
+    <Content Include="TestData\JS\Input\Comments\ImportantIgnore.js" />
     <Content Include="TestData\JS\Input\Comments\OnlyImportantComment.js" />
     <Content Include="TestData\JS\Input\Comments\TwoImportantComments.js" />
     <Content Include="TestData\JS\Input\ConditionalCompilation\EndEOF.js" />
