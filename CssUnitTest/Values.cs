@@ -42,5 +42,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Zeros()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

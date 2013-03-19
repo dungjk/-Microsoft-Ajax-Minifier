@@ -185,6 +185,7 @@
     <Content Include="TestData\CSS\Expected\Values\Calc.css" />
     <Content Include="TestData\CSS\Expected\Values\Cycle.css" />
     <Content Include="TestData\CSS\Expected\Values\Grids.css" />
+    <Content Include="TestData\CSS\Expected\Values\Zeros.css" />
     <Content Include="TestData\CSS\Expected\Values\Units.css" />
     <Content Include="TestData\CSS\Input\AtRules\Charset.css" />
     <Content Include="TestData\CSS\Input\AtRules\FontFace.css" />
@@ -266,6 +267,7 @@
     <Content Include="TestData\CSS\Input\Values\Cycle.css" />
     <Content Include="TestData\CSS\Input\Values\Grids.css" />
     <Content Include="TestData\CSS\Input\Values\Units.css" />
+    <Content Include="TestData\CSS\Input\Values\Zeros.css" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="TestData\CSS\Input\Replacements\ValueReplacement.resx">
