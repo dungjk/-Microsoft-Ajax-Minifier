@@ -196,6 +196,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\dowhile.cs">
       <Link>JavaScript\dowhile.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\emptystatement.cs">
+      <Link>JavaScript\emptystatement.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\EvaluateLiteralVisitor.cs">
       <Link>JavaScript\EvaluateLiteralVisitor.cs</Link>
     </Compile>
