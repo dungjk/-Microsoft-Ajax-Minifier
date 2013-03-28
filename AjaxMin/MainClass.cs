@@ -1102,13 +1102,24 @@ namespace Microsoft.Ajax.Utilities
                         crunchGroup[ndx].EncodingName ?? switchParser.EncodingInputName, 
                         ref sourceLength);
 
+                    if (ndx > 0)
+                    {
+                        inputBuilder.AppendLine();
+                    }
+
                     inputBuilder.Append("///#SOURCE 1 1 ");
                     inputBuilder.AppendLine(crunchGroup[ndx].Path);
                     inputBuilder.Append(sourceCode);
 
                     // if we are echoing the input, add it to the echo builder, but without the comment
+                    // but WITH a line-break
                     if (echoBuilder != null)
                     {
+                        if (ndx > 0)
+                        {
+                            echoBuilder.AppendLine();
+                        }
+
                         echoBuilder.Append(sourceCode);
                     }
                 }
