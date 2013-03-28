@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- update BOTH of these two values for every release -->
-<?define VersionNumber = "4.85"?>
-<?define ProductId = "{3320A879-35B5-486D-9DAD-073A491AEDB2}"?>
+<?define VersionNumber = "4.86"?>
+<?define ProductId = "{34CECC73-4BC9-4DB0-B3BE-8052C7A33F9C}"?>
 
 <?define Manufacturer = "Microsoft"?>
 <?define ProductName = "Microsoft Ajax Minifier"?>
