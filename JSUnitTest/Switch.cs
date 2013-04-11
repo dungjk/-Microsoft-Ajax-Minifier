@@ -166,7 +166,7 @@ namespace JSUnitTest
         [TestMethod]
         public void IgnoreErrors()
         {
-            TestHelper.Instance.RunErrorTest("-rename:none", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.NoRightParenthesis);
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.ErrorEndOfFile, JSError.UnclosedFunction, JSError.UndeclaredFunction, JSError.UndeclaredVariable, JSError.NoRightParenthesis, JSError.VariableDefinedNotReferenced);
         }
 
         [TestMethod]

@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -72,6 +73,12 @@ namespace JSUnitTest
         public void UnRefForIn()
         {
             TestHelper.Instance.RunTest("-rename:all");
+        }
+
+        [TestMethod]
+        public void UnRefVar()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:all", JSError.ArgumentNotReferenced, JSError.VariableDefinedNotReferenced);
         }
     }
 }
