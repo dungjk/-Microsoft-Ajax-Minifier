@@ -70,6 +70,12 @@ namespace JSUnitTest
         #endregion
 
         [TestMethod]
+        public void OneRefIteration()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
         public void UnRefForIn()
         {
             TestHelper.Instance.RunTest("-rename:all");

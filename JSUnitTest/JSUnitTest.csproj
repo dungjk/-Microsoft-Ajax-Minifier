@@ -416,6 +416,7 @@
     <Content Include="TestData\JS\Expected\UnknownScope\Eval_J.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Expected\VarDecls\OneRefIteration.js" />
     <Content Include="TestData\JS\Expected\VarDecls\UnRefForIn.js" />
     <Content Include="TestData\JS\Expected\VarDecls\UnRefVar.js" />
     <Content Include="TestData\JS\Expected\XmlInput\Combined.css" />
@@ -663,6 +664,7 @@
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\With.js" />
+    <Content Include="TestData\JS\Input\VarDecls\OneRefIteration.js" />
     <Content Include="TestData\JS\Input\VarDecls\UnRefForIn.js" />
     <Content Include="TestData\JS\Input\VarDecls\UnRefVar.js" />
     <Content Include="TestData\JS\Input\XmlInput\EncInputRussian.xml" />

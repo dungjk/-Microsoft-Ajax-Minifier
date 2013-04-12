@@ -507,6 +507,7 @@ namespace Microsoft.Ajax.Utilities
             // if it's not one of those types, then go ahead and assume iterative reference doesn't matter.
             var regExp = initializer as RegExpLiteral;
             if (initializer is ArrayLiteral 
+                || initializer is ObjectLiteral
                 || (regExp != null && regExp.PatternSwitches != null && regExp.PatternSwitches.IndexOf("g", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 // get the parent block for the initializer. We'll use this as a stopping point in our loop.
