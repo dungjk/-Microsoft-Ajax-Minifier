@@ -26,6 +26,7 @@ using System.Resources;
 using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
@@ -43,6 +44,11 @@ namespace Microsoft.Ajax.Utilities
         // prefix for usage messages that tell that method to not create an error string
         // from the message, but the output it directly, as-is
         private const string c_rawMessagePrefix = "RAWUSAGE";
+
+        /// <summary>
+        /// regular expression used to determine if a source file ends in a semicolon (optionally followed by whitespace)
+        /// </summary>
+        private static Regex s_endsInSemicolon = new Regex(@";\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
 
         /// <summary>
         /// This field is initially false, and it set to true if any errors were
@@ -1095,6 +1101,7 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
+                var endsInSemicolon = true;
                 for (var ndx = 0; ndx < crunchGroup.Count; ++ndx)
                 {
                     var sourceCode = ReadInputFile(
@@ -1104,12 +1111,25 @@ namespace Microsoft.Ajax.Utilities
 
                     if (ndx > 0)
                     {
+                        // separate subsequent files (not the first) with a line break
                         inputBuilder.AppendLine();
+
+                        // if the previous file did NOT end in a semicolon, also add one now
+                        // BEFORE the source comment (so it won't affect the column numbers of the first line).
+                        // the flag is initialized to true so the first file won't get a semicolon added.
+                        if (!endsInSemicolon)
+                        {
+                            inputBuilder.Append(';');
+                        }
                     }
 
                     inputBuilder.Append("///#SOURCE 1 1 ");
                     inputBuilder.AppendLine(crunchGroup[ndx].Path);
                     inputBuilder.Append(sourceCode);
+
+                    // save whether or not this code ends in a semicolon so we can know
+                    // NEXT time whether we need to add one to separate the files.
+                    endsInSemicolon = s_endsInSemicolon.IsMatch(sourceCode);
 
                     // if we are echoing the input, add it to the echo builder, but without the comment
                     // but WITH a line-break

@@ -103,5 +103,12 @@ namespace JSUnitTest
         // not valid JSON
         TestHelper.Instance.RunTest("-js:json -rename:all");
     }
+
+    [TestMethod]
+    public void ConcatSemicolons()
+    {
+        // not valid JSON
+        TestHelper.Instance.RunTest("", "concat1.js", "concat2.js", "concat-partial1.js", "concat-partial2.js", "concat-partial3.js", "concat-partial4.js");
+    }
   }
 }

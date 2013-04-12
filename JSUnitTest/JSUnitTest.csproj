@@ -161,6 +161,7 @@
     <Content Include="TestData\JS\Expected\CatchVariable\OuterIsGlobal.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef.js" />
     <Content Include="TestData\JS\Expected\CatchVariable\OuterNotRef_h.js" />
+    <Content Include="TestData\JS\Expected\CommandLine\ConcatSemicolons.js" />
     <Content Include="TestData\JS\Expected\CommandLine\EventHandler.js" />
     <Content Include="TestData\JS\Expected\CommandLine\Expression.js" />
     <Content Include="TestData\JS\Expected\CommandLine\Expression_json.js" />
@@ -479,6 +480,13 @@
     <Content Include="TestData\JS\Input\CatchVariable\NoOuter.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterIsGlobal.js" />
     <Content Include="TestData\JS\Input\CatchVariable\OuterNotRef.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat-partial1.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat-partial2.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat-partial3.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat-partial4.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat1.js" />
+    <Content Include="TestData\JS\Input\CommandLine\concat2.js" />
+    <Content Include="TestData\JS\Input\CommandLine\ConcatSemicolons.js" />
     <Content Include="TestData\JS\Input\CommandLine\EventHandler.js" />
     <Content Include="TestData\JS\Input\CommandLine\Expression.js" />
     <Content Include="TestData\JS\Input\CommandLine\Globals.js" />
