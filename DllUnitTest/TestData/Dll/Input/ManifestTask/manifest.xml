@@ -8,6 +8,7 @@
         <input path="file2.js"/>
         <input path="file3.js"/>
         <input path="file4.js"/>
+        <input path="file5.js"/>
     </output>
     <output path="test2.js">
         <arguments>-global:foobar -define:porkpie=42 -reorder:Y -fnames:onlyref -debug:N</arguments>
@@ -16,6 +17,7 @@
         <input path="file2.js"/>
         <input path="file3.js"/>
         <input path="file4.js"/>
+        <input path="file5.js"/>
     </output>
     <output path="test1.css">
         <arguments>-colors:major</arguments>

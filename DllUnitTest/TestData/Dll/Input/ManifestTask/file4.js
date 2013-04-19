@@ -1,1 +1,2 @@
-﻿})(window, document);
+﻿})(window, document)
+// a single-line comment that ends in the EOF

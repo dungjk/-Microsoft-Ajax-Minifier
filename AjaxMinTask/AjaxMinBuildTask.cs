@@ -37,6 +37,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         #region private fields
 
         /// <summary>
+        /// regular expression used to determine if a source file ends in a semicolon (optionally followed by whitespace)
+        /// </summary>
+        private static Regex s_endsInSemicolon = new Regex(@";\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        /// <summary>
         /// AjaxMin Minifier
         /// </summary>
         private readonly Utilities.Minifier m_minifier = new Utilities.Minifier();
@@ -979,17 +984,25 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // concatenate all the input files together, with each one prefaced by the
             // special #SOURCE comment so the errors and warnings turn out right.
             var inputBuilder = new StringBuilder();
+            var endsInSemicolon = true;
             foreach (var itemSpec in this.JsSourceFiles)
             {
-                // if the term-semicolons switch is set, separate each input file with
-                // a semicolon to terminate the previous statement
-                if (m_switchParser.JSSettings.TermSemicolons)
+                // start a new line so any previous single-line comments are terminated, then
+                // if the previous file didn't end in a semicolon, add one now.
+                // (doesn't hurt to have an extra semicolon)
+                inputBuilder.AppendLine();
+                if (!endsInSemicolon)
                 {
                     inputBuilder.Append(';');
                 }
 
                 inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);
-                inputBuilder.Append(File.ReadAllText(itemSpec.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new JSEncoderFallback())));
+
+                string fileContent = File.ReadAllText(itemSpec.ItemSpec, GetEncoding(m_switchParser.EncodingInputName, new JSEncoderFallback()));
+                inputBuilder.Append(fileContent);
+
+                // set the flag for whether or not this file ends in a semicolon
+                endsInSemicolon = s_endsInSemicolon.IsMatch(fileContent);
             }
 
             MinifyJavaScript(inputBuilder.ToString(), string.Empty, this.JsCombinedFileName, mapFilePath);

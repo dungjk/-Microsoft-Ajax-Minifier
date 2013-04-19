@@ -122,6 +122,7 @@
     <Content Include="TestData\Dll\Input\ManifestTask\file3.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\file3.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file4.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\file5.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\ManifestFail.xml" />

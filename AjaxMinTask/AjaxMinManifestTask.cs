@@ -38,6 +38,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
         private static readonly string FolderSeparator = Path.DirectorySeparatorChar.ToString();
 
         /// <summary>
+        /// regular expression used to determine if a source file ends in a semicolon (optionally followed by whitespace)
+        /// </summary>
+        private static Regex s_endsInSemicolon = new Regex(@";\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        /// <summary>
         /// Default AjaxMin switches to use for the project
         /// </summary>
         public string ProjectDefaultSwitches { get; set; }
@@ -473,8 +478,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
             return switchParser;
         }
 
-        private static void CopyInputWithContext(TextWriter writer, string fileContext, string inputPath, Encoding encoding)
+        private static void CopyInputWithContext(TextWriter writer, string fileContext, string inputPath, Encoding encoding, ref bool endsInSemicolon)
         {
+            // start a new line so any previous single-line comments are terminated, then
+            // if the previous file didn't end in a semicolon, add one now.
+            // It doesn't hurt to have an extra semicolon in JavaScript, and our CSS Parser has been
+            // tweaked to ignore extraneous semicolons as well.
+            writer.WriteLine();
+            if (!endsInSemicolon)
+            {
+                writer.Write(';');
+            }
+
             // output a special comment that AjaxMin will pick up so any errors will 
             // have the proper file context
             writer.Write("///#source 1 1 ");
@@ -485,11 +500,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // so just ask for a JS encoding here.
             using (var reader = new StreamReader(inputPath, encoding))
             {
-                writer.WriteLine(reader.ReadToEnd());
+                var fileContent = reader.ReadToEnd();
+                writer.WriteLine(fileContent);
+
+                // set the flag for whether or not this file ends in a semicolon
+                endsInSemicolon = s_endsInSemicolon.IsMatch(fileContent);
             }
         }
 
-        private void CopyAllInputWithContext(TextWriter writer, string manifestFolder, DirectoryInfo folderInfo, Encoding encoding, string extensions)
+        private void CopyAllInputWithContext(TextWriter writer, string manifestFolder, DirectoryInfo folderInfo, Encoding encoding, string extensions, ref bool endsInSemicolon)
         {
             // get all the files in this folder
             foreach (var fileInfo in folderInfo.GetFiles())
@@ -499,14 +518,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // will be period-delimited and end in a period.
                 if (extensions.IndexOf(fileInfo.Extension.ToUpperInvariant() + '.', StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    CopyInputWithContext(writer, this.GetInputFileContext(fileInfo.FullName, manifestFolder), fileInfo.FullName, encoding);
+                    CopyInputWithContext(writer, this.GetInputFileContext(fileInfo.FullName, manifestFolder), fileInfo.FullName, encoding, ref endsInSemicolon);
                 }
             }
 
             // then recurse any subfolders
             foreach (var subFolder in folderInfo.GetDirectories())
             {
-                CopyAllInputWithContext(writer, manifestFolder, subFolder, encoding, extensions);
+                CopyAllInputWithContext(writer, manifestFolder, subFolder, encoding, extensions, ref endsInSemicolon);
             }
         }
 
@@ -566,6 +585,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             // create combined input source
             var sb = new StringBuilder();
+            var endsInSemicolon = true;
             using (var writer = new StringWriter(sb, CultureInfo.InvariantCulture))
             {
                 foreach (var input in inputFiles)
@@ -595,7 +615,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             writer, 
                             this.GetInputFileContext(fileInfo.FullName, manifestFolder), 
                             fileInfo.FullName, 
-                            GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName));
+                            GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
+                            ref endsInSemicolon);
                     }
                     else
                     {
@@ -618,7 +639,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                     manifestFolder,
                                     folderInfo,
                                     GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
-                                    ExtensionsFromCodeType(codeType));
+                                    ExtensionsFromCodeType(codeType),
+                                    ref endsInSemicolon);
                             }
                         }
                         else if (!input.Optional)
