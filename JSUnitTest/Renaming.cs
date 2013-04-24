@@ -74,5 +74,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-rename:all");
         }
+
+        [TestMethod]
+        public void SafeAll()
+        {
+            TestHelper.Instance.RunTest("-rename:all -evals:safeall");
+        }
+
+        [TestMethod]
+        public void SafeAll_imm()
+        {
+            TestHelper.Instance.RunTest("-rename:all -evals:immediate");
+        }
     }
 }
