@@ -157,7 +157,7 @@ namespace Microsoft.Ajax.Utilities
         internal override bool EncloseBlock(EncloseBlockType type)
         {
             // if there's an else block, recurse down that branch
-            if (FalseBlock != null)
+            if (FalseBlock != null && FalseBlock.Count > 0)
             {
                 return FalseBlock.EncloseBlock(type);
             }

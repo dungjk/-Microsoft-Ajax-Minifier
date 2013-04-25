@@ -180,6 +180,12 @@ namespace JSUnitTest
         }
 
         [TestMethod()]
+        public void EncloseBlock_nominify()
+        {
+            TestHelper.Instance.RunTest("-minify:no");
+        }
+
+        [TestMethod()]
         public void Throw()
         {
             TestHelper.Instance.RunTest("-mac:N");

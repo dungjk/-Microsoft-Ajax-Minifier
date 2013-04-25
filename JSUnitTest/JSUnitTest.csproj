@@ -209,6 +209,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\DoWhile.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\DoWhile_3.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\EncloseBlock.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\EncloseBlock_nominify.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForIn.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForNoIn.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\ForNoIn_kill.js" />

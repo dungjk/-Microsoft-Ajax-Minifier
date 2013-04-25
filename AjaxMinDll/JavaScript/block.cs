@@ -109,7 +109,7 @@ namespace Microsoft.Ajax.Utilities
                 return (
                   m_list.Count == 0
                   ? true
-                  : (m_list.Count == 1  && !m_list[0].HideFromOutput ? m_list[0].RequiresSeparator : false)
+                  : (m_list.Count == 1  && !m_list[0].HideFromOutput && !(m_list[0] is Block) ? m_list[0].RequiresSeparator : false)
                   );
             }
         }
