@@ -36,12 +36,16 @@ function foo()
     catch(e)
     {
         for (var f = 0; f < b; ++f)
+        {
             a = a * d
+        }
     }
     finally
     {
         if (!a)
-            b = -1;
+        {
+            b = -1
+        }
         else
             b = a
     }

@@ -81,6 +81,7 @@
     <Compile Include="GlobalMethods.cs" />
     <Compile Include="LexicalDeclarations.cs" />
     <Compile Include="Literals.cs" />
+    <Compile Include="NoMinify.cs" />
     <Compile Include="ObjectCreation.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Preprocessor.cs" />
@@ -300,6 +301,7 @@
     <Content Include="TestData\JS\Expected\Literals\Strings_h.js" />
     <Content Include="TestData\JS\Expected\Literals\strings_k.js" />
     <Content Include="TestData\JS\Expected\Literals\Strings_utf.js" />
+    <Content Include="TestData\JS\Expected\NoMinify\EmptyElse.js" />
     <Content Include="TestData\JS\Expected\ObjectCreation\CompareObjects.js" />
     <Content Include="TestData\JS\Expected\ObjectCreation\Constructor.js" />
     <Content Include="TestData\JS\Expected\ObjectCreation\Constructor_H.js" />
@@ -584,6 +586,7 @@
     <Content Include="TestData\JS\Input\Literals\Replace.js" />
     <Content Include="TestData\JS\Input\Literals\StrictEncoding.js" />
     <Content Include="TestData\JS\Input\Literals\Strings.js" />
+    <Content Include="TestData\JS\Input\NoMinify\EmptyElse.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\CompareObjects.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\Constructor.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\InstanceOf.js" />
