@@ -77,13 +77,22 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// </summary>
         public ITaskItem[] Manifests { get; set; }
 
+        /// <summary>
+        /// Gets or sets whether this execution is a clean operation (delete output files)
+        /// or a normal build operation (create output files)
+        /// </summary>
+        public bool IsCleanOperation { get; set; }
+
         public override bool Execute()
         {
             if (Manifests != null && Manifests.Length > 0)
             {
                 // create the project default settings
                 var projectDefaultSettings = new SwitchParser();
-                projectDefaultSettings.Parse(ProjectDefaultSwitches);
+                if (!string.IsNullOrWhiteSpace(ProjectDefaultSwitches))
+                {
+                    projectDefaultSettings.Parse(ProjectDefaultSwitches);
+                }
 
                 // each task item represents an ajaxmin manifest file: an XML file that
                 // has settings and one or more output files, each comprised of one or more
@@ -141,9 +150,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         private void ProcessOutputGroup(OutputGroup outputGroup, SwitchParser defaultSettings, string manifestFolder, DateTime manifestModifiedTime)
         {
-            var processGroup = false;
-            var codeType = outputGroup.CodeType;
-
             // get the full path and check for existence
             var outputFileInfo = new FileInfo(GetRootedOutput(outputGroup.Path, manifestFolder));
 
@@ -161,6 +167,25 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                 symbolsFileInfo = new FileInfo(GetRootedOutput(symbolMapPath, manifestFolder));
             }
+
+            if (IsCleanOperation)
+            {
+                // delete the output file(s)
+                outputFileInfo.Delete();
+                symbolsFileInfo.IfNotNull(fi => fi.Delete());
+            }
+            else
+            {
+                // generate the output files
+                GenerateOutput(outputFileInfo, symbolsFileInfo, outputGroup, defaultSettings, manifestFolder, manifestModifiedTime);
+            }
+        }
+
+        private void GenerateOutput(FileInfo outputFileInfo, FileInfo symbolsFileInfo, OutputGroup outputGroup, SwitchParser defaultSettings, string manifestFolder, DateTime manifestModifiedTime)
+        {
+            // build the output files
+            var processGroup = false;
+            var codeType = outputGroup.CodeType;
 
             if (!outputFileInfo.Exists
                 || (symbolsFileInfo != null && !symbolsFileInfo.Exists))
@@ -462,7 +487,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // first get the appropriate string for this configuration. Check for arguments that
             // match this configuration, and if none exist, check for the defaults (blank config)
             string arguments;
-            if (!configArguments.TryGetValue(this.Configuration, out arguments))
+            if (this.Configuration.IsNullOrWhiteSpace() || !configArguments.TryGetValue(this.Configuration, out arguments))
             {
                 if (!configArguments.TryGetValue(string.Empty, out arguments))
                 {
