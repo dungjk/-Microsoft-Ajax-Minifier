@@ -144,6 +144,12 @@
   <data name="MapDestinationIsReadOnly" xml:space="preserve">
     <value>Did not generate symbol map: destination file '{0}' is read-only.</value>
   </data>
+  <data name="NoJavaScriptToMinify" xml:space="preserve">
+    <value>No JavaScript files to minify</value>
+  </data>
+  <data name="NoStyleSheetsToMinify" xml:space="preserve">
+    <value>No CSS files to minify</value>
+  </data>
   <data name="NoWritePermission" xml:space="preserve">
     <value>No permission to minify to destination file '{0}'</value>
   </data>

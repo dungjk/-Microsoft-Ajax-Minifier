@@ -120,6 +120,42 @@
             Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "failoutput.css")), "failoutput.css should not exist");
         }
 
+        [TestMethod]
+        public void ManifestExternalGroups()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.Manifests = new[] { new TaskItem { ItemSpec = @"Dll\Input\ManifestTask\ManifestExternal.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_ext.js")), "test_ext.js does not exist");
+
+            // verify output file contents
+            var test1JSVerify = VerifyFileContents("test_ext.js");
+
+            Assert.IsTrue(test1JSVerify, "Test_ext.js output doesn't match");
+        }
+
+        [TestMethod]
+        public void ManifestExternal()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.TreatWarningsAsErrors = true;
+            task.Manifests = new[] { new TaskItem { ItemSpec = @"Dll\Input\ManifestTask\Manifestjq2.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_jq2.js")), "test_jq2.js does not exist");
+        }
+
         private AjaxMinManifestTask CreateAndSetupTask()
         {
             var task = new AjaxMinManifestTask();

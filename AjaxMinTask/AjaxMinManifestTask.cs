@@ -293,14 +293,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 var settings = ParseConfigSettings(outputGroup.Arguments, defaultSettings);
 
                 // create combined input source
-                var inputCode = CombineInputs(outputGroup.Inputs, manifestFolder, settings.EncodingInputName, ref codeType);
-                if (inputCode.Length > 0)
+                var inputGroups = CombineInputs(outputGroup.Inputs, manifestFolder, settings.EncodingInputName, ref codeType);
+                if (inputGroups.Count > 0)
                 {
                     switch (codeType)
                     {
                         case CodeType.JavaScript:
                             ProcessJavaScript(
-                                inputCode,
+                                inputGroups,
                                 manifestFolder,
                                 settings.JSSettings,
                                 outputFileInfo.FullName,
@@ -311,7 +311,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                         case CodeType.StyleSheet:
                             ProcessStylesheet(
-                                inputCode,
+                                inputGroups,
                                 manifestFolder,
                                 settings.CssSettings,
                                 settings.JSSettings,
@@ -342,15 +342,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region code processing methods
 
-        private void ProcessJavaScript(string inputCode, string manifestFolder, CodeSettings settings, string outputPath, SymbolMap symbolMap, IList<Resource> resourceList, Encoding encoding)
+        private void ProcessJavaScript(IList<InputGroup> inputGroups, string manifestFolder, CodeSettings settings, string outputPath, SymbolMap symbolMap, IList<Resource> resourceList, Encoding encoding)
         {
-            // create and setup parser
-            var parser = new JSParser(inputCode);
-            parser.CompilerError += (sender, ea) =>
-            {
-                LogContextError(ea.Error);
-            };
-
             // if we want a symbols map, we need to set it up now
             TextWriter mapWriter = null;
             ISourceMap sourceMap = null;
@@ -392,17 +385,64 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     settings.AddResourceStrings(ProcessResourceFile(resource.Name, GetRootedInput(resource.Path, manifestFolder)));
                 }
 
-                // minify input
-                var block = parser.Parse(settings);
-                var minifiedCode = block.ToCode();
+                // save the original term settings. We'll make sure to set this back again
+                // for the last item in the group, but we'll make sure it's TRUE for all the others.
+                bool originalTermSetting = settings.TermSemicolons;
+
+                var outputBuilder = new StringBuilder();
+                GlobalScope sharedGlobalScope = null;
+                for (var ndx = 0; ndx < inputGroups.Count; ++ndx)
+                {
+                    var inputGroup = inputGroups[ndx];
+
+                    // create and setup parser
+                    var parser = new JSParser(inputGroup.Source);
+
+                    // set the shared global object
+                    parser.GlobalScope = sharedGlobalScope;
+
+                    // set up the error handler
+                    parser.CompilerError += (sender, ea) =>
+                    {
+                        // if the input group isn't project, then we only want to report sev-0 errors
+                        if (inputGroup.Origin == InputOrigin.Project || ea.Error.Severity == 0)
+                        {
+                            LogContextError(ea.Error);
+                        }
+                    };
+
+                    // for all but the last item, we want the term-semicolons setting to be true.
+                    // but for the last entry, set it back to its original value
+                    settings.TermSemicolons = ndx < inputGroups.Count - 1 ? true : originalTermSetting;
+
+                    // minify input
+                    var block = parser.Parse(settings);
+                    if (block != null)
+                    {
+                        if (ndx > 0)
+                        {
+                            // not the first group, so output the appropriate newline
+                            // sequence before we output the group.
+                            outputBuilder.Append(settings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n");
+                        }
+
+                        outputBuilder.Append(block.ToCode());
+                    }
+
+                    // save the global scope for the next group (if any).
+                    // we need to do this in case an earlier input group defines some global
+                    // functions or variables, and later groups reference them. We don't want the
+                    // later parse to say "undefined global"
+                    sharedGlobalScope = parser.GlobalScope;
+                }
 
                 // write output
                 if (!Log.HasLoggedErrors)
                 {
                     using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
                     {
-                        // write the minified code
-                        writer.Write(minifiedCode);
+                        // write the combined minified code
+                        writer.Write(outputBuilder.ToString());
 
                         // give the map (if any) a chance to add something
                         settings.SymbolsMap.IfNotNull(m => m.EndFile(
@@ -432,26 +472,34 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private void ProcessStylesheet(string inputCode, string manifestFolder, CssSettings settings, CodeSettings jsSettings, string outputPath, Encoding encoding)
+        private void ProcessStylesheet(IList<InputGroup> inputGroups, string manifestFolder, CssSettings settings, CodeSettings jsSettings, string outputPath, Encoding encoding)
         {
-            // create and setup parser
-            var parser = new CssParser();
-            parser.CssError += (sender, ea) =>
+            var outputBuilder = new StringBuilder();
+            foreach (var inputGroup in inputGroups)
             {
-                LogContextError(ea.Error);
-            };
-            parser.Settings = settings;
-            parser.JSSettings = jsSettings;
+                // create and setup parser
+                var parser = new CssParser();
+                parser.Settings = settings;
+                parser.JSSettings = jsSettings;
+                parser.CssError += (sender, ea) =>
+                {
+                    // if the input group is not project, then only report sev-0 errors
+                    if (inputGroup.Origin == InputOrigin.Project || ea.Error.Severity == 0)
+                    {
+                        LogContextError(ea.Error);
+                    }
+                };
 
-            // minify input
-            var minifiedCode = parser.Parse(inputCode);
+                // minify input
+                outputBuilder.Append(parser.Parse(inputGroup.Source));
+            }
 
             // write output
             if (!Log.HasLoggedErrors)
             {
                 using (var writer = new StreamWriter(GetRootedOutput(outputPath, manifestFolder), false, encoding))
                 {
-                    writer.Write(minifiedCode);
+                    writer.Write(outputBuilder.ToString());
                 }
             }
             else
@@ -606,73 +654,120 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private string CombineInputs(IList<InputFile> inputFiles, string manifestFolder, string defaultEncodingName, ref CodeType codeType)
+        private IList<InputGroup> CombineInputs(IList<InputFile> inputFiles, string manifestFolder, string defaultEncodingName, ref CodeType codeType)
+        {
+            // the list of input groups
+            var inputGroups = new List<InputGroup>();
+
+            // this string builder will be used to build up project-origin input files as we encounter them
+            var groupBuilder = new StringBuilder();
+            var endsInSemicolon = true;
+            foreach (var inputFile in inputFiles)
+            {
+                if (inputFile.Origin != null && string.CompareOrdinal(inputFile.Origin, "external") == 0)
+                {
+                    // we found an external input file.
+                    // if we were building up project input files, dump what we have into a new group and clear it out
+                    if (groupBuilder.Length > 0)
+                    {
+                        inputGroups.Add(new InputGroup { Source = groupBuilder.ToString(), Origin = InputOrigin.Project });
+                        groupBuilder.Clear();
+                    }
+
+                    // read the content of the external file, assuming that the previous code does NOT end in a semicolon
+                    var dummy = false;
+                    var externalSource = ReadInputFile(inputFile, manifestFolder, defaultEncodingName, ref codeType, ref dummy);
+
+                    // only add a group if it isn't null or only whitespace
+                    if (!externalSource.IsNullOrWhiteSpace())
+                    {
+                        inputGroups.Add(new InputGroup { Source = externalSource, Origin = InputOrigin.External });
+                    }
+
+                    // always reset the flag to false so that the NEXT code will be separated from the external code 
+                    // with a semicolon
+                    endsInSemicolon = false;
+                }
+                else
+                {
+                    // a project file. 
+                    // read the content of the project file and add it to the group builder
+                    groupBuilder.Append(ReadInputFile(inputFile, manifestFolder, defaultEncodingName, ref codeType, ref endsInSemicolon));
+                }
+            }
+
+            // if there is anything left in the group builder, add it to the input groups now
+            if (groupBuilder.Length > 0)
+            {
+                inputGroups.Add(new InputGroup { Source = groupBuilder.ToString(), Origin = InputOrigin.Project });
+            }
+
+            return inputGroups;
+        }
+
+        private string ReadInputFile(InputFile input, string manifestFolder, string defaultEncodingName, ref CodeType codeType, ref bool endsInSemicolon)
         {
             // create combined input source
             var sb = new StringBuilder();
-            var endsInSemicolon = true;
             using (var writer = new StringWriter(sb, CultureInfo.InvariantCulture))
             {
-                foreach (var input in inputFiles)
+                var fileInfo = new FileInfo(GetRootedInput(input.Path, manifestFolder));
+                if (fileInfo.Exists)
                 {
-                    var fileInfo = new FileInfo(GetRootedInput(input.Path, manifestFolder));
-                    if (fileInfo.Exists)
+                    // if we don't know the code type yet, try to figure it out from 
+                    // the file extensions; first match wins.
+                    if (codeType == CodeType.Unknown)
                     {
-                        // if we don't know the code type yet, try to figure it out from 
-                        // the file extensions; first match wins.
+                        switch (fileInfo.Extension.ToUpperInvariant())
+                        {
+                            case ".JS":
+                                codeType = CodeType.JavaScript;
+                                break;
+
+                            case ".CSS":
+                                codeType = CodeType.StyleSheet;
+                                break;
+                        }
+                    }
+
+                    // copy the input file to the output with a special context 
+                    // marker so any errors are logged to the apporpriate source file
+                    CopyInputWithContext(
+                        writer, 
+                        this.GetInputFileContext(fileInfo.FullName, manifestFolder), 
+                        fileInfo.FullName, 
+                        GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
+                        ref endsInSemicolon);
+                }
+                else
+                {
+                    // FILE doesn't exist -- see if it's a directory
+                    var folderInfo = new DirectoryInfo(fileInfo.FullName);
+                    if (folderInfo.Exists)
+                    {
+                        // AHA! It's a folder, not a file.
+                        // if we don't know the code type, then we can't proceed
                         if (codeType == CodeType.Unknown)
                         {
-                            switch (fileInfo.Extension.ToUpperInvariant())
-                            {
-                                case ".JS":
-                                    codeType = CodeType.JavaScript;
-                                    break;
-
-                                case ".CSS":
-                                    codeType = CodeType.StyleSheet;
-                                    break;
-                            }
+                            Log.LogError(Strings.DirectorySourceRequiresCodeType);
                         }
-
-                        // copy the input file to the output with a special context 
-                        // marker so any errors are logged to the apporpriate source file
-                        CopyInputWithContext(
-                            writer, 
-                            this.GetInputFileContext(fileInfo.FullName, manifestFolder), 
-                            fileInfo.FullName, 
-                            GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
-                            ref endsInSemicolon);
+                        else
+                        {
+                            // recursively look for all source files of the appropriate extension
+                            // assume just JS and CSS at this time.
+                            CopyAllInputWithContext(
+                                writer,
+                                manifestFolder,
+                                folderInfo,
+                                GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
+                                ExtensionsFromCodeType(codeType),
+                                ref endsInSemicolon);
+                        }
                     }
-                    else
+                    else if (!input.Optional)
                     {
-                        // FILE doesn't exist -- see if it's a directory
-                        var folderInfo = new DirectoryInfo(fileInfo.FullName);
-                        if (folderInfo.Exists)
-                        {
-                            // AHA! It's a folder, not a file.
-                            // if we don't know the code type, then we can't proceed
-                            if (codeType == CodeType.Unknown)
-                            {
-                                Log.LogError(Strings.DirectorySourceRequiresCodeType);
-                            }
-                            else
-                            {
-                                // recursively look for all source files of the appropriate extension
-                                // assume just JS and CSS at this time.
-                                CopyAllInputWithContext(
-                                    writer,
-                                    manifestFolder,
-                                    folderInfo,
-                                    GetJavaScriptEncoding(input.EncodingName ?? defaultEncodingName),
-                                    ExtensionsFromCodeType(codeType),
-                                    ref endsInSemicolon);
-                            }
-                        }
-                        else if (!input.Optional)
-                        {
-                            // this input file isn't optional, and it doesn't exist. Throw an error.
-                            LogFileError(fileInfo.FullName, Strings.RequiredInputDoesntExist, input.Path);
-                        }
+                        // this input file isn't optional, and it doesn't exist. Throw an error.
+                        LogFileError(fileInfo.FullName, Strings.RequiredInputDoesntExist, input.Path);
                     }
                 }
             }
@@ -881,6 +976,22 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     error.Message       // message
                     );
             }
+        }
+
+        #endregion
+
+        #region private helper classes
+
+        private class InputGroup
+        {
+            public string Source { get; set; }
+            public InputOrigin Origin { get; set; }
+        }
+
+        private enum InputOrigin
+        {
+            Project = 0,
+            External,
         }
 
         #endregion

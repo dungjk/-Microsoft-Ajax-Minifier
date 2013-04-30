@@ -88,6 +88,7 @@
     <Content Include="TestData\Dll\Expected\ManifestTask\test1.css" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test1.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test2.js" />
+    <Content Include="TestData\Dll\Expected\ManifestTask\test_ext.js" />
     <Content Include="TestData\Dll\Expected\SourceChange.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.css" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.js" />
@@ -116,6 +117,7 @@
     <Content Include="TestData\Dll\Input\Frameworks\modernizr-2.0.6.js" />
     <Content Include="TestData\Dll\Input\Frameworks\prototype-1.7.1.js" />
     <Content Include="TestData\Dll\Input\Frameworks\prototype.1.17.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\external.min.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file1.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\file1.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file2.css" />
@@ -126,7 +128,10 @@
     <Content Include="TestData\Dll\Input\ManifestTask\file5.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\jquery-2.0.0.min.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\ManifestExternal.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\ManifestFail.xml" />
+    <Content Include="TestData\Dll\Input\ManifestTask\Manifestjq2.xml" />
     <Content Include="TestData\Dll\Input\SourceChange.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\manifest.xml" />
   </ItemGroup>

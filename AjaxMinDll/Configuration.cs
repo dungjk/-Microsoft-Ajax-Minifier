@@ -35,6 +35,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
         private const string PathAttributeName = "path";
         private const string EncodingAttributeName = "encoding";
         private const string TypeAttributeName = "type";
+        private const string OriginAttributeName = "origin";
         private const string MapPathAttributeName = "mappath";
         private const string SourceRootAttributeName = "sourceRoot";
         private const string SafeAttributeName = "safe";
@@ -346,6 +347,10 @@ namespace Microsoft.Ajax.Utilities.Configuration
                                     inputNode.Optional = optional;
                                 }
                                 break;
+
+                            case OriginAttributeName:
+                                inputNode.Origin = reader.Value;
+                                break;
                         }
                     }
 
@@ -454,6 +459,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
         public string Path { get; set; }
         public string EncodingName { get; set; }
         public bool Optional { get; set; }
+        public string Origin { get; set; }
     }
 
     public enum CodeType

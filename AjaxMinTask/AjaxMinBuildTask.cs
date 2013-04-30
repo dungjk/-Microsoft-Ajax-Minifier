@@ -692,6 +692,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                 MinifyJavaScript();
             }
+            else
+            {
+                Log.LogMessage(Strings.NoJavaScriptToMinify);
+            }
 
             // Deal with CSS minification
             if (this.CssSourceFiles != null && this.CssSourceFiles.Length > 0)
@@ -726,6 +730,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 }
 
                 MinifyStyleSheets();
+            }
+            else
+            {
+                Log.LogMessage(Strings.NoStyleSheetsToMinify);
             }
 
             return !Log.HasLoggedErrors;
