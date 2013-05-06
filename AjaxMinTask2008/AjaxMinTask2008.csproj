@@ -57,6 +57,15 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="..\AjaxMin\ManifestStrings.Designer.cs">
+      <Link>ManifestStrings.Designer.cs</Link>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManifestStrings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="..\AjaxMin\ManifestUtilities.cs">
+      <Link>ManifestUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMin\Properties\ProductAssemblyInfo.cs">
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
@@ -67,6 +76,12 @@
       <Link>Strings.resx</Link>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\AjaxMin\ManifestStrings.resx">
+      <Link>ManifestStrings.resx</Link>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities.Configuration</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

@@ -744,7 +744,7 @@ namespace JSUnitTest
 
             // read the input JS
             string jsSource;
-            using (StreamReader reader = new StreamReader(inputPath, MainClass.GetJSEncoding(switchParser.EncodingInputName)))
+            using (var reader = new StreamReader(inputPath, GetJSEncoding(switchParser.EncodingInputName)))
             {
                 jsSource = reader.ReadToEnd();
             }
@@ -795,7 +795,7 @@ namespace JSUnitTest
             }
 
             // output the crunched code using the proper output encoding
-            using (var outputStream = new StreamWriter(outputPath, false, MainClass.GetJSEncoding(switchParser.EncodingOutputName)))
+            using (var outputStream = new StreamWriter(outputPath, false, GetJSEncoding(switchParser.EncodingOutputName)))
             {
                 outputStream.Write(crunchedCode);
             }
@@ -958,6 +958,32 @@ namespace JSUnitTest
         {
             public List<string> OutputFiles { get; set; }
             public List<string> OutputMapFiles { get; set; }
+        }
+
+        private Encoding GetJSEncoding(string encodingName)
+        {
+            Encoding encoding = null;
+            if (!string.IsNullOrWhiteSpace(encodingName))
+            {
+                try
+                {
+                    // try to create an encoding from the encoding name
+                    // using special encoder fallback determined earlier, or a default
+                    // encoder fallback that uses the UNICODE "replace character" for
+                    // things it doesn't understand, and a decoder replacement fallback 
+                    // that also uses the UNICODE "replacement character" for things it doesn't understand.
+                    encoding = Encoding.GetEncoding(
+                        encodingName,
+                        new JSEncoderFallback(),
+                        new DecoderReplacementFallback("\uFFFD"));
+                }
+                catch (ArgumentException)
+                {
+                    // eat the exception and just go with UTF-8
+                }
+            }
+
+            return encoding ?? new UTF8Encoding(false);
         }
 
         #endregion

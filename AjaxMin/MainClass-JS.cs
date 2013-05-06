@@ -32,171 +32,212 @@ namespace Microsoft.Ajax.Utilities
     {
         #region file processing
 
-        private int PreprocessJSFile(string combinedSourceFile, SwitchParser switchParser, StringBuilder outputBuilder)
+        private int PreprocessJSFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             // blank line before
             WriteProgress();
 
-            // create the a parser object for our chunk of code
-            JSParser parser = new JSParser(combinedSourceFile);
+            var ndx = 0;
+            GlobalScope sharedGlobalScope = null;
+            foreach (var inputGroup in inputGroups)
+            {
+                // create the a parser object for our chunk of code
+                JSParser parser = new JSParser(inputGroup.Source);
 
-            // hook the engine events
-            parser.UndefinedReference += OnUndefinedReference;
-            parser.CompilerError += (sender, ea) =>
+                // set the shared global scope
+                parser.GlobalScope = sharedGlobalScope;
+
+                // hook the engine events
+                parser.UndefinedReference += OnUndefinedReference;
+                parser.CompilerError += (sender, ea) =>
+                    {
+                        var error = ea.Error;
+                        if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
+                        {
+                            // ignore severity values greater than our severity level
+                            // also ignore errors that are in our ignore list (if any)
+                            if (error.Severity <= switchParser.WarningLevel)
+                            {
+                                // we found an error
+                                m_errorsFound = true;
+
+                                // write the error out
+                                WriteError(error.ToString());
+                            }
+                        }
+                    };
+
+                // we only want to preprocess the code. Call that api on the parser
+                var resultingCode = parser.PreprocessOnly(switchParser.JSSettings);
+
+                if (!string.IsNullOrEmpty(resultingCode))
+                {
+                    // always output the crunched code to debug stream
+                    Debug.WriteLine(resultingCode);
+
+                    // send the output code to the output stream prepended by an appropriate line terminator
+                    if (ndx++ > 0)
+                    {
+                        outputBuilder.Append(switchParser.JSSettings.LineTerminator);
+                    }
+
+                    outputBuilder.Append(resultingCode);
+                }
+                else
+                {
+                    // resulting code is null or empty
+                    Debug.WriteLine(AjaxMin.OutputEmpty);
+                }
+
+                // save the global scope for later
+                sharedGlobalScope = parser.GlobalScope;
+            }
+
+            return 0;
+        }
+
+        private int ProcessJSFileEcho(IList<InputGroup> inputGroups, SwitchParser switchParser)
+        {
+            // blank line before
+            WriteProgress();
+
+            GlobalScope sharedGlobalScope = null;
+            foreach (var inputGroup in inputGroups)
+            {
+                // create the a parser object for our chunk of code
+                JSParser parser = new JSParser(inputGroup.Source);
+
+                // set the shared global scope
+                parser.GlobalScope = sharedGlobalScope;
+
+                // hook the engine events
+                parser.UndefinedReference += OnUndefinedReference;
+                parser.CompilerError += (sender, ea) =>
                 {
                     var error = ea.Error;
-
-                    // ignore severity values greater than our severity level
-                    // also ignore errors that are in our ignore list (if any)
-                    if (error.Severity <= switchParser.WarningLevel)
+                    if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
                     {
-                        // we found an error
-                        m_errorsFound = true;
+                        // ignore severity values greater than our severity level
+                        // also ignore errors that are in our ignore list (if any)
+                        if (error.Severity <= switchParser.WarningLevel)
+                        {
+                            // we found an error
+                            m_errorsFound = true;
 
-                        // write the error out
-                        WriteError(error.ToString());
+                            // write the error out
+                            WriteError(error.ToString());
+                        }
                     }
                 };
 
-            // we only want to preprocess the code. Call that api on the parser
-            var resultingCode = parser.PreprocessOnly(switchParser.JSSettings);
+                var scriptBlock = parser.Parse(switchParser.JSSettings);
+                if (scriptBlock == null)
+                {
+                    // no code?
+                    WriteProgress(AjaxMin.NoParsedCode);
+                }
 
-            if (!string.IsNullOrEmpty(resultingCode))
-            {
-                // always output the crunched code to debug stream
-                Debug.WriteLine(resultingCode);
-
-                // send the output code to the output stream
-                outputBuilder.Append(resultingCode);
+                sharedGlobalScope = parser.GlobalScope;
             }
-            else
+
+            if (switchParser.AnalyzeMode)
             {
-                // resulting code is null or empty
-                Debug.WriteLine(AjaxMin.OutputEmpty);
+                // blank line before
+                WriteProgress();
+
+                // output our report
+                CreateReport(sharedGlobalScope, switchParser);
             }
 
             return 0;
         }
 
-        private int ProcessJSFileEcho(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
-        {
-            // blank line before
-            WriteProgress();
-
-            // create the a parser object for our chunk of code
-            JSParser parser = new JSParser(combinedSourceCode);
-
-            // hook the engine events
-            parser.UndefinedReference += OnUndefinedReference;
-            parser.CompilerError += (sender, ea) =>
-            {
-                var error = ea.Error;
-
-                // ignore severity values greater than our severity level
-                // also ignore errors that are in our ignore list (if any)
-                if (error.Severity <= switchParser.WarningLevel)
-                {
-                    // we found an error
-                    m_errorsFound = true;
-
-                    // write the error out
-                    WriteError(error.ToString());
-                }
-            };
-
-            Block scriptBlock = parser.Parse(switchParser.JSSettings);
-            if (scriptBlock != null)
-            {
-                if (switchParser.AnalyzeMode)
-                {
-                    // blank line before
-                    WriteProgress();
-
-                    // output our report
-                    CreateReport(parser.GlobalScope, switchParser);
-                }
-            }
-            else
-            {
-                // no code?
-                WriteProgress(AjaxMin.NoParsedCode);
-            }
-
-            // send the output code to the output stream
-            outputBuilder.Append(combinedSourceCode);
-
-            return 0;
-        }
-
-        private int ProcessJSFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
+        private int ProcessJSFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             var returnCode = 0;
 
             // blank line before
             WriteProgress();
 
-            // create the a parser object for our chunk of code
-            JSParser parser = new JSParser(combinedSourceCode);
+            var ndx = 0;
+            GlobalScope sharedGlobalScope = null;
 
-            // hook the engine events
-            parser.UndefinedReference += OnUndefinedReference;
-            parser.CompilerError += (sender, ea) =>
+            // output visitor requires a text writer, so make one from the string builder
+            using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
             {
-                var error = ea.Error;
-
-                // ignore severity values greater than our severity level
-                // also ignore errors that are in our ignore list (if any)
-                if (error.Severity <= switchParser.WarningLevel)
+                foreach (var inputGroup in inputGroups)
                 {
-                    // we found an error
-                    m_errorsFound = true;
+                    // create the a parser object for our chunk of code
+                    JSParser parser = new JSParser(inputGroup.Source);
+                    parser.GlobalScope = sharedGlobalScope;
 
-                    // write the error out
-                    WriteError(error.ToString());
-                }
-            };
-
-            Block scriptBlock = parser.Parse(switchParser.JSSettings);
-            if (scriptBlock != null)
-            {
-                if (switchParser.AnalyzeMode)
-                {
-                    // blank line before
-                    WriteProgress();
-
-                    // output our report
-                    CreateReport(parser.GlobalScope, switchParser);
-                }
-
-                // crunch the output and write it to debug stream, but make sure
-                // the settings we use to output THIS chunk are correct
-                using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
-                {
-                    if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                    // hook the engine events
+                    parser.UndefinedReference += OnUndefinedReference;
+                    parser.CompilerError += (sender, ea) =>
                     {
-                        if (!JSONOutputVisitor.Apply(writer, scriptBlock))
+                        var error = ea.Error;
+                        if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
                         {
-                            returnCode = 1;
+                            // ignore severity values greater than our severity level
+                            // also ignore errors that are in our ignore list (if any)
+                            if (error.Severity <= switchParser.WarningLevel)
+                            {
+                                // we found an error
+                                m_errorsFound = true;
+
+                                // write the error out
+                                WriteError(error.ToString());
+                            }
+                        }
+                    };
+
+                    var scriptBlock = parser.Parse(switchParser.JSSettings);
+                    if (scriptBlock != null)
+                    {
+                        if (ndx++ > 0)
+                        {
+                            // separate subsequent input groups with an appropriate line terminator
+                            writer.WriteLine(switchParser.JSSettings.LineTerminator);
+                        }
+
+                        // crunch the output and write it to debug stream, but make sure
+                        // the settings we use to output THIS chunk are correct
+                        if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                        {
+                            if (!JSONOutputVisitor.Apply(writer, scriptBlock))
+                            {
+                                returnCode = 1;
+                            }
+                        }
+                        else
+                        {
+                            OutputVisitor.Apply(writer, scriptBlock, switchParser.JSSettings);
                         }
                     }
                     else
                     {
-                        OutputVisitor.Apply(writer, scriptBlock, switchParser.JSSettings);
-
-                        // give the symbols map a chance to write something at the bottom of the source file
-                        if (switchParser.JSSettings.SymbolsMap != null)
-                        {
-                            switchParser.JSSettings.SymbolsMap.EndFile(
-                                writer, 
-                                switchParser.JSSettings.OutputMode == OutputMode.SingleLine ? "\n" : "\r\n");
-                        }
+                        // no code?
+                        WriteProgress(AjaxMin.NoParsedCode);
                     }
+
+                    // save the global scope for later
+                    sharedGlobalScope = parser.GlobalScope;
+                }
+
+                // give the symbols map a chance to write something at the bottom of the source file
+                if (switchParser.JSSettings.SymbolsMap != null)
+                {
+                    switchParser.JSSettings.SymbolsMap.EndFile(writer, switchParser.JSSettings.LineTerminator);
                 }
             }
-            else
+
+            if (switchParser.AnalyzeMode)
             {
-                // no code?
-                WriteProgress(AjaxMin.NoParsedCode);
+                // blank line before
+                WriteProgress();
+
+                // output our report
+                CreateReport(sharedGlobalScope, switchParser);
             }
 
             return returnCode;

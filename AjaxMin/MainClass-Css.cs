@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -26,37 +27,49 @@ namespace Microsoft.Ajax.Utilities
     {
         #region ProcessCssFile method
 
-        private int ProcessCssFile(string combinedSourceCode, SwitchParser switchParser, StringBuilder outputBuilder)
+        private int ProcessCssFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             int retVal = 0;
 
             // blank line before
             WriteProgress();
 
-            try
+            // we can share the same parser object
+            CssParser parser = new CssParser();
+            parser.Settings = switchParser.CssSettings;
+            parser.JSSettings = switchParser.JSSettings;
+
+            var ndx = 0;
+            foreach(var inputGroup in inputGroups)
             {
                 // process input source...
-                CssParser parser = new CssParser();
-                parser.Settings = switchParser.CssSettings;
-                parser.JSSettings = switchParser.JSSettings;
                 parser.CssError += (sender, ea) =>
                     {
                         var error = ea.Error;
-                        // ignore severity values greater than our severity level
-                        if (error.Severity <= switchParser.WarningLevel)
+                        if (inputGroup.Origin == Configuration.SourceOrigin.Project || error.Severity == 0)
                         {
-                            // we found an error
-                            m_errorsFound = true;
+                            // ignore severity values greater than our severity level
+                            if (error.Severity <= switchParser.WarningLevel)
+                            {
+                                // we found an error
+                                m_errorsFound = true;
 
-                            WriteError(error.ToString());
+                                WriteError(error.ToString());
+                            }
                         }
                     };
 
                 // crunch the source and output to the string builder we were passed
-                string crunchedStyles = parser.Parse(combinedSourceCode);
+                var crunchedStyles = parser.Parse(inputGroup.Source);
                 if (!string.IsNullOrEmpty(crunchedStyles))
                 {
                     Debug.WriteLine(crunchedStyles);
+                    if (ndx++ > 0)
+                    {
+                        // separate input group outputs with an appropriate newline
+                        outputBuilder.Append(switchParser.CssSettings.LineTerminator);
+                    }
+
                     outputBuilder.Append(crunchedStyles);
                 }
                 else
@@ -64,13 +77,6 @@ namespace Microsoft.Ajax.Utilities
                     // resulting code is null or empty
                     Debug.WriteLine(AjaxMin.OutputEmpty);
                 }
-            }
-            catch (IOException e)
-            {
-                // probably an error with the input file
-                retVal = 1;
-                System.Diagnostics.Debug.WriteLine(e.ToString());
-                WriteError("AM-IO", e.Message);
             }
 
             return retVal;

@@ -11,7 +11,7 @@
 
         <!-- do the merging -->
         <Message Text="Merging assemblies" Importance="high" />
-        <Exec Command="&quot;$(SolutionDir)ILmerge.exe&quot; /keyfile:&quot;$(SolutionDir)ajaxmin.snk&quot; /out:&quot;@(MainAssembly)&quot; &quot;@(IntermediateAssembly)&quot; @(ILMergeAssemblies->'&quot;%(FullPath)&quot;', ' ') /targetplatform:v2,%WINDIR%\Microsoft.NET\Framework\v2.0.50727 /log"
+        <Exec Command="&quot;$(SolutionDir)ILmerge.exe&quot; /keyfile:&quot;$(SolutionDir)ajaxmin.snk&quot; /out:&quot;@(MainAssembly)&quot; &quot;@(IntermediateAssembly)&quot; @(ILMergeAssemblies->'&quot;%(FullPath)&quot;', ' ') /targetplatform:v2,%WINDIR%\Microsoft.NET\Framework\v2.0.50727 /log /allowDup"
               LogStandardErrorAsError="true" Condition="'$(TargetFrameworkVersion)'=='v2.0'" />
         <Exec Command="&quot;$(SolutionDir)ILmerge.exe&quot; /keyfile:&quot;$(SolutionDir)ajaxmin.snk&quot; /out:&quot;@(MainAssembly)&quot; &quot;@(IntermediateAssembly)&quot; @(ILMergeAssemblies->'&quot;%(FullPath)&quot;', ' ') /targetplatform:v4,&quot;%ProgramFiles%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0&quot; /log"
               LogStandardErrorAsError="true" Condition="'$(TargetFrameworkVersion)'!='v2.0'" />

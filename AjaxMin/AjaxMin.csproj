@@ -119,6 +119,12 @@
     <Compile Include="DefaultScopeReport.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IScopeReport.cs" />
+    <Compile Include="ManifestStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManifestStrings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ManifestUtilities.cs" />
     <Compile Include="XmlScopeReport.cs" />
     <Content Include="..\App.ico" />
     <Compile Include="Properties\ProductAssemblyInfo.cs" />
@@ -138,6 +144,11 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ManifestStrings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities.Configuration</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

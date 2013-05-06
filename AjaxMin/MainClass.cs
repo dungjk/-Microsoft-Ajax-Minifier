@@ -31,6 +31,8 @@ using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
 {
+    using Configuration;
+
     /// <summary>
     /// Application entry point
     /// </summary>
@@ -46,11 +48,6 @@ namespace Microsoft.Ajax.Utilities
         private const string c_rawMessagePrefix = "RAWUSAGE";
 
         /// <summary>
-        /// regular expression used to determine if a source file ends in a semicolon (optionally followed by whitespace)
-        /// </summary>
-        private static Regex s_endsInSemicolon = new Regex(@";\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
-
-        /// <summary>
         /// This field is initially false, and it set to true if any errors were
         /// found parsing the javascript. The return value for the application
         /// will be set to non-zero if this flag is true.
@@ -62,11 +59,6 @@ namespace Microsoft.Ajax.Utilities
         /// Set to true when header is written
         /// </summary>
         private bool m_headerWritten;
-
-        /// <summary>
-        /// default set of arguments if this is driven from an XML file
-        /// </summary>
-        private string m_defaultArguments;
 
         /// <summary>
         /// configuration mode
@@ -92,19 +84,19 @@ namespace Microsoft.Ajax.Utilities
         private bool m_echoInput;// = false;
 
         /// <summary>
-        /// File name of the source file or directory (if in recursive mode)
+        /// MAnifest file built from input XML or from command-line input/output file(s)
         /// </summary>
-        private List<string> m_inputFiles;// = null;
+        private Manifest m_manifest;
 
         /// <summary>
-        /// Input type: JS or CSS
+        /// SymbolMap settings stored from command-line
         /// </summary>
-        private InputType m_inputType = InputType.Unknown;
+        private SymbolMap m_symbolMap;// = null;
 
         /// <summary>
         /// Input type hint from the switches: possibly JS or CSS
         /// </summary>
-        private InputType m_inputTypeHint = InputType.Unknown;
+        private CodeType m_inputTypeHint = CodeType.Unknown;
 
         /// <summary>
         /// Output mode
@@ -117,8 +109,9 @@ namespace Microsoft.Ajax.Utilities
         private bool m_outputToStandardOut;// = false;
 
         /// <summary>
-        /// Optional file name of the destination file. Must be blank for in-place processing.
-        /// If not in-place, a blank destination output to STDOUT
+        /// Optional file name of the destination file. 
+        /// An empty destination outputs to STDOUT. A folder path can be used with
+        /// an XML manifest to specify the root output folder for relative output paths.
         /// </summary>
         private string m_outputFile = string.Empty;
 
@@ -129,27 +122,6 @@ namespace Microsoft.Ajax.Utilities
         private string m_xmlInputFile;// = null;
 
         /// <summary>
-        /// An optional file mapping the source and destination files.
-        /// </summary>
-        private string m_symbolsMapFile;
-
-        /// <summary>
-        /// An optional symbols map root URI, used by some source map implementations (eg: V3)
-        /// </summary>
-        private string m_symbolsMapRoot;
-
-        /// <summary>
-        /// An optional flag to indicate whether or not we want the source map implementation (eg: V3)
-        /// to add any extra header information to make the map "safe" from a security standpoint.
-        /// </summary>
-        private bool m_symbolsMapSafeHeader;
-
-        /// <summary>
-        /// Name of the symbols map implementation to use (if any)
-        /// </summary>
-        private string m_symbolsMapName;
-
-        /// <summary>
         /// clobber type
         /// </summary>
         private enum ClobberType
@@ -157,6 +129,28 @@ namespace Microsoft.Ajax.Utilities
             Auto = 0,
             Clobber,
             NoClobber
+        }
+
+        #endregion
+
+        #region properties
+
+        /// <summary>
+        /// Gets the one output group for the implicit manifest created from command-line parameters.
+        /// Create the implicit manifest if one hasn't been created yet.
+        /// </summary>
+        private OutputGroup ImplicitManifestOutputGroup
+        {
+            get
+            {
+                if (m_manifest == null)
+                {
+                    m_manifest = new Manifest();
+                    m_manifest.Outputs.Add(new OutputGroup());
+                }
+
+                return m_manifest.Outputs[0];
+            }
         }
 
         #endregion
@@ -216,8 +210,8 @@ namespace Microsoft.Ajax.Utilities
             m_switchParser = new SwitchParser();
             m_switchParser.UnknownParameter += OnUnknownParameter;
 
-            m_switchParser.CssOnlyParameter += (sender, ea) => { InputTypeHint(InputType.Stylesheet); };
-            m_switchParser.JSOnlyParameter += (sender, ea) => { InputTypeHint(InputType.JavaScript); };
+            m_switchParser.CssOnlyParameter += (sender, ea) => { InputTypeHint(CodeType.StyleSheet); };
+            m_switchParser.JSOnlyParameter += (sender, ea) => { InputTypeHint(CodeType.JavaScript); };
             m_switchParser.InvalidSwitch += (sender, ea) =>
             {
                 if (ea.ParameterPart == null)
@@ -239,30 +233,32 @@ namespace Microsoft.Ajax.Utilities
             // code path to take (JS or CSS) at this point. The XML file can contain either or both.
             if (string.IsNullOrEmpty(m_xmlInputFile))
             {
-                // not XML input; we need to know what type we want to process. check for input file extensions.
-                if (m_inputFiles != null && m_inputFiles.Count > 0)
+                // not XML input; just command-line parameters.
+                // we need to know what type we want to process. check for input file extensions.
+                var outputGroup = ImplicitManifestOutputGroup;
+                if (outputGroup.Inputs.Count > 0)
                 {
                     // check the extensions of the files -- they can definitively tell us 
                     // what input type we want.
-                    foreach (string path in m_inputFiles)
+                    foreach (var inputFile in outputGroup.Inputs)
                     {
-                        string extension = Path.GetExtension(path).ToUpperInvariant();
-                        switch (m_inputType)
+                        string extension = Path.GetExtension(inputFile.Path).ToUpperInvariant();
+                        switch (outputGroup.CodeType)
                         {
-                            case InputType.Unknown:
+                            case CodeType.Unknown:
                                 // we don't know yet. If the extension is JS or CSS set to the
                                 // appropriate input type
                                 if (extension == ".JS")
                                 {
-                                    m_inputType = InputType.JavaScript;
+                                    outputGroup.CodeType = CodeType.JavaScript;
                                 }
                                 else if (extension == ".CSS")
                                 {
-                                    m_inputType = InputType.Stylesheet;
+                                    outputGroup.CodeType = CodeType.StyleSheet;
                                 }
                                 break;
 
-                            case InputType.JavaScript:
+                            case CodeType.JavaScript:
                                 // we know we are JS -- if we find a CSS file, throw an error
                                 if (extension == ".CSS")
                                 {
@@ -270,7 +266,7 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 break;
 
-                            case InputType.Stylesheet:
+                            case CodeType.StyleSheet:
                                 // we know we are CSS -- if we find a JS file, throw an error
                                 if (extension == ".JS")
                                 {
@@ -278,17 +274,24 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 break;
                         }
+
+                        // while we're at it, check for existence, too
+                        // (directories aren't valid for command-line input files)
+                        if (!File.Exists(inputFile.Path))
+                        {
+                            throw new UsageException(m_outputMode, AjaxMin.SourceFileNotExist.FormatInvariant(inputFile.Path));
+                        }
                     }
 
                     // if we have input files but we don't know the type by now, 
                     // then throw an exception
-                    if (m_inputType == InputType.Unknown)
+                    if (outputGroup.CodeType == CodeType.Unknown)
                     {
                         // we still don't know -- check the hint from the switches.
-                        if (m_inputTypeHint != InputType.Unknown && m_inputTypeHint != InputType.Mix)
+                        if (m_inputTypeHint != CodeType.Unknown && m_inputTypeHint != CodeType.Mix)
                         {
                             // either JS or CSS. use the hint.
-                            m_inputType = m_inputTypeHint;
+                            outputGroup.CodeType = m_inputTypeHint;
                         }
                         else
                         {
@@ -300,14 +303,14 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     // no input files. Check the hint from the switches.
-                    if (m_inputTypeHint == InputType.Unknown || m_inputTypeHint == InputType.Mix)
+                    if (m_inputTypeHint == CodeType.Unknown || m_inputTypeHint == CodeType.Mix)
                     {
                         // can't tell; throw an exception
                         throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
                     }
 
                     // use the hint
-                    m_inputType = m_inputTypeHint;
+                    outputGroup.CodeType = m_inputTypeHint;
                 }
             }
         }
@@ -432,7 +435,7 @@ namespace Microsoft.Ajax.Utilities
 
                         // next argument is the output path
                         // cannot have two map arguments
-                        if (!string.IsNullOrEmpty(m_symbolsMapFile))
+                        if (m_symbolMap != null && !string.IsNullOrEmpty(m_symbolMap.Path))
                         {
                             throw new UsageException(m_outputMode, AjaxMin.MultipleMapArg);
                         }
@@ -442,12 +445,17 @@ namespace Microsoft.Ajax.Utilities
                             throw new UsageException(m_outputMode, AjaxMin.MapArgNeedsPath);
                         }
 
-                        m_symbolsMapFile = ea.Arguments[++ea.Index];
+                        if (m_symbolMap == null)
+                        {
+                            m_symbolMap = new SymbolMap();
+                        }
+
+                        m_symbolMap.Path = ea.Arguments[++ea.Index];
 
                         // save the map implementation name, if any
                         if (!ea.ParameterPart.IsNullOrWhiteSpace())
                         {
-                            m_symbolsMapName = ea.ParameterPart;
+                            m_symbolMap.Name = ea.ParameterPart;
                         }
                         break;
 
@@ -457,14 +465,24 @@ namespace Microsoft.Ajax.Utilities
                             throw new UsageException(m_outputMode, AjaxMin.MapArgNeedsPath);
                         }
 
-                        m_symbolsMapRoot = ea.Arguments[++ea.Index];
+                        if (m_symbolMap == null)
+                        {
+                            m_symbolMap = new SymbolMap();
+                        }
+
+                        m_symbolMap.SourceRoot = ea.Arguments[++ea.Index];
                         break;
 
                     case "MAPSAFE":
+                        if (m_symbolMap == null)
+                        {
+                            m_symbolMap = new SymbolMap();
+                        }
+
                         if (ea.ParameterPart == null)
                         {
                             // default if specified is true
-                            m_symbolsMapSafeHeader = true;
+                            m_symbolMap.SafeHeader = true;
                         }
                         else
                         {
@@ -472,7 +490,7 @@ namespace Microsoft.Ajax.Utilities
                             bool safeFlag;
                             if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out safeFlag))
                             {
-                                m_symbolsMapSafeHeader = safeFlag;
+                                m_symbolMap.SafeHeader = safeFlag;
                             }
                             else
                             {
@@ -568,7 +586,7 @@ namespace Microsoft.Ajax.Utilities
 
                     case "XML":
                     case "X": // <-- old style
-                        if (!string.IsNullOrEmpty(m_symbolsMapFile))
+                        if (m_symbolMap != null)
                         {
                             throw new UsageException(m_outputMode, AjaxMin.MapAndXmlArgs);
                         }
@@ -577,8 +595,9 @@ namespace Microsoft.Ajax.Utilities
                         {
                             throw new UsageException(m_outputMode, AjaxMin.MultipleXmlArgs);
                         }
-                        // cannot have input files
-                        if (m_inputFiles != null && m_inputFiles.Count > 0)
+
+                        // cannot have input files from the command line
+                        if (m_manifest != null)
                         {
                             throw new UsageException(m_outputMode, AjaxMin.XmlArgHasInputFiles);
                         }
@@ -616,47 +635,30 @@ namespace Microsoft.Ajax.Utilities
                     throw new UsageException(m_outputMode, AjaxMin.XmlArgHasInputFiles);
                 }
 
-                // shortcut
-                string fileName = ea.Arguments[ea.Index];
-
-                // make sure it exists (will throw an exception if it doesn't)
-                EnsureInputFileExists(fileName);
-
-                if (m_inputFiles == null)
-                {
-                    // if we haven't created it yet, do it now and just add the
-                    // file because we know it's empty and won't collide with any dupe
-                    m_inputFiles = new List<string>();
-                    m_inputFiles.Add(fileName);
-                }
-                else
-                {
-                    // duplicates are okay
-                    m_inputFiles.Add(fileName);
-                }
+                ImplicitManifestOutputGroup.Inputs.Add(new InputFile { Path = ea.Arguments[ea.Index] });
             }
         }
 
-        private void InputTypeHint(InputType inputTypeHint)
+        private void InputTypeHint(CodeType inputTypeHint)
         {
             switch (m_inputTypeHint)
             {
-                case InputType.Unknown:
+                case CodeType.Unknown:
                     // if we don't know yet, make the assumption
                     m_inputTypeHint = inputTypeHint;
                     break;
 
-                case InputType.JavaScript:
-                case InputType.Stylesheet:
+                case CodeType.JavaScript:
+                case CodeType.StyleSheet:
                     // if what we've had before doesn't mesh with what we have now,
                     // then we have a mix of switches
                     if (m_inputTypeHint != inputTypeHint)
                     {
-                        m_inputTypeHint = InputType.Mix;
+                        m_inputTypeHint = CodeType.Mix;
                     }
                     break;
 
-                case InputType.Mix:
+                case CodeType.Mix:
                     // a mix is a mix
                     break;
             }
@@ -734,47 +736,63 @@ namespace Microsoft.Ajax.Utilities
         private int Run()
         {
             int retVal = 0;
-            IList<CrunchGroup> crunchGroups;
-
-            // see if we have an XML file to process
-            if (!string.IsNullOrEmpty(m_xmlInputFile))
+            if (m_xmlInputFile.IsNullOrWhiteSpace())
             {
-                // process the XML file, using the output path as an optional output root folder
-                crunchGroups = ProcessXmlFile(m_xmlInputFile, m_outputFile);
+                // not from an XML file. 
+                var outputGroup = ImplicitManifestOutputGroup;
+                outputGroup.Path = m_outputFile;
+
+                // add symbol map info if we have any.
+                // have to have at least one of these two fields.
+                if (m_symbolMap != null)
+                {
+                    outputGroup.SymbolMap = m_symbolMap;
+                }
+
+                try
+                {
+                    // validate and normalize the manifest
+                    m_manifest.ValidateAndNormalize(Environment.CurrentDirectory, Environment.CurrentDirectory);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    // throw an error indicating the file-not-found error. The file name should already be
+                    // in the error message.
+                    System.Diagnostics.Debug.WriteLine(ex.ToString());
+                    throw new UsageException(m_outputMode, ex.Message);
+                }
+                catch (XmlException ex)
+                {
+                    // throw an error indicating the XML error
+                    System.Diagnostics.Debug.WriteLine(ex.ToString());
+                    throw new UsageException(m_outputMode, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
+                }
             }
             else
             {
-                // just pass the input and output files specified in the command line
-                // to the processing method (normal operation)
-                crunchGroups = new CrunchGroup[] { 
-                    new CrunchGroup(m_inputFiles, m_switchParser.EncodingInputName)
-                    {
-                        Output = new FileInformation() {Path = m_outputFile, EncodingName = m_switchParser.EncodingOutputName},
-                        SymbolMapPath = m_symbolsMapFile,
-                        SymbolMapName = m_symbolsMapName,
-                        InputType = m_inputType
-                    }
-                };
+                // processing the XML will take care of the validation as well.
+                m_manifest = ProcessXmlFile(m_xmlInputFile, m_outputFile);
             }
 
-            if (crunchGroups.Count > 0)
+            if (m_manifest.Outputs.Count > 0)
             {
                 // if there are any default arguments, then we are coming from an XML file that has 
                 // a default set of arguments. Apply them on top of the arguments we parsed from 
                 // the command line
-                if (!string.IsNullOrEmpty(m_defaultArguments))
+                var defaultArguments = m_manifest.GetConfigArguments(m_configuration);
+                if (!defaultArguments.IsNullOrWhiteSpace())
                 {
                     // parse the default arguments right on top of the ones we parsed from the command-line
-                    m_switchParser.Parse(m_defaultArguments);
+                    m_switchParser.Parse(defaultArguments);
                 }
 
                 // if any one crunch group is writing to stdout, then we need to make sure
                 // that no progress or informational messages go to stdout or we will output 
                 // invalid JavaScript/CSS. Loop through the crunch groups and if any one is
                 // outputting to stdout, set the appropriate flag.
-                for (var ndxGroup = 0; ndxGroup < crunchGroups.Count; ++ndxGroup)
+                foreach (var outputGroup in m_manifest.Outputs)
                 {
-                    if (string.IsNullOrEmpty(crunchGroups[ndxGroup].Output.Path))
+                    if (outputGroup.Path.IsNullOrWhiteSpace())
                     {
                         // set the flag; no need to check any more
                         m_outputToStandardOut = true;
@@ -783,7 +801,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // loop through all the crunch groups
-                retVal = this.ProcessCrunchGroups(crunchGroups);
+                retVal = this.ProcessOutputGroups(m_manifest.Outputs);
             }
             else
             {
@@ -794,29 +812,29 @@ namespace Microsoft.Ajax.Utilities
             return retVal;
         }
 
-        private int ProcessCrunchGroups(IList<CrunchGroup> crunchGroups)
+        private int ProcessOutputGroups(IList<OutputGroup> outputGroups)
         {
             var retVal = 0;
             var ndxGroup = 0;
 
-            foreach (var crunchGroup in crunchGroups)
+            foreach (var outputGroup in outputGroups)
             {
                 ++ndxGroup;
-                var crunchResult = 1;
+                var minifiedCode = 1;
 
                 // create clones of the overall settings to which we will then apply
                 // our changes for this current crunch group
                 var switchParser = m_switchParser.Clone();
-                switchParser.Parse(crunchGroup.Arguments);
+                switchParser.Parse(outputGroup.GetConfigArguments(m_configuration));
 
                 TextWriter symbolMapWriter = null;
                 ISourceMap sourceMap = null;
                 try
                 {
-                    if (!string.IsNullOrEmpty(crunchGroup.SymbolMapPath))
+                    if (outputGroup.SymbolMap != null)
                     {
                         retVal = this.ClobberFileAndExecuteOperation(
-                            crunchGroup.SymbolMapPath, (path) =>
+                            outputGroup.SymbolMap.Path, (path) =>
                             {
                                 // the spec says UTF-8, but Chrome fails to load the map if there's a BOM.
                                 // So make sure the BOM doesn't get written.
@@ -834,7 +852,7 @@ namespace Microsoft.Ajax.Utilities
                         // which implementation to instantiate?
                         // if we don't know, implement the XML writer, since that was the first one before names
                         // were introduced.
-                        sourceMap = SourceMapFactory.Create(symbolMapWriter, crunchGroup.SymbolMapName ?? ScriptSharpSourceMap.ImplementationName);
+                        sourceMap = SourceMapFactory.Create(symbolMapWriter, outputGroup.SymbolMap.Name ?? ScriptSharpSourceMap.ImplementationName);
                         if (sourceMap != null)
                         {
                             // if we get here, the symbol map implementation now owns the stream and we can
@@ -842,17 +860,17 @@ namespace Microsoft.Ajax.Utilities
                             symbolMapWriter = null;
 
                             // set some properties used by some of the implementations
-                            sourceMap.SourceRoot = crunchGroup.SymbolMapSourceRoot ?? m_symbolsMapRoot;
-                            sourceMap.SafeHeader = crunchGroup.SymbolMapSafeHeader.GetValueOrDefault(m_symbolsMapSafeHeader);
+                            sourceMap.SourceRoot = outputGroup.SymbolMap.SourceRoot;
+                            sourceMap.SafeHeader = outputGroup.SymbolMap.SafeHeader.GetValueOrDefault(false);
 
                             // start off the package
                             switchParser.JSSettings.SymbolsMap = sourceMap;
-                            sourceMap.StartPackage(crunchGroup.Output.Path, crunchGroup.SymbolMapPath);
+                            sourceMap.StartPackage(outputGroup.Path, outputGroup.SymbolMap.Path);
                         }
                     }
 
-                    // process the crunch group
-                    crunchResult = this.ProcessCrunchGroup(crunchGroup, switchParser);
+                    // process the output group
+                    minifiedCode = this.ProcessOutputGroup(outputGroup, switchParser);
                 }
                 finally
                 {
@@ -871,23 +889,23 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // if the result contained an error...
-                if (crunchResult != 0)
+                if (minifiedCode != 0)
                 {
                     // if we're processing more than one group, we should output an
                     // error message indicating that this group encountered an error
-                    if (crunchGroups.Count > 1)
+                    if (outputGroups.Count > 1)
                     {
                         // non-localized string, so format is not in the resources
-                        string errorCode = "AM{0:D4}".FormatInvariant(crunchResult);
+                        string errorCode = "AM{0:D4}".FormatInvariant(minifiedCode);
 
                         // if there is an output file name, use it.
-                        if (!string.IsNullOrEmpty(crunchGroup.Output.Path))
+                        if (!string.IsNullOrEmpty(outputGroup.Path))
                         {
                             this.WriteError(
-                                crunchGroup.Output.Path,
+                                outputGroup.Path,
                                 AjaxMin.OutputFileErrorSubCat,
                                 errorCode,
-                                AjaxMin.OutputFileError.FormatInvariant(crunchResult));
+                                AjaxMin.OutputFileError.FormatInvariant(minifiedCode));
                         }
                         else if (!string.IsNullOrEmpty(this.m_xmlInputFile))
                         {
@@ -897,7 +915,7 @@ namespace Microsoft.Ajax.Utilities
                                 this.m_xmlInputFile,
                                 AjaxMin.OutputGroupErrorSubCat,
                                 errorCode,
-                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, crunchResult));
+                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, minifiedCode));
                         }
                         else
                         {
@@ -909,12 +927,12 @@ namespace Microsoft.Ajax.Utilities
                                 "stdout",
                                 AjaxMin.OutputGroupErrorSubCat,
                                 errorCode,
-                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, crunchResult));
+                                AjaxMin.OutputGroupError.FormatInvariant(ndxGroup, minifiedCode));
                         }
                     }
 
                     // return the error. Only the last one will be used
-                    retVal = crunchResult;
+                    retVal = minifiedCode;
                 }
             }
 
@@ -925,258 +943,69 @@ namespace Microsoft.Ajax.Utilities
 
         #region ProcessCrunchGroup method
 
-        public static Encoding GetJSEncoding(string encodingName)
-        {
-            return GetEncoding(encodingName, new JSEncoderFallback());
-        }
-
-        public static Encoding GetCssEncoding(string encodingName)
-        {
-            return GetEncoding(encodingName, new CssEncoderFallback());
-        }
-
-        private static Encoding GetEncoding(string encodingName, EncoderFallback fallback)
-        {
-            Encoding encoding = null;
-            if (string.IsNullOrEmpty(encodingName))
-            {
-                // nothing specified -- use our default encoding of UTF-8 with no BOM.
-                // don't need to set the JS encoder fallback because UTF-8 should be able
-                // to output all UNICODE characters.
-                encoding = new UTF8Encoding(false);
-            }
-            else
-            {
-                try
-                {
-                    // try to create an encoding from the encoding argument
-                    encoding = Encoding.GetEncoding(
-                        encodingName,
-                        fallback,
-                        new DecoderReplacementFallback("\uFFFD"));
-                }
-                catch (ArgumentException e)
-                {
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
-                }
-            }
-
-            return encoding;
-        }
-
-        private Encoding GetOutputEncoding(InputType inputType, string encodingName)
-        {
-            // pick the right encoder from our file type
-            Encoding encoding = null;
-
-            // set the appropriate encoder fallback
-            if (inputType == InputType.JavaScript)
-            {
-                encoding = GetJSEncoding(encodingName);
-            }
-            else if (inputType == InputType.Stylesheet)
-            {
-                encoding = GetCssEncoding(encodingName);
-            }
-
-            if (encoding == null)
-            {
-                throw new UsageException(m_outputMode, AjaxMin.InvalidOutputEncoding.FormatInvariant(encodingName));
-            }
-
-            return encoding;
-        }
-
-        private Encoding GetInputEncoding(string encodingName)
-        {
-            // just get the JS encoding; we're not going to be outputting anything with this encoding
-            // object, so it doesn't matter which output encoding fallback object we have on it.
-            var encoding = GetJSEncoding(encodingName);
-            if (encoding == null)
-            {
-                throw new UsageException(m_outputMode, AjaxMin.InvalidInputEncoding.FormatInvariant(encodingName));
-            }
-
-            return encoding;
-        }
-
-        private string ReadInputFile(string sourcePath, string encodingName, ref long sourceLength)
-        {
-            // read our chunk of code
-            var encodingInput = GetInputEncoding(encodingName);
-
-            string source;
-            if (!string.IsNullOrEmpty(sourcePath))
-            {
-                using (StreamReader reader = new StreamReader(sourcePath, encodingInput))
-                {
-                    WriteProgress(
-                      AjaxMin.CrunchingFile.FormatInvariant(Path.GetFileName(sourcePath))
-                      );
-                    source = reader.ReadToEnd();
-                }
-
-                // add the actual file length in to the input source length
-                FileInfo inputFileInfo = new FileInfo(sourcePath);
-                sourceLength += inputFileInfo.Length;
-            }
-            else
-            {
-                WriteProgress(AjaxMin.CrunchingStdIn);
-                try
-                {
-                    // try setting the input encoding
-                    Console.InputEncoding = encodingInput;
-                }
-                catch (IOException e)
-                {
-                    // error setting the encoding input; just use whatever the default is
-                    Debug.WriteLine(e.ToString());
-                }
-
-                source = Console.In.ReadToEnd();
-
-                if (m_switchParser.AnalyzeMode)
-                {
-                    // calculate the actual number of bytes read using the input encoding
-                    // and the string that we just read and
-                    // add the number of bytes read into the input length.
-                    sourceLength += Console.InputEncoding.GetByteCount(source);
-                }
-                else
-                {
-                    // don't bother calculating the actual bytes -- the number of characters
-                    // is sufficient if we're not doing the analysis
-                    sourceLength += source.Length;
-                }
-            }
-
-            return source;
-        }
-
-        private int ProcessCrunchGroup(CrunchGroup crunchGroup, SwitchParser switchParser)
+        private int ProcessOutputGroup(OutputGroup outputGroup, SwitchParser switchParser)
         {
             int retVal = 0;
 
-            // length of all the source files combined
-            long sourceLength = 0;
+            // combine all the source files into a single string, delimited with ///#SOURCE comments so we can track
+            // back to the original files. Also, add all the raw input to the echo builder.
+            var inputGroups = outputGroup.ReadInputGroups(switchParser.EncodingInputName);
 
             // if we are echoing the input, then we don't want to echo the assembled input with the
             // added ///#SOURCE comments. So create a second builder in those cases, which won't get
             // the comments added to it.
-            StringBuilder echoBuilder = null;
+            // we are always going to build the combined raw sources so we can run some comparison calcs on them.
+            var rawBuilder = new StringBuilder();
             if (m_echoInput)
             {
-                echoBuilder = new StringBuilder();
-
                 // we're just echoing the input -- so if this is a JS output file,
                 // we want to output a JS version of all resource dictionaries at the top
                 // of the file.
-                if (crunchGroup.InputType == InputType.JavaScript
+                if (outputGroup.CodeType == CodeType.JavaScript
                     && switchParser.JSSettings.ResourceStrings.Count > 0)
                 {
                     foreach (var resourceStrings in switchParser.JSSettings.ResourceStrings)
                     {
                         string resourceObject = CreateJSFromResourceStrings(resourceStrings);
-                        echoBuilder.Append(resourceObject);
+                        rawBuilder.Append(resourceObject);
                     }
                 }
             }
 
-            // combine all the source files into a single string, delimited with ///#SOURCE comments so we can track
-            // back to the original files
-            var inputBuilder = new StringBuilder();
-            if (crunchGroup.Count == 0)
+            // for calculation purposes, we're going to want to calculate the length of 
+            // all the raw sources, and combine them together
+            var sourceLength = 0L;
+            foreach (var inputGroup in inputGroups)
             {
-                // coming from stdin
-                var sourceCode = ReadInputFile(string.Empty, null, ref sourceLength);
-                inputBuilder.AppendLine("///#SOURCE 1 1 stdin");
-                inputBuilder.Append(sourceCode);
-
-                // if we are echoing the input, add it to the echo builder, but without the comment
-                if (echoBuilder != null)
-                {
-                    echoBuilder.Append(sourceCode);
-                }
+                // add the raw source length and the raw source
+                // to the echo builder
+                sourceLength += inputGroup.RawSource.Length;
+                rawBuilder.Append(inputGroup.RawSource);
             }
-            else
-            {
-                var endsInSemicolon = true;
-                for (var ndx = 0; ndx < crunchGroup.Count; ++ndx)
-                {
-                    var sourceCode = ReadInputFile(
-                        crunchGroup[ndx].Path, 
-                        crunchGroup[ndx].EncodingName ?? switchParser.EncodingInputName, 
-                        ref sourceLength);
-
-                    if (ndx > 0)
-                    {
-                        // separate subsequent files (not the first) with a line break
-                        inputBuilder.AppendLine();
-
-                        // if the previous file did NOT end in a semicolon, also add one now
-                        // BEFORE the source comment (so it won't affect the column numbers of the first line).
-                        // the flag is initialized to true so the first file won't get a semicolon added.
-                        if (!endsInSemicolon)
-                        {
-                            inputBuilder.Append(';');
-                        }
-                    }
-
-                    inputBuilder.Append("///#SOURCE 1 1 ");
-                    inputBuilder.AppendLine(crunchGroup[ndx].Path);
-                    inputBuilder.Append(sourceCode);
-
-                    // save whether or not this code ends in a semicolon so we can know
-                    // NEXT time whether we need to add one to separate the files.
-                    endsInSemicolon = s_endsInSemicolon.IsMatch(sourceCode);
-
-                    // if we are echoing the input, add it to the echo builder, but without the comment
-                    // but WITH a line-break
-                    if (echoBuilder != null)
-                    {
-                        if (ndx > 0)
-                        {
-                            echoBuilder.AppendLine();
-                        }
-
-                        echoBuilder.Append(sourceCode);
-                    }
-                }
-            }
-
-            var combinedSourceCode = inputBuilder.ToString();
 
             // if the crunch group has any resource strings objects, we need to add them to the back
             // of the settings list
-            var hasCrunchSpecificResources = crunchGroup.ResourceStrings != null && crunchGroup.ResourceStrings.Count > 0;
+            var hasCrunchSpecificResources = outputGroup.Resources.Count > 0;
 
             // create a string builder we'll dump our output into
-            StringBuilder outputBuilder = new StringBuilder();
-
-            switch (crunchGroup.InputType)
+            var outputBuilder = new StringBuilder();
+            switch (outputGroup.CodeType)
             {
-                case InputType.Stylesheet:
+                case CodeType.StyleSheet:
                     if (hasCrunchSpecificResources)
                     {
                         // add to the CSS list
-                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
-                        {
-                            switchParser.CssSettings.AddResourceStrings(resourceStrings);
-                        }
+                        outputGroup.ProcessResourceStrings(switchParser.CssSettings.ResourceStrings, null);
                     }
 
-                    retVal = ProcessCssFile(combinedSourceCode, switchParser, outputBuilder);
+                    retVal = ProcessCssFile(inputGroups, switchParser, outputBuilder);
                     break;
 
-                case InputType.JavaScript:
+                case CodeType.JavaScript:
                     if (hasCrunchSpecificResources)
                     {
                         // add to the JS list
-                        foreach (var resourceStrings in crunchGroup.ResourceStrings)
-                        {
-                            switchParser.JSSettings.AddResourceStrings(resourceStrings);
-                        }
+                        outputGroup.ProcessResourceStrings(switchParser.JSSettings.ResourceStrings, c_defaultResourceObjectName);
                     }
 
                     try
@@ -1184,15 +1013,15 @@ namespace Microsoft.Ajax.Utilities
                         if (m_switchParser.JSSettings.PreprocessOnly)
                         {
                             // pre-process the input
-                            retVal = PreprocessJSFile(combinedSourceCode, switchParser, outputBuilder);
+                            retVal = PreprocessJSFile(inputGroups, switchParser, outputBuilder);
                         }
                         else if (m_echoInput)
                         {
-                            retVal = ProcessJSFileEcho(combinedSourceCode, switchParser, outputBuilder);
+                            retVal = ProcessJSFileEcho(inputGroups, switchParser);
                         }
                         else
                         {
-                            retVal = ProcessJSFile(combinedSourceCode, switchParser, outputBuilder);
+                            retVal = ProcessJSFile(inputGroups, switchParser, outputBuilder);
                         }
                     }
                     catch (JScriptException e)
@@ -1214,29 +1043,25 @@ namespace Microsoft.Ajax.Utilities
                 outputBuilder.AppendLine();
             }
 
-            string crunchedCode = outputBuilder.ToString();
+            // if we are echoing the input, then use the echobuilder; otherwise use the generated output
+            string outputCode = (m_echoInput ? rawBuilder : outputBuilder).ToString();
 
-            // use the crunch-group encoding. If none specified, use the default output encoding.
-            // if nothing has been specified, use ASCII if sending to the console (no output file)
-            // otherwise UTF-8.
-            Encoding encodingOutput = GetOutputEncoding(
-                crunchGroup.InputType,
-                crunchGroup.Output.EncodingName ?? switchParser.EncodingOutputName
-                ?? (string.IsNullOrEmpty(crunchGroup.Output.Path) ? "ASCII" : null));
+            // use the output group encoding. If none specified, use the default output encoding.
+            var encodingOutput = outputGroup.GetEncoding(switchParser.EncodingOutputName);
 
             // now write the final output file
-            if (string.IsNullOrEmpty(crunchGroup.Output.Path))
+            if (outputGroup.Path.IsNullOrWhiteSpace())
             {
                 // no output file specified - send to STDOUT
                 // if the code is empty, don't bother outputting it to the console
-                if (!string.IsNullOrEmpty(crunchedCode))
+                if (!outputCode.IsNullOrWhiteSpace())
                 {
                     // however, for some reason when I set the output encoding it
                     // STILL doesn't call the EncoderFallback to Unicode-escape characters
                     // not supported by the encoding scheme. So instead we need to run the
                     // translation outselves. Still need to set the output encoding, though,
                     // so the translated bytes get displayed properly in the console.
-                    byte[] encodedBytes = encodingOutput.GetBytes(crunchedCode);
+                    byte[] encodedBytes = encodingOutput.GetBytes(outputCode);
 
                     // only output the size analysis if we aren't echoing the input
                     if (!m_echoInput)
@@ -1244,30 +1069,16 @@ namespace Microsoft.Ajax.Utilities
                         // output blank line before
                         WriteProgress();
 
-                        // if we are echoing the input, don't bother reporting the
-                        // minify savings because we don't have the minified output --
-                        // we have the original output
-                        double percentage;
-                        if (!m_echoInput)
-                        {
-                            // calculate the percentage saved
-                            percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
-                            WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
-                                              sourceLength,
-                                              encodedBytes.Length,
-                                              percentage
-                                              ));
-                        }
-                        else
-                        {
-
-                            WriteProgress(AjaxMin.SavingsOutputMessage.FormatInvariant(
-                                encodedBytes.Length
-                                ));
-                        }
+                        // calculate the percentage saved
+                        var percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
+                        WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
+                                            sourceLength,
+                                            encodedBytes.Length,
+                                            percentage
+                                            ));
 
                         // calculate how much gzip on the unminified, combined original source might be
-                        long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(combinedSourceCode));
+                        long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(rawBuilder.ToString()));
                         percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
                         WriteProgress(AjaxMin.SavingsGzipSourceMessage.FormatInvariant(gzipLength, percentage));
 
@@ -1293,13 +1104,7 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // sometimes they will error, in which case we'll just set it to ascii
                             Debug.WriteLine(e.ToString());
-                            Console.OutputEncoding = Encoding.ASCII;
-                        }
-
-                        // if we are echoing the input, the get a new stream of bytes
-                        if (echoBuilder != null)
-                        {
-                            encodedBytes = encodingOutput.GetBytes(echoBuilder.ToString());
+                            //Console.OutputEncoding = Encoding.ASCII;
                         }
 
                         Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
@@ -1309,7 +1114,7 @@ namespace Microsoft.Ajax.Utilities
             else
             {
                 retVal = this.ClobberFileAndExecuteOperation(
-                    crunchGroup.Output.Path, (path) =>
+                    outputGroup.Path, (path) =>
                     {
                         // create the output file using the given encoding
                         using (StreamWriter outputStream = new StreamWriter(
@@ -1318,15 +1123,7 @@ namespace Microsoft.Ajax.Utilities
                            encodingOutput
                            ))
                         {
-                            if (echoBuilder == null)
-                            {
-                                outputStream.Write(crunchedCode);
-                            }
-                            else
-                            {
-                                // just echo the input
-                                outputStream.Write(echoBuilder.ToString());
-                            }
+                            outputStream.Write(outputCode);
                         }
 
                         // only output the size analysis if there is actually some output to measure
@@ -1341,29 +1138,15 @@ namespace Microsoft.Ajax.Utilities
                                 // blank line before
                                 WriteProgress();
 
-                                // if we are just echoing the input, don't bother calculating
-                                // the minify savings because there aren't any
-                                double percentage;
-                                if (!m_echoInput)
-                                {
-                                    // calculate the percentage saved by minification
-                                    percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
-                                    WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
-                                                        sourceLength,
-                                                        crunchedLength,
-                                                        percentage
-                                                        ));
-                                }
-                                else
-                                {
-
-                                    WriteProgress(AjaxMin.SavingsOutputMessage.FormatInvariant(
-                                        crunchedLength
-                                        ));
-                                }
+                                // calculate the percentage saved by minification
+                                var percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
+                                WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
+                                    sourceLength,
+                                    crunchedLength,
+                                    percentage));
 
                                 // calculate how much gzip on the unminified, combined original source might be
-                                long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(combinedSourceCode));
+                                long gzipLength = CalculateGzipSize(encodingOutput.GetBytes(rawBuilder.ToString()));
                                 percentage = Math.Round((1 - ((double)gzipLength) / sourceLength) * 100, 1);
                                 WriteProgress(AjaxMin.SavingsGzipSourceMessage.FormatInvariant(gzipLength, percentage));
 
@@ -1477,300 +1260,30 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
-        #region CrunchGroup class
-
-        /// <summary>
-        /// FileInformation class
-        /// </summary>
-        private class FileInformation
-        {
-            public string Path { get; set; }
-            public string EncodingName { get; set; }
-        }
-
-        /// <summary>
-        /// CrunchGroup class
-        /// </summary>
-        private class CrunchGroup : IEnumerable<FileInformation>
-        {
-            // the output file for the group. May be empty string.
-            public FileInformation Output { get; set; }
-
-            // input type (JavaScript or CSS)
-            public InputType InputType { get; set; }
-
-            // optional list of resource string objects specific to this group
-            public IList<ResourceStrings> ResourceStrings { get; set; }
-
-            // list of input files -- may not be empty.
-            private List<FileInformation> m_sourcePaths;// = null;
-
-            // the count of input files
-            public int Count { get { return m_sourcePaths.Count; } }
-
-            // indexer to a grunch group points to a specific input file
-            public FileInformation this[int ndx]
-            {
-                get
-                {
-                    // return the object (which may throw an index exception itself)
-                    return m_sourcePaths[ndx];
-                }
-            }
-
-            // path to the output symbol map
-            public string SymbolMapPath { get; set; }
-
-            // name of the symbol map implementation
-            public string SymbolMapName { get; set; }
-
-            // optional source root to add to the map
-            public string SymbolMapSourceRoot { get; set; }
-
-            // flag to indication whether or not to add a "safe" header to the map
-            public bool? SymbolMapSafeHeader { get; set; }
-
-            // optional crunch group-specific arguments
-            public string Arguments { get; set; }
-
-            public CrunchGroup()
-            {
-                m_sourcePaths = new List<FileInformation>();
-            }
-
-            public CrunchGroup(IEnumerable<string> inputFiles, string encodingInputName)
-            {
-                m_sourcePaths = new List<FileInformation>();
-
-                // add the input file information if there is any
-                if (inputFiles != null)
-                {
-                    foreach (var inputPath in inputFiles)
-                    {
-                        m_sourcePaths.Add(new FileInformation() { Path = inputPath, EncodingName = encodingInputName });
-                    }
-                }
-            }
-
-            public void Add(string inputPath, string encodingName)
-            {
-                // add this item to the list
-                m_sourcePaths.Add(new FileInformation() { Path = inputPath, EncodingName = encodingName });
-            }
-
-            #region IEnumerable<FileInformation> Members
-
-            public IEnumerator<FileInformation> GetEnumerator()
-            {
-                return m_sourcePaths.GetEnumerator();
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return m_sourcePaths.GetEnumerator();
-            }
-
-            #endregion
-        }
-
-        #endregion
-
         #region ProcessXmlFile method
 
-        private IList<CrunchGroup> ProcessXmlFile(string xmlPath, string outputFolder)
+        private static Manifest ProcessXmlFile(string xmlPath, string outputFolder)
         {
-            // list of crunch groups we're going to create by reading the XML file
-            List<CrunchGroup> crunchGroups = new List<CrunchGroup>();
+            Manifest manifest = null;
             try
             {
-                Configuration.Manifest manifest = null;
-                StreamReader fileReader = null;
-                try
-                {
-                    // create the file reader
-                    fileReader = new StreamReader(xmlPath);
-
-                    // create the xml reader from the file string using these settings
-                    var settings = new XmlReaderSettings()
-                    {
-                        IgnoreComments = true,
-                        IgnoreProcessingInstructions = true,
-                        IgnoreWhitespace = true,
-                    };
-                    using (var reader = XmlReader.Create(fileReader, settings))
-                    {
-                        fileReader = null;
-                        manifest = Configuration.ManifestFactory.Create(reader);
-                    }
-                }
-                finally
-                {
-                    if (fileReader != null)
-                    {
-                        fileReader.Close();
-                        fileReader = null;
-                    }
-                }
-
-                if (manifest != null)
-                {
-                    // save the XML file's directory name because we'll use it as a root
-                    // for all the other paths in the file
-                    var rootPath = Path.GetDirectoryName(xmlPath);
-
-                    // save the default arguments (if any)
-                    m_defaultArguments = GetConfigArguments(manifest.DefaultArguments);
-
-                    // the output nodes correspond to the crunch groups
-                    foreach (var outputNode in manifest.Outputs)
-                    {
-                        // normalize the output path
-                        var outputPath = NormalizePath(outputFolder, rootPath, outputNode.Path);
-
-                        var crunchGroup = new CrunchGroup()
-                        {
-                            Output = new FileInformation() { Path = outputPath, EncodingName = outputNode.EncodingName },
-                            InputType = (InputType)outputNode.CodeType,
-                            Arguments = GetConfigArguments(outputNode.Arguments),
-                            SymbolMapPath = NormalizePath(outputFolder, rootPath, outputNode.SymbolMap.IfNotNull(s => s.Path)),
-                            SymbolMapName = outputNode.SymbolMap.IfNotNull(s => s.Name),
-                            SymbolMapSourceRoot = outputNode.SymbolMap.IfNotNull(s => s.SourceRoot),
-                            SymbolMapSafeHeader = outputNode.SymbolMap.IfNotNull(s => s.SafeHeader)
-                        };
-
-                        // add resources
-                        foreach (var resourceNode in outputNode.Resources)
-                        {
-                            var resourcePath = resourceNode.Path;
-                            if (!string.IsNullOrEmpty(resourcePath))
-                            {
-                                if (!Path.IsPathRooted(resourcePath))
-                                {
-                                    resourcePath = Path.Combine(rootPath, resourcePath);
-                                }
-
-                                // make sure the resource file actually exists! It's an error if it doesn't.
-                                if (!File.Exists(resourcePath))
-                                {
-                                    throw new XmlException(AjaxMin.XmlResourceNotExist.FormatInvariant(resourceNode.Path));
-                                }
-
-                                var resourceStrings = ProcessResourceFile(resourcePath);
-                                resourceStrings.Name = resourceNode.Name.IfNullOrWhiteSpace(c_defaultResourceObjectName);
-
-                                if (crunchGroup.ResourceStrings == null)
-                                {
-                                    crunchGroup.ResourceStrings = new List<ResourceStrings>();
-                                }
-
-                                crunchGroup.ResourceStrings.Add(resourceStrings);
-                            }
-                            else
-                            {
-                                throw new XmlException(AjaxMin.ResourceNoPathAttr);
-                            }
-                        }
-
-                        // add inputs
-                        foreach (var inputNode in outputNode.Inputs)
-                        {
-                            var inputPath = inputNode.Path;
-                            if (!string.IsNullOrEmpty(inputPath))
-                            {
-                                // if it's a relative path...
-                                if (!Path.IsPathRooted(inputPath))
-                                {
-                                    // make it relative from the XML file
-                                    inputPath = Path.Combine(rootPath, inputPath);
-                                }
-
-                                // make sure the input file actually exists! It's an error if it doesn't.
-                                if (!File.Exists(inputPath))
-                                {
-                                    throw new XmlException(AjaxMin.XmlInputNotExist.FormatInvariant(inputNode.Path));
-                                }
-
-                                // if we don't know the type yet, let's see if the extension gives us a hint
-                                if (crunchGroup.InputType == InputType.Unknown)
-                                {
-                                    switch (Path.GetExtension(inputPath).ToUpperInvariant())
-                                    {
-                                        case ".JS":
-                                            crunchGroup.InputType = InputType.JavaScript;
-                                            break;
-
-                                        case ".CSS":
-                                            crunchGroup.InputType = InputType.Stylesheet;
-                                            break;
-                                    }
-                                }
-
-                                // add the input file and its encoding (if any) to the group
-                                crunchGroup.Add(inputPath, inputNode.EncodingName);
-                            }
-                            else
-                            {
-                                // no required path attribute on the <input> element
-                                throw new XmlException(AjaxMin.InputNoPathAttr);
-                            }
-                        }
-
-                        // add it.
-                        crunchGroups.Add(crunchGroup);
-                    }
-                }
+                manifest = ManifestUtilities.ReadManifestFile(xmlPath);
+                manifest.ValidateAndNormalize(Path.GetDirectoryName(xmlPath), outputFolder);
             }
-            catch (XmlException e)
+            catch (FileNotFoundException ex)
             {
                 // throw an error indicating the XML error
-                System.Diagnostics.Debug.WriteLine(e.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(e.Message));
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
             }
-
-            // return the list of CrunchGroup objects
-            return crunchGroups;
-        }
-
-        private static string NormalizePath(string outputFolder, string rootPath, string path)
-        {
-            // if we have a value and it's a relative path...
-            if (!string.IsNullOrEmpty(path) && !Path.IsPathRooted(path))
+            catch (XmlException ex)
             {
-                if (string.IsNullOrEmpty(outputFolder))
-                {
-                    // make it relative to the XML file
-                    path = Path.Combine(rootPath, path);
-                }
-                else
-                {
-                    // make it relative to the output folder
-                    path = Path.Combine(outputFolder, path);
-                }
+                // throw an error indicating the XML error
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
             }
 
-            return path;
-        }
-
-        private string GetConfigArguments(IDictionary<string, string> configArguments)
-        {
-            // try getting the current configuration
-            string arguments;
-            if (!configArguments.TryGetValue(m_configuration ?? string.Empty, out arguments))
-            {
-                // if we didn't already try getting the current configuration...
-                if (!string.IsNullOrEmpty(m_configuration))
-                {
-                    // try the default (empty configuration)
-                    configArguments.TryGetValue(m_configuration, out arguments);
-                }
-            }
-
-            // make sure we don't return null
-            return arguments ?? string.Empty;
+            return manifest;
         }
 
         #endregion
@@ -2096,14 +1609,6 @@ namespace Microsoft.Ajax.Utilities
     {
         Silent,
         Console
-    }
-
-    internal enum InputType
-    {
-        Unknown = 0,
-        JavaScript,
-        Stylesheet,
-        Mix,
     }
 
     #endregion

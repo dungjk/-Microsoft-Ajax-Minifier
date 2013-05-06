@@ -39,7 +39,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS;NET_20</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -50,7 +50,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;NET_20</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -95,6 +95,15 @@
     <Compile Include="..\AjaxMin\MainClass.cs">
       <Link>MainClass.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMin\ManifestStrings.Designer.cs">
+      <Link>ManifestStrings.Designer.cs</Link>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManifestStrings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="..\AjaxMin\ManifestUtilities.cs">
+      <Link>ManifestUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMin\Properties\ProductAssemblyInfo.cs">
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
@@ -110,6 +119,12 @@
       <SubType>Designer</SubType>
       <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
       <LastGenOutput>AjaxMin.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\AjaxMin\ManifestStrings.resx">
+      <Link>ManifestStrings.resx</Link>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities.Configuration</CustomToolNamespace>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

@@ -950,7 +950,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             // give the symbol map a chance to add a little something, if we have one
                             sourceMap.IfNotNull(m => m.EndFile(
                                 outputWriter,
-                                m_switchParser.JSSettings.OutputMode == OutputMode.MultipleLines ? "\r\n" : "\n"));
+                                m_switchParser.JSSettings.LineTerminator));
                         }
                     }
                     catch (UnauthorizedAccessException)
