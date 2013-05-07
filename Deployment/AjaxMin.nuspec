@@ -32,6 +32,14 @@
         <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net40"/>
         <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="tools/net40"/>
         <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.pdb" target="tools/net40"/>
+
+        <file src="AjaxMinTask\AjaxMin.tasks" target="tools/net35"/>
+        <file src="AjaxMinTask\AjaxMinTask.targets" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.dll" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.dll" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.pdb" target="tools/net35"/>
+
         <file src="**\*.cs" target="src"/>
     </files>
 </package>
