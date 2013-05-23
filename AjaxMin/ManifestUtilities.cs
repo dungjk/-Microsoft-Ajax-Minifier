@@ -104,7 +104,8 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="manifest">manifest object</param>
         /// <param name="manifestPath">relative input folder; use current folder if null</param>
         /// <param name="outputFolder">relative output folder; same as input folder if null</param>
-        public static void ValidateAndNormalize(this Manifest manifest, string inputFolder, string outputFolder)
+        /// <param name="ignoreInput">whether to ignore input files or ensure their existance</param>
+        public static void ValidateAndNormalize(this Manifest manifest, string inputFolder, string outputFolder, bool throwInputErrors)
         {
             if (manifest != null)
             {
@@ -147,7 +148,7 @@ namespace Microsoft.Ajax.Utilities
                         // it exists. If not, then that's an error
                         if (!resource.Optional)
                         {
-                            if (!File.Exists(resource.Path))
+                            if (!File.Exists(resource.Path) && throwInputErrors)
                             {
                                 // throw an error
                                 throw new FileNotFoundException(ManifestStrings.ResourceFileNotFound, resource.Path);
@@ -190,7 +191,7 @@ namespace Microsoft.Ajax.Utilities
                         if (!inputFile.Optional)
                         {
                             // if it's not a file and it's not a folder...
-                            if (!File.Exists(inputFile.Path) && !Directory.Exists(inputFile.Path))
+                            if (!File.Exists(inputFile.Path) && !Directory.Exists(inputFile.Path) && throwInputErrors)
                             {
                                 // throw an error
                                 throw new FileNotFoundException(ManifestStrings.InputFileNotFound, inputFile.Path);

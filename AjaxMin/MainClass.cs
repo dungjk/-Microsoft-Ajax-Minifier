@@ -752,14 +752,14 @@ namespace Microsoft.Ajax.Utilities
                 try
                 {
                     // validate and normalize the manifest
-                    m_manifest.ValidateAndNormalize(Environment.CurrentDirectory, Environment.CurrentDirectory);
+                    m_manifest.ValidateAndNormalize(Environment.CurrentDirectory, Environment.CurrentDirectory, true);
                 }
                 catch (FileNotFoundException ex)
                 {
                     // throw an error indicating the file-not-found error. The file name should already be
                     // in the error message.
                     System.Diagnostics.Debug.WriteLine(ex.ToString());
-                    throw new UsageException(m_outputMode, ex.Message);
+                    throw new UsageException(m_outputMode, ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty));
                 }
                 catch (XmlException ex)
                 {
@@ -1268,13 +1268,13 @@ namespace Microsoft.Ajax.Utilities
             try
             {
                 manifest = ManifestUtilities.ReadManifestFile(xmlPath);
-                manifest.ValidateAndNormalize(Path.GetDirectoryName(xmlPath), outputFolder);
+                manifest.ValidateAndNormalize(Path.GetDirectoryName(xmlPath), outputFolder, true);
             }
             catch (FileNotFoundException ex)
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(ex.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
+                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty)));
             }
             catch (XmlException ex)
             {

@@ -123,12 +123,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // read the manifest in
                 manifest = ManifestUtilities.ReadManifestFile(taskItem.ItemSpec);
 
-                // validate and normalize all paths
-                manifest.ValidateAndNormalize(manifestFolder, this.OutputFolder);
+                // if an input folder was specified and it exists, use that as the root
+                // for all input files. Otherwise use the manifest folder path.
+                var inputFolder = (this.InputFolder.IsNullOrWhiteSpace() || !Directory.Exists(this.InputFolder))
+                    ? manifestFolder
+                    : this.InputFolder;
+
+                // validate and normalize all paths. 
+                manifest.ValidateAndNormalize(inputFolder, this.OutputFolder, !this.IsCleanOperation);
             }
             catch (FileNotFoundException ex)
             {
-                Log.LogError(ex.Message);
+                Log.LogError(ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty));
             }
             catch (XmlException ex)
             {
