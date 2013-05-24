@@ -4430,15 +4430,23 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            // check to see if we went overflow
+                            // if we went overflow or are not a number, then we will use the "Other"
+                            // primitive type so we don't try doing any numeric calcs with it. But it we 
+                            // aren't overflow or NaN, still call it a number.
+                            var primitiveType = double.IsInfinity(doubleValue) || double.IsNaN(doubleValue)
+                                ? PrimitiveType.Other
+                                : PrimitiveType.Number;
+
+                            // and if we ARE an overflow, report it
                             if (double.IsInfinity(doubleValue))
                             {
+                                // overflow
                                 ReportError(JSError.NumericOverflow, numericContext, true);
                             }
 
                             // regardless, we're going to create a special constant wrapper
                             // that simply echos the input as-is
-                            ast = new ConstantWrapper(m_currentToken.Code, PrimitiveType.Other, numericContext, this)
+                            ast = new ConstantWrapper(m_currentToken.Code, primitiveType, numericContext, this)
                             {
                                 MayHaveIssues = true
                             };
@@ -5484,8 +5492,9 @@ namespace Microsoft.Ajax.Utilities
 
         private JSToken PeekToken()
         {
-            // clone the scanner and get the next token
+            // clone the scanner, turn off any error reporting, and get the next token
             var clonedScanner = m_scanner.Clone();
+            clonedScanner.SuppressErrors = true;
             var peekToken = clonedScanner.ScanNextToken(false);
 
             // there are some tokens we really don't care about when we peek

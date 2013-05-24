@@ -128,6 +128,12 @@ namespace JSUnitTest
         }
 
         [TestMethod]
+        public void Member_Preserve()
+        {
+            TestHelper.Instance.RunTest("-kill:0x200000");
+        }
+
+        [TestMethod]
         public void GetterSetter()
         {
             TestHelper.Instance.RunTest();

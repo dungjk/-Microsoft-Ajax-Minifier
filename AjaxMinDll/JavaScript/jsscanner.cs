@@ -84,6 +84,8 @@ namespace Microsoft.Ajax.Utilities
 
         public bool StripDebugCommentBlocks { get; set; }
 
+        public bool SuppressErrors { get; set; }
+
         internal string Identifier
         {
             get
@@ -1256,6 +1258,19 @@ namespace Microsoft.Ajax.Utilities
                     while ('0' <= c && c <= '7')
                     {
                         c = GetChar(++m_currentPosition);
+                    }
+
+                    // bad octal?
+                    if (char.IsDigit(c) && '7' < c)
+                    {
+                        // bad octal. Skip any other digits, throw an error, mark it has having issues
+                        m_literalIssues = true;
+                        while ('0' <= c && c <= '9')
+                        {
+                            c = GetChar(++m_currentPosition);
+                        }
+
+                        HandleError(JSError.BadNumericLiteral);
                     }
 
                     // return the integer token with issues, which should cause it to be output
@@ -3006,7 +3021,11 @@ namespace Microsoft.Ajax.Utilities
             m_currentToken.EndPosition = m_currentPosition;
             m_currentToken.EndLinePosition = m_startLinePosition;
             m_currentToken.EndLineNumber = m_currentLine;
-            m_currentToken.HandleError(error);
+
+            if (!this.SuppressErrors)
+            {
+                m_currentToken.HandleError(error);
+            }
         }
 
         /// <summary>

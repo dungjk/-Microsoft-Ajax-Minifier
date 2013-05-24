@@ -1699,11 +1699,12 @@ namespace Microsoft.Ajax.Utilities
                     var constantWrapper = node.Root as ConstantWrapper;
                     if (constantWrapper != null && constantWrapper.IsFiniteNumericLiteral)
                     {
-                        // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version
+                        // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version.
+                        // if the number has issues, then don't format it and just use the source.
                         string numericText;
                         if (constantWrapper.Context == null
                             || !constantWrapper.Context.HasCode
-                            || Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals))
+                            || (Settings.IsModificationAllowed(TreeModifications.MinifyNumericLiterals) && !constantWrapper.MayHaveIssues))
                         {
                             // apply minification to the literal to get it as small as possible
                             numericText = NormalizeNumber(constantWrapper.ToNumber(), constantWrapper.Context);
@@ -1715,15 +1716,27 @@ namespace Microsoft.Ajax.Utilities
                             numericText = constantWrapper.Context.Code;
                         }
 
-                        // if there is no decimal point in the number, we need to add one at the end
-                        // so the member-dot operator doesn't get mistaken for the decimal point and
-                        // generate a syntax error
-                        Output(numericText);
-                        if (numericText.IndexOf('.') < 0
-                            && !numericText.StartsWith("(", StringComparison.Ordinal))
+                        // if the value is negative, we're going to need to wrap it in parens
+                        if (numericText.StartsWith("-", StringComparison.Ordinal))
                         {
-                            // no decimal point - make sure to add one
-                            Output('.');
+                            Output('(');
+                            Output(numericText);
+                            Output(')');
+                        }
+                        else
+                        {
+                            // if there is no decimal point in the number, we need to add one at the end
+                            // so the member-dot operator doesn't get mistaken for the decimal point and
+                            // generate a syntax error.
+                            // if the number starts with a zero (and isn't just "0"), then it is a special number
+                            // that doesn't need an extra decimal point (hex, octal, binary...)
+                            Output(numericText);
+                            if (numericText.IndexOf('.') < 0
+                                && (!numericText.StartsWith("0", StringComparison.Ordinal) || numericText.Length == 1 || char.IsDigit(numericText[1])))
+                            {
+                                // no decimal point - make sure to add one
+                                Output('.');
+                            }
                         }
                     }
                     else

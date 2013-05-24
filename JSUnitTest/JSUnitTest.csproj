@@ -287,6 +287,7 @@
     <Content Include="TestData\JS\Expected\Literals\InlineSafeErrors_on.js" />
     <Content Include="TestData\JS\Expected\Literals\InlineSafe_no.js" />
     <Content Include="TestData\JS\Expected\Literals\Member.js" />
+    <Content Include="TestData\JS\Expected\Literals\Member_Preserve.js" />
     <Content Include="TestData\JS\Expected\Literals\NestedCombine.js" />
     <Content Include="TestData\JS\Expected\Literals\NullCharacter.js" />
     <Content Include="TestData\JS\Expected\Literals\Number.js" />

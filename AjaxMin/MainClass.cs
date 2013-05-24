@@ -947,6 +947,14 @@ namespace Microsoft.Ajax.Utilities
         {
             int retVal = 0;
 
+            // if there are no input groups, we'll be reading from STDIN and should output our
+            // headers right now.
+            if (outputGroup.Inputs.Count == 0)
+            {
+                // if we write a blank line now, it will cause the header to be output
+                WriteProgress();
+            }
+
             // combine all the source files into a single string, delimited with ///#SOURCE comments so we can track
             // back to the original files. Also, add all the raw input to the echo builder.
             var inputGroups = outputGroup.ReadInputGroups(switchParser.EncodingInputName);
