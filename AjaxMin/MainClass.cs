@@ -1112,7 +1112,33 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // sometimes they will error, in which case we'll just set it to ascii
                             Debug.WriteLine(e.ToString());
-                            //Console.OutputEncoding = Encoding.ASCII;
+
+                            // see if we know what kind of fallback we need
+                            EncoderFallback fallback = null;
+                            if (outputGroup.CodeType == CodeType.JavaScript)
+                            {
+                                fallback = new JSEncoderFallback();
+                            }
+                            else if (outputGroup.CodeType == CodeType.StyleSheet)
+                            {
+                                fallback = new CssEncoderFallback();
+                            }
+
+                            if (fallback != null)
+                            {
+                                // try it again -- but this time if it fails, just leave the stream
+                                // to its default encoding.
+                                try
+                                {
+                                    var asciiClone = (Encoding)Encoding.ASCII.Clone();
+                                    asciiClone.EncoderFallback = fallback;
+                                    Console.OutputEncoding = asciiClone;
+                                }
+                                catch (IOException)
+                                {
+                                    // ignore
+                                }
+                            }
                         }
 
                         Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));

@@ -371,22 +371,8 @@ namespace Microsoft.Ajax.Utilities
             Encoding encoding = null;
             if (outputGroup != null)
             {
-                // see if we can determine which special encoder fallback to use from the code type
-                EncoderFallback encoderFallback = null;
-                if (outputGroup.CodeType == CodeType.JavaScript)
-                {
-                    encoderFallback = new JSEncoderFallback();
-                }
-                else if (outputGroup.CodeType == CodeType.StyleSheet)
-                {
-                    encoderFallback = new CssEncoderFallback();
-                }
-
                 // if none specified on the output group, use the default
-                var encodingName = outputGroup.EncodingName.IsNullOrWhiteSpace()
-                    ? defaultEncodingName
-                    : outputGroup.EncodingName;
-
+                var encodingName = outputGroup.EncodingName.IfNullOrWhiteSpace(defaultEncodingName);
                 if (!encodingName.IsNullOrWhiteSpace())
                 {
                     try
@@ -398,7 +384,7 @@ namespace Microsoft.Ajax.Utilities
                         // that also uses the UNICODE "replacement character" for things it doesn't understand.
                         encoding = Encoding.GetEncoding(
                             encodingName,
-                            encoderFallback ?? new EncoderReplacementFallback("\uFFFD"),
+                            GetEncoderFallback(outputGroup.CodeType),
                             new DecoderReplacementFallback("\uFFFD"));
                     }
                     catch (ArgumentException e)
@@ -416,11 +402,13 @@ namespace Microsoft.Ajax.Utilities
                 if (outputGroup == null || outputGroup.Path.IsNullOrWhiteSpace())
                 {
                     // no output group or outputting to stdout (no output path)
-                    encoding = new ASCIIEncoding();
+                    encoding = (Encoding)Encoding.ASCII.Clone();
+                    encoding.EncoderFallback = GetEncoderFallback(outputGroup.IfNotNull(g => g.CodeType));
                 }
                 else
                 {
-                    // outputting to file, use UTF-8 WITHOUT the BOM
+                    // outputting to file, use UTF-8 WITHOUT the BOM.
+                    // don't need a fallback encoder for UTF-8.
                     encoding = new UTF8Encoding(false);
                 }
             }
@@ -445,6 +433,20 @@ namespace Microsoft.Ajax.Utilities
         }
 
         #region helper methods
+
+        private static EncoderFallback GetEncoderFallback(CodeType codeType)
+        {
+            if (codeType == CodeType.JavaScript)
+            {
+                return new JSEncoderFallback();
+            }
+            else if (codeType == CodeType.StyleSheet)
+            {
+                return new CssEncoderFallback();
+            }
+
+            return new EncoderReplacementFallback("\uFFFD");
+        }
 
         private static Encoding GetInputEncoding(string encodingName)
         {

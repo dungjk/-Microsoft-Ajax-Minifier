@@ -1332,16 +1332,27 @@ namespace Microsoft.Ajax.Utilities
                 m_currentPosition++;
             }
 
+            // get the last character of the number
             c = GetChar(m_currentPosition - 1);
             if ('+' == c || '-' == c)
             {
+                // if it's a + or -, then it's not part of the number; back it up one
                 m_currentPosition--;
                 c = GetChar(m_currentPosition - 1);
             }
 
             if ('e' == c || 'E' == c)
             {
+                // if it's an e, it's not part of the number; back it up one
                 m_currentPosition--;
+                c = GetChar(m_currentPosition - 1);
+            }
+
+            if (token == JSToken.NumericLiteral && c == '.')
+            {
+                // if we thought this was a numeric value and not an integer, but the last
+                // value was the decimal point, treat it as an integer.
+                token = JSToken.IntegerLiteral;
             }
 
             // it is invalid for a numeric literal to be immediately followed by another

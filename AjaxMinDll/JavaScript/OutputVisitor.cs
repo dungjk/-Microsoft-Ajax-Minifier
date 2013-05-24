@@ -1697,7 +1697,8 @@ namespace Microsoft.Ajax.Utilities
                 if (node.Root != null)
                 {
                     var constantWrapper = node.Root as ConstantWrapper;
-                    if (constantWrapper != null && constantWrapper.IsFiniteNumericLiteral)
+                    if (constantWrapper != null 
+                        && (constantWrapper.IsFiniteNumericLiteral || constantWrapper.IsOtherDecimal))
                     {
                         // numeric constant wrapper that isn't NaN or Infinity - get the formatted text version.
                         // if the number has issues, then don't format it and just use the source.

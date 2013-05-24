@@ -4431,22 +4431,17 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             // if we went overflow or are not a number, then we will use the "Other"
-                            // primitive type so we don't try doing any numeric calcs with it. But it we 
-                            // aren't overflow or NaN, still call it a number.
-                            var primitiveType = double.IsInfinity(doubleValue) || double.IsNaN(doubleValue)
-                                ? PrimitiveType.Other
-                                : PrimitiveType.Number;
-
-                            // and if we ARE an overflow, report it
+                            // primitive type so we don't try doing any numeric calcs with it. 
                             if (double.IsInfinity(doubleValue))
                             {
                                 // overflow
+                                // and if we ARE an overflow, report it
                                 ReportError(JSError.NumericOverflow, numericContext, true);
                             }
 
                             // regardless, we're going to create a special constant wrapper
                             // that simply echos the input as-is
-                            ast = new ConstantWrapper(m_currentToken.Code, primitiveType, numericContext, this)
+                            ast = new ConstantWrapper(m_currentToken.Code, PrimitiveType.Other, numericContext, this)
                             {
                                 MayHaveIssues = true
                             };

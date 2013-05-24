@@ -175,6 +175,15 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public bool IsOtherDecimal
+        {
+            get
+            {
+                return PrimitiveType == PrimitiveType.Other
+                    && IsOnlyDecimalDigits(Value.ToString());
+            }
+        }
+
         public bool StringContainsAspNetReplacement
         {
             get
@@ -730,6 +739,18 @@ namespace Microsoft.Ajax.Utilities
 
             // otherwise this must be a string
             return Value.ToString();
+        }
+
+        private static bool IsOnlyDecimalDigits(string text)
+        {
+            for (var ndx = 0; ndx < text.Length; ++ndx)
+            {
+                if (!char.IsDigit(text[ndx]))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
