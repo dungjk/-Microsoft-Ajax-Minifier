@@ -21,9 +21,11 @@ var issues = (1000000000000000128).toFixed(0);
 var noDec = (9).toFixed();
 var dec = (0.9).toFixed();
 var hex = (0xC9).toFixed();
+var oct = (037).toFixed();
 var zero = (0).toFixed(0);
 var negZero = (-0).toFixed(0);
 var badOct = (009).toFixed();
 var neg = (-42).toFixed(2);
 var op = (2-5).toFixed();
+var exp = 1000000..toFixed();
 

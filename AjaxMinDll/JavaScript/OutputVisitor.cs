@@ -1725,17 +1725,44 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            // if there is no decimal point in the number, we need to add one at the end
-                            // so the member-dot operator doesn't get mistaken for the decimal point and
-                            // generate a syntax error.
-                            // if the number starts with a zero (and isn't just "0"), then it is a special number
-                            // that doesn't need an extra decimal point (hex, octal, binary...)
+                            // if there is no decimal point in the number and no exponent, then we may need to add 
+                            // a decimal point to the end of the number so the member-dot operator doesn't get mistaken 
+                            // for the decimal point and generate a syntax error.
                             Output(numericText);
                             if (numericText.IndexOf('.') < 0
-                                && (!numericText.StartsWith("0", StringComparison.Ordinal) || numericText.Length == 1 || char.IsDigit(numericText[1])))
+                                && numericText.IndexOf("e", StringComparison.OrdinalIgnoreCase) < 0)
                             {
-                                // no decimal point - make sure to add one
-                                Output('.');
+                                // HOWEVER... octal literals don't need the dot. So if this number starts with zero and
+                                // has more than one digit, we need to check for octal literals and 0xd+ 0bd+ and 0od+ literals,
+                                // because THOSE don't need the extra dot, either. 
+                                bool addDecimalPoint = !numericText.StartsWith("0", StringComparison.Ordinal) || numericText.Length == 1;
+                                if (!addDecimalPoint)
+                                {
+                                    // But we might also have a number that just starts with zero and is a regular decimal (like 0009).
+                                    // if the second "digit" isn't a number, then we have 0x or 0b or 0o, so we don't have to do
+                                    // any further tests -- we know we don't need the extra decimal point. Otherwise we need to
+                                    // make sure this
+                                    if (char.IsDigit(numericText[1]))
+                                    {
+                                        // the second character is a digit, so we know we aren't 0x, 0b, or 0o. But we start with
+                                        // a zero -- so we need to test to see if this is an octal literal, because they do NOT need
+                                        // the extra decimal point. But if it isn't an octal literal, we DO need it after all.
+                                        for (var ndx = 1; ndx < numericText.Length; ++ndx)
+                                        {
+                                            if ('7' < numericText[ndx])
+                                            {
+                                                // NOT octal; we need the extra dot
+                                                addDecimalPoint = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (addDecimalPoint)
+                                {
+                                    Output('.');
+                                }
                             }
                         }
                     }
