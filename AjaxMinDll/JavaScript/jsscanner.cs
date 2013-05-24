@@ -1312,7 +1312,7 @@ namespace Microsoft.Ajax.Utilities
                             break;
                         }
 
-                        exponent = true;
+                        exponent = noMoreDot = true;
                         token = JSToken.NumericLiteral;
                     }
                     else if ('+' == c || '-' == c)

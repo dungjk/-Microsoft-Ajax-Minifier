@@ -27,5 +27,6 @@ var negZero = (-0).toFixed(0);
 var badOct = (009).toFixed();
 var neg = (-42).toFixed(2);
 var op = (2-5).toFixed();
-var exp = 1000000..toFixed();
+var exp1 = 1000000..toFixed();
+var exp2 = 8e-05.toFixed(4);
 
