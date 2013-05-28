@@ -2501,8 +2501,7 @@ namespace Microsoft.Ajax.Utilities
                 m_segmentStartLine = m_lineCount;
                 m_segmentStartColumn = m_lineLength;
 
-                m_outputStream.Write(text);
-                m_lineLength += text.Length;
+                m_lineLength += WriteToStream(text);
                 m_noLineBreaks = false;
 
                 // if it ends in a newline, we're still on a newline
@@ -2522,8 +2521,7 @@ namespace Microsoft.Ajax.Utilities
             m_segmentStartLine = m_lineCount;
             m_segmentStartColumn = m_lineLength;
 
-            m_outputStream.Write(ch);
-            ++m_lineLength;
+            m_lineLength += WriteToStream(ch);
             m_noLineBreaks = false;
 
             // determine if this was a newline character
@@ -2537,9 +2535,11 @@ namespace Microsoft.Ajax.Utilities
         {
             if (m_noLineBreaks)
             {
+                // don't bother going through the WriteToStream method, since
+                // we KNOW a space won't be expanded to \u0020.
                 m_outputStream.Write(' ');
-                m_lastCharacter = ' ';
                 ++m_lineLength;
+                m_lastCharacter = ' ';
             }
             else
             {
@@ -2716,9 +2716,8 @@ namespace Microsoft.Ajax.Utilities
                 // if we aren't on a new line, then output our space character
                 if (!m_onNewLine)
                 {
-                    m_outputStream.Write(ch);
+                    m_lineLength += WriteToStream(ch);
                     m_lastCharacter = ch;
-                    ++m_lineLength;
                 }
             }
             else
@@ -2731,10 +2730,9 @@ namespace Microsoft.Ajax.Utilities
                 m_segmentStartLine = m_lineCount;
                 m_segmentStartColumn = m_lineLength;
                 
-                m_outputStream.Write(ch);
+                m_lineLength += WriteToStream(ch);
                 m_onNewLine = false;
                 m_lastCharacter = ch;
-                ++m_lineLength;
 
                 // break the line if it's too long, but don't force it
                 BreakLine(false);
@@ -2754,10 +2752,12 @@ namespace Microsoft.Ajax.Utilities
                 m_segmentStartColumn = m_lineLength;
 
                 // output the semicolon
+                // don't bother going through the WriteToStream method, since we
+                // KNOW a semicolon won't be expanded to \u003b
                 m_outputStream.Write(';');
+                ++m_lineLength;
                 m_onNewLine = false;
                 m_lastCharacter = ';';
-                ++m_lineLength;
                 outputSemicolon = true;
             }
 
@@ -2777,6 +2777,8 @@ namespace Microsoft.Ajax.Utilities
                 else
                 {
                     // terminate the line and start a new one
+                    // don't bother going through the WriteToStream method, since we
+                    // KNOW a \n character won't be expanded to \u000a
                     m_outputStream.Write('\n');
                     m_lineCount++;
 
@@ -2792,13 +2794,16 @@ namespace Microsoft.Ajax.Utilities
         {
             if (Settings.OutputMode == OutputMode.MultipleLines && !m_onNewLine)
             {
-                // output the newline character
+                // output the newline character -- don't go through WriteToStream
+                // since we KNOW it won't get expanded to \uXXXX formats.
                 m_outputStream.WriteLine();
                 m_lineCount++;
 
                 // if the indent level is greater than zero, output the indent spaces
                 if (m_indentLevel > 0)
                 {
+                    // the spaces won't get expanded to \u0020, so don't bother going
+                    // through the WriteToStream method.
                     var numSpaces = m_indentLevel * Settings.IndentSize;
                     m_lineLength = numSpaces;
                     while (numSpaces-- > 0)
@@ -2816,6 +2821,78 @@ namespace Microsoft.Ajax.Utilities
 
                 // we just output a newline
                 m_onNewLine = true;
+            }
+        }
+
+        // write a text string to the output stream, optionally expanding any single characters
+        // to \uXXXX format if outside the ASCII range. Return the actual number of characters written
+        // after any expansion.
+        private int WriteToStream(string text)
+        {
+            // if we always want to encode non-ascii characters, then we need
+            // to look at each one and see if we need to encode anything!
+            if (Settings.AlwaysEscapeNonAscii)
+            {
+                StringBuilder sb = null;
+                var runStart = 0;
+                for (var ndx = 0; ndx < text.Length; ++ndx)
+                {
+                    // if the character is over the ASCII range, we'll need to escape it
+                    if (text[ndx] > '\u007f')
+                    {
+                        // if we haven't yet created the builder, create it now
+                        if (sb == null)
+                        {
+                            sb = new StringBuilder();
+                        }
+
+                        // if there's a run of unescaped characters waiting to be
+                        // output, output it now
+                        if (ndx > runStart)
+                        {
+                            sb.Append(text, runStart, ndx - runStart);
+                        }
+
+                        // format the current character in \uXXXX, and start the next
+                        // run at the NEXT character.
+                        sb.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:x4}".FormatInvariant((int)text[ndx]));
+                        runStart = ndx + 1;
+                    }
+                }
+
+                // if nothing needed escaping, the builder will still be null and we
+                // have nothing else to do (just use the string as-is)
+                if (sb != null)
+                {
+                    // if there is an unescaped run at the end still left, add it now
+                    if (runStart < text.Length)
+                    {
+                        sb.Append(text, runStart, text.Length - runStart);
+                    }
+
+                    // and use the fully-escaped string going forward.
+                    text = sb.ToString();
+                }
+            }
+
+            m_outputStream.Write(text);
+            return text.Length;
+        }
+
+        // write a single character to the stream, optionally expanding it to a \uXXXX sequence
+        // if needed. Return the number of characters sent to the stream (1 or 6)
+        private int WriteToStream(char ch)
+        {
+            if (Settings.AlwaysEscapeNonAscii && ch > '\u007f')
+            {
+                // expand it to the \uXXXX format, which is six characters
+                m_outputStream.Write("\\u{0:x4}", (int)ch);
+                return 6;
+            }
+            else
+            {
+                m_outputStream.Write(ch);
+                return 1;
             }
         }
 
