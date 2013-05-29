@@ -581,7 +581,7 @@ namespace Microsoft.Ajax.Utilities
             return null;
         }
 
-        internal void ManualRenameFields()
+        protected void ManualRenameFields()
         {
             // if the local-renaming kill switch is on, we won't be renaming ANYTHING, so we'll have nothing to do.
             if (m_settings.IsModificationAllowed(TreeModifications.LocalRenaming))

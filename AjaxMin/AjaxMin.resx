@@ -385,6 +385,9 @@ Valid JSOPTS are zero or more of:
         To specify debug lookups to remove, add them comma-separated after the
         boolean flag. Specifying lookups on the command line REPLACES the
         defaults; blank lookups are allowed and will be ignored.
+  -esc[:BOOL] &gt; whether to always escape non-ascii characters in the output
+        as a \uXXXX sequence (true), or to leave the escaping up to the output
+        encoding. Default is False.
   -evals:(ignore|immediate|safeall) &gt; ignore eval statements or ensure that
         that the immediate scope is safe, or all possibly-affected scopes are 
         safe. Default is ignore.
