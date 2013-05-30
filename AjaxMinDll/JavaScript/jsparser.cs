@@ -901,17 +901,7 @@ namespace Microsoft.Ajax.Utilities
                         try
                         {
                             bool bAssign;
-                            // if this statement starts with a function within parens, we want to know now
-                            bool parenFunction = (m_currentToken.Token == JSToken.LeftParenthesis && PeekToken() == JSToken.Function);
                             statement = ParseUnaryExpression(out bAssign, false);
-                            if (statement != null && parenFunction)
-                            {
-                                FunctionObject functionObject = statement.LeftHandSide as FunctionObject;
-                                if (functionObject != null)
-                                {
-                                    functionObject.LeftHandFunctionExpression = true;
-                                }
-                            }
 
                             // look for labels
                             if (statement is Lookup && JSToken.Colon == m_currentToken.Token)

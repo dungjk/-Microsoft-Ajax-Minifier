@@ -54,5 +54,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-aspnet:true");
         }
+
+        [TestMethod()]
+        public void PlusAssignReturn()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
