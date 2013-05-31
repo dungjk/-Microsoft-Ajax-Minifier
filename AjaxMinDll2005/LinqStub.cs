@@ -54,5 +54,21 @@ namespace System.Linq
 
             return newDictionary;
         }
+
+        public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            // for each item in the source collection...
+            foreach (var item in source)
+            {
+                if (predicate(item))
+                {
+                    // as soon as ONE evaluates to true, we return true
+                    return true;
+                }
+            }
+
+            // if we get here, nothing evaluated to true
+            return false;
+        }
     }
 }
