@@ -64,8 +64,16 @@ namespace Microsoft.Ajax.Utilities
                         m_writer.WriteStartElement("reference");
                         m_writer.WriteAttributeString("name", undefined.Name);
                         m_writer.WriteAttributeString("type", undefined.ReferenceType.ToString().ToLowerInvariant());
-                        m_writer.WriteAttributeString("srcLine", undefined.Line.ToStringInvariant());
-                        m_writer.WriteAttributeString("srcCol", (undefined.Column + 1).ToStringInvariant());
+                        if (undefined.LookupNode != null && undefined.LookupNode.Context != null)
+                        {
+                            OutputContextPosition(undefined.LookupNode.Context);
+                        }
+                        else
+                        {
+                            m_writer.WriteAttributeString("srcLine", undefined.Line.ToStringInvariant());
+                            m_writer.WriteAttributeString("srcCol", (undefined.Column + 1).ToStringInvariant());
+                        }
+
                         m_writer.WriteEndElement();
                     }
 
@@ -133,11 +141,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    if (functionObject.Context != null)
-                    {
-                        m_writer.WriteAttributeString("srcLine", functionObject.Context.StartLineNumber.ToStringInvariant());
-                        m_writer.WriteAttributeString("srcCol", (functionObject.Context.StartColumn + 1).ToStringInvariant());
-                    }
+                    OutputContextPosition(functionObject.Context);
 
                     if (m_useReferenceCounts && functionObject.VariableField != null)
                     {
@@ -160,11 +164,6 @@ namespace Microsoft.Ajax.Utilities
                         foreach (var item in functionObject.ParameterDeclarations)
                         {
                             m_writer.WriteStartElement("argument");
-                            if (item.Context != null)
-                            {
-                                m_writer.WriteAttributeString("srcLine", item.Context.StartLineNumber.ToStringInvariant());
-                                m_writer.WriteAttributeString("srcCol", (item.Context.StartColumn + 1).ToStringInvariant());
-                            }
 
                             var parameter = item as ParameterDeclaration;
                             if (parameter != null)
@@ -175,11 +174,16 @@ namespace Microsoft.Ajax.Utilities
                                     m_writer.WriteAttributeString("min", parameter.VariableField.CrunchedName);
                                 }
 
+                                OutputContextPosition(item.Context);
                                 if (m_useReferenceCounts && parameter.VariableField != null)
                                 {
                                     m_writer.WriteAttributeString("refcount", parameter.VariableField.RefCount.ToStringInvariant());
                                 }
 
+                            }
+                            else
+                            {
+                                OutputContextPosition(item.Context);
                             }
 
                             m_writer.WriteEndElement();
@@ -213,11 +217,7 @@ namespace Microsoft.Ajax.Utilities
                         m_writer.WriteAttributeString("min", catchVariable.CrunchedName);
                     }
 
-                    if (catchVariable.OriginalContext != null)
-                    {
-                        m_writer.WriteAttributeString("srcLine", catchVariable.OriginalContext.StartLineNumber.ToStringInvariant());
-                        m_writer.WriteAttributeString("srcCol", (catchVariable.OriginalContext.StartColumn + 1).ToStringInvariant());
-                    }
+                    OutputContextPosition(catchVariable.OriginalContext);
 
                     if (m_useReferenceCounts)
                     {
@@ -408,11 +408,7 @@ namespace Microsoft.Ajax.Utilities
                 m_writer.WriteAttributeString("min", field.CrunchedName);
             }
 
-            if (field.OriginalContext != null)
-            {
-                m_writer.WriteAttributeString("srcLine", field.OriginalContext.StartLineNumber.ToStringInvariant());
-                m_writer.WriteAttributeString("srcCol", (field.OriginalContext.StartColumn + 1).ToStringInvariant());
-            }
+            OutputContextPosition(field.OriginalContext);
 
             if (m_useReferenceCounts)
             {
@@ -438,5 +434,19 @@ namespace Microsoft.Ajax.Utilities
         }
 
         #endregion
+
+        private void OutputContextPosition(Context context)
+        {
+            if (context != null)
+            {
+                m_writer.WriteAttributeString("srcLine", context.StartLineNumber.ToStringInvariant());
+                m_writer.WriteAttributeString("srcCol", (context.StartColumn + 1).ToStringInvariant());
+                if (context.OutputLine > 0)
+                {
+                    m_writer.WriteAttributeString("dstLine", context.OutputLine.ToStringInvariant());
+                    m_writer.WriteAttributeString("dstCol", (context.OutputColumn + 1).ToStringInvariant());
+                }
+            }
+        }
     }
 }

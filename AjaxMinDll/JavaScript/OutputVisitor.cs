@@ -97,6 +97,7 @@ namespace Microsoft.Ajax.Utilities
 
                 OutputPossibleLineBreak('[');
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
 
@@ -143,6 +144,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 Output(node.AspNetBlockText);
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
             }
@@ -164,6 +166,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // output as comma-separated expressions starting with the first one
                 node[0].Accept(this);
+                SetContextOutputPosition(node.Context, node[0].Context);
 
                 // this should never be the first element of the line, but
                 // just in case, reset the flag after the first expression.
@@ -218,6 +221,7 @@ namespace Microsoft.Ajax.Utilities
                     if (node.Operand1 != null)
                     {
                         node.Operand1.Accept(this);
+                        SetContextOutputPosition(node.Context, node.Operand1.Context);
 
                         // if we don't have a right-hand operator, don't bother with the comma
                         if (node.Operand2 != null)
@@ -268,6 +272,7 @@ namespace Microsoft.Ajax.Utilities
                     if (node.Operand1 != null)
                     {
                         AcceptNodeWithParens(node.Operand1, node.Operand1.Precedence < ourPrecedence);
+                        SetContextOutputPosition(node.Context, node.Operand1.Context);
                     }
 
                     m_startOfStatement = false;
@@ -418,6 +423,7 @@ namespace Microsoft.Ajax.Utilities
 
                     // always enclose in curly-braces
                     OutputPossibleLineBreak('{');
+                    SetContextOutputPosition(node.Context);
                     MarkSegment(node, null, node.Context);
                     Indent();
                 }
@@ -498,6 +504,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("break");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
@@ -536,6 +543,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output("new");
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
 
                     m_startOfStatement = false;
                 }
@@ -576,6 +584,10 @@ namespace Microsoft.Ajax.Utilities
                     }
 
                     AcceptNodeWithParens(node.Function, needsParens);
+                    if (!node.IsConstructor)
+                    {
+                        SetContextOutputPosition(node.Context);
+                    }
                 }
 
                 if (!node.IsConstructor || node.Arguments.Count > 0)
@@ -638,6 +650,7 @@ namespace Microsoft.Ajax.Utilities
                     // start of comment
                     Output("/*");
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
 
                     // get the next statement, which will be the first one we output
                     var statement = node.Statements[ndx];
@@ -696,6 +709,7 @@ namespace Microsoft.Ajax.Utilities
                 
                 Output("@else");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 EndSymbol(symbol);
             }
@@ -708,6 +722,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("@elif(");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 if (node.Condition != null)
@@ -727,6 +742,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("@end");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 EndSymbol(symbol);
             }
         }
@@ -738,6 +754,8 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("@if(");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
+
                 m_startOfStatement = false;
                 if (node.Condition != null)
                 {
@@ -760,6 +778,7 @@ namespace Microsoft.Ajax.Utilities
                     m_outputCCOn = true;
                     Output("@cc_on");
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
                 }
 
                 EndSymbol(symbol);
@@ -774,6 +793,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("@set");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 Output(node.VariableName);
@@ -807,6 +827,7 @@ namespace Microsoft.Ajax.Utilities
                 if (node.Condition != null)
                 {
                     AcceptNodeWithParens(node.Condition, node.Condition.Precedence < OperatorPrecedence.LogicalOr);
+                    SetContextOutputPosition(node.Context);
                 }
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
@@ -928,6 +949,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 m_noIn = isNoIn;
 
@@ -949,6 +971,7 @@ namespace Microsoft.Ajax.Utilities
                 // varname must include the @ sign
                 Output(node.VarName);
                 m_startOfStatement = false;
+                SetContextOutputPosition(node.Context);
 
                 if (node.ForceComments)
                 {
@@ -966,6 +989,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("const");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 Indent();
 
@@ -995,6 +1019,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("continue");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 if (!string.IsNullOrEmpty(node.Label))
@@ -1033,6 +1058,7 @@ namespace Microsoft.Ajax.Utilities
                     var symbol = StartSymbol(node);
                     Output(node.ToCode());
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
                     EndSymbol(symbol);
                 }
             }
@@ -1045,6 +1071,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("debugger");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 EndSymbol(symbol);
             }
@@ -1077,6 +1104,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("do");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 if (node.Body == null || node.Body.Count == 0)
                 {
@@ -1158,6 +1186,7 @@ namespace Microsoft.Ajax.Utilities
                 // empty statement is just a semicolon
                 OutputPossibleLineBreak(';');
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
             }
         }
 
@@ -1169,6 +1198,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("for");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
@@ -1219,6 +1249,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("for");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -1300,6 +1331,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("function");
                 MarkSegment(node, fullFunctionName, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 bool isAnonymous = true;
@@ -1327,6 +1359,7 @@ namespace Microsoft.Ajax.Utilities
 
                         Output(minFunctionName);
                         MarkSegment(node, node.Name, node.IdContext);
+                        SetContextOutputPosition(node.NameContext);
                     }
                 }
 
@@ -1372,6 +1405,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output(node.IsGetter ? "get" : "set");
                 MarkSegment(node, node.Value.ToString(), node.Context);
+                SetContextOutputPosition(node.Context);
 
                 m_startOfStatement = false;
                 Output(node.Value.ToString());
@@ -1387,6 +1421,7 @@ namespace Microsoft.Ajax.Utilities
                 // don't output a possible line-break here.
                 Output('(');
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
 
                 if (node.Operand != null)
@@ -1408,6 +1443,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("if");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
 
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
@@ -1523,6 +1559,7 @@ namespace Microsoft.Ajax.Utilities
                 // of whether or not we are in multi- or single-line mode, and the statement after
                 // should also be on a new line.
                 BreakLine(true);
+                node.Context.OutputLine = m_lineCount;
 
                 // the output method assumes any text we send it's way doesn't contain any line feed
                 // characters. The important comment, however, may contain some. We don't want to count
@@ -1602,6 +1639,7 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 OutputPossibleLineBreak(':');
                 MarkSegment(node, null, node.ColonContext);
                 if (node.Statement != null && !node.Statement.HideFromOutput)
@@ -1625,6 +1663,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output(OperatorString(node.StatementToken));
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 Indent();
                 var useNewLines = !(node.Parent is ForNode);
@@ -1679,6 +1718,7 @@ namespace Microsoft.Ajax.Utilities
                     ? node.VariableField.ToString()
                     : node.Name);
                 MarkSegment(node, node.Name, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
 
                 EndSymbol(symbol);
@@ -1785,6 +1825,8 @@ namespace Microsoft.Ajax.Utilities
 
                         AcceptNodeWithParens(node.Root, needsParens);
                     }
+
+                    SetContextOutputPosition(node.Context);
                 }
 
                 OutputPossibleLineBreak('.');
@@ -1815,6 +1857,8 @@ namespace Microsoft.Ajax.Utilities
 
                 OutputPossibleLineBreak('{');
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
+
                 m_startOfStatement = false;
                 Indent();
 
@@ -1916,6 +1960,7 @@ namespace Microsoft.Ajax.Utilities
                 if (node.Name != null)
                 {
                     node.Name.Accept(this);
+                    SetContextOutputPosition(node.Context);
                 }
 
                 if (node.Name is GetterSetter)
@@ -1937,6 +1982,7 @@ namespace Microsoft.Ajax.Utilities
                 // just output the node's name
                 Output(node.VariableField == null ? node.Name : node.VariableField.ToString());
                 MarkSegment(node, node.Name, node.Context);
+                SetContextOutputPosition(node.Context);
             }
         }
 
@@ -1951,6 +1997,8 @@ namespace Microsoft.Ajax.Utilities
                 // cannot have a line break anywhere in this node
                 Output('/');
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
+
                 Output(node.Pattern);
                 Output('/');
                 if (!string.IsNullOrEmpty(node.PatternSwitches))
@@ -1970,6 +2018,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("return");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
@@ -1997,6 +2046,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("switch");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -2066,6 +2116,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output("case");
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
 
                     m_startOfStatement = false;
                     node.CaseValue.Accept(this);
@@ -2074,6 +2125,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     Output("default");
                     MarkSegment(node, null, node.Context);
+                    SetContextOutputPosition(node.Context);
                 }
 
                 OutputPossibleLineBreak(':');
@@ -2114,6 +2166,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("this");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 EndSymbol(symbol);
             }
@@ -2126,6 +2179,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
                 Output("throw");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 if (node.Operand != null)
                 {
@@ -2171,6 +2225,7 @@ namespace Microsoft.Ajax.Utilities
         {
             Output("try");
             MarkSegment(node, null, node.Context);
+            SetContextOutputPosition(node.Context);
             if (node.TryBlock == null || node.TryBlock.Count == 0)
             {
                 if (Settings.OutputMode == OutputMode.MultipleLines)
@@ -2277,6 +2332,7 @@ namespace Microsoft.Ajax.Utilities
 
                 Output("var");
                 MarkSegment(node, null, node.Context);
+                SetContextOutputPosition(node.Context);
                 m_startOfStatement = false;
                 Indent();
                 var useNewLines = !(node.Parent is ForNode);
@@ -2321,6 +2377,8 @@ namespace Microsoft.Ajax.Utilities
                 // output the name (use the field is possible)
                 Output(node.VariableField != null ? node.VariableField.ToString() : node.Identifier);
                 MarkSegment(node, node.Name, node.Context);
+                SetContextOutputPosition(node.Context);
+                node.VariableField.IfNotNull(f => SetContextOutputPosition(f.OriginalContext));
 
                 m_startOfStatement = false;
                 if (node.Initializer != null)
@@ -2385,6 +2443,7 @@ namespace Microsoft.Ajax.Utilities
                     if (node.Operand != null)
                     {
                         AcceptNodeWithParens(node.Operand, node.Operand.Precedence < node.Precedence);
+                        SetContextOutputPosition(node.Context, node.Operand.Context);
                     }
 
                     // the only postfix unary operators are ++ and --, and when in the postfix position,
@@ -2416,12 +2475,14 @@ namespace Microsoft.Ajax.Utilities
 
                         Output(OperatorString(node.OperatorToken));
                         MarkSegment(node, null, node.OperatorContext);
+                        SetContextOutputPosition(node.Context);
                         Output("@*/");
                     }
                     else
                     {
                         Output(OperatorString(node.OperatorToken));
                         MarkSegment(node, null, node.OperatorContext ?? node.Context);
+                        SetContextOutputPosition(node.Context);
                     }
 
                     m_startOfStatement = false;
@@ -2443,6 +2504,7 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
 
                 Output("while");
+                SetContextOutputPosition(node.Context);
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -2468,6 +2530,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 var symbol = StartSymbol(node);
                 Output("with");
+                SetContextOutputPosition(node.Context);
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     OutputPossibleLineBreak(' ');
@@ -3653,5 +3716,28 @@ namespace Microsoft.Ajax.Utilities
         }
 
         #endregion Map file methods
+
+        #region context output position methods
+
+        private void SetContextOutputPosition(Context context)
+        {
+            if (context != null)
+            {
+                // segment start line will be zero-based, but we want to have a 1-based line number
+                context.OutputLine = m_segmentStartLine + 1;
+                context.OutputColumn = m_segmentStartColumn;
+            }
+        }
+
+        private static void SetContextOutputPosition(Context context, Context fromContext)
+        {
+            if (context != null && fromContext != null)
+            {
+                context.OutputLine = fromContext.OutputLine;
+                context.OutputColumn = fromContext.OutputColumn;
+            }
+        }
+
+        #endregion
     }
 }
