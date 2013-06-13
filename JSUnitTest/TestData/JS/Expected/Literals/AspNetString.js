@@ -1,1 +1,1 @@
-﻿alert("<%= Request("FooBar") %>"),alert('<%= Request('foo') %>');var foo="<%= Request("foo1") %>"+'<%= Request("bar1") %>',bar="<%= Request("foo2") %>"+"<%= Request("bar2") %>"
+﻿alert("<%= Request("FooBar") %>");alert('<%= Request('foo') %>');var foo="<%= Request("foo1") %>"+'<%= Request("bar1") %>',bar="<%= Request("foo2") %>"+"<%= Request("bar2") %>"

@@ -220,6 +220,7 @@
     <Compile Include="JavaScript\return.cs" />
     <Compile Include="JavaScript\scannerexception.cs" />
     <Compile Include="JavaScript\ScriptSharpSourceMap.cs" />
+    <Compile Include="JavaScript\StatementStartVisitor.cs" />
     <Compile Include="JavaScript\switch.cs" />
     <Compile Include="JavaScript\switchcase.cs" />
     <Compile Include="JavaScript\SourceMapFactory.cs" />

@@ -343,6 +343,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\SourceMapFactory.cs">
       <Link>JavaScript\SourceMapFactory.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\StatementStartVisitor.cs">
+      <Link>JavaScript\StatementStartVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\switch.cs">
       <Link>JavaScript\switch.cs</Link>
     </Compile>

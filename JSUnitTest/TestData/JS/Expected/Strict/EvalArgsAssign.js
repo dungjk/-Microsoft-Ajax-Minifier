@@ -1,1 +1,1 @@
-﻿"use strict";function test1(){eval=function(txt){alert("eval: "+txt)},arguments={}}function test2(){++eval,eval--,--arguments,arguments++}
+﻿"use strict";function test1(){eval=function(txt){alert("eval: "+txt)};arguments={}}function test2(){++eval;eval--;--arguments;arguments++}

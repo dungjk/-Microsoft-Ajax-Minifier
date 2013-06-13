@@ -1,1 +1,1 @@
-﻿[1,foo+=bar?function(n){return n.location.href}(window):{loc:"none"}],alert("great googley-moogley!")
+﻿[1,foo+=bar?function(n){return n.location.href}(window):{loc:"none"}];alert("great googley-moogley!")

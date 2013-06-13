@@ -1,1 +1,1 @@
-﻿"use strict";function test1(a,b){function foo(x){return x*x}var c=a+b;delete a,delete c,delete foo}
+﻿"use strict";function test1(a,b){function foo(x){return x*x}var c=a+b;delete a;delete c;delete foo}
