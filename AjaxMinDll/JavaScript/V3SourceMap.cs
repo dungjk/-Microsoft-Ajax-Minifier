@@ -201,18 +201,18 @@ namespace Microsoft.Ajax.Utilities
         public void EndFile(TextWriter writer, string newLine)
         {
             // we want to output to the text stream a comment in the format of:
-            //      //@ sourceMappingURL=<uri>
+            //      //# sourceMappingURL=<uri>
             // where the URI is the relative uri from m_minifiedPath to the map file
             if (writer != null && !m_mapPath.IsNullOrWhiteSpace())
             {
                 // make relative to output, don't just output the mapfile path as-is.
                 // and it's supposed to be a URL anyway
                 writer.Write(newLine);
-                writer.Write("/*");
-                writer.Write(newLine);
-                writer.Write("//@ sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
-                writer.Write(newLine);
-                writer.Write("*/");
+                //writer.Write("/*");
+                //writer.Write(newLine);
+                writer.Write("//# sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
+                //writer.Write(newLine);
+                //writer.Write("*/");
             }
         }
 
