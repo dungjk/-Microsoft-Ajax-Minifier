@@ -92,12 +92,8 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         private static Regex s_vendorSpecific = new Regex(
-            @"^(\-(?<vendor>[^\-]+)\-)?(?<root>.+)$", 
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            @"^(\-(?<vendor>[^\-]+)\-)?(?<root>.+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         #region Comment-related fields
 
@@ -107,11 +103,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         //private static Regex s_regexComments = new Regex(
         //    @"/\*([^*]|(\*+[^*/]))*\*+/",
-        //    RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-        //    | RegexOptions.Compiled
-#endif
-        //    );
+        //    RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// regular expression for matching first comment hack
@@ -119,11 +111,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack1 = new Regex(
             @"/\*([^*]|(\*+[^*/]))*\**\\\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching second comment hack
@@ -132,11 +120,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack2 = new Regex(
             @"/\*/\*//\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching third comment hack
@@ -145,11 +129,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack3 = new Regex(
             @"/\*/\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching fourth comment hack
@@ -162,11 +142,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack4 = new Regex(
             @"(?<=\w\s+)/\*([^*]|(\*+[^*/]))*\*+/\s*(?=:)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching fifth comment hack
@@ -179,11 +155,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack5 = new Regex(
             @"(?<=[\w/]\s*:)\s*/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching sixth comment hack -- although not a real hack
@@ -198,11 +170,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack6 = new Regex(
             @"(?<=\w)/\*([^*]|(\*+[^*/]))*\*+/\s*(?=:)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for empty comments
@@ -213,11 +181,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack7 = new Regex(
             @"/\*(\s?)\*/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         #endregion
 
@@ -231,11 +195,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_rrggbb = new Regex(
             @"^\#(?<r>[0-9a-fA-F])\k<r>(?<g>[0-9a-fA-F])\k<g>(?<b>[0-9a-fA-F])\k<b>$",
-            RegexOptions.IgnoreCase
-#if !SILVERLIGHT
-            | RegexOptions.Compiled
-#endif
-            );
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // whether we are currently parsing the value for a property that might
         // use color names
@@ -251,12 +211,8 @@ namespace Microsoft.Ajax.Utilities
         /// Format: /*[id]*/
         /// </summary>
         private static Regex s_valueReplacement = new Regex(
-          @"/\*\s*\[(?<id>\w+)\]\s*\*/",
-          RegexOptions.IgnoreCase | RegexOptions.Singleline
-#if !SILVERLIGHT
- | RegexOptions.Compiled
-#endif
-);
+            @"/\*\s*\[(?<id>\w+)\]\s*\*/",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         // this variable will be set whenever we encounter a value-replacement comment
         // and have a string to replace it with
@@ -4412,11 +4368,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
 //        private static Regex s_regexNewlines = new Regex(
 //            @"\r\n|\f|\r|\n",
-//            RegexOptions.IgnoreCase | RegexOptions.Singleline
-//#if !SILVERLIGHT
-//            | RegexOptions.Compiled
-//#endif
-//            );
+//            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         static string NormalizedValueReplacementComment(string source)
         {
@@ -4487,9 +4439,7 @@ namespace Microsoft.Ajax.Utilities
     /// <summary>
     /// Base class for exceptions thrown by the parser or the scanner
     /// </summary>
-#if !SILVERLIGHT
     [Serializable]
-#endif
     public class CssException : Exception
     {
         private string m_originator;
@@ -4540,7 +4490,6 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
-#if !SILVERLIGHT
         protected CssException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -4577,12 +4526,9 @@ namespace Microsoft.Ajax.Utilities
             info.AddValue("line", m_line);
             info.AddValue("char", m_char);
         }
-#endif
     }
 
-#if !SILVERLIGHT
     [Serializable]
-#endif
     public sealed class CssParserException : CssException
     {
         private static readonly string s_originator = CssStrings.ParserSubsystem;
@@ -4607,12 +4553,10 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
-#if !SILVERLIGHT
         private CssParserException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
-#endif
     }
 
     #endregion
