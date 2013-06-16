@@ -208,11 +208,12 @@ namespace Microsoft.Ajax.Utilities
                 // make relative to output, don't just output the mapfile path as-is.
                 // and it's supposed to be a URL anyway
                 writer.Write(newLine);
-                //writer.Write("/*");
-                //writer.Write(newLine);
-                writer.Write("//# sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
-                //writer.Write(newLine);
-                //writer.Write("*/");
+                writer.Write("/*");
+                writer.Write(newLine);
+                //writer.Write("//# sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
+                writer.Write("//@ sourceMappingURL={0}", MakeRelative(m_mapPath, m_minifiedPath));
+                writer.Write(newLine);
+                writer.Write("*/");
             }
         }
 
