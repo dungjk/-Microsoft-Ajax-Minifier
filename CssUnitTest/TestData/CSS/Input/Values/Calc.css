@@ -16,3 +16,14 @@ blockquote { font-size: max(30px, 3em) }
     margin: -webkit-calc(5 * min( 10px , 2em ) ) -webkit-calc(10 + max( 5px, min(10 - 3em, 2in)) );
     padding-top: calc( 5 * (2em + -1px));
 }
+
+.ralph
+{
+    width: -webkit-calc(-webkit-calc(100% - 100px) / 4);
+    width: calc(calc(100% - 100px) / 4);
+}
+
+.withattr
+{
+    margin: calc(attr(foobar em, 1) / 2);
+}

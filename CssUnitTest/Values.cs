@@ -48,5 +48,11 @@ namespace CssUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Toggle()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

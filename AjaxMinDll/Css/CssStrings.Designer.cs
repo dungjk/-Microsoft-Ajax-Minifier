@@ -295,15 +295,6 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Unexpected function; only min( or max( allowed here, found &apos;{0}&apos;.
-        /// </summary>
-        internal static string ExpectedMinMax {
-            get {
-                return ResourceManager.GetString("ExpectedMinMax", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Expected namespace string or uri, found &apos;{0}&apos;.
         /// </summary>
         internal static string ExpectedNamespace {
@@ -678,6 +669,15 @@ namespace Microsoft.Ajax.Utilities {
         internal static string UnexpectedEscape {
             get {
                 return ResourceManager.GetString("UnexpectedEscape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unexpected function; only calc( or attr( allowed here, found &apos;{0}&apos;.
+        /// </summary>
+        internal static string UnexpectedFunction {
+            get {
+                return ResourceManager.GetString("UnexpectedFunction", resourceCulture);
             }
         }
         
