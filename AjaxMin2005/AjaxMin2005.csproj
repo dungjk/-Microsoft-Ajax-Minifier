@@ -95,12 +95,6 @@
     <Compile Include="..\AjaxMin\MainClass.cs">
       <Link>MainClass.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMin\ManifestStrings.Designer.cs">
-      <Link>ManifestStrings.Designer.cs</Link>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ManifestStrings.resx</DependentUpon>
-    </Compile>
     <Compile Include="..\AjaxMin\ManifestUtilities.cs">
       <Link>ManifestUtilities.cs</Link>
     </Compile>
@@ -109,6 +103,11 @@
     </Compile>
     <Compile Include="..\AjaxMin\XmlScopeReport.cs">
       <Link>XmlScopeReport.cs</Link>
+    </Compile>
+    <Compile Include="ManifestStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManifestStrings.resx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -120,11 +119,10 @@
       <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
       <LastGenOutput>AjaxMin.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\AjaxMin\ManifestStrings.resx">
-      <Link>ManifestStrings.resx</Link>
-      <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
+    <EmbeddedResource Include="ManifestStrings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

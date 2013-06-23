@@ -24,5 +24,6 @@
         <input path="file1.css"/>
         <input path="file2.css"/>
         <input path="file3.css"/>
+        <input path="file-missing.css" optional="true"/>
     </output>
 </root>
