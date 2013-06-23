@@ -148,7 +148,7 @@
     <EmbeddedResource Include="ManifestStrings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Microsoft.Ajax.Utilities.Configuration</CustomToolNamespace>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

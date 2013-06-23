@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Ajax.Utilities.Configuration {
+namespace Microsoft.Ajax.Utilities {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Microsoft.Ajax.Utilities.Configuration {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Ajax.Minifier.Tasks.ManifestStrings", typeof(ManifestStrings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Ajax.Utilities.ManifestStrings", typeof(ManifestStrings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

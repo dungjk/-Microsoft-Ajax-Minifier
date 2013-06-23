@@ -373,7 +373,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
 
-                if (settings.TermSemicolons)
+                if (m_settings.TermSemicolons)
                 {
                     // if we want to make sure this file has a terminating semicolon, start a new line
                     // (to make sure any single-line comments are terminated) and output a semicolon

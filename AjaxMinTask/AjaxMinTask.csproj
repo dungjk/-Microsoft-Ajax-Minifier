@@ -93,7 +93,7 @@
       <Link>ManifestStrings.resx</Link>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ManifestStrings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Microsoft.Ajax.Utilities.Configuration</CustomToolNamespace>
+      <CustomToolNamespace>Microsoft.Ajax.Utilities</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>

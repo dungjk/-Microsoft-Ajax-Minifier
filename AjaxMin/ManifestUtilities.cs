@@ -24,7 +24,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 
-using Microsoft.Ajax.Utilities.Configuration;
+using Microsoft.Ajax.Utilities;
 
 #if NET_20
 
@@ -47,6 +47,8 @@ namespace System.Runtime.CompilerServices
 
 namespace Microsoft.Ajax.Utilities
 {
+    using Configuration;
+
     public static class ManifestUtilities
     {
         #region private static fields
