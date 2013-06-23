@@ -298,16 +298,31 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         case CodeType.JavaScript:
                             try
                             {
-                                // process the resources for this output group into the settings list
-                                outputGroup.ProcessResourceStrings(settings.JSSettings.ResourceStrings, null);
+                                if (settings.JSSettings.PreprocessOnly)
+                                {
+                                    // just run the preprocess-only method, which won't do any string resources or
+                                    // symbol map generation or anything, since the source tree isn't actually parsed.
+                                    // we just echo everything back as-is, EXCEPT that we do look at the preprocessing
+                                    // directive comments (///#IF and such).
+                                    PreprocessOnlyJavaScript(
+                                        inputGroups, 
+                                        settings.JSSettings, 
+                                        outputFileInfo.FullName, 
+                                        outputGroup.GetEncoding(settings.EncodingOutputName));
+                                }
+                                else
+                                {
+                                    // process the resources for this output group into the settings list
+                                    outputGroup.ProcessResourceStrings(settings.JSSettings.ResourceStrings, null);
 
-                                // then process the javascript output group
-                                ProcessJavaScript(
-                                    inputGroups,
-                                    settings.JSSettings,
-                                    outputFileInfo.FullName,
-                                    outputGroup.SymbolMap,
-                                    outputGroup.GetEncoding(settings.EncodingOutputName));
+                                    // then process the javascript output group
+                                    ProcessJavaScript(
+                                        inputGroups,
+                                        settings.JSSettings,
+                                        outputFileInfo.FullName,
+                                        outputGroup.SymbolMap,
+                                        outputGroup.GetEncoding(settings.EncodingOutputName));
+                                }
                             }
                             catch (ArgumentException ex)
                             {
@@ -470,6 +485,63 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     mapWriter.Close();
                 }
+            }
+        }
+
+        private void PreprocessOnlyJavaScript(IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding)
+        {
+            // save the original term settings. We'll make sure to set this back again
+            // for the last item in the group, but we'll make sure it's TRUE for all the others.
+            bool originalTermSetting = settings.TermSemicolons;
+
+            var outputBuilder = new StringBuilder();
+            GlobalScope sharedGlobalScope = null;
+            for (var ndx = 0; ndx < inputGroups.Count; ++ndx)
+            {
+                var inputGroup = inputGroups[ndx];
+
+                // create and setup parser
+                var parser = new JSParser(inputGroup.Source);
+
+                // set the shared global object
+                parser.GlobalScope = sharedGlobalScope;
+
+                // set up the error handler
+                parser.CompilerError += (sender, ea) =>
+                {
+                    // if the input group isn't project, then we only want to report sev-0 errors
+                    if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
+                    {
+                        LogContextError(ea.Error);
+                    }
+                };
+
+                // for all but the last item, we want the term-semicolons setting to be true.
+                // but for the last entry, set it back to its original value
+                settings.TermSemicolons = ndx < inputGroups.Count - 1 ? true : originalTermSetting;
+
+                // preprocess-only and add the results to the output builder
+                outputBuilder.Append(parser.PreprocessOnly(settings));
+
+                // save the global scope for the next group (if any).
+                // we need to do this in case an earlier input group defines some global
+                // functions or variables, and later groups reference them. We don't want the
+                // later parse to say "undefined global"
+                sharedGlobalScope = parser.GlobalScope;
+            }
+
+            // write output
+            if (!Log.HasLoggedErrors)
+            {
+                using (var writer = new StreamWriter(outputPath, false, outputEncoding))
+                {
+                    // write the combined minified code
+                    writer.Write(outputBuilder.ToString());
+                }
+            }
+            else
+            {
+                Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
             }
         }
 

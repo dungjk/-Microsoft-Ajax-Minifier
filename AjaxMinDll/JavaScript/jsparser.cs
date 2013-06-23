@@ -372,6 +372,15 @@ namespace Microsoft.Ajax.Utilities
                         lastEndPosition = tokenContext.EndPosition;
                     }
                 }
+
+                if (settings.TermSemicolons)
+                {
+                    // if we want to make sure this file has a terminating semicolon, start a new line
+                    // (to make sure any single-line comments are terminated) and output a semicolon
+                    // followed by another line break.
+                    outputStream.WriteLine();
+                    outputStream.WriteLine(';');
+                }
             }
         }
 

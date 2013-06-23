@@ -104,6 +104,34 @@
         }
 
         [TestMethod]
+        public void ManifestPPOnly()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Input\ManifestTask\Manifest_pponly.xml" } };
+            task.ProjectDefaultSwitches = "-pponly";
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test1_pponly.js")), "test1_pponly.js does not exist");
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test2_pponly.js")), "test2_pponly.js does not exist");
+
+            // the symbol map should NOT have been created, since this is pponly
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "test1_pponly.xml")), "test1_pponly.xml should not exist");
+            Assert.IsFalse(File.Exists(Path.Combine(s_outputFolder, "test2_pponly.xml")), "test2_pponly.xml should not exist");
+
+            // verify output file contents
+            var test1JSVerify = VerifyFileContents("test1_pponly.js");
+            var test2JSVerify = VerifyFileContents("test2_pponly.js");
+
+            Assert.IsTrue(test1JSVerify, "Test1_pponly.js output doesn't match");
+            Assert.IsTrue(test2JSVerify, "Test2_pponly.js output doesn't match");
+        }
+
+        [TestMethod]
         public void ManifestTaskFail()
         {
             // create the task, set it up, and execute it
@@ -189,14 +217,17 @@
             return success;
         }
 
-        private bool VerifyFileContents(string fileName)
+        private bool VerifyFileContents(string fileName, string suffix = null)
         {
             Trace.WriteLine("");
             Trace.Write("VERIFY OUTPUTFILE: ");
             Trace.WriteLine(fileName);
 
             var outputPath = Path.Combine(s_outputFolder, fileName);
-            var expectedPath = Path.Combine(s_expectedFolder, fileName);
+            var expectedPath = Path.Combine(s_expectedFolder, 
+                string.IsNullOrWhiteSpace(suffix) 
+                    ? fileName 
+                    : Path.GetFileNameWithoutExtension(fileName) + '_' + suffix + Path.GetExtension(fileName));
 
             Trace.WriteLine(string.Format("odd \"{1}\" \"{0}\"", outputPath, expectedPath));
 

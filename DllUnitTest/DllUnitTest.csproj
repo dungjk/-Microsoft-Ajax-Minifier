@@ -87,7 +87,9 @@
     <Content Include="TestData\Dll\Expected\AjaxMinTask\test2.min.css" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test1.css" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test1.js" />
+    <Content Include="TestData\Dll\Expected\ManifestTask\test1_pponly.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test2.js" />
+    <Content Include="TestData\Dll\Expected\ManifestTask\test2_pponly.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test_ext.js" />
     <Content Include="TestData\Dll\Expected\SourceChange.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.css" />
@@ -132,6 +134,7 @@
     <Content Include="TestData\Dll\Input\ManifestTask\ManifestExternal.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\ManifestFail.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\Manifestjq2.xml" />
+    <Content Include="TestData\Dll\Input\ManifestTask\manifest_pponly.xml" />
     <Content Include="TestData\Dll\Input\SourceChange.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\manifest.xml" />
   </ItemGroup>
