@@ -48,6 +48,15 @@
     <Compile Include="..\AjaxMinTask\AjaxMinBuildTask.cs">
       <Link>AjaxMinBuildTask.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinTask\AjaxMinBundleTask.cs">
+      <Link>AjaxMinBundleTask.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinTask\AjaxMinManifestBaseTask.cs">
+      <Link>AjaxMinManifestBaseTask.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinTask\AjaxMinManifestCleanTask.cs">
+      <Link>AjaxMinManifestCleanTask.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinTask\AjaxMinManifestTask.cs">
       <Link>AjaxMinManifestTask.cs</Link>
     </Compile>

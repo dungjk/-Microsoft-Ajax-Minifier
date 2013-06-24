@@ -292,13 +292,17 @@ namespace Microsoft.Ajax.Utilities
                         System.Diagnostics.Debug.WriteLine(e.ToString());
                     }
 
+                    var sourceComment = outputGroup.CodeType == CodeType.StyleSheet
+                        ? "/*/#SOURCE 1 1 stdin */\r\n"
+                        : "///#SOURCE 1 1 stdin\r\n";
+
                     // read from stdin, append to the builder, then create a single project input group
                     // from the build code.
                     var sourceCode = Console.In.ReadToEnd();
                     inputGroups.Add(new InputGroup
                         {
                             RawSource = sourceCode,
-                            Source = "///#SOURCE 1 1 stdin\n" + sourceCode,
+                            Source = sourceComment + sourceCode,
                             Origin = SourceOrigin.Project
                         });
                 }
@@ -569,7 +573,7 @@ namespace Microsoft.Ajax.Utilities
                 if (File.Exists(inputFile.Path))
                 {
                     // file exists -- read it into the string builder with the appropriate context comments added
-                    ReadFileWithContext(fileReadBuilder, inputFile.Path, encoding);
+                    ReadFileWithContext(fileReadBuilder, inputFile.Path, codeType, encoding);
                 }
                 else if (Directory.Exists(inputFile.Path))
                 {
@@ -581,23 +585,23 @@ namespace Microsoft.Ajax.Utilities
                         ? "*.css"
                         : "*.*";
 
-                    ReadAllFilesWithContext(fileReadBuilder, inputFile.Path, searchPattern, encoding);
+                    ReadAllFilesWithContext(fileReadBuilder, inputFile.Path, searchPattern, codeType, encoding);
                 }
             }
         }
 
-        private static void ReadAllFilesWithContext(FileReadBuilder fileReadBuilder, string folderPath, string searchPattern, Encoding encoding)
+        private static void ReadAllFilesWithContext(FileReadBuilder fileReadBuilder, string folderPath, string searchPattern, CodeType codeType, Encoding encoding)
         {
             // get all the files in the folder path that match the search pattern
             foreach (var filePath in Directory.GetFiles(folderPath, searchPattern))
             {
                 // read each one into the string builder with context
-                ReadFileWithContext(fileReadBuilder, filePath, encoding);
+                ReadFileWithContext(fileReadBuilder, filePath, codeType, encoding);
             }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.ManifestUtilities+FileReadBuilder.Annotate(System.String)", Justification = "context comment string is not localizeable")]
-        private static void ReadFileWithContext(FileReadBuilder fileReadBuilder, string filePath, Encoding encoding)
+        private static void ReadFileWithContext(FileReadBuilder fileReadBuilder, string filePath, CodeType codeType, Encoding encoding)
         {
             // start a new line so any previous single-line comments are terminated.
             fileReadBuilder.AnnotateLine();
@@ -605,7 +609,7 @@ namespace Microsoft.Ajax.Utilities
             // if the previous file didn't end in a semicolon, add one now.
             // it doesn't hurt to have an extra semicolon in JavaScript, and our CSS Parser has been
             // tweaked to ignore extraneous semicolons as well.
-            if (!fileReadBuilder.EndsInSemicolon)
+            if (!fileReadBuilder.EndsInSemicolon && codeType != CodeType.StyleSheet)
             {
                 fileReadBuilder.Annotate(';');
             }
@@ -613,8 +617,22 @@ namespace Microsoft.Ajax.Utilities
             // output a special comment that AjaxMin will pick up so any errors will 
             // have the proper file context. The CSS parser has been tweaked to look for
             // this comment as well.
-            fileReadBuilder.Annotate("///#source 1 1 ");
-            fileReadBuilder.AnnotateLine(filePath);
+            if (codeType == CodeType.StyleSheet)
+            {
+                fileReadBuilder.Annotate("/*/#source 1 1 ");
+            }
+            else
+            {
+                fileReadBuilder.Annotate("///#source 1 1 ");
+            }
+
+            fileReadBuilder.Annotate(filePath);
+            if (codeType == CodeType.StyleSheet)
+            {
+                fileReadBuilder.Annotate(" */");
+            }
+
+            fileReadBuilder.AnnotateLine();
 
             // now read all the file source and add it to the combined input.
             // it doesn't matter which encoder fallback we use -- we'll be DECODING, and we always use a simple replacement for that.
@@ -661,11 +679,6 @@ namespace Microsoft.Ajax.Utilities
             public void AnnotateLine()
             {
                 m_annotatedContent.AppendLine();
-            }
-
-            public void AnnotateLine(string text)
-            {
-                m_annotatedContent.AppendLine(text);
             }
 
             public void Clear()

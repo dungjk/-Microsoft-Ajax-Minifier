@@ -2,6 +2,7 @@
 {
     using System.Diagnostics;
     using System.IO;
+    using System.Text.RegularExpressions;
     using Microsoft.Ajax.Minifier.Tasks;
     using Microsoft.Build.Utilities;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +20,10 @@
         private static string s_outputFolder;
 
         private static string s_expectedFolder;
+
+        private static Regex s_testRunRegex = new Regex(
+            @"(/[/*]/#source\s+\d+\s+\d+\s+).+\\TestResults\\[^\\]+(\\.+)$", 
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         #endregion
 
@@ -132,6 +137,40 @@
         }
 
         [TestMethod]
+        public void ManifestBundle()
+        {
+            // create the task, set it up, and execute it
+            var task = new AjaxMinBundleTask();
+            task.BuildEngine = new TestBuildEngine()
+            {
+                MockProjectPath = Path.Combine(testContextInstance.DeploymentDirectory, "mock.csproj")
+            };
+            task.InputFolder = s_inputFolder;
+            task.OutputFolder = s_outputFolder;
+            task.Configuration = "Debug";
+
+            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Input\ManifestTask\Manifest_bundle.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(task.OutputFolder, "test_bundle.js")), "test_bundle.js does not exist");
+            Assert.IsTrue(File.Exists(Path.Combine(task.OutputFolder, "test_bundle.css")), "test_bundle.css does not exist");
+
+            // the symbol map should NOT have been created, since this is bundle only
+            Assert.IsFalse(File.Exists(Path.Combine(task.OutputFolder, "test_bundle.xml")), "test1_bundle.xml should not exist");
+
+            // verify output file contents
+            var testBundleJSVerify = VerifyFileContents("test_bundle.js");
+            var testBundleCSSVerify = VerifyFileContents("test_bundle.css");
+
+            Assert.IsTrue(testBundleJSVerify, "Test_bundle.js output doesn't match");
+            Assert.IsTrue(testBundleCSSVerify, "Test_bundle.css output doesn't match");
+        }
+
+        [TestMethod]
         public void ManifestTaskFail()
         {
             // create the task, set it up, and execute it
@@ -188,7 +227,7 @@
         {
             var task = new AjaxMinManifestTask();
             task.InputFolder = s_inputFolder;
-            task.SourceFolder = "TestData/Dll/Input/ManifestTask/";
+            //task.InputFolder = "TestData/Dll/Input/ManifestTask/";
             task.OutputFolder = s_outputFolder;
             task.Configuration = "Debug";
             task.ProjectDefaultSwitches = "-define:FOO=bar";
@@ -201,7 +240,7 @@
             return task;
         }
 
-        private bool ExecuteAndLog(AjaxMinManifestTask task)
+        private bool ExecuteAndLog(AjaxMinManifestBaseTask task)
         {
             var success = task.Execute();
             Trace.Write("TASK RESULT: ");
@@ -217,17 +256,14 @@
             return success;
         }
 
-        private bool VerifyFileContents(string fileName, string suffix = null)
+        private bool VerifyFileContents(string fileName)
         {
             Trace.WriteLine("");
             Trace.Write("VERIFY OUTPUTFILE: ");
             Trace.WriteLine(fileName);
 
             var outputPath = Path.Combine(s_outputFolder, fileName);
-            var expectedPath = Path.Combine(s_expectedFolder, 
-                string.IsNullOrWhiteSpace(suffix) 
-                    ? fileName 
-                    : Path.GetFileNameWithoutExtension(fileName) + '_' + suffix + Path.GetExtension(fileName));
+            var expectedPath = Path.Combine(s_expectedFolder, fileName);
 
             Trace.WriteLine(string.Format("odd \"{1}\" \"{0}\"", outputPath, expectedPath));
 
@@ -245,6 +281,9 @@
             {
                 outputCode = reader.ReadToEnd();
             }
+
+            // swap out any references to the specific test run that might be in the output
+            outputCode = s_testRunRegex.Replace(outputCode, "$1TESTRUNPATH$2");
 
             Trace.WriteLine("ACTUAL:");
             Trace.WriteLine(outputCode);
