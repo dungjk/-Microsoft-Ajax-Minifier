@@ -4505,7 +4505,9 @@ namespace Microsoft.Ajax.Utilities
     /// <summary>
     /// Base class for exceptions thrown by the parser or the scanner
     /// </summary>
+#if !NOSERIALIZE
     [Serializable]
+#endif
     public class CssException : Exception
     {
         private string m_originator;
@@ -4542,6 +4544,7 @@ namespace Microsoft.Ajax.Utilities
             m_line = line;
             m_char = pos;
         }
+
         public CssException()
         {
         }
@@ -4556,6 +4559,7 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
+#if !NOSERIALIZE
         protected CssException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -4574,8 +4578,7 @@ namespace Microsoft.Ajax.Utilities
 
         [SecurityCritical]
         [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
-        public override void GetObjectData(
-           SerializationInfo info, StreamingContext context)
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // make sure parameters are not null
             if (info == null)
@@ -4592,9 +4595,12 @@ namespace Microsoft.Ajax.Utilities
             info.AddValue("line", m_line);
             info.AddValue("char", m_char);
         }
+#endif
     }
 
+#if !NOSERIALIZE
     [Serializable]
+#endif
     public sealed class CssParserException : CssException
     {
         private static readonly string s_originator = CssStrings.ParserSubsystem;
@@ -4619,10 +4625,12 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
+#if !NOSERIALIZE
         private CssParserException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+#endif
     }
 
     #endregion

@@ -2029,7 +2029,9 @@ namespace Microsoft.Ajax.Utilities
         #endregion
     }
 
+#if !NOSERIALIZE
     [Serializable]
+#endif
     public sealed class CssScannerException : CssException
     {
         private static readonly string s_originator = CssStrings.ScannerSubsystem;
@@ -2054,10 +2056,12 @@ namespace Microsoft.Ajax.Utilities
         {
         }
 
+#if !NOSERIALIZE
         private CssScannerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+#endif
     }
 
     internal class CssScannerErrorEventArgs : EventArgs

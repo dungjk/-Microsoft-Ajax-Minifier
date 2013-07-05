@@ -1595,7 +1595,9 @@ namespace Microsoft.Ajax.Utilities
 
         #region usage exception
 
+#if !NOSERIALIZE
         [Serializable]
+#endif
         private sealed class UsageException : Exception
         {
             public ConsoleOutputMode OutputMode { get; private set; }
@@ -1612,6 +1614,7 @@ namespace Microsoft.Ajax.Utilities
                 OutputMode = outputMode;
             }
 
+#if !NOSERIALIZE
             private UsageException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             {
@@ -1621,6 +1624,7 @@ namespace Microsoft.Ajax.Utilities
                 }
                 OutputMode = ConsoleOutputMode.Console;
             }
+#endif
 
             public UsageException()
             {

@@ -37,12 +37,16 @@ namespace Microsoft.Ajax.Utilities
     //  2- Update JScript.resx with the US English error message
     //  3- Update Severity.
     //-------------------------------------------------------------------------------------------------------
+#if !NOSERIALIZE
     [Serializable]
-    public class JScriptException : Exception
+#endif
+    public sealed class JScriptException : Exception
     {
         #region private fields
 
+#if !NOSERIALIZE
         [NonSerialized]
+#endif
         private Context m_context;
 
         private string m_valueObject;
@@ -284,7 +288,8 @@ namespace Microsoft.Ajax.Utilities
             SetHResult();
         }
 
-        protected JScriptException(SerializationInfo info, StreamingContext context)
+#if !NOSERIALIZE
+        private JScriptException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             if (info == null)
@@ -298,11 +303,13 @@ namespace Microsoft.Ajax.Utilities
             m_canRecover = info.GetBoolean("CanRecover");
             m_fileContext = info.GetString("FileContext");
         }
+#endif
 
         #endregion
 
         #region public methods
 
+#if !NOSERIALIZE
         [SecurityCritical] 
         [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -315,6 +322,7 @@ namespace Microsoft.Ajax.Utilities
             info.AddValue("CanRecover", m_canRecover);
             info.AddValue("FileContext", m_fileContext);
         }
+#endif
 
         #endregion
 
@@ -407,13 +415,19 @@ namespace Microsoft.Ajax.Utilities
         }
     }
 
+#if !NOSERIALIZE
     [Serializable]
-    public class UndefinedReferenceException : Exception
+#endif
+    public sealed class UndefinedReferenceException : Exception
     {
+#if !NOSERIALIZE
         [NonSerialized]
+#endif
         private Context m_context;
 
+#if !NOSERIALIZE
         [NonSerialized]
+#endif
         private Lookup m_lookup;
         public AstNode LookupNode
         {
@@ -476,7 +490,8 @@ namespace Microsoft.Ajax.Utilities
         public UndefinedReferenceException(string message) : base(message) { }
         public UndefinedReferenceException(string message, Exception innerException) : base(message, innerException) { }
 
-        protected UndefinedReferenceException(SerializationInfo info, StreamingContext context)
+#if !NOSERIALIZE
+        private UndefinedReferenceException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             if (info == null)
@@ -500,6 +515,7 @@ namespace Microsoft.Ajax.Utilities
             info.AddValue("name", m_name);
             info.AddValue("type", m_type.ToString());
         }
+#endif
 
         public override string ToString()
         {

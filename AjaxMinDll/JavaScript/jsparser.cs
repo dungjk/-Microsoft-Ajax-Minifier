@@ -5677,7 +5677,9 @@ namespace Microsoft.Ajax.Utilities
     //***************************************************************************************
     //
     //***************************************************************************************
+#if !NOSERIALIZE
     [Serializable]
+#endif
     public class ParserException : Exception
     {
         private static string s_errorMsg = JScript.JSParserException;
@@ -5686,29 +5688,43 @@ namespace Microsoft.Ajax.Utilities
         public ParserException(string message) : base(message) { }
         public ParserException(string message, Exception innerException) : base(message, innerException) { }
 
+#if !NOSERIALIZE
         protected ParserException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
     }
 
+#if !NOSERIALIZE
     [Serializable]
-    public class UnexpectedTokenException : ParserException
+#endif
+    public sealed class UnexpectedTokenException : ParserException
     {
         public UnexpectedTokenException() : base() { }
         public UnexpectedTokenException(string message) : base(message) { }
         public UnexpectedTokenException(string message, Exception innerException) : base(message, innerException) { }
-        protected UnexpectedTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+
+#if !NOSERIALIZE
+        private UnexpectedTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
     }
 
+#if !NOSERIALIZE
     [Serializable]
-    public class EndOfFileException : ParserException
+#endif
+    public sealed class EndOfFileException : ParserException
     {
         public EndOfFileException() : base() { }
         public EndOfFileException(string message) : base(message) { }
         public EndOfFileException(string message, Exception innerException) : base(message, innerException) { }
-        protected EndOfFileException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+
+#if !NOSERIALIZE
+        private EndOfFileException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
     }
 
+#if !NOSERIALIZE
     [Serializable]
-    internal class RecoveryTokenException : ParserException
+#endif
+    internal sealed class RecoveryTokenException : ParserException
     {
         internal JSToken _token;
         internal AstNode _partiallyComputedNode;
@@ -5720,7 +5736,9 @@ namespace Microsoft.Ajax.Utilities
             _partiallyComputedNode = partialAST;
         }
 
-        protected RecoveryTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#if !NOSERIALIZE
+        private RecoveryTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+#endif
     }
 
     //***************************************************************************************

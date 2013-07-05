@@ -22,8 +22,10 @@ using System.Security.Permissions;
 
 namespace Microsoft.Ajax.Utilities
 {
+#if !NOSERIALIZE
     [Serializable]
-    public class ScannerException : Exception
+#endif
+    public sealed class ScannerException : Exception
     {
         private JSError m_errorId;
 
@@ -51,7 +53,8 @@ namespace Microsoft.Ajax.Utilities
             m_errorId = JSError.SyntaxError;
         }
 
-        protected ScannerException(SerializationInfo info, StreamingContext context)
+#if !NOSERIALIZE
+        private ScannerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             if (info == null)
@@ -73,6 +76,7 @@ namespace Microsoft.Ajax.Utilities
             base.GetObjectData(info, context);
             info.AddValue("errorId", m_errorId.ToString());
         }
+#endif
 
         public JSError Error
         {
