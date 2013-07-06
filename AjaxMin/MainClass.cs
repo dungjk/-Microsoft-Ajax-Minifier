@@ -23,10 +23,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Resources;
-using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
@@ -70,6 +68,15 @@ namespace Microsoft.Ajax.Utilities
 
         #endregion
 
+        #region private static fields
+
+        /// <summary>
+        /// Output mode
+        /// </summary>
+        private static bool s_silentMode;
+
+        #endregion
+
         #region common settings
 
         /// <summary>
@@ -97,11 +104,6 @@ namespace Microsoft.Ajax.Utilities
         /// Input type hint from the switches: possibly JS or CSS
         /// </summary>
         private CodeType m_inputTypeHint = CodeType.Unknown;
-
-        /// <summary>
-        /// Output mode
-        /// </summary>
-        private ConsoleOutputMode m_outputMode = ConsoleOutputMode.Console;
 
         /// <summary>
         /// Whether or not we are outputting the crunched code to one or more files (false) or to stdout (true)
@@ -180,7 +182,7 @@ namespace Microsoft.Ajax.Utilities
                     MainClass app = new MainClass(args);
                     retVal = app.Run();
                 }
-                catch (UsageException e)
+                catch (NotSupportedException e)
                 {
                     Usage(e);
                     retVal = 1;
@@ -206,6 +208,12 @@ namespace Microsoft.Ajax.Utilities
 
         private void ProcessArgs(string[] args)
         {
+            if (args.Length == 1 && string.Compare(args[0], "HELP", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                // special case "ajaxmin help" to be the usage message
+                throw new NotSupportedException(string.Empty);
+            }
+
             // create the switch parser and hook the events we care about
             m_switchParser = new SwitchParser();
             m_switchParser.UnknownParameter += OnUnknownParameter;
@@ -217,12 +225,12 @@ namespace Microsoft.Ajax.Utilities
                 if (ea.ParameterPart == null)
                 {
                     // if there's no parameter, then the switch required an arg
-                    throw new UsageException(m_outputMode, AjaxMin.SwitchRequiresArg.FormatInvariant(ea.SwitchPart));
+                    throw new NotSupportedException(AjaxMin.SwitchRequiresArg.FormatInvariant(ea.SwitchPart));
                 }
                 else
                 {
                     // otherwise the arg was invalid
-                    throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.ParameterPart, ea.SwitchPart));
+                    throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.ParameterPart, ea.SwitchPart));
                 }
             };
 
@@ -262,7 +270,7 @@ namespace Microsoft.Ajax.Utilities
                                 // we know we are JS -- if we find a CSS file, throw an error
                                 if (extension == ".CSS")
                                 {
-                                    throw new UsageException(m_outputMode, AjaxMin.ConflictingInputType);
+                                    throw new NotSupportedException(AjaxMin.ConflictingInputType);
                                 }
                                 break;
 
@@ -270,7 +278,7 @@ namespace Microsoft.Ajax.Utilities
                                 // we know we are CSS -- if we find a JS file, throw an error
                                 if (extension == ".JS")
                                 {
-                                    throw new UsageException(m_outputMode, AjaxMin.ConflictingInputType);
+                                    throw new NotSupportedException(AjaxMin.ConflictingInputType);
                                 }
                                 break;
                         }
@@ -279,7 +287,7 @@ namespace Microsoft.Ajax.Utilities
                         // (directories aren't valid for command-line input files)
                         if (!File.Exists(inputFile.Path))
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.SourceFileNotExist.FormatInvariant(inputFile.Path));
+                            throw new NotSupportedException(AjaxMin.SourceFileNotExist.FormatInvariant(inputFile.Path));
                         }
                     }
 
@@ -296,7 +304,7 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             // no switch hint or it's a mix, and we can't tell from the files. Error.
-                            throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
+                            throw new NotSupportedException(AjaxMin.UnknownInputType);
                         }
                     }
                 }
@@ -306,7 +314,7 @@ namespace Microsoft.Ajax.Utilities
                     if (m_inputTypeHint == CodeType.Unknown || m_inputTypeHint == CodeType.Mix)
                     {
                         // can't tell; throw an exception
-                        throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
+                        throw new NotSupportedException(AjaxMin.UnknownInputType);
                     }
 
                     // use the hint
@@ -336,7 +344,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
+                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
                         }
 
                         break;
@@ -344,7 +352,7 @@ namespace Microsoft.Ajax.Utilities
                     case "CONFIG":
                         if (ea.ParameterPart == null)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
+                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
                         }
 
                         m_configuration = ea.ParameterPart;
@@ -363,7 +371,7 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
+                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
                         }
 
                         break;
@@ -376,14 +384,14 @@ namespace Microsoft.Ajax.Utilities
                         // -pretty and -echo are not compatible
                         if (m_switchParser.AnalyzeMode)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.PrettyAndEchoArgs);
+                            throw new NotSupportedException(AjaxMin.PrettyAndEchoArgs);
                         }
                         break;
 
                     case "HELP":
                     case "?":
                         // just show usage
-                        throw new UsageException(m_outputMode);
+                        throw new NotSupportedException(string.Empty);
 
                     case "OUT":
                     case "O": // <-- old style
@@ -391,7 +399,7 @@ namespace Microsoft.Ajax.Utilities
                         // either we will have an output file or the no-output flag will be set
                         if (!string.IsNullOrEmpty(m_outputFile) || m_noOutput)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MultipleOutputArg);
+                            throw new NotSupportedException(AjaxMin.MultipleOutputArg);
                         }
                         else
                         {
@@ -410,7 +418,7 @@ namespace Microsoft.Ajax.Utilities
                                 else
                                 {
                                     // invalid argument switch
-                                    throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                                    throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
                                 }
                             }
 
@@ -419,7 +427,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 if (ea.Index >= ea.Arguments.Count - 1)
                                 {
-                                    throw new UsageException(m_outputMode, AjaxMin.OutputArgNeedsPath);
+                                    throw new NotSupportedException(AjaxMin.OutputArgNeedsPath);
                                 }
 
                                 m_outputFile = ea.Arguments[++ea.Index];
@@ -430,19 +438,19 @@ namespace Microsoft.Ajax.Utilities
                     case "MAP":
                         if (!string.IsNullOrEmpty(m_xmlInputFile))
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MapAndXmlArgs);
+                            throw new NotSupportedException(AjaxMin.MapAndXmlArgs);
                         }
 
                         // next argument is the output path
                         // cannot have two map arguments
                         if (m_symbolMap != null && !string.IsNullOrEmpty(m_symbolMap.Path))
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MultipleMapArg);
+                            throw new NotSupportedException(AjaxMin.MultipleMapArg);
                         }
 
                         if (ea.Index >= ea.Arguments.Count - 1)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MapArgNeedsPath);
+                            throw new NotSupportedException(AjaxMin.MapArgNeedsPath);
                         }
 
                         if (m_symbolMap == null)
@@ -462,7 +470,7 @@ namespace Microsoft.Ajax.Utilities
                     case "MAPROOT":
                         if (ea.Index >= ea.Arguments.Count - 1)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MapArgNeedsPath);
+                            throw new NotSupportedException(AjaxMin.MapArgNeedsPath);
                         }
 
                         if (m_symbolMap == null)
@@ -495,7 +503,7 @@ namespace Microsoft.Ajax.Utilities
                             else
                             {
                                 // invalid argument switch
-                                throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                                throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
                             }
                         }
                         break;
@@ -509,7 +517,7 @@ namespace Microsoft.Ajax.Utilities
                             if (ea.Index >= ea.Arguments.Count - 1)
                             {
                                 // must be followed by an encoding
-                                throw new UsageException(m_outputMode, AjaxMin.RenameArgMissingParameterOrFilePath.FormatInvariant(ea.SwitchPart));
+                                throw new NotSupportedException(AjaxMin.RenameArgMissingParameterOrFilePath.FormatInvariant(ea.SwitchPart));
                             }
 
                             // the renaming file is specified as the NEXT argument
@@ -529,7 +537,7 @@ namespace Microsoft.Ajax.Utilities
                         // must have resource file on next parameter
                         if (ea.Index >= ea.Arguments.Count - 1)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.ResourceArgNeedsPath);
+                            throw new NotSupportedException(AjaxMin.ResourceArgNeedsPath);
                         }
 
                         // the resource file name is the NEXT argument
@@ -550,7 +558,7 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 if (!JSScanner.IsValidIdentifier(part))
                                 {
-                                    throw new UsageException(m_outputMode, AjaxMin.ResourceArgInvalidName.FormatInvariant(part));
+                                    throw new NotSupportedException(AjaxMin.ResourceArgInvalidName.FormatInvariant(part));
                                 }
                             }
 
@@ -573,7 +581,12 @@ namespace Microsoft.Ajax.Utilities
                     case "SILENT":
                     case "S": // <-- old style
                         // ignore any argument part
-                        m_outputMode = ConsoleOutputMode.Silent;
+                        s_silentMode = true;
+                        break;
+
+                    case "VERBOSE":
+                        // ignore any argument part
+                        s_silentMode = false;
                         break;
 
                     case "VERSION":
@@ -582,29 +595,30 @@ namespace Microsoft.Ajax.Utilities
 
                         // the special prefix tells the Usage method to not create an error
                         // out of the text and just output it as-is
-                        throw new UsageException(ConsoleOutputMode.Silent, c_rawMessagePrefix + version);
+                        s_silentMode = true;
+                        throw new NotSupportedException(c_rawMessagePrefix + version);
 
                     case "XML":
                     case "X": // <-- old style
                         if (m_symbolMap != null)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MapAndXmlArgs);
+                            throw new NotSupportedException(AjaxMin.MapAndXmlArgs);
                         }
 
                         if (!string.IsNullOrEmpty(m_xmlInputFile))
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.MultipleXmlArgs);
+                            throw new NotSupportedException(AjaxMin.MultipleXmlArgs);
                         }
 
                         // cannot have input files from the command line
                         if (m_manifest != null)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.XmlArgHasInputFiles);
+                            throw new NotSupportedException(AjaxMin.XmlArgHasInputFiles);
                         }
 
                         if (ea.Index >= ea.Arguments.Count - 1)
                         {
-                            throw new UsageException(m_outputMode, AjaxMin.XmlArgNeedsPath);
+                            throw new NotSupportedException(AjaxMin.XmlArgNeedsPath);
                         }
 
                         // the xml file name is the NEXT argument
@@ -623,7 +637,7 @@ namespace Microsoft.Ajax.Utilities
 
                     default:
                         // truly an unknown parameter -- throw a usage error
-                        throw new UsageException(m_outputMode, AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                        throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
                 }
             }
             else
@@ -632,7 +646,7 @@ namespace Microsoft.Ajax.Utilities
                 // cannot coexist with XML file
                 if (!string.IsNullOrEmpty(m_xmlInputFile))
                 {
-                    throw new UsageException(m_outputMode, AjaxMin.XmlArgHasInputFiles);
+                    throw new NotSupportedException(AjaxMin.XmlArgHasInputFiles);
                 }
 
                 ImplicitManifestOutputGroup.Inputs.Add(new InputFile { Path = ea.Arguments[ea.Index] });
@@ -664,7 +678,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private void EnsureInputFileExists(string fileName)
+        private static void EnsureInputFileExists(string fileName)
         {
             // make sure it exists
             if (!File.Exists(fileName))
@@ -673,12 +687,12 @@ namespace Microsoft.Ajax.Utilities
                 if (Directory.Exists(fileName))
                 {
                     // cannot be a folder
-                    throw new UsageException(m_outputMode, AjaxMin.SourceFileIsFolder.FormatInvariant(fileName));
+                    throw new NotSupportedException(AjaxMin.SourceFileIsFolder.FormatInvariant(fileName));
                 }
                 else
                 {
                     // just plain doesn't exist
-                    throw new UsageException(m_outputMode, AjaxMin.SourceFileNotExist.FormatInvariant(fileName));
+                    throw new NotSupportedException(AjaxMin.SourceFileNotExist.FormatInvariant(fileName));
                 }
             }
         }
@@ -687,14 +701,14 @@ namespace Microsoft.Ajax.Utilities
 
         #region Usage method
 
-        private static void Usage(UsageException e)
+        private static void Usage(NotSupportedException e)
         {
             string fileName = Path.GetFileName(
               Assembly.GetExecutingAssembly().Location
               );
 
             // only output the header if we aren't supposed to be silent
-            if (e.OutputMode != ConsoleOutputMode.Silent)
+            if (!s_silentMode)
             {
                 Console.Error.WriteLine(GetHeaderString());
             }
@@ -702,9 +716,9 @@ namespace Microsoft.Ajax.Utilities
             // if we have a message, then only output the mini-usage message that
             // tells the user how to get the full usage text. It's getting too long and
             // obscuring the error messages
-            if (e.Message.Length > 0)
+            if (!e.Message.IsNullOrWhiteSpace())
             {
-                if (e.OutputMode != ConsoleOutputMode.Silent)
+                if (!s_silentMode)
                 {
                     Console.Error.WriteLine(AjaxMin.MiniUsageMessage);
                     Console.Error.WriteLine();
@@ -723,7 +737,7 @@ namespace Microsoft.Ajax.Utilities
                         e.Message));
                 }
             }
-            else if (e.OutputMode != ConsoleOutputMode.Silent)
+            else if (!s_silentMode)
             {
                 Console.Error.WriteLine(AjaxMin.Usage.FormatInvariant(fileName));
             }
@@ -759,13 +773,13 @@ namespace Microsoft.Ajax.Utilities
                     // throw an error indicating the file-not-found error. The file name should already be
                     // in the error message.
                     System.Diagnostics.Debug.WriteLine(ex.ToString());
-                    throw new UsageException(m_outputMode, ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty));
+                    throw new NotSupportedException(ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty));
                 }
                 catch (XmlException ex)
                 {
                     // throw an error indicating the XML error
                     System.Diagnostics.Debug.WriteLine(ex.ToString());
-                    throw new UsageException(m_outputMode, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
+                    throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(ex.Message));
                 }
             }
             else
@@ -806,7 +820,7 @@ namespace Microsoft.Ajax.Utilities
             else
             {
                 // no crunch groups
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.NoInput);
+                throw new NotSupportedException(AjaxMin.NoInput);
             }
 
             return retVal;
@@ -1016,33 +1030,24 @@ namespace Microsoft.Ajax.Utilities
                         outputGroup.ProcessResourceStrings(switchParser.JSSettings.ResourceStrings, c_defaultResourceObjectName);
                     }
 
-                    try
+                    if (m_switchParser.JSSettings.PreprocessOnly)
                     {
-                        if (m_switchParser.JSSettings.PreprocessOnly)
-                        {
-                            // pre-process the input
-                            retVal = PreprocessJSFile(inputGroups, switchParser, outputBuilder);
-                        }
-                        else if (m_echoInput)
-                        {
-                            retVal = ProcessJSFileEcho(inputGroups, switchParser);
-                        }
-                        else
-                        {
-                            retVal = ProcessJSFile(inputGroups, switchParser, outputBuilder);
-                        }
+                        // pre-process the input
+                        retVal = PreprocessJSFile(inputGroups, switchParser, outputBuilder);
                     }
-                    catch (JScriptException e)
+                    else if (m_echoInput)
                     {
-                        retVal = 1;
-                        System.Diagnostics.Debug.WriteLine(e.ToString());
-                        WriteError("JS{0}".FormatInvariant((int)e.ErrorCode), e.Message);
+                        retVal = ProcessJSFileEcho(inputGroups, switchParser);
+                    }
+                    else
+                    {
+                        retVal = ProcessJSFile(inputGroups, switchParser, outputBuilder);
                     }
 
                     break;
 
                 default:
-                    throw new UsageException(m_outputMode, AjaxMin.UnknownInputType);
+                    throw new NotSupportedException(AjaxMin.UnknownInputType);
             }
 
             // if we are pretty-printing, add a newline
@@ -1308,13 +1313,13 @@ namespace Microsoft.Ajax.Utilities
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(ex.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty)));
+                throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(ex.Message + ex.FileName.IfNotNull(s => " " + s).IfNullOrWhiteSpace(string.Empty)));
             }
             catch (XmlException ex)
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(ex.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(ex.Message));
+                throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(ex.Message));
             }
 
             return manifest;
@@ -1344,7 +1349,7 @@ namespace Microsoft.Ajax.Utilities
 
                 default:
                     // no other types are supported
-                    throw new UsageException(m_outputMode, AjaxMin.ResourceArgInvalidType);
+                    throw new NotSupportedException(AjaxMin.ResourceArgInvalidType);
             }
         }
 
@@ -1400,7 +1405,7 @@ namespace Microsoft.Ajax.Utilities
         /// <param name="args">optional arguments</param>
         private void WriteProgress(string format, params object[] args)
         {
-            if (m_outputMode != ConsoleOutputMode.Silent)
+            if (!s_silentMode)
             {
                 // if we are writing all output to one or more files, then progress messages will go
                 // to stdout. If we are sending any minified output to stdout, then progress messages will
@@ -1449,7 +1454,7 @@ namespace Microsoft.Ajax.Utilities
         private void WriteError(string message)
         {
             // don't output the header if in silent mode
-            if (m_outputMode != ConsoleOutputMode.Silent && !m_headerWritten)
+            if (!s_silentMode && !m_headerWritten)
             {
                 // the header string will end with its own line-terminator, so we 
                 // don't need to call WriteLine
@@ -1592,59 +1597,5 @@ namespace Microsoft.Ajax.Utilities
         }
 
         #endregion
-
-        #region usage exception
-
-#if !NOSERIALIZE
-        [Serializable]
-#endif
-        private sealed class UsageException : Exception
-        {
-            public ConsoleOutputMode OutputMode { get; private set; }
-
-            public UsageException(ConsoleOutputMode outputMode)
-                : base(string.Empty)
-            {
-                OutputMode = outputMode;
-            }
-
-            public UsageException(ConsoleOutputMode outputMode, string message)
-                : base(message)
-            {
-                OutputMode = outputMode;
-            }
-
-#if !NOSERIALIZE
-            private UsageException(SerializationInfo info, StreamingContext context)
-                : base(info, context)
-            {
-                if (info == null)
-                {
-                    throw new ArgumentException(AjaxMin.InternalCompilerError);
-                }
-                OutputMode = ConsoleOutputMode.Console;
-            }
-#endif
-
-            public UsageException()
-            {
-                OutputMode = ConsoleOutputMode.Console;
-            }
-        }
-
-        #endregion
     }
-
-    #region custom enumeration
-
-    /// <summary>
-    /// Method of outputting information
-    /// </summary>
-    internal enum ConsoleOutputMode
-    {
-        Silent,
-        Console
-    }
-
-    #endregion
 }

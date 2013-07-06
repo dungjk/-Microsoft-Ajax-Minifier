@@ -17,9 +17,7 @@
 namespace Microsoft.Ajax.Utilities
 {
     using System;
-    using System.Globalization;
     using System.IO;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Text.RegularExpressions;
 
@@ -1996,8 +1994,9 @@ namespace Microsoft.Ajax.Utilities
             //        4 == this is just not right
 
             string message = CssStrings.ResourceManager.GetString(error.ToString(), CssStrings.Culture).FormatInvariant(args);
-            OnScannerError(new CssScannerException(
+            OnScannerError(new CssException(
                 (int)error,
+                CssStrings.ScannerSubsystem,
                 severity,
                 m_context.End.Line,
                 m_context.End.Char,
@@ -2007,7 +2006,7 @@ namespace Microsoft.Ajax.Utilities
 
         public event EventHandler<CssScannerErrorEventArgs> ScannerError;
 
-        protected void OnScannerError(CssScannerException exc)
+        protected void OnScannerError(CssException exc)
         {
             if (ScannerError != null)
             {
@@ -2029,46 +2028,11 @@ namespace Microsoft.Ajax.Utilities
         #endregion
     }
 
-#if !NOSERIALIZE
-    [Serializable]
-#endif
-    public sealed class CssScannerException : CssException
-    {
-        private static readonly string s_originator = CssStrings.ScannerSubsystem;
-
-        internal CssScannerException(int error, int severity, int line, int pos, string message)
-            : base(error, s_originator, severity, line, pos, message)
-        {
-        }
-
-        public CssScannerException()
-            : base((int)CssErrorCode.UnknownError, s_originator, 1, 0, 0, CssStrings.UnknownError)
-        {
-        }
-
-        public CssScannerException(string message)
-            : base((int)CssErrorCode.UnknownError, s_originator, 1, 0, 0, message)
-        {
-        }
-
-        public CssScannerException(string message, Exception innerException)
-            : base((int)CssErrorCode.UnknownError, s_originator, 1, 0, 0, message, innerException)
-        {
-        }
-
-#if !NOSERIALIZE
-        private CssScannerException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-#endif
-    }
-
     internal class CssScannerErrorEventArgs : EventArgs
     {
-        public CssScannerException Exception { get; private set; }
+        public CssException Exception { get; private set; }
 
-        public CssScannerErrorEventArgs(CssScannerException exc)
+        public CssScannerErrorEventArgs(CssException exc)
         {
             Exception = exc;
         }

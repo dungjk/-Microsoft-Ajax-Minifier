@@ -218,7 +218,6 @@
     <Compile Include="JavaScript\ReorderScopeVisitor.cs" />
     <Compile Include="JavaScript\ResolutionVisitor.cs" />
     <Compile Include="JavaScript\return.cs" />
-    <Compile Include="JavaScript\scannerexception.cs" />
     <Compile Include="JavaScript\ScriptSharpSourceMap.cs" />
     <Compile Include="JavaScript\StatementStartVisitor.cs" />
     <Compile Include="JavaScript\switch.cs" />

@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization;
 
 namespace Microsoft.Ajax.Utilities
 {
@@ -146,7 +145,7 @@ namespace Microsoft.Ajax.Utilities
                         se.Severity,
                         GetSeverityString(se.Severity),
                         errorCode,
-                        se.HelpLink,
+                        null,
                         se.FileContext,
                         se.Line,
                         se.Column,
@@ -479,67 +478,79 @@ namespace Microsoft.Ajax.Utilities
             // start of a new module
             m_newModule = true;
 
-            Block scriptBlock;
-            Block returnBlock;
-            switch (m_settings.SourceMode)
+            Block scriptBlock = null;
+            Block returnBlock = null;
+            try
             {
-                case JavaScriptSourceMode.Program:
-                    // simply parse a block of statements
-                    returnBlock = scriptBlock = ParseStatements();
-                    break;
-                    
-                case JavaScriptSourceMode.Expression:
-                    // create a block, get the first token, add in the parse of a single expression, 
-                    // and we'll go fron there.
-                    returnBlock = scriptBlock = new Block(CurrentPositionContext(), this);
-                    GetNextToken();
-                    try
-                    {
-                        var expr = ParseExpression();
-                        if (expr != null)
+                switch (m_settings.SourceMode)
+                {
+                    case JavaScriptSourceMode.Program:
+                        // simply parse a block of statements
+                        returnBlock = scriptBlock = ParseStatements();
+                        break;
+
+                    case JavaScriptSourceMode.Expression:
+                        // create a block, get the first token, add in the parse of a single expression, 
+                        // and we'll go fron there.
+                        returnBlock = scriptBlock = new Block(CurrentPositionContext(), this);
+                        GetNextToken();
+                        try
                         {
-                            scriptBlock.Append(expr);
-                            scriptBlock.UpdateWith(expr.Context);
+                            var expr = ParseExpression();
+                            if (expr != null)
+                            {
+                                scriptBlock.Append(expr);
+                                scriptBlock.UpdateWith(expr.Context);
+                            }
                         }
-                    }
-                    catch (EndOfFileException)
-                    {
-                        Debug.WriteLine("EOF");
-                    }
-                    break;
-
-                case JavaScriptSourceMode.EventHandler:
-                    // we're going to create the global block, add in a function expression with a single
-                    // parameter named "event", and then we're going to parse the input as the body of that
-                    // function expression. We're going to resolve the global block, but only return the body
-                    // of the function.
-                    scriptBlock = new Block(null, this);
-
-                    var parameters = new AstNodeList(null, this);
-                    parameters.Append(new ParameterDeclaration(null, this)
+                        catch (EndOfStreamException)
                         {
-                            Name = "event",
-                            RenameNotAllowed = true
-                        });
+                            Debug.WriteLine("EOF");
+                        }
+                        break;
 
-                    var funcExpression = new FunctionObject(null, this)
-                        {
-                            FunctionType = FunctionType.Expression, 
-                            ParameterDeclarations = parameters
-                        };
-                    scriptBlock.Append(funcExpression);
+                    case JavaScriptSourceMode.EventHandler:
+                        // we're going to create the global block, add in a function expression with a single
+                        // parameter named "event", and then we're going to parse the input as the body of that
+                        // function expression. We're going to resolve the global block, but only return the body
+                        // of the function.
+                        scriptBlock = new Block(null, this);
 
-                    returnBlock = ParseStatements();
-                    funcExpression.Body = returnBlock;
-                    break;
+                        var parameters = new AstNodeList(null, this);
+                        parameters.Append(new ParameterDeclaration(null, this)
+                            {
+                                Name = "event",
+                                RenameNotAllowed = true
+                            });
 
-                default:
-                    Debug.Fail("Unexpected source mode enumeration");
-                    return null;
+                        var funcExpression = new FunctionObject(null, this)
+                            {
+                                FunctionType = FunctionType.Expression,
+                                ParameterDeclarations = parameters
+                            };
+                        scriptBlock.Append(funcExpression);
+
+                        returnBlock = ParseStatements();
+                        funcExpression.Body = returnBlock;
+                        break;
+
+                    default:
+                        Debug.Fail("Unexpected source mode enumeration");
+                        return null;
+                }
+            }
+            catch (RecoveryTokenException)
+            {
+                // this should never happen but let's make SURE we don't expose our
+                // private excetion object to the outside world
+                m_currentToken.HandleError(JSError.ApplicationError, true);
             }
 
-            // resolve everything
-            ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
+            if (scriptBlock != null)
+            {
+                // resolve everything
+                ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
+            }
 
             if (scriptBlock != null && Settings.MinifyCode)
             {
@@ -582,7 +593,7 @@ namespace Microsoft.Ajax.Utilities
                 GlobalScope.ValidateGeneratedNames();
             }
 
-            if (returnBlock.Parent != null)
+            if (returnBlock != null && returnBlock.Parent != null)
             {
                 returnBlock.Parent = null;
             }
@@ -728,14 +739,8 @@ namespace Microsoft.Ajax.Utilities
                 }
 
             }
-            catch (EndOfFileException)
+            catch (EndOfStreamException)
             {
-            }
-            catch (ScannerException se)
-            {
-                // a scanner exception implies that the end of file has been reached with an error.
-                // Mark the end of file as the error location
-                EOFError(se.Error);
             }
 
             program.UpdateWith(CurrentPositionContext());
@@ -807,7 +812,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     case JSToken.EndOfFile:
                         EOFError(JSError.ErrorEndOfFile);
-                        throw new EndOfFileException(); // abort parsing, get back to the main parse routine
+                        throw new EndOfStreamException(); // abort parsing, get back to the main parse routine
                     case JSToken.Semicolon:
                         // make an empty statement
                         statement = new EmptyStatement(m_currentToken.Clone(), this);
@@ -3596,7 +3601,7 @@ namespace Microsoft.Ajax.Utilities
                     body.Context.UpdateWith(m_currentToken);
                     fncCtx.UpdateWith(m_currentToken);
                 }
-                catch (EndOfFileException)
+                catch (EndOfStreamException)
                 {
                     // if we get an EOF here, we never had a chance to find the closing curly-brace
                     fncCtx.HandleError(JSError.UnclosedFunction, true);
@@ -5400,41 +5405,25 @@ namespace Microsoft.Ajax.Utilities
         //---------------------------------------------------------------------------------------
         private void GetNextToken()
         {
-            try
+            if (m_useCurrentForNext)
             {
-                if (m_useCurrentForNext)
+                // we just want to keep using the current token.
+                // but don't get into an infinite loop -- after a while,
+                // give up and grab the next token from the scanner anyway
+                m_useCurrentForNext = false;
+                if (m_breakRecursion++ > 10)
                 {
-                    // we just want to keep using the current token.
-                    // but don't get into an infinite loop -- after a while,
-                    // give up and grab the next token from the scanner anyway
-                    m_useCurrentForNext = false;
-                    if (m_breakRecursion++ > 10)
-                    {
-                        m_currentToken = ScanNextToken();
-                    }
-                }
-                else
-                {
-                    m_goodTokensProcessed++;
-                    m_breakRecursion = 0;
-
-                    // the scanner reuses the same context object for performance,
-                    // so if we ever mean to hold onto it later, we need to clone it.
                     m_currentToken = ScanNextToken();
                 }
             }
-            catch (ScannerException e)
+            else
             {
-                if (e.Error != JSError.NoCommentEnd)
-                {
-                    // rethrow anything that isn't an unterminated comment
-                    throw;
-                }
-                else
-                {
-                    m_currentToken.Token = JSToken.EndOfFile;
-                    m_currentToken.HandleError(JSError.NoCommentEnd);
-                }
+                m_goodTokensProcessed++;
+                m_breakRecursion = 0;
+
+                // the scanner reuses the same context object for performance,
+                // so if we ever mean to hold onto it later, we need to clone it.
+                m_currentToken = ScanNextToken();
             }
         }
 
@@ -5625,10 +5614,10 @@ namespace Microsoft.Ajax.Utilities
                 if (++m_tokensSkipped > c_MaxSkippedTokenNumber)
                 {
                     m_currentToken.HandleError(JSError.TooManyTokensSkipped);
-                    throw new EndOfFileException();
+                    throw new EndOfStreamException();
                 }
                 if (JSToken.EndOfFile == m_currentToken.Token)
-                    throw new EndOfFileException();
+                    throw new EndOfStreamException();
             }
 
             m_useCurrentForNext = true;
@@ -5671,176 +5660,109 @@ namespace Microsoft.Ajax.Utilities
         {
             return (-1 != IndexOfToken(tokens, exc._token));
         }
-    }
 
-    // helper classes
-    //***************************************************************************************
-    //
-    //***************************************************************************************
-#if !NOSERIALIZE
-    [Serializable]
-#endif
-    public class ParserException : Exception
-    {
-        private static string s_errorMsg = JScript.JSParserException;
+        // helper classes
+        //***************************************************************************************
+        //
+        //***************************************************************************************
 
-        public ParserException() : base(s_errorMsg) { }
-        public ParserException(string message) : base(message) { }
-        public ParserException(string message, Exception innerException) : base(message, innerException) { }
-
-#if !NOSERIALIZE
-        protected ParserException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
-
-#if !NOSERIALIZE
-    [Serializable]
-#endif
-    public sealed class UnexpectedTokenException : ParserException
-    {
-        public UnexpectedTokenException() : base() { }
-        public UnexpectedTokenException(string message) : base(message) { }
-        public UnexpectedTokenException(string message, Exception innerException) : base(message, innerException) { }
-
-#if !NOSERIALIZE
-        private UnexpectedTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
-
-#if !NOSERIALIZE
-    [Serializable]
-#endif
-    public sealed class EndOfFileException : ParserException
-    {
-        public EndOfFileException() : base() { }
-        public EndOfFileException(string message) : base(message) { }
-        public EndOfFileException(string message, Exception innerException) : base(message, innerException) { }
-
-#if !NOSERIALIZE
-        private EndOfFileException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
-
-#if !NOSERIALIZE
-    [Serializable]
-#endif
-    internal sealed class RecoveryTokenException : ParserException
-    {
-        internal JSToken _token;
-        internal AstNode _partiallyComputedNode;
-
-        internal RecoveryTokenException(JSToken token, AstNode partialAST)
-            : base()
+        // this is a private exception used by the parser to handle syntax errors and partially-computed
+        // AST nodes. It will never make it outside the parser, so forget about serializing and proper constructors,
+        // and being public to begin with. We KNOW this will never get out because we have a try/catch in the
+        // Parse method that will catch any strays that happen to make it out and throw a syntax error.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2237:MarkISerializableTypesWithSerializable"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
+        private sealed class RecoveryTokenException : Exception
         {
-            _token = token;
-            _partiallyComputedNode = partialAST;
-        }
+            internal JSToken _token;
+            internal AstNode _partiallyComputedNode;
 
-#if !NOSERIALIZE
-        private RecoveryTokenException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
+            internal RecoveryTokenException() { }
 
-    //***************************************************************************************
-    // NoSkipTokenSet
-    //
-    //  This class is a possible implementation of the no skip token set. It relies on the
-    //  fact that the array passed in are static. Should you change it, this implementation
-    //  should change as well.
-    //  It keeps a linked list of token arrays that are passed in during parsing, on error
-    //  condition the list is traversed looking for a matching token. If a match is found
-    //  the token should not be skipped and an exception is thrown to let the proper
-    //  rule deal with the token
-    //***************************************************************************************
-    internal class NoSkipTokenSet
-    {
-        private List<JSToken[]> m_tokenSetList;
-
-        internal NoSkipTokenSet()
-        {
-            m_tokenSetList = new List<JSToken[]>();
-        }
-
-        internal void Add(JSToken[] tokens)
-        {
-            m_tokenSetList.Add(tokens);
-        }
-
-        internal void Remove(JSToken[] tokens)
-        {
-            bool wasRemoved = m_tokenSetList.Remove(tokens);
-            Debug.Assert(wasRemoved, "Token set not in no-skip list");
-        }
-
-        internal bool HasToken(JSToken token)
-        {
-            foreach (JSToken[] tokenSet in m_tokenSetList)
+            internal RecoveryTokenException(JSToken token, AstNode partialAST)
+                : base()
             {
-                for (int ndx = 0; ndx < tokenSet.Length; ++ndx)
+                _token = token;
+                _partiallyComputedNode = partialAST;
+            }
+        }
+
+        //***************************************************************************************
+        // NoSkipTokenSet
+        //
+        //  This class is a possible implementation of the no skip token set. It relies on the
+        //  fact that the array passed in are static. Should you change it, this implementation
+        //  should change as well.
+        //  It keeps a linked list of token arrays that are passed in during parsing, on error
+        //  condition the list is traversed looking for a matching token. If a match is found
+        //  the token should not be skipped and an exception is thrown to let the proper
+        //  rule deal with the token
+        //***************************************************************************************
+        private class NoSkipTokenSet
+        {
+            private List<JSToken[]> m_tokenSetList;
+
+            internal NoSkipTokenSet()
+            {
+                m_tokenSetList = new List<JSToken[]>();
+            }
+
+            internal void Add(JSToken[] tokens)
+            {
+                m_tokenSetList.Add(tokens);
+            }
+
+            internal void Remove(JSToken[] tokens)
+            {
+                bool wasRemoved = m_tokenSetList.Remove(tokens);
+                Debug.Assert(wasRemoved, "Token set not in no-skip list");
+            }
+
+            internal bool HasToken(JSToken token)
+            {
+                foreach (JSToken[] tokenSet in m_tokenSetList)
                 {
-                    if (tokenSet[ndx] == token)
+                    for (int ndx = 0; ndx < tokenSet.Length; ++ndx)
                     {
-                        return true;
+                        if (tokenSet[ndx] == token)
+                        {
+                            return true;
+                        }
                     }
                 }
+                return false;
             }
-            return false;
+
+            // list of static no skip token set for specifc rules
+            internal static readonly JSToken[] s_ArrayInitNoSkipTokenSet = new JSToken[] { JSToken.RightBracket, JSToken.Comma };
+            internal static readonly JSToken[] s_BlockConditionNoSkipTokenSet = new JSToken[] { JSToken.RightParenthesis, JSToken.LeftCurly, JSToken.EndOfLine };
+            internal static readonly JSToken[] s_BlockNoSkipTokenSet = new JSToken[] { JSToken.RightCurly };
+            internal static readonly JSToken[] s_BracketToken = new JSToken[] { JSToken.RightBracket };
+            internal static readonly JSToken[] s_CaseNoSkipTokenSet = new JSToken[] { JSToken.Case, JSToken.Default, JSToken.Colon, JSToken.EndOfLine };
+            internal static readonly JSToken[] s_DoWhileBodyNoSkipTokenSet = new JSToken[] { JSToken.While };
+            internal static readonly JSToken[] s_EndOfLineToken = new JSToken[] { JSToken.EndOfLine };
+            internal static readonly JSToken[] s_EndOfStatementNoSkipTokenSet = new JSToken[] { JSToken.Semicolon, JSToken.EndOfLine };
+            internal static readonly JSToken[] s_ExpressionListNoSkipTokenSet = new JSToken[] { JSToken.Comma };
+            internal static readonly JSToken[] s_FunctionDeclNoSkipTokenSet = new JSToken[] { JSToken.RightParenthesis, JSToken.LeftCurly, JSToken.Comma };
+            internal static readonly JSToken[] s_IfBodyNoSkipTokenSet = new JSToken[] { JSToken.Else };
+            internal static readonly JSToken[] s_MemberExprNoSkipTokenSet = new JSToken[] { JSToken.LeftBracket, JSToken.LeftParenthesis, JSToken.AccessField };
+            internal static readonly JSToken[] s_NoTrySkipTokenSet = new JSToken[] { JSToken.Catch, JSToken.Finally };
+            internal static readonly JSToken[] s_ObjectInitNoSkipTokenSet = new JSToken[] { JSToken.RightCurly, JSToken.Comma };
+            internal static readonly JSToken[] s_ParenExpressionNoSkipToken = new JSToken[] { JSToken.RightParenthesis };
+            internal static readonly JSToken[] s_ParenToken = new JSToken[] { JSToken.RightParenthesis };
+            internal static readonly JSToken[] s_PostfixExpressionNoSkipTokenSet = new JSToken[] { JSToken.Increment, JSToken.Decrement };
+            internal static readonly JSToken[] s_StartStatementNoSkipTokenSet = new JSToken[]{JSToken.LeftCurly,
+                                                                                               JSToken.Var,
+                                                                                               JSToken.Const,
+                                                                                               JSToken.If,
+                                                                                               JSToken.For,
+                                                                                               JSToken.Do,
+                                                                                               JSToken.While,
+                                                                                               JSToken.With,
+                                                                                               JSToken.Switch,
+                                                                                               JSToken.Try};
+            internal static readonly JSToken[] s_SwitchNoSkipTokenSet = new JSToken[] { JSToken.Case, JSToken.Default };
+            internal static readonly JSToken[] s_TopLevelNoSkipTokenSet = new JSToken[] { JSToken.Function };
+            internal static readonly JSToken[] s_VariableDeclNoSkipTokenSet = new JSToken[] { JSToken.Comma, JSToken.Semicolon };
         }
-
-        // list of static no skip token set for specifc rules
-        internal static readonly JSToken[] s_ArrayInitNoSkipTokenSet = new JSToken[]{JSToken.RightBracket,
-                                                                                           JSToken.Comma};
-        internal static readonly JSToken[] s_BlockConditionNoSkipTokenSet = new JSToken[]{JSToken.RightParenthesis,
-                                                                                           JSToken.LeftCurly,
-                                                                                           JSToken.EndOfLine};
-        internal static readonly JSToken[] s_BlockNoSkipTokenSet = new JSToken[] { JSToken.RightCurly };
-        internal static readonly JSToken[] s_BracketToken = new JSToken[] { JSToken.RightBracket };
-        internal static readonly JSToken[] s_CaseNoSkipTokenSet = new JSToken[]{JSToken.Case,
-                                                                                           JSToken.Default,
-                                                                                           JSToken.Colon,
-                                                                                           JSToken.EndOfLine};
-        internal static readonly JSToken[] s_DoWhileBodyNoSkipTokenSet = new JSToken[] { JSToken.While };
-        internal static readonly JSToken[] s_EndOfLineToken = new JSToken[] { JSToken.EndOfLine };
-        internal static readonly JSToken[] s_EndOfStatementNoSkipTokenSet = new JSToken[]{JSToken.Semicolon,
-                                                                                           JSToken.EndOfLine};
-        internal static readonly JSToken[] s_ExpressionListNoSkipTokenSet = new JSToken[] { JSToken.Comma };
-        internal static readonly JSToken[] s_FunctionDeclNoSkipTokenSet = new JSToken[]{JSToken.RightParenthesis,
-                                                                                           JSToken.LeftCurly,
-                                                                                           JSToken.Comma};
-        internal static readonly JSToken[] s_IfBodyNoSkipTokenSet = new JSToken[] { JSToken.Else };
-        internal static readonly JSToken[] s_MemberExprNoSkipTokenSet = new JSToken[]{JSToken.LeftBracket,
-                                                                                           JSToken.LeftParenthesis,
-                                                                                           JSToken.AccessField};
-        internal static readonly JSToken[] s_NoTrySkipTokenSet = new JSToken[]{JSToken.Catch,
-                                                                                           JSToken.Finally};
-        internal static readonly JSToken[] s_ObjectInitNoSkipTokenSet = new JSToken[]{JSToken.RightCurly,
-                                                                                           JSToken.Comma};
-        internal static readonly JSToken[] s_ParenExpressionNoSkipToken = new JSToken[] { JSToken.RightParenthesis };
-        internal static readonly JSToken[] s_ParenToken = new JSToken[] { JSToken.RightParenthesis };
-        internal static readonly JSToken[] s_PostfixExpressionNoSkipTokenSet = new JSToken[]{JSToken.Increment,
-                                                                                           JSToken.Decrement};
-        internal static readonly JSToken[] s_StartStatementNoSkipTokenSet = new JSToken[]{JSToken.LeftCurly,
-                                                                                           JSToken.Var,
-                                                                                           JSToken.Const,
-                                                                                           JSToken.If,
-                                                                                           JSToken.For,
-                                                                                           JSToken.Do,
-                                                                                           JSToken.While,
-                                                                                           JSToken.With,
-                                                                                           JSToken.Switch,
-                                                                                           JSToken.Try};
-        internal static readonly JSToken[] s_SwitchNoSkipTokenSet = new JSToken[]{JSToken.Case,
-                                                                                           JSToken.Default};
-        internal static readonly JSToken[] s_TopLevelNoSkipTokenSet = new JSToken[]{JSToken.Function};
-        internal static readonly JSToken[] s_VariableDeclNoSkipTokenSet = new JSToken[]{JSToken.Comma,
-                                                                                           JSToken.Semicolon};
-    }
-
-    public enum FunctionType
-    {
-        Declaration,
-        Expression,
-        Getter,
-        Setter
     }
 }

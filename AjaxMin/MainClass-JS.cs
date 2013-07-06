@@ -346,7 +346,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // throw an error indicating the XML error
                 System.Diagnostics.Debug.WriteLine(e.ToString());
-                throw new UsageException(ConsoleOutputMode.Console, AjaxMin.InputXmlError.FormatInvariant(e.Message));
+                throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(e.Message));
             }
             finally
             {
