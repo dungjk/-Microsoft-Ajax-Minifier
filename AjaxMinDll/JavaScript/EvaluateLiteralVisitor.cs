@@ -2252,6 +2252,43 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        public override void Visit(Member node)
+        {
+            if (node != null)
+            {
+                // depth-first
+                base.Visit(node);
+
+                if (string.CompareOrdinal(node.Name, "length") == 0
+                    && m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateLiteralLengths))
+                {
+                    // if we create a constant, we'll replace the current node with it
+                    ConstantWrapper length = null;
+
+                    ArrayLiteral arrayLiteral;
+                    var constantWrapper = node.Root as ConstantWrapper;
+                    if (constantWrapper != null)
+                    {
+                        if (constantWrapper.PrimitiveType == PrimitiveType.String && !constantWrapper.MayHaveIssues)
+                        {
+                            length = new ConstantWrapper(constantWrapper.ToString().Length, PrimitiveType.Number, node.Context, node.Parser);
+                        }
+                    }
+                    else if ((arrayLiteral = node.Root as ArrayLiteral) != null && !arrayLiteral.MayHaveIssues)
+                    {
+                        // get the count of items in the array literal, create a constant wrapper from it, and
+                        // replace this node with it
+                        length = new ConstantWrapper(arrayLiteral.Elements.Count, PrimitiveType.Number, node.Context, node.Parser);
+                    }
+
+                    if (length != null)
+                    {
+                        node.Parent.ReplaceChild(node, length);
+                    }
+                }
+            }
+        }
+
         public override void Visit(UnaryOperator node)
         {
             if (node != null)

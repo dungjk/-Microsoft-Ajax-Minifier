@@ -1,1 +1,1 @@
-function Func(){var a;return a=[0,1,2,3,4],a.length}
+function yes1(){return 5}function yes2(){return 5}function no1(){return[1,2,3,,].length}

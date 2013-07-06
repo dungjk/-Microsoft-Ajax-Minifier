@@ -124,6 +124,7 @@
     <Content Include="TestData\JS\Expected\AstMods\ConstantIf.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus.js" />
     <Content Include="TestData\JS\Expected\AstMods\DateGetTimeToUnaryPlus_H.js" />
+    <Content Include="TestData\JS\Expected\AstMods\EvalLength.js" />
     <Content Include="TestData\JS\Expected\AstMods\ExpressionIf.js" />
     <Content Include="TestData\JS\Expected\AstMods\IfContinue.js" />
     <Content Include="TestData\JS\Expected\AstMods\IfReturn.js" />
@@ -454,6 +455,7 @@
     <Content Include="TestData\JS\Input\AstMods\CallToMember.js" />
     <Content Include="TestData\JS\Input\AstMods\ConstantIf.js" />
     <Content Include="TestData\JS\Input\AstMods\DateGetTimeToUnaryPlus.js" />
+    <Content Include="TestData\JS\Input\AstMods\EvalLength.js" />
     <Content Include="TestData\JS\Input\AstMods\ExpressionIf.js" />
     <Content Include="TestData\JS\Input\AstMods\IfContinue.js" />
     <Content Include="TestData\JS\Input\AstMods\IfReturn.js" />

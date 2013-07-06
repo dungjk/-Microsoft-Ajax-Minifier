@@ -204,5 +204,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void EvalLength()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
