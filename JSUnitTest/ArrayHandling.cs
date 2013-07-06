@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -28,7 +29,7 @@ namespace JSUnitTest
     [TestMethod()]
     public void Array()
     {
-      TestHelper.Instance.RunTest();
+        TestHelper.Instance.RunErrorTest(JSError.UndeclaredFunction, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma);
     }
 
     [TestMethod()]

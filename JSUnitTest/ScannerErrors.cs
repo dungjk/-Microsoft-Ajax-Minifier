@@ -25,25 +25,25 @@ namespace JSUnitTest
     [TestMethod()]
     public void BadHexDigit()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.BadNumericLiteral);
+      TestHelper.Instance.RunErrorTest(JSError.BadNumericLiteral);
     }
 
     [TestMethod()]
     public void StringEOF()
     {
-      TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString);
+      TestHelper.Instance.RunErrorTest(JSError.UnterminatedString);
     }
 
     [TestMethod()]
     public void StringEOL()
     {
-        TestHelper.Instance.RunErrorTest(null, JSError.UnterminatedString, JSError.SemicolonInsertion);
+        TestHelper.Instance.RunErrorTest(JSError.UnterminatedString, JSError.SemicolonInsertion);
     }
 
     [TestMethod()]
     public void UnexpectedNull()
     {
-        TestHelper.Instance.RunErrorTest(null, JSError.IllegalChar);
+        TestHelper.Instance.RunErrorTest(JSError.IllegalChar);
     }
   }
 }

@@ -668,6 +668,11 @@ namespace JSUnitTest
             return outputData;
         }
 
+        public void RunErrorTest(params JSError[] expectedErrorArray)
+        {
+            RunErrorTest(string.Empty, expectedErrorArray);
+        }
+
         public void RunErrorTest(string settingsSwitches, params JSError[] expectedErrorArray)
         {
             // open the stack trace for this call

@@ -542,7 +542,7 @@ namespace Microsoft.Ajax.Utilities
             catch (RecoveryTokenException)
             {
                 // this should never happen but let's make SURE we don't expose our
-                // private excetion object to the outside world
+                // private exception object to the outside world
                 m_currentToken.HandleError(JSError.ApplicationError, true);
             }
 
@@ -4531,6 +4531,7 @@ namespace Microsoft.Ajax.Utilities
                     Context listCtx = m_currentToken.Clone();
                     GetNextToken();
                     AstNodeList list = new AstNodeList(CurrentPositionContext(), this);
+                    var hasTrailingCommas = false;
                     while (JSToken.RightBracket != m_currentToken.Token)
                     {
                         if (JSToken.Comma != m_currentToken.Token)
@@ -4553,7 +4554,8 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // we have a comma -- skip it after adding it as a terminator
                                     // on the previous expression
-                                    expression.IfNotNull(e => e.TerminatingContext = m_currentToken.Clone());
+                                    var commaContext = m_currentToken.Clone();
+                                    expression.IfNotNull(e => e.TerminatingContext = commaContext);
                                     GetNextToken();
 
                                     // if the next token is the closing brackets, then we need to
@@ -4562,7 +4564,12 @@ namespace Microsoft.Ajax.Utilities
                                     // TECHNICALLY, that puts an extra item into the array for most modern browsers, but not ALL.
                                     if (m_currentToken.Token == JSToken.RightBracket)
                                     {
+                                        hasTrailingCommas = true;
                                         list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this));
+
+                                        // throw a cross-browser warning about trailing commas
+                                        commaContext.HandleError(JSError.ArrayLiteralTrailingComma);
+                                        break;
                                     }
                                 }
                             }
@@ -4575,7 +4582,8 @@ namespace Microsoft.Ajax.Utilities
                                     listCtx.UpdateWith(CurrentPositionContext());
                                     exc._partiallyComputedNode = new ArrayLiteral(listCtx, this)
                                         {
-                                            Elements = list
+                                            Elements = list,
+                                            MayHaveIssues = true
                                         };
                                     throw;
                                 }
@@ -4593,9 +4601,10 @@ namespace Microsoft.Ajax.Utilities
                         else
                         {
                             // comma -- missing array item in the list
+                            var commaContext = m_currentToken.Clone();
                             list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this)
                                 {
-                                    TerminatingContext = m_currentToken.Clone()
+                                    TerminatingContext = commaContext
                                 });
 
                             // skip over the comma
@@ -4606,14 +4615,21 @@ namespace Microsoft.Ajax.Utilities
                             // TECHNICALLY, that puts an extra item into the array for most modern browsers, but not ALL.
                             if (m_currentToken.Token == JSToken.RightBracket)
                             {
+                                hasTrailingCommas = true;
                                 list.Append(new ConstantWrapper(Missing.Value, PrimitiveType.Other, m_currentToken.Clone(), this));
+
+                                // throw a cross-browser warning about trailing commas
+                                commaContext.HandleError(JSError.ArrayLiteralTrailingComma);
+                                break;
                             }
                         }
                     }
+
                     listCtx.UpdateWith(m_currentToken);
                     ast = new ArrayLiteral(listCtx, this)
                         {
-                            Elements = list
+                            Elements = list,
+                            MayHaveIssues = hasTrailingCommas
                         };
                     break;
 

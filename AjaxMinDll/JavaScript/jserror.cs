@@ -110,6 +110,7 @@ namespace Microsoft.Ajax.Utilities
         DuplicateCatch = 1308, // variable declaration duplicates catch error name
         SuspectEquality = 1309, // suspect equality comparison
         SemicolonInsertion = 1310, // semicolon insertion
+        ArrayLiteralTrailingComma = 1311, // array literal trailing commas has cross-browser difference
 
         //5000 - 6000 JScript errors that can occur during execution. 
         IllegalAssignment = 5008, // "Illegal assignment"

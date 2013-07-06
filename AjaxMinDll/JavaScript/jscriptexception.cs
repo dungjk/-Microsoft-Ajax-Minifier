@@ -264,6 +264,7 @@ namespace Microsoft.Ajax.Utilities
                 case JSError.StrictComparisonIsAlwaysTrueOrFalse:
                     return 1;
 
+                case JSError.ArrayLiteralTrailingComma:
                 case JSError.DuplicateCatch:
                 case JSError.DuplicateConstantDeclaration:
                 case JSError.DuplicateLexicalDeclaration:

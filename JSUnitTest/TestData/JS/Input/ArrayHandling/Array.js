@@ -14,6 +14,7 @@
     // missing items, ending with a single comma - for most browsers we could get rid of the trailing
     // comma, HOWEVER -- some other browsers might [incorrectly] think the trailing comma means a missing
     // value on the end. So leave it as-is -- the developer knows best.
+    // throw a cross-browser warning (sev-2) if there are any trailing commas because of this delta.
     var arrayObj11 = [1, , 3, 4,];
 
     // missing items, ending with TWO commas - do NOT remove the trailing commas!

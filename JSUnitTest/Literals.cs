@@ -149,7 +149,7 @@ namespace JSUnitTest
         public void InlineSafeErrors()
         {
             // default test - should have no errors
-            TestHelper.Instance.RunErrorTest("");
+            TestHelper.Instance.RunErrorTest();
         }
 
         [TestMethod]

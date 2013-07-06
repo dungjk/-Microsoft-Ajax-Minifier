@@ -27,6 +27,11 @@ function yes4()
     return "and a " + [1,2,3].join(" and a ") + " [music]";
 }
 
+function yes5()
+{
+    return "missing [" + [1,,3].join() + "] number 2";
+}
+
 function no1(a)
 {
     // not a constant join separator
@@ -57,4 +62,10 @@ function no5()
     // a cross-browser or cross-platform difference in the precision
     // or the text conversion
     return ["one", -1234567890.12345678, "three"].join();
+}
+
+function no6()
+{
+    // trailing commas is a no-go, too, because of cross-browser issues
+    return [1,2,].join();
 }

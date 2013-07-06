@@ -64,7 +64,7 @@ namespace JSUnitTest
         [TestMethod()]
         public void Globals()
         {
-            TestHelper.Instance.RunErrorTest("");
+            TestHelper.Instance.RunErrorTest();
         }
 
         [TestMethod()]

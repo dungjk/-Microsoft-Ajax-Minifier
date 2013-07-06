@@ -2006,9 +2006,9 @@ namespace Microsoft.Ajax.Utilities
                             && m_parser.Settings.IsModificationAllowed(TreeModifications.EvaluateLiteralJoins))
                         {
                             // this is a call to join with zero or one argument (no more)
-                            // see if the root is an array literal
+                            // see if the root is an array literal that has no issues
                             var arrayLiteral = member.Root as ArrayLiteral;
-                            if (arrayLiteral != null)
+                            if (arrayLiteral != null && !arrayLiteral.MayHaveIssues)
                             {
                                 // it is -- make sure the separator is either not specified or is a constant
                                 ConstantWrapper separator = null;

@@ -40,7 +40,7 @@ namespace JSUnitTest
         [TestMethod]
         public void AssumedGlobals()
         {
-            TestHelper.Instance.RunErrorTest("");
+            TestHelper.Instance.RunErrorTest();
         }
     }
 }
