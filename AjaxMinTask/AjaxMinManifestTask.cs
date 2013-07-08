@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -46,36 +47,21 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             try
             {
-                if (settings.IfNotNull(s => s.PreprocessOnly))
+                // process the resources for this output group into the settings list
+                // if there are any to be processed
+                if (outputGroup != null && settings != null
+                    && settings.ResourceStrings.IfNotNull(rs => rs.Count > 0))
                 {
-                    // just run the preprocess-only method, which won't do any string resources or
-                    // symbol map generation or anything, since the source tree isn't actually parsed.
-                    // we just echo everything back as-is, EXCEPT that we do look at the preprocessing
-                    // directive comments (///#IF and such).
-                    PreprocessOnlyJavaScript(
-                        inputGroups,
-                        settings,
-                        outputPath,
-                        outputEncoding);
+                    outputGroup.ProcessResourceStrings(settings.ResourceStrings, null);
                 }
-                else
-                {
-                    // process the resources for this output group into the settings list
-                    // if there are any to be processed
-                    if (outputGroup != null && settings != null
-                        && settings.ResourceStrings.IfNotNull(rs => rs.Count > 0))
-                    {
-                        outputGroup.ProcessResourceStrings(settings.ResourceStrings, null);
-                    }
 
-                    // then process the javascript output group
-                    ProcessJavaScript(
-                        inputGroups,
-                        settings,
-                        outputPath,
-                        outputGroup.IfNotNull(og => og.SymbolMap),
-                        outputEncoding);
-                }
+                // then process the javascript output group
+                ProcessJavaScript(
+                    inputGroups,
+                    settings,
+                    outputPath,
+                    outputGroup.IfNotNull(og => og.SymbolMap),
+                    outputEncoding);
             }
             catch (ArgumentException ex)
             {
@@ -100,12 +86,12 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         private void ProcessJavaScript(IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, SymbolMap symbolMap, Encoding outputEncoding)
         {
-            // if we want a symbols map, we need to set it up now
             TextWriter mapWriter = null;
             ISourceMap sourceMap = null;
             try
             {
-                if (symbolMap != null)
+                // if we want a symbols map, we need to set it up now
+                if (symbolMap != null && !settings.PreprocessOnly)
                 {
                     // if we specified the path, use it. Otherwise just use the output path with
                     // ".map" appended to the end. Eg: output.js => output.js.map
@@ -136,53 +122,79 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                 // save the original term settings. We'll make sure to set this back again
                 // for the last item in the group, but we'll make sure it's TRUE for all the others.
-                bool originalTermSetting = settings.TermSemicolons;
+                var originalTermSetting = settings.TermSemicolons;
 
                 var outputBuilder = new StringBuilder();
-                GlobalScope sharedGlobalScope = null;
-                for (var ndx = 0; ndx < inputGroups.Count; ++ndx)
+                using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                 {
-                    var inputGroup = inputGroups[ndx];
-
-                    // create and setup parser
-                    var parser = new JSParser(inputGroup.Source);
-
-                    // set the shared global object
-                    parser.GlobalScope = sharedGlobalScope;
-
-                    // set up the error handler
-                    parser.CompilerError += (sender, ea) =>
+                    GlobalScope sharedGlobalScope = null;
+                    for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
                     {
-                        // if the input group isn't project, then we only want to report sev-0 errors
-                        if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
+                        var inputGroup = inputGroups[inputGroupIndex];
+
+                        // create and setup parser
+                        var parser = new JSParser(inputGroup.Source);
+
+                        // set the shared global object
+                        parser.GlobalScope = sharedGlobalScope;
+
+                        // set up the error handler
+                        parser.CompilerError += (sender, ea) =>
                         {
-                            LogContextError(ea.Error);
-                        }
-                    };
+                            // if the input group isn't project, then we only want to report sev-0 errors
+                            if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
+                            {
+                                LogContextError(ea.Error);
+                            }
+                        };
 
-                    // for all but the last item, we want the term-semicolons setting to be true.
-                    // but for the last entry, set it back to its original value
-                    settings.TermSemicolons = ndx < inputGroups.Count - 1 ? true : originalTermSetting;
+                        // for all but the last item, we want the term-semicolons setting to be true.
+                        // but for the last entry, set it back to its original value
+                        settings.TermSemicolons = inputGroupIndex < inputGroups.Count - 1 ? true : originalTermSetting;
 
-                    // minify input
-                    var block = parser.Parse(settings);
-                    if (block != null)
-                    {
-                        if (ndx > 0)
+                        if (settings.PreprocessOnly)
                         {
-                            // not the first group, so output the appropriate newline
-                            // sequence before we output the group.
-                            outputBuilder.Append(settings.LineTerminator);
+                            parser.EchoWriter = writer;
+
+                            if (inputGroupIndex > 0)
+                            {
+                                // not the first group, so output the appropriate newline
+                                // sequence before we output the group.
+                                writer.Write(settings.LineTerminator);
+                            }
                         }
 
-                        outputBuilder.Append(block.ToCode());
+                        // parse the input
+                        var block = parser.Parse(settings);
+                        if (block != null && !settings.PreprocessOnly)
+                        {
+                            if (inputGroupIndex > 0)
+                            {
+                                // not the first group, so output the appropriate newline
+                                // sequence before we output the group.
+                                writer.Write(settings.LineTerminator);
+                            }
+
+                            // minify the AST to the output
+                            if (settings.Format == JavaScriptFormat.JSON)
+                            {
+                                if (!JSONOutputVisitor.Apply(writer, block))
+                                {
+                                    Log.LogError(Strings.InvalidJSONOutput);
+                                }
+                            }
+                            else
+                            {
+                                OutputVisitor.Apply(writer, block, settings);
+                            }
+                        }
+
+                        // save the global scope for the next group (if any).
+                        // we need to do this in case an earlier input group defines some global
+                        // functions or variables, and later groups reference them. We don't want the
+                        // later parse to say "undefined global"
+                        sharedGlobalScope = parser.GlobalScope;
                     }
-
-                    // save the global scope for the next group (if any).
-                    // we need to do this in case an earlier input group defines some global
-                    // functions or variables, and later groups reference them. We don't want the
-                    // later parse to say "undefined global"
-                    sharedGlobalScope = parser.GlobalScope;
                 }
 
                 // write output
@@ -193,15 +205,22 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         // write the combined minified code
                         writer.Write(outputBuilder.ToString());
 
-                        // give the map (if any) a chance to add something
-                        settings.SymbolsMap.IfNotNull(m => m.EndFile(
-                            writer,
-                            settings.LineTerminator));
+                        if (!settings.PreprocessOnly)
+                        {
+                            // give the map (if any) a chance to add something
+                            settings.SymbolsMap.IfNotNull(m => m.EndFile(
+                                writer,
+                                settings.LineTerminator));
+                        }
                     }
                 }
                 else
                 {
                     Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
+                    if (File.Exists(outputPath))
+                    {
+                        File.Delete(outputPath);
+                    }
                 }
             }
             finally
@@ -218,63 +237,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     mapWriter.Close();
                 }
-            }
-        }
-
-        private void PreprocessOnlyJavaScript(IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding)
-        {
-            // save the original term settings. We'll make sure to set this back again
-            // for the last item in the group, but we'll make sure it's TRUE for all the others.
-            bool originalTermSetting = settings.TermSemicolons;
-
-            var outputBuilder = new StringBuilder();
-            GlobalScope sharedGlobalScope = null;
-            for (var ndx = 0; ndx < inputGroups.Count; ++ndx)
-            {
-                var inputGroup = inputGroups[ndx];
-
-                // create and setup parser
-                var parser = new JSParser(inputGroup.Source);
-
-                // set the shared global object
-                parser.GlobalScope = sharedGlobalScope;
-
-                // set up the error handler
-                parser.CompilerError += (sender, ea) =>
-                {
-                    // if the input group isn't project, then we only want to report sev-0 errors
-                    if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
-                    {
-                        LogContextError(ea.Error);
-                    }
-                };
-
-                // for all but the last item, we want the term-semicolons setting to be true.
-                // but for the last entry, set it back to its original value
-                settings.TermSemicolons = ndx < inputGroups.Count - 1 ? true : originalTermSetting;
-
-                // preprocess-only and add the results to the output builder
-                outputBuilder.Append(parser.PreprocessOnly(settings));
-
-                // save the global scope for the next group (if any).
-                // we need to do this in case an earlier input group defines some global
-                // functions or variables, and later groups reference them. We don't want the
-                // later parse to say "undefined global"
-                sharedGlobalScope = parser.GlobalScope;
-            }
-
-            // write output
-            if (!Log.HasLoggedErrors)
-            {
-                using (var writer = new StreamWriter(outputPath, false, outputEncoding))
-                {
-                    // write the combined minified code
-                    writer.Write(outputBuilder.ToString());
-                }
-            }
-            else
-            {
-                Log.LogWarning(Strings.DidNotMinify, outputPath, Strings.ThereWereErrors);
             }
         }
 

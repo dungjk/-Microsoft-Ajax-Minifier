@@ -1,4 +1,3 @@
-
 ///#source 1 1 TESTRUNPATH\Out\Dll\Input\ManifestTask\file1.js
 (function(window, document, undefined)
 {

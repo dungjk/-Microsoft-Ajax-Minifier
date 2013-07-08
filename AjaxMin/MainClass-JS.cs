@@ -32,141 +32,32 @@ namespace Microsoft.Ajax.Utilities
     {
         #region file processing
 
-        private int PreprocessJSFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
-        {
-            // blank line before
-            WriteProgress();
-
-            var ndx = 0;
-            GlobalScope sharedGlobalScope = null;
-            foreach (var inputGroup in inputGroups)
-            {
-                // create the a parser object for our chunk of code
-                JSParser parser = new JSParser(inputGroup.Source);
-
-                // set the shared global scope
-                parser.GlobalScope = sharedGlobalScope;
-
-                // hook the engine events
-                parser.UndefinedReference += OnUndefinedReference;
-                parser.CompilerError += (sender, ea) =>
-                    {
-                        var error = ea.Error;
-                        if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
-                        {
-                            // ignore severity values greater than our severity level
-                            // also ignore errors that are in our ignore list (if any)
-                            if (error.Severity <= switchParser.WarningLevel)
-                            {
-                                // we found an error
-                                m_errorsFound = true;
-
-                                // write the error out
-                                WriteError(error.ToString());
-                            }
-                        }
-                    };
-
-                // we only want to preprocess the code. Call that api on the parser
-                var resultingCode = parser.PreprocessOnly(switchParser.JSSettings);
-
-                if (!string.IsNullOrEmpty(resultingCode))
-                {
-                    // always output the crunched code to debug stream
-                    Debug.WriteLine(resultingCode);
-
-                    // send the output code to the output stream prepended by an appropriate line terminator
-                    if (ndx++ > 0)
-                    {
-                        outputBuilder.Append(switchParser.JSSettings.LineTerminator);
-                    }
-
-                    outputBuilder.Append(resultingCode);
-                }
-                else
-                {
-                    // resulting code is null or empty
-                    Debug.WriteLine(AjaxMin.OutputEmpty);
-                }
-
-                // save the global scope for later
-                sharedGlobalScope = parser.GlobalScope;
-            }
-
-            return 0;
-        }
-
-        private int ProcessJSFileEcho(IList<InputGroup> inputGroups, SwitchParser switchParser)
-        {
-            // blank line before
-            WriteProgress();
-
-            GlobalScope sharedGlobalScope = null;
-            foreach (var inputGroup in inputGroups)
-            {
-                // create the a parser object for our chunk of code
-                JSParser parser = new JSParser(inputGroup.Source);
-
-                // set the shared global scope
-                parser.GlobalScope = sharedGlobalScope;
-
-                // hook the engine events
-                parser.UndefinedReference += OnUndefinedReference;
-                parser.CompilerError += (sender, ea) =>
-                {
-                    var error = ea.Error;
-                    if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
-                    {
-                        // ignore severity values greater than our severity level
-                        // also ignore errors that are in our ignore list (if any)
-                        if (error.Severity <= switchParser.WarningLevel)
-                        {
-                            // we found an error
-                            m_errorsFound = true;
-
-                            // write the error out
-                            WriteError(error.ToString());
-                        }
-                    }
-                };
-
-                var scriptBlock = parser.Parse(switchParser.JSSettings);
-                if (scriptBlock == null)
-                {
-                    // no code?
-                    WriteProgress(AjaxMin.NoParsedCode);
-                }
-
-                sharedGlobalScope = parser.GlobalScope;
-            }
-
-            if (switchParser.AnalyzeMode)
-            {
-                // blank line before
-                WriteProgress();
-
-                // output our report
-                CreateReport(sharedGlobalScope, switchParser);
-            }
-
-            return 0;
-        }
-
         private int ProcessJSFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
         {
             var returnCode = 0;
+            var settings = switchParser.JSSettings;
 
             // blank line before
             WriteProgress();
 
-            var ndx = 0;
             GlobalScope sharedGlobalScope = null;
+            var originalTermSetting = settings.TermSemicolons;
 
             // output visitor requires a text writer, so make one from the string builder
             using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
             {
-                foreach (var inputGroup in inputGroups)
+                var outputIndex = 0;
+                var stopWatch = new Stopwatch();
+                var timerFormat = inputGroups.Count > 1 ? AjaxMin.TimerMultiFormat : AjaxMin.TimerFormat;
+
+                // frequency is ticks per second, so if we divide by 1000.0, then we will have a
+                // double-precision value indicating the ticks per millisecond. Divide this into the
+                // number of ticks we measure, and we'll get the milliseconds in double-precision.
+                var frequency = Stopwatch.Frequency / 1000.0;
+                for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
                 {
+                    var inputGroup = inputGroups[inputGroupIndex];
+
                     // create the a parser object for our chunk of code
                     JSParser parser = new JSParser(inputGroup.Source);
                     parser.GlobalScope = sharedGlobalScope;
@@ -191,33 +82,69 @@ namespace Microsoft.Ajax.Utilities
                         }
                     };
 
-                    var scriptBlock = parser.Parse(switchParser.JSSettings);
-                    if (scriptBlock != null)
+                    // for all but the last item, we want the term-semicolons setting to be true.
+                    // but for the last entry, set it back to its original value
+                    settings.TermSemicolons = inputGroupIndex < inputGroups.Count - 1 ? true : originalTermSetting;
+
+                    // if this is preprocess-only or echo-input, then set up the writer as the echo writer for the parser
+                    if (settings.PreprocessOnly || m_echoInput)
                     {
-                        if (ndx++ > 0)
+                        parser.EchoWriter = writer;
+                        if (inputGroupIndex > 0)
                         {
                             // separate subsequent input groups with an appropriate line terminator
-                            writer.WriteLine(switchParser.JSSettings.LineTerminator);
+                            writer.Write(settings.LineTerminator);
+                            writer.Write(';');
+                            writer.Write(settings.LineTerminator);
                         }
+                    }
 
-                        // crunch the output and write it to debug stream, but make sure
-                        // the settings we use to output THIS chunk are correct
-                        if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                    // start the timer and parse the input code
+                    stopWatch.Start();
+                    var scriptBlock = parser.Parse(settings);
+
+                    // stop timing and always output the results to debug console. If we used the -timer switch,
+                    // output as progress as well.
+                    stopWatch.Stop();
+                    var timerMessage = string.Format(CultureInfo.CurrentUICulture, timerFormat, inputGroupIndex + 1, stopWatch.ElapsedTicks / frequency);
+                    Debug.WriteLine(timerMessage);
+                    if (m_outputTimer)
+                    {
+                        WriteProgress(timerMessage);
+                    }
+
+                    // reset the timer so we can use it again next time instead of creating a whole new instance
+                    stopWatch.Reset();
+
+                    if (!settings.PreprocessOnly && !m_echoInput)
+                    {
+                        if (scriptBlock != null)
                         {
-                            if (!JSONOutputVisitor.Apply(writer, scriptBlock))
+                            if (outputIndex++ > 0)
                             {
-                                returnCode = 1;
+                                // separate subsequent input groups with an appropriate line terminator
+                                writer.Write(settings.LineTerminator);
+                            }
+
+                            // crunch the output and write it to debug stream, but make sure
+                            // the settings we use to output THIS chunk are correct
+                            if (settings.Format == JavaScriptFormat.JSON)
+                            {
+                                if (!JSONOutputVisitor.Apply(writer, scriptBlock))
+                                {
+                                    returnCode = 1;
+                                }
+                            }
+                            else
+                            {
+                                OutputVisitor.Apply(writer, scriptBlock, settings);
                             }
                         }
                         else
                         {
-                            OutputVisitor.Apply(writer, scriptBlock, switchParser.JSSettings);
+                            // no code?
+                            WriteProgress(AjaxMin.NoParsedCode);
                         }
-                    }
-                    else
-                    {
-                        // no code?
-                        WriteProgress(AjaxMin.NoParsedCode);
                     }
 
                     // save the global scope for later
@@ -225,9 +152,10 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // give the symbols map a chance to write something at the bottom of the source file
-                if (switchParser.JSSettings.SymbolsMap != null)
+                // (and if this isn't preprocess-only or echo)
+                if (settings.SymbolsMap != null && !settings.PreprocessOnly && !m_echoInput)
                 {
-                    switchParser.JSSettings.SymbolsMap.EndFile(writer, switchParser.JSSettings.LineTerminator);
+                    settings.SymbolsMap.EndFile(writer, settings.LineTerminator);
                 }
             }
 

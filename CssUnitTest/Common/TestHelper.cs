@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -27,6 +28,13 @@ namespace CssUnitTest
 {
     sealed class TestHelper
     {
+        /// <summary>
+        /// regular expression used to remove the testresults path from actual output
+        /// </summary>
+        private static Regex s_testRunRegex = new Regex(
+            @"(/[/*]/#source\s+\d+\s+\d+\s+).+\\TestResults\\[^\\]+(\\.+)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
         /// <summary>
         /// the name of the unit test folder under the main project folder
         /// </summary>
@@ -347,7 +355,7 @@ namespace CssUnitTest
         {
             using (StreamReader reader = new StreamReader(filePath))
             {
-                string text = reader.ReadToEnd();
+                string text = s_testRunRegex.Replace(reader.ReadToEnd(), "$1TESTRUNPATH$2");
 
                 Trace.WriteLine(filePath);
                 Trace.WriteLine(text);
@@ -364,8 +372,8 @@ namespace CssUnitTest
             {
                 using (StreamReader rightReader = new StreamReader(rightPath))
                 {
-                    string left = leftReader.ReadToEnd();
-                    string right = rightReader.ReadToEnd();
+                    string left = s_testRunRegex.Replace(leftReader.ReadToEnd(), "$1TESTRUNPATH$2");
+                    string right = s_testRunRegex.Replace(rightReader.ReadToEnd(), "$1TESTRUNPATH$2");
 
                     return (string.Compare(left, right) == 0);
                 }

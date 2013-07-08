@@ -1,5 +1,4 @@
-﻿
-/*/#source 1 1 TESTRUNPATH\Out\Dll\Input\ManifestTask\file1.css */
+﻿/*/#source 1 1 TESTRUNPATH\Out\Dll\Input\ManifestTask\file1.css */
 .foo:nth-child(n+1) 
 {
     border-left: 25.0px dashed lightgray;

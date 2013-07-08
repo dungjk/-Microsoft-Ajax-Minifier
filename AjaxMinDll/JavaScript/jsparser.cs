@@ -89,6 +89,12 @@ namespace Microsoft.Ajax.Utilities
         private int m_breakRecursion;// = 0;
         private int m_severity;
 
+        /// <summary>
+        /// Gets or sets a TextWriter instance to which raw preprocessed input will be
+        /// written when Parse is called.
+        /// </summary>
+        public TextWriter EchoWriter { get; set; }
+
         public event EventHandler<JScriptExceptionEventArgs> CompilerError;
         public event EventHandler<UndefinedReferenceEventArgs> UndefinedReference;
 
@@ -288,10 +294,12 @@ namespace Microsoft.Ajax.Utilities
         #region pre-process only
 
         /// <summary>
+        /// Obsolete - set the PreprocessOnly property on the CodeSettings class to true and call Parse method.
         /// Preprocess the input only - don't generate an AST tree or do any other code analysis, just return the processed code as a string. 
         /// </summary>
         /// <param name="settings">settings to use in the scanner</param>
         /// <returns>the source as processed by the preprocessor</returns>
+        [Obsolete("Set EchoWriter property to and call Parse method with PreprocessOnly property on the CodeSettings object set to true", true)]
         public string PreprocessOnly(CodeSettings settings)
         {
             // create an empty string builder
@@ -311,66 +319,14 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         /// <param name="settings">settings to use in the scanner</param>
         /// <param name="outputStream">output stream to which to write the processed source</param>
+        [Obsolete("Set EchoWriter property to and call Parse method with PreprocessOnly property on the CodeSettings object set to true", true)]
         public void PreprocessOnly(CodeSettings settings, TextWriter outputStream)
         {
             if (outputStream != null)
             {
-                // initialize the scanner
-                // make sure the RawTokens setting is on so that the scanner
-                // just returns everything (after doing preprocessor evaluations)
-                InitializeScanner(settings);
-
-                // get the first token, which might be a regular expression
-                // (since it makes no sense to start off script with a divide-operator)
-                var scanRegExp = true;
-                var tokenContext = m_scanner.ScanNextToken(scanRegExp);
-
-                // until we hit the end of the file...
-                int lastEndPosition = tokenContext.EndPosition;
-                while (tokenContext.Token != JSToken.EndOfFile)
-                {
-                    // just output the token and grab the next one.
-                    // but skip preprocessor directives!
-                    if (tokenContext.Token != JSToken.PreprocessorDirective)
-                    {
-                        outputStream.Write(tokenContext.Code);
-                    }
-
-                    // if this the kind of token we want to know about the next time, then save it
-                    switch (tokenContext.Token)
-                    {
-                        case JSToken.WhiteSpace:
-                        case JSToken.EndOfLine:
-                        case JSToken.AspNetBlock:
-                        case JSToken.SingleLineComment:
-                        case JSToken.MultipleLineComment:
-                        case JSToken.PreprocessorDirective:
-                        case JSToken.ConditionalCompilationOn:
-                        case JSToken.ConditionalCompilationSet:
-                        case JSToken.ConditionalCompilationIf:
-                        case JSToken.ConditionalCompilationElseIf:
-                        case JSToken.ConditionalCompilationElse:
-                        case JSToken.ConditionalCompilationEnd:
-                            // don't change the regexp flag for these tokens
-                            break;
-
-                        default:
-                            scanRegExp = RegExpCanFollow(tokenContext.Token);
-                            break;
-                    }
-
-                    tokenContext = m_scanner.ScanNextToken(scanRegExp);
-                    if (!m_scanner.IsEndOfFile && tokenContext.EndPosition == lastEndPosition)
-                    {
-                        // didn't get anything, but not at the end of the file. infinite loop?
-                        tokenContext.HandleError(JSError.ApplicationError, true);
-                        break;
-                    }
-                    else
-                    {
-                        lastEndPosition = tokenContext.EndPosition;
-                    }
-                }
+                EchoWriter = outputStream;
+                Parse(settings);
+                EchoWriter = null;
 
                 if (m_settings.TermSemicolons)
                 {
@@ -380,75 +336,6 @@ namespace Microsoft.Ajax.Utilities
                     outputStream.WriteLine();
                     outputStream.WriteLine(';');
                 }
-            }
-        }
-
-        private static bool RegExpCanFollow(JSToken previousToken)
-        {
-            switch (previousToken)
-            {
-                case JSToken.Do:
-                case JSToken.Return:
-                case JSToken.Throw:
-                case JSToken.LeftCurly:
-                case JSToken.Semicolon:
-                case JSToken.LeftParenthesis:
-                case JSToken.LeftBracket:
-                case JSToken.ConditionalIf:
-                case JSToken.Colon:
-                case JSToken.Comma:
-                case JSToken.Case:
-                case JSToken.Else:
-                case JSToken.EndOfLine:
-                case JSToken.RightCurly:
-                case JSToken.LogicalNot:
-                case JSToken.BitwiseNot:
-                case JSToken.Delete:
-                case JSToken.Void:
-                case JSToken.New:
-                case JSToken.TypeOf:
-                case JSToken.Increment:
-                case JSToken.Decrement:
-                case JSToken.Plus:
-                case JSToken.Minus:
-                case JSToken.LogicalOr:
-                case JSToken.LogicalAnd:
-                case JSToken.BitwiseOr:
-                case JSToken.BitwiseXor:
-                case JSToken.BitwiseAnd:
-                case JSToken.Equal:
-                case JSToken.NotEqual:
-                case JSToken.StrictEqual:
-                case JSToken.StrictNotEqual:
-                case JSToken.GreaterThan:
-                case JSToken.LessThan:
-                case JSToken.LessThanEqual:
-                case JSToken.GreaterThanEqual:
-                case JSToken.LeftShift:
-                case JSToken.RightShift:
-                case JSToken.UnsignedRightShift:
-                case JSToken.Multiply:
-                case JSToken.Divide:
-                case JSToken.Modulo:
-                case JSToken.InstanceOf:
-                case JSToken.In:
-                case JSToken.Assign:
-                case JSToken.PlusAssign:
-                case JSToken.MinusAssign:
-                case JSToken.MultiplyAssign:
-                case JSToken.DivideAssign:
-                case JSToken.BitwiseAndAssign:
-                case JSToken.BitwiseOrAssign:
-                case JSToken.BitwiseXorAssign:
-                case JSToken.ModuloAssign:
-                case JSToken.LeftShiftAssign:
-                case JSToken.RightShiftAssign:
-                case JSToken.UnsignedRightShiftAssign:
-                case JSToken.None:
-                    return true;
-
-                default:
-                    return false;
             }
         }
 
@@ -529,9 +416,7 @@ namespace Microsoft.Ajax.Utilities
                                 ParameterDeclarations = parameters
                             };
                         scriptBlock.Append(funcExpression);
-
-                        returnBlock = ParseStatements();
-                        funcExpression.Body = returnBlock;
+                        funcExpression.Body = returnBlock = ParseStatements();
                         break;
 
                     default:
@@ -552,7 +437,7 @@ namespace Microsoft.Ajax.Utilities
                 ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
             }
 
-            if (scriptBlock != null && Settings.MinifyCode)
+            if (scriptBlock != null && Settings.MinifyCode && !Settings.PreprocessOnly)
             {
                 // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
                 // unnests blocks, identifies prologue directives, and sets the strict mode on scopes. 
@@ -4476,19 +4361,14 @@ namespace Microsoft.Ajax.Utilities
 
                 case JSToken.Divide:
                     // could it be a regexp?
-                    String source = m_scanner.ScanRegExp();
-                    if (source != null)
+                    ast = ScanRegularExpression();
+                    if (ast != null)
                     {
-                        // parse the flags (if any)
-                        String flags = m_scanner.ScanRegExpFlags();
-                        // create the literal
-                        ast = new RegExpLiteral(m_currentToken.Clone(), this)
-                            {
-                                Pattern = source,
-                                PatternSwitches = flags
-                            };
+                        // yup -- we're done here
                         break;
                     }
+
+                    // nope -- go to the default branch
                     goto default;
 
                 // expression
@@ -5443,8 +5323,30 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        private AstNode ScanRegularExpression()
+        {
+            var source = m_scanner.ScanRegExp();
+            if (source != null)
+            {
+                // parse the flags (if any)
+                var flags = m_scanner.ScanRegExpFlags();
+
+                // create the regexp node and return it 
+                return new RegExpLiteral(m_currentToken.Clone(), this)
+                {
+                    Pattern = source,
+                    PatternSwitches = flags
+                };
+            }
+
+            // if we get here, there isn't a regular expression at the current position
+            return null;
+        }
+
         private Context ScanNextToken()
         {
+            EchoWriter.IfNotNull(w => { if (m_currentToken.Token != JSToken.None) w.Write(m_currentToken.Code); });
+
             m_newModule = false;
             m_foundEndOfLine = false;
             m_importantComments.Clear();
@@ -5473,6 +5375,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
 
+                // if we are preprocess-only, then don't output any preprocessor directive tokens
+                EchoWriter.IfNotNull(w => { if (!Settings.PreprocessOnly || nextToken.Token != JSToken.PreprocessorDirective) w.Write(nextToken.Code); });
                 nextToken = m_scanner.ScanNextToken(false);
             }
 

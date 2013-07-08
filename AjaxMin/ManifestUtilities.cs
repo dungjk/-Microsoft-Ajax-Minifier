@@ -603,8 +603,11 @@ namespace Microsoft.Ajax.Utilities
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.ManifestUtilities+FileReadBuilder.Annotate(System.String)", Justification = "context comment string is not localizeable")]
         private static void ReadFileWithContext(FileReadBuilder fileReadBuilder, string filePath, CodeType codeType, Encoding encoding)
         {
-            // start a new line so any previous single-line comments are terminated.
-            fileReadBuilder.AnnotateLine();
+            if (fileReadBuilder.Length > 0)
+            {
+                // start a new line so any previous single-line comments are terminated.
+                fileReadBuilder.AnnotateLine();
+            }
 
             // if the previous file didn't end in a semicolon, add one now.
             // it doesn't hurt to have an extra semicolon in JavaScript, and our CSS Parser has been

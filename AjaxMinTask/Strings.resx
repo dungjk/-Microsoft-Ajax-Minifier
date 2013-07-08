@@ -138,6 +138,9 @@
   <data name="InvalidInputParameter" xml:space="preserve">
     <value>Invalid property value to AjaxMin build task: '{0}'</value>
   </data>
+  <data name="InvalidJSONOutput" xml:space="preserve">
+    <value>Invalid JSON Output</value>
+  </data>
   <data name="InvalidSymbolMapName" xml:space="preserve">
     <value>Invalid symbol map implementation name: '{0}'. No symbol map generated.</value>
   </data>

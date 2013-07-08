@@ -46,6 +46,11 @@ namespace Microsoft.Ajax.Utilities
         private const string c_rawMessagePrefix = "RAWUSAGE";
 
         /// <summary>
+        /// whether to output the results of the timer to the console
+        /// </summary>
+        private bool m_outputTimer;
+
+        /// <summary>
         /// This field is initially false, and it set to true if any errors were
         /// found parsing the javascript. The return value for the application
         /// will be set to non-zero if this flag is true.
@@ -584,6 +589,25 @@ namespace Microsoft.Ajax.Utilities
                         s_silentMode = true;
                         break;
 
+                    case "TIME":
+                    case "TIMER":
+                    case "TIMES":
+                        // putting the timer switch on the command line without any arguments
+                        // is the same as putting -timer:true and perfectly valid.
+                        if (ea.ParameterPart == null)
+                        {
+                            m_outputTimer = true;
+                        }
+                        else if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out flag))
+                        {
+                            m_outputTimer = flag;
+                        }
+                        else
+                        {
+                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
+                        }
+                        break;
+
                     case "VERBOSE":
                         // ignore any argument part
                         s_silentMode = false;
@@ -973,26 +997,8 @@ namespace Microsoft.Ajax.Utilities
             // back to the original files. Also, add all the raw input to the echo builder.
             var inputGroups = outputGroup.ReadInputGroups(switchParser.EncodingInputName);
 
-            // if we are echoing the input, then we don't want to echo the assembled input with the
-            // added ///#SOURCE comments. So create a second builder in those cases, which won't get
-            // the comments added to it.
             // we are always going to build the combined raw sources so we can run some comparison calcs on them.
             var rawBuilder = new StringBuilder();
-            if (m_echoInput)
-            {
-                // we're just echoing the input -- so if this is a JS output file,
-                // we want to output a JS version of all resource dictionaries at the top
-                // of the file.
-                if (outputGroup.CodeType == CodeType.JavaScript
-                    && switchParser.JSSettings.ResourceStrings.Count > 0)
-                {
-                    foreach (var resourceStrings in switchParser.JSSettings.ResourceStrings)
-                    {
-                        string resourceObject = CreateJSFromResourceStrings(resourceStrings);
-                        rawBuilder.Append(resourceObject);
-                    }
-                }
-            }
 
             // for calculation purposes, we're going to want to calculate the length of 
             // all the raw sources, and combine them together
@@ -1011,6 +1017,21 @@ namespace Microsoft.Ajax.Utilities
 
             // create a string builder we'll dump our output into
             var outputBuilder = new StringBuilder();
+
+            // we're just echoing the input -- so if this is a JS output file,
+            // we want to output a JS version of all resource dictionaries at the top
+            // of the file.
+            if (m_echoInput
+                && outputGroup.CodeType == CodeType.JavaScript
+                && switchParser.JSSettings.ResourceStrings.Count > 0)
+            {
+                foreach (var resourceStrings in switchParser.JSSettings.ResourceStrings)
+                {
+                    string resourceObject = CreateJSFromResourceStrings(resourceStrings);
+                    outputBuilder.Append(resourceObject);
+                }
+            }
+
             switch (outputGroup.CodeType)
             {
                 case CodeType.StyleSheet:
@@ -1030,20 +1051,7 @@ namespace Microsoft.Ajax.Utilities
                         outputGroup.ProcessResourceStrings(switchParser.JSSettings.ResourceStrings, c_defaultResourceObjectName);
                     }
 
-                    if (m_switchParser.JSSettings.PreprocessOnly)
-                    {
-                        // pre-process the input
-                        retVal = PreprocessJSFile(inputGroups, switchParser, outputBuilder);
-                    }
-                    else if (m_echoInput)
-                    {
-                        retVal = ProcessJSFileEcho(inputGroups, switchParser);
-                    }
-                    else
-                    {
-                        retVal = ProcessJSFile(inputGroups, switchParser, outputBuilder);
-                    }
-
+                    retVal = ProcessJSFile(inputGroups, switchParser, outputBuilder);
                     break;
 
                 default:
@@ -1056,8 +1064,7 @@ namespace Microsoft.Ajax.Utilities
                 outputBuilder.AppendLine();
             }
 
-            // if we are echoing the input, then use the echobuilder; otherwise use the generated output
-            string outputCode = (m_echoInput ? rawBuilder : outputBuilder).ToString();
+            string outputCode = outputBuilder.ToString();
 
             // use the output group encoding. If none specified, use the default output encoding.
             var encodingOutput = outputGroup.GetEncoding(switchParser.EncodingOutputName);

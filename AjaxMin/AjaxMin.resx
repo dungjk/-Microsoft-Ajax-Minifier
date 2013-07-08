@@ -632,4 +632,10 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   <data name="SavingsGzipSourceMessage" xml:space="preserve">
     <value>Gzip of source input approx. {0} bytes ({1}% compression)</value>
   </data>
+  <data name="TimerFormat" xml:space="preserve">
+    <value>Parse time: {1}ms.</value>
+  </data>
+  <data name="TimerMultiFormat" xml:space="preserve">
+    <value>Parse time for input group {0}: {1}ms.</value>
+  </data>
 </root>

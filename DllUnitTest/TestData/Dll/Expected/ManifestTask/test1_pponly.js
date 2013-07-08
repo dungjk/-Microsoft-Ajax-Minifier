@@ -1,5 +1,4 @@
-﻿
-(function(window, document, undefined)
+﻿(function(window, document, undefined)
 {
     // start of our closure
     

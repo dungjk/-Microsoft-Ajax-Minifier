@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 using Microsoft.Ajax.Utilities;
@@ -50,6 +51,13 @@ namespace JSUnitTest
         private const string FileIdAttribute = "id";
 
         #endregion Symbol Map Xml Tags
+
+        /// <summary>
+        /// regular expression used to remove the testresults path from actual output
+        /// </summary>
+        private static Regex s_testRunRegex = new Regex(
+            @"(/[/*]/#source\s+\d+\s+\d+\s+).+\\TestResults\\[^\\]+(\\.+)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         /// <summary>
         /// the name of the unit test folder under the main project folder
@@ -768,36 +776,36 @@ namespace JSUnitTest
                     errorList.Add(e);
                 };
 
-            string crunchedCode;
-            if (settingsSwitches != null && settingsSwitches.IndexOf("-pponly", StringComparison.OrdinalIgnoreCase) >= 0)
+            var sb = new StringBuilder();
+            using (var writer = new StringWriter(sb))
             {
-                // we want a pre-process only run
-                crunchedCode = parser.PreprocessOnly(switchParser.JSSettings);
-            }
-            else
-            {
+                if (switchParser.JSSettings.PreprocessOnly)
+                {
+                    parser.EchoWriter = writer;
+                }
+
                 // normal -- just run it through the parser
                 var block = parser.Parse(switchParser.JSSettings);
-
-                // look at the settings for the proper output visitor
-                if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
+                if (!switchParser.JSSettings.PreprocessOnly)
                 {
-                    var sb = new StringBuilder();
-                    using (var writer = new StringWriter(sb))
+                    // look at the settings for the proper output visitor
+                    if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
                     {
-                        if (!JSONOutputVisitor.Apply(writer, block))
                         {
-                            Trace.WriteLine("JSON OUTPUT ERRORS!");
+                            if (!JSONOutputVisitor.Apply(writer, block))
+                            {
+                                Trace.WriteLine("JSON OUTPUT ERRORS!");
+                            }
                         }
                     }
-
-                    crunchedCode = sb.ToString();
-                }
-                else
-                {
-                    crunchedCode = block.ToCode();
+                    else
+                    {
+                        OutputVisitor.Apply(writer, block, switchParser.JSSettings);
+                    }
                 }
             }
+
+            var crunchedCode = sb.ToString();
 
             // output the crunched code using the proper output encoding
             using (var outputStream = new StreamWriter(outputPath, false, GetJSEncoding(switchParser.EncodingOutputName)))
@@ -909,7 +917,7 @@ namespace JSUnitTest
         {
             using (StreamReader reader = new StreamReader(filePath))
             {
-                string text = reader.ReadToEnd();
+                string text = s_testRunRegex.Replace(reader.ReadToEnd(), "$1TESTRUNPATH$2");
 
                 Trace.WriteLine(filePath);
                 Trace.WriteLine(text);
@@ -928,12 +936,12 @@ namespace JSUnitTest
             using (StreamReader leftReader = new StreamReader(leftPath))
             {
                 // read the left file in its entirety
-                string left = leftReader.ReadToEnd();
+                string left = s_testRunRegex.Replace(leftReader.ReadToEnd(), "$1TESTRUNPATH$2");
                 if (File.Exists(rightPath))
                 {
                     using (StreamReader rightReader = new StreamReader(rightPath))
                     {
-                        string right = rightReader.ReadToEnd();
+                        string right = s_testRunRegex.Replace(rightReader.ReadToEnd(), "$1TESTRUNPATH$2");
 
                         return (string.Compare(left, right) == 0);
                     }
