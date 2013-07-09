@@ -38,6 +38,30 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AjaxMin2005\AjaxMin2005.csproj">
+      <Name>AjaxMin2005</Name>
+      <Project>{468aba80-f65c-4cfa-8e50-5be16c78a170}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\AjaxMinDll2005\AjaxMinDll2005.csproj">
+      <Name>AjaxMinDll2005</Name>
+      <Project>{aaaa10ac-122e-4b87-b458-3ec03a06e331}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\AjaxMinDll2008\AjaxMinDll2008.csproj">
+      <Name>AjaxMinDll2008</Name>
+      <Project>{84c7eddf-23ac-444c-ab0f-d65f8d6de89c}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\AjaxMinDll\AjaxMinDll.csproj">
       <Name>AjaxMinDll</Name>
       <Project>{dfdb930e-1162-4514-a91d-c8595a807f13}</Project>
@@ -49,6 +73,14 @@
     <ProjectReference Include="..\AjaxMinStub\AjaxMinStub.csproj">
       <Name>AjaxMinStub</Name>
       <Project>{3fb14356-8ca2-4a38-b8e0-b38aae8e366b}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\AjaxMinTask2008\AjaxMinTask2008.csproj">
+      <Name>AjaxMinTask2008</Name>
+      <Project>{c1090c91-a7a2-4fc5-b267-b411ebc6e70d}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>

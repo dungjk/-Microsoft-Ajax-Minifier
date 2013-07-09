@@ -25,20 +25,15 @@
         <!-- task stuff in the tools folder -->
         <!--<file src="AjaxMinTask\install.ps1" target="tools"/>
         <file src="AjaxMinTask\uninstall.ps1" target="tools"/>-->
-        
-        <file src="AjaxMinTask\AjaxMin.tasks" target="tools/net40"/>
-        <file src="AjaxMinTask\AjaxMinTask.targets" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="tools/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.pdb" target="tools/net40"/>
 
-        <file src="AjaxMinTask\AjaxMin.tasks" target="tools/net35"/>
-        <file src="AjaxMinTask\AjaxMinTask.targets" target="tools/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.dll" target="tools/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.pdb" target="tools/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.dll" target="tools/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.pdb" target="tools/net35"/>
+        <!-- build files -->
+        <file src="AjaxMinTask\AjaxMin.targets" target="build/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="build/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="build/net40"/>
+
+        <file src="AjaxMinTask\AjaxMin.targets" target="build/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.dll" target="build/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.dll" target="build/net35"/>
 
         <file src="**\*.cs" target="src"/>
     </files>
