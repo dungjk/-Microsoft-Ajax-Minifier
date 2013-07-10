@@ -54,5 +54,12 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-P");
         }
+
+        [TestMethod]
+        public void ES6()
+        {
+            // no errors
+            TestHelper.Instance.RunErrorTest();
+        }
     }
 }

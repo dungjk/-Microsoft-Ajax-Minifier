@@ -35,7 +35,7 @@ namespace Microsoft.Ajax.Utilities
         {
             // define the Global object's properties, and methods
             m_globalProperties = new HashSet<string>(new[] { 
-                "Infinity", "NaN", "undefined", "window", "Image", "JSON", "Math", "XMLHttpRequest", "DOMParser",
+                "Infinity", "NaN", "undefined", "window", "Image", "JSON", "Map", "Math", "Set", "WeakMap", "XMLHttpRequest", "DOMParser",
                 "applicationCache", "clientInformation", "clipboardData", "closed", "console", "document", "event", "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", "opener", "parent", "screen", "self", "sessionStorage", "status", "top"});
 
             m_globalFunctions = new HashSet<string>(new[] {

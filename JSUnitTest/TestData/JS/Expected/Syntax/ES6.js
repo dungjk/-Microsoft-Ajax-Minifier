@@ -1,0 +1,1 @@
+﻿var word,s,v,m,name,value;for(word of["one","two","three"])alert(word);s=Set([1,3,4,2,3,2,17,17,1,17]);for(v of s)alert(v);m=new Map;m.set("one",1);m.set("two",2);for([name,value]of m)alert(name+" = "+value)
