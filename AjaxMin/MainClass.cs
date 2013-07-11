@@ -987,10 +987,25 @@ namespace Microsoft.Ajax.Utilities
 
             // if there are no input groups, we'll be reading from STDIN and should output our
             // headers right now.
+            WriteProgress();
             if (outputGroup.Inputs.Count == 0)
             {
-                // if we write a blank line now, it will cause the header to be output
-                WriteProgress();
+                // output status message so user knows input coming from stdin
+                WriteProgress(AjaxMin.MinifyFromStdIn);
+            }
+            else if (outputGroup.Inputs.Count == 1)
+            {
+                // minifying a single input group. Simple message to let user know what's going on
+                WriteProgress(AjaxMin.MinifySingleInput.FormatInvariant(outputGroup.Inputs[0].Path));
+            }
+            else
+            {
+                // combining and minifying. More complex messaging.
+                WriteProgress(AjaxMin.MinifyingMultipleInputs);
+                foreach (var input in outputGroup.Inputs)
+                {
+                    WriteProgress("\t{0}", input.Path);
+                }
             }
 
             // combine all the source files into a single string, delimited with ///#SOURCE comments so we can track
@@ -1086,9 +1101,6 @@ namespace Microsoft.Ajax.Utilities
                     // only output the size analysis if we aren't echoing the input
                     if (!m_echoInput)
                     {
-                        // output blank line before
-                        WriteProgress();
-
                         // calculate the percentage saved
                         var percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
                         WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(
@@ -1154,6 +1166,7 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         Console.Out.Write(Console.OutputEncoding.GetChars(encodedBytes));
+                        WriteProgress();
                     }
                 }
             }
@@ -1181,9 +1194,6 @@ namespace Microsoft.Ajax.Utilities
                             long crunchedLength = crunchedFileInfo.Length;
                             if (crunchedLength > 0)
                             {
-                                // blank line before
-                                WriteProgress();
-
                                 // calculate the percentage saved by minification
                                 var percentage = Math.Round((1 - ((double)crunchedLength) / sourceLength) * 100, 1);
                                 WriteProgress(AjaxMin.SavingsMessage.FormatInvariant(

@@ -646,6 +646,33 @@ namespace Microsoft.Ajax.Utilities {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Minifying from STDIN.
+        /// </summary>
+        internal static string MinifyFromStdIn {
+            get {
+                return ResourceManager.GetString("MinifyFromStdIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Combining and minifying:.
+        /// </summary>
+        internal static string MinifyingMultipleInputs {
+            get {
+                return ResourceManager.GetString("MinifyingMultipleInputs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Minifying &apos;{0}&apos;.
+        /// </summary>
+        internal static string MinifySingleInput {
+            get {
+                return ResourceManager.GetString("MinifySingleInput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to See the &apos;-?&apos; command-line option for usage details..
         /// </summary>
         internal static string MiniUsageMessage {

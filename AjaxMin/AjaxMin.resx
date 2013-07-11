@@ -638,4 +638,13 @@ Online documentation: http://ajaxmin.codeplex.com/documentation </value>
   <data name="TimerMultiFormat" xml:space="preserve">
     <value>Parse time for input group {0}: {1}ms.</value>
   </data>
+  <data name="MinifyFromStdIn" xml:space="preserve">
+    <value>Minifying from STDIN</value>
+  </data>
+  <data name="MinifyingMultipleInputs" xml:space="preserve">
+    <value>Combining and minifying:</value>
+  </data>
+  <data name="MinifySingleInput" xml:space="preserve">
+    <value>Minifying '{0}'</value>
+  </data>
 </root>
