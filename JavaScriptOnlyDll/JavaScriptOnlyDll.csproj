@@ -309,9 +309,6 @@
     <Compile Include="..\AjaxMinDll\JavaScript\return.cs">
       <Link>JavaScript\return.cs</Link>
     </Compile>
-    <Compile Include="..\AjaxMinDll\JavaScript\scannerexception.cs">
-      <Link>JavaScript\scannerexception.cs</Link>
-    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\ScriptSharpSourceMap.cs">
       <Link>JavaScript\ScriptSharpSourceMap.cs</Link>
     </Compile>
