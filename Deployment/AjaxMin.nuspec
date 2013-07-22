@@ -27,13 +27,15 @@
         <file src="AjaxMinTask\uninstall.ps1" target="tools"/>-->
 
         <!-- build files -->
-        <file src="AjaxMinTask\AjaxMin.targets" target="build/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="build/net40"/>
-        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="build/net40"/>
+        <!-- nuget seems to have a bug for VisualStudio empty website projects, so I can't use their
+             auto-add feature for AjaxMin.targets. If it gets fixed, move back to the build folder. -->
+        <file src="AjaxMinTask\AjaxMin.targets" target="tools/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMinTask.dll" target="tools/net40"/>
+        <file src="AjaxMinTask\bin\$Configuration$\AjaxMin.dll" target="tools/net40"/>
 
-        <file src="AjaxMinTask\AjaxMin.targets" target="build/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.dll" target="build/net35"/>
-        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.dll" target="build/net35"/>
+        <file src="AjaxMinTask\AjaxMin.targets" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMinTask.dll" target="tools/net35"/>
+        <file src="AjaxMinTask2008\bin\$Configuration$\AjaxMin.dll" target="tools/net35"/>
 
         <file src="**\*.cs" target="src"/>
     </files>
