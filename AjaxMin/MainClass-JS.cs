@@ -47,13 +47,6 @@ namespace Microsoft.Ajax.Utilities
             using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
             {
                 var outputIndex = 0;
-                var stopWatch = new Stopwatch();
-                var timerFormat = inputGroups.Count > 1 ? AjaxMin.TimerMultiFormat : AjaxMin.TimerFormat;
-
-                // frequency is ticks per second, so if we divide by 1000.0, then we will have a
-                // double-precision value indicating the ticks per millisecond. Divide this into the
-                // number of ticks we measure, and we'll get the milliseconds in double-precision.
-                var frequency = Stopwatch.Frequency / 1000.0;
                 for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
                 {
                     var inputGroup = inputGroups[inputGroupIndex];
@@ -100,21 +93,12 @@ namespace Microsoft.Ajax.Utilities
                     }
 
                     // start the timer and parse the input code
-                    stopWatch.Start();
                     var scriptBlock = parser.Parse(settings);
 
-                    // stop timing and always output the results to debug console. If we used the -timer switch,
-                    // output as progress as well.
-                    stopWatch.Stop();
-                    var timerMessage = string.Format(CultureInfo.CurrentUICulture, timerFormat, inputGroupIndex + 1, stopWatch.ElapsedTicks / frequency);
-                    Debug.WriteLine(timerMessage);
                     if (m_outputTimer)
                     {
-                        WriteProgress(timerMessage);
+                        OutputTimingPoints(parser, inputGroupIndex, inputGroups.Count);
                     }
-
-                    // reset the timer so we can use it again next time instead of creating a whole new instance
-                    stopWatch.Reset();
 
                     if (!settings.PreprocessOnly && !m_echoInput)
                     {
@@ -169,6 +153,46 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return returnCode;
+        }
+
+        private void OutputTimingPoints(JSParser parser, int groupIndex, int groupCount)
+        {
+            // frequency is ticks per second, so if we divide by 1000.0, then we will have a
+            // double-precision value indicating the ticks per millisecond. Divide this into the
+            // number of ticks we measure, and we'll get the milliseconds in double-precision.
+            var frequency = Stopwatch.Frequency / 1000.0;
+
+            // step names
+            var stepNames = new[] { AjaxMin.StepParse, AjaxMin.StepResolve, AjaxMin.StepReorder, 
+                                                AjaxMin.StepAnalyzeNode, AjaxMin.StepAnalyzeScope, AjaxMin.StepAutoRename, 
+                                                AjaxMin.StepEvaluateLiterals, AjaxMin.StepFinalPass, AjaxMin.StepValidateNames };
+
+            // and output other steps to debug
+            var stepCount = parser.TimingPoints.Count;
+            var latestTimingPoint = 0L;
+            var previousTimingPoint = 0L;
+            var sb = new StringBuilder();
+            for (var ndx = stepCount - 1; ndx >= 0; --ndx)
+            {
+                if (parser.TimingPoints[ndx] != 0)
+                {
+                    // 1-based step index
+                    var stepIndex = stepCount - ndx;
+                    latestTimingPoint = parser.TimingPoints[ndx];
+                    var deltaMS = (latestTimingPoint - previousTimingPoint) / frequency;
+                    previousTimingPoint = latestTimingPoint;
+
+                    sb.AppendFormat(AjaxMin.Culture, AjaxMin.TimerStepFormat, stepIndex, deltaMS, stepNames[stepIndex - 1]);
+                    sb.AppendLine();
+                }
+            }
+
+            var timerFormat = groupCount > 1 ? AjaxMin.TimerMultiFormat : AjaxMin.TimerFormat;
+            var timerMessage = string.Format(CultureInfo.CurrentUICulture, timerFormat, groupIndex + 1, latestTimingPoint / frequency);
+            Debug.WriteLine(timerMessage);
+            Debug.Write(sb.ToString());
+            WriteProgress(timerMessage);
+            WriteProgress(sb.ToString());
         }
 
         #endregion

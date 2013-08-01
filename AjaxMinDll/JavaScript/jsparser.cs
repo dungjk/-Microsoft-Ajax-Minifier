@@ -95,6 +95,9 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public TextWriter EchoWriter { get; set; }
 
+        private long[] m_timingPoints;
+        public IList<long> TimingPoints { get { return m_timingPoints; } }
+
         public event EventHandler<JScriptExceptionEventArgs> CompilerError;
         public event EventHandler<UndefinedReferenceEventArgs> UndefinedReference;
 
@@ -365,6 +368,11 @@ namespace Microsoft.Ajax.Utilities
             // start of a new module
             m_newModule = true;
 
+            var timePoints = m_timingPoints = new long[9];
+            var timeIndex = timePoints.Length;
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             Block scriptBlock = null;
             Block returnBlock = null;
             try
@@ -431,26 +439,33 @@ namespace Microsoft.Ajax.Utilities
                 m_currentToken.HandleError(JSError.ApplicationError, true);
             }
 
+            timePoints[--timeIndex] = stopWatch.ElapsedTicks;
+
             if (scriptBlock != null)
             {
                 // resolve everything
                 ResolutionVisitor.Apply(scriptBlock, GlobalScope, m_settings);
             }
 
+            timePoints[--timeIndex] = stopWatch.ElapsedTicks;
+
             if (scriptBlock != null && Settings.MinifyCode && !Settings.PreprocessOnly)
             {
                 // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
                 // unnests blocks, identifies prologue directives, and sets the strict mode on scopes. 
                 ReorderScopeVisitor.Apply(scriptBlock, this);
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
 
                 // analyze the entire node tree (needed for hypercrunch)
                 // root to leaf (top down)
                 var analyzeVisitor = new AnalyzeNodeVisitor(this);
                 scriptBlock.Accept(analyzeVisitor);
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
 
                 // analyze the scope chain (also needed for hypercrunch)
                 // root to leaf (top down)
                 GlobalScope.AnalyzeScope();
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
 
                 // if we want to crunch any names....
                 if (m_settings.LocalRenaming != LocalRenaming.KeepAll
@@ -462,6 +477,8 @@ namespace Microsoft.Ajax.Utilities
                     GlobalScope.AutoRenameFields();
                 }
 
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
+
                 // if we want to evaluate literal expressions, do so now
                 if (m_settings.EvalLiteralExpressions)
                 {
@@ -469,13 +486,17 @@ namespace Microsoft.Ajax.Utilities
                     scriptBlock.Accept(visitor);
                 }
 
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
+
                 // make the final cleanup pass
                 FinalPassVisitor.Apply(scriptBlock, this);
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
 
                 // we want to walk all the scopes to make sure that any generated
                 // variables that haven't been crunched have been assigned valid
                 // variable names that don't collide with any existing variables.
                 GlobalScope.ValidateGeneratedNames();
+                timePoints[--timeIndex] = stopWatch.ElapsedTicks;
             }
 
             if (returnBlock != null && returnBlock.Parent != null)
