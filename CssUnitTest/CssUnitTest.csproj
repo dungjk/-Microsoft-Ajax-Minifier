@@ -150,6 +150,7 @@
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_hex.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_major.css" />
+    <Content Include="TestData\CSS\Expected\Replacements\CssReplacementTokens.css" />
     <Content Include="TestData\CSS\Expected\Replacements\MajorColors.css" />
     <Content Include="TestData\CSS\Expected\Replacements\MajorColors_strict.css" />
     <Content Include="TestData\CSS\Expected\Replacements\StringReplacement.css" />
@@ -235,6 +236,7 @@
     <Content Include="TestData\CSS\Input\Errors\UnterminatedString.css" />
     <Content Include="TestData\CSS\Input\Hacks\IEhacks.css" />
     <Content Include="TestData\CSS\Input\Replacements\ColorNames.css" />
+    <Content Include="TestData\CSS\Input\Replacements\CssReplacementTokens.css" />
     <Content Include="TestData\CSS\Input\Replacements\MajorColors.css" />
     <Content Include="TestData\CSS\Input\Replacements\StringReplacement.css" />
     <Content Include="TestData\CSS\Input\Replacements\ValueReplacement.css" />

@@ -59,5 +59,11 @@ namespace CssUnitTest
       {
           TestHelper.Instance.RunTest("-colors:major");
       }
+
+      [TestMethod]
+      public void CssReplacementTokens()
+      {
+          TestHelper.Instance.RunTest();
+      }
   }
 }
