@@ -15,12 +15,10 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Xml;
 
@@ -36,44 +34,41 @@ namespace Microsoft.Ajax.Utilities
         {
             var returnCode = 0;
             var settings = switchParser.JSSettings;
+            var currentSourceOrigin = SourceOrigin.Project;
 
             // blank line before
             WriteProgress();
 
-            GlobalScope sharedGlobalScope = null;
-            var originalTermSetting = settings.TermSemicolons;
+            // create our parser object and hook up some events
+            var parser = new JSParser();
+            parser.UndefinedReference += OnUndefinedReference;
+            parser.CompilerError += (sender, ea) =>
+            {
+                var error = ea.Error;
+                if (currentSourceOrigin == SourceOrigin.Project || error.Severity == 0)
+                {
+                    // ignore severity values greater than our severity level
+                    // also ignore errors that are in our ignore list (if any)
+                    if (error.Severity <= switchParser.WarningLevel)
+                    {
+                        // we found an error
+                        m_errorsFound = true;
+
+                        // write the error out
+                        WriteError(error.ToString());
+                    }
+                }
+            };
 
             // output visitor requires a text writer, so make one from the string builder
             using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
             {
                 var outputIndex = 0;
+                var originalTermSetting = settings.TermSemicolons;
                 for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
                 {
                     var inputGroup = inputGroups[inputGroupIndex];
-
-                    // create the a parser object for our chunk of code
-                    JSParser parser = new JSParser(inputGroup.Source);
-                    parser.GlobalScope = sharedGlobalScope;
-
-                    // hook the engine events
-                    parser.UndefinedReference += OnUndefinedReference;
-                    parser.CompilerError += (sender, ea) =>
-                    {
-                        var error = ea.Error;
-                        if (inputGroup.Origin == SourceOrigin.Project || error.Severity == 0)
-                        {
-                            // ignore severity values greater than our severity level
-                            // also ignore errors that are in our ignore list (if any)
-                            if (error.Severity <= switchParser.WarningLevel)
-                            {
-                                // we found an error
-                                m_errorsFound = true;
-
-                                // write the error out
-                                WriteError(error.ToString());
-                            }
-                        }
-                    };
+                    currentSourceOrigin = inputGroup.Origin;
 
                     // for all but the last item, we want the term-semicolons setting to be true.
                     // but for the last entry, set it back to its original value
@@ -91,9 +86,20 @@ namespace Microsoft.Ajax.Utilities
                             writer.Write(settings.LineTerminator);
                         }
                     }
+                    else
+                    {
+                        // not a preprocess-only or echo - make sure the echo writer is null
+                        parser.EchoWriter = null;
+                    }
 
-                    // start the timer and parse the input code
-                    var scriptBlock = parser.Parse(settings);
+                    // parse the input code. Don't use a source context because it should already be
+                    // in the source using ///#SOURCE comments as we assembled the input groups.
+                    var scriptBlock = parser.Parse(inputGroup.Source, settings);
+
+                    if (m_errorsFound)
+                    {
+                        WriteProgress();
+                    }
 
                     if (m_outputTimer)
                     {
@@ -130,9 +136,6 @@ namespace Microsoft.Ajax.Utilities
                             WriteProgress(AjaxMin.NoParsedCode);
                         }
                     }
-
-                    // save the global scope for later
-                    sharedGlobalScope = parser.GlobalScope;
                 }
 
                 // give the symbols map a chance to write something at the bottom of the source file
@@ -149,7 +152,7 @@ namespace Microsoft.Ajax.Utilities
                 WriteProgress();
 
                 // output our report
-                CreateReport(sharedGlobalScope, switchParser);
+                CreateReport(parser.GlobalScope, switchParser);
             }
 
             return returnCode;
@@ -370,7 +373,7 @@ namespace Microsoft.Ajax.Utilities
             var parser = sender as JSParser;
             if (parser != null)
             {
-                parser.GlobalScope.AddUndefinedReference(e.Exception);
+                parser.GlobalScope.AddUndefinedReference(e.Reference);
             }
         }
 

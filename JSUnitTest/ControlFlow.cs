@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -53,7 +54,7 @@ namespace JSUnitTest
         [TestMethod()]
         public void Debugger_D()
         {
-            TestHelper.Instance.RunTest("-debug:N -kill:0x400000000000");
+            TestHelper.Instance.RunTest("-debug:N,Debug,$Debug,WAssert,Msn.Debug,Web.Debug -kill:0x400000000000");
         }
 
         [TestMethod()]
@@ -120,13 +121,19 @@ namespace JSUnitTest
         [TestMethod()]
         public void Labels()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunErrorTest("-ignore:JS1267 -rename:none -unused:keep", JSError.NoLabel, JSError.NoLabel, JSError.UnusedLabel, JSError.UnusedLabel);
         }
 
         [TestMethod()]
         public void Labels_H()
         {
-            TestHelper.Instance.RunTest("-rename:all");
+            TestHelper.Instance.RunErrorTest("-ignore:JS1267", JSError.NoLabel, JSError.NoLabel, JSError.UnusedLabel, JSError.UnusedLabel);
+        }
+
+        [TestMethod()]
+        public void Labels_keep()
+        {
+            TestHelper.Instance.RunErrorTest("-ignore:JS1267 -unused:keep", JSError.NoLabel, JSError.NoLabel, JSError.UnusedLabel, JSError.UnusedLabel);
         }
 
         [TestMethod()]
@@ -176,7 +183,7 @@ namespace JSUnitTest
         {
             // kill switch: IfExpressionsToExpression, CombineAdjacentExpressionStatements, IfNotTrueFalseToIfFalseTrue,
             // IfConditionCallToConditionAndCall
-            TestHelper.Instance.RunTest("-reorder:no -kill:0x21800002000");
+            TestHelper.Instance.RunTest("-reorder:no -kill:0x21804002000");
         }
 
         [TestMethod()]

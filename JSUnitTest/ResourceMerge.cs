@@ -47,5 +47,12 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-res:Strings.Foo.Bar");
         }
+
+        [TestMethod]
+        public void ReplacementTokens()
+        {
+            // parse replacement tokens without error
+            TestHelper.Instance.RunErrorTest("-rename:none");
+        }
     }
 }

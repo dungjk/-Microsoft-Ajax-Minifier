@@ -276,7 +276,8 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                 // first check the time of the manifest file itself. If it's newer than the output
                 // time, then we need to process. Otherwise we need to check each input source file.
-                if (manifestModifiedTime > outputFileTime)
+                // also rebuild if they're equal, just in case.
+                if (manifestModifiedTime >= outputFileTime)
                 {
                     // the manifest itself has been changed after the last output that was generated,
                     // so yes: we need to process this group.
@@ -291,7 +292,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                         var fileInfo = new FileInfo(input.Path);
                         if (fileInfo.Exists)
                         {
-                            if (fileInfo.LastWriteTimeUtc > outputFileTime)
+                            // equal time also means process the output, because that is just SO close to
+                            // the input being newer. Plus, someone might have the input be the output, so
+                            // the times will be equal and we will want to process it.
+                            if (fileInfo.LastWriteTimeUtc >= outputFileTime)
                             {
                                 processGroup = true;
                                 break;
@@ -336,7 +340,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     foreach (var resource in outputGroup.Resources)
                     {
                         var fileInfo = new FileInfo(resource.Path);
-                        if (fileInfo.Exists && fileInfo.LastWriteTimeUtc > outputFileTime)
+                        if (fileInfo.Exists && fileInfo.LastWriteTimeUtc >= outputFileTime)
                         {
                             processGroup = true;
                             break;
@@ -373,7 +377,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 {
                     // extension is good -- check the input time. If it's later than the output,
                     // bail early because we now know we want to process the output group.
-                    if (fileInfo.LastWriteTimeUtc > outputFileTime)
+                    if (fileInfo.LastWriteTimeUtc >= outputFileTime)
                     {
                         return true;
                     }

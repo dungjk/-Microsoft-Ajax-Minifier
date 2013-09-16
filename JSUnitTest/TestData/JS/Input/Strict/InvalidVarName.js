@@ -2,7 +2,7 @@
 
 function test1(obj)
 {
-    // eval not allowed to be a var name
+    // eval and arguments not allowed to be a var name
     var eval;
     for(var arguments in obj)
     {
@@ -40,7 +40,7 @@ function test4(a)
     {
         return foo[a];
     }
-    catch(eval)
+    catch(eval) // eval not allowed to be catch parameter
     {
         return "";
     }
@@ -52,7 +52,7 @@ function test5(a)
     {
         return foo[a];
     }
-    catch(arguments)
+    catch(arguments) // arguments not allowed to be catch parameter
     {
         return "";
     }

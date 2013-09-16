@@ -11,6 +11,7 @@
       <Word>charset</Word>
       <Word>codeplex</Word>
       <Word>decls</Word>
+      <Word>ecma</Word>
       <Word>elif</Word>
       <Word>enc</Word>
       <Word>eval</Word>
@@ -19,6 +20,8 @@
       <Word>expr</Word>
       <Word>fnames</Word>
       <Word>gzip</Word>
+      <Word>incrementer</Word>
+      <Word>js</Word>
       <Word>minifier</Word>
       <Word>minification</Word>
       <Word>ms</Word>
@@ -28,6 +31,7 @@
       <Word>norename</Word>
       <Word>onlyref</Word>
       <Word>progid</Word>
+      <Word>renameable</Word>
       <Word>rgb</Word>
       <Word>safeall</Word>
       <Word>stderr</Word>

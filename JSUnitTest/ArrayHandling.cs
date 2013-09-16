@@ -19,47 +19,53 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
 {
-  /// <summary>
-  ///This is a test class for Microsoft.Ajax.Utilities.MainClass and is intended
-  ///to contain all Microsoft.Ajax.Utilities.MainClass Unit Tests
-  ///</summary>
-  [TestClass()]
-  public class ArrayHandling
-  {
-    [TestMethod()]
-    public void Array()
+    /// <summary>
+    ///This is a test class for Microsoft.Ajax.Utilities.MainClass and is intended
+    ///to contain all Microsoft.Ajax.Utilities.MainClass Unit Tests
+    ///</summary>
+    [TestClass()]
+    public class ArrayHandling
     {
-        TestHelper.Instance.RunErrorTest(JSError.UndeclaredFunction, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma);
-    }
+        [TestMethod()]
+        public void Array()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.UndeclaredFunction, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma, JSError.ArrayLiteralTrailingComma);
+        }
 
-    [TestMethod()]
-    public void Array_L()
-    {
-      TestHelper.Instance.RunTest("-new:keep");
-    }
+        [TestMethod()]
+        public void Array_L()
+        {
+            TestHelper.Instance.RunTest("-new:keep");
+        }
 
-    [TestMethod()]
-    public void Join()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod()]
+        public void Join()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod()]
-    public void Length()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod()]
+        public void Length()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod()]
-    public void Reverse()
-    {
-      TestHelper.Instance.RunTest();
-    }
+        [TestMethod()]
+        public void Reverse()
+        {
+            TestHelper.Instance.RunTest();
+        }
 
-    [TestMethod()]
-    public void Sort()
-    {
-      TestHelper.Instance.RunTest();
+        [TestMethod()]
+        public void Sort()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod()]
+        public void Spread()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
-  }
 }

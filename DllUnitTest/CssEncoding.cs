@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -90,11 +89,11 @@ namespace DllUnitTest
         [TestMethod]
         public void ParseNull()
         {
-            var errors = new List<CssException>();
+            var errors = new List<ContextError>();
             var cssParser = new CssParser();
             cssParser.CssError += (sender, ea) =>
             {
-                errors.Add(ea.Exception);
+                errors.Add(ea.Error);
             };
 
             // parse it
@@ -114,11 +113,11 @@ namespace DllUnitTest
                 var source = ReadFileAsAscii(Path.Combine(s_inputFolder, fileName), encoding);
 
                 // set up the parser and the error condition
-                var errors = new List<CssException>();
+                var errors = new List<ContextError>();
                 var cssParser = new CssParser();
                 cssParser.CssError += (sender, ea) =>
                 {
-                    errors.Add(ea.Exception);
+                    errors.Add(ea.Error);
                 };
 
                 // parse it
@@ -138,7 +137,7 @@ namespace DllUnitTest
                 {
                     while (ndxExpected < expectedErrors.Length && ndxActual < errors.Count)
                     {
-                        if (errors[ndxActual].Error == (int)expectedErrors[ndxExpected])
+                        if (errors[ndxActual].ErrorNumber == (int)expectedErrors[ndxExpected])
                         {
                             // log the match and move to the next
                             Trace.WriteLine("Matched error: " + expectedErrors[ndxExpected]);
@@ -148,7 +147,7 @@ namespace DllUnitTest
                         else
                         {
                             // log the match and move to the next ACTUAL error (but not the expected)
-                            Trace.WriteLine("Unexpected error: " + (CssErrorCode)errors[ndxActual].Error);
+                            Trace.WriteLine("Unexpected error: " + (CssErrorCode)errors[ndxActual].ErrorNumber);
                             ++ndxActual;
 
                             // make sure we fail this test
@@ -173,7 +172,7 @@ namespace DllUnitTest
                     mismatch = true;
                     for (; ndxActual < errors.Count; ++ndxActual)
                     {
-                        Trace.WriteLine("Unexpected error: " + (CssErrorCode)errors[ndxActual].Error);
+                        Trace.WriteLine("Unexpected error: " + (CssErrorCode)errors[ndxActual].ErrorNumber);
                     }
                 }
 

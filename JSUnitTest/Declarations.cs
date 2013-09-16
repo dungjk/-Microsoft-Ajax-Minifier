@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -70,7 +71,22 @@ namespace JSUnitTest
         [TestMethod()]
         public void Identifiers()
         {
-            TestHelper.Instance.RunTest();
+            // just the one flag for "module"
+            TestHelper.Instance.RunErrorTest("-rename:none");
+        }
+
+        [TestMethod()]
+        public void Identifiers_h()
+        {
+            // just the one flag for "module"
+            TestHelper.Instance.RunErrorTest();
+        }
+
+        [TestMethod()]
+        public void Identifiers_ascii()
+        {
+            // just the one flag for "module"
+            TestHelper.Instance.RunErrorTest("-rename:none -enc:out ascii");
         }
 
         [TestMethod()]

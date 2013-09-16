@@ -766,14 +766,14 @@ namespace JSUnitTest
             Trace.WriteLine(inputPath);
             Trace.WriteLine(jsSource);
 
-            bool testPassed = true;
-            List<JSError> expectedErrorList = new List<JSError>(expectedErrorArray);
+            var testPassed = true;
+            var expectedErrorList = new List<JSError>(expectedErrorArray);
 
-            List<JScriptExceptionEventArgs> errorList = new List<JScriptExceptionEventArgs>();
-            var parser = new JSParser(jsSource);
+            var errorList = new List<ContextError>();
+            var parser = new JSParser();
             parser.CompilerError += (source, e) =>
                 {
-                    errorList.Add(e);
+                    errorList.Add(e.Error);
                 };
 
             var sb = new StringBuilder();
@@ -785,7 +785,7 @@ namespace JSUnitTest
                 }
 
                 // normal -- just run it through the parser
-                var block = parser.Parse(switchParser.JSSettings);
+                var block = parser.Parse(new DocumentContext(jsSource) { FileContext = inputPath }, switchParser.JSSettings);
                 if (!switchParser.JSSettings.PreprocessOnly)
                 {
                     // look at the settings for the proper output visitor
@@ -817,22 +817,20 @@ namespace JSUnitTest
             Trace.WriteLine("---ERRORS---");
             foreach (var err in errorList)
             {
-                Trace.WriteLine(err.Error.ToString());
+                Trace.WriteLine(((JSError)err.ErrorNumber).ToString());
             }
 
             Trace.WriteLine(string.Empty);
             Trace.Indent();
-            foreach (var ea in errorList)
+            foreach (var err in errorList)
             {
-                var ex = ea.Exception;
-
                 // log the error
                 Trace.WriteLine(string.Empty);
-                Trace.WriteLine(string.Format("Error JS{0} at Line {1}, Column {2}: {3}", (int)ex.ErrorCode, ex.Line, ex.Column, ex.ErrorSegment));
+                Trace.WriteLine(string.Format("Error {0} at Line {1}, Column {2}: {3}", err.ErrorCode, err.StartLine, err.StartColumn, err.Message));
                 Trace.Indent();
-                Trace.WriteLine(ex.Message);
+                Trace.WriteLine(err.Message);
 
-                int index = expectedErrorList.IndexOf(ex.ErrorCode);
+                int index = expectedErrorList.IndexOf((JSError)err.ErrorNumber);
                 if (index >= 0)
                 {
                     // expected error -- remove it from the list so we can tell what we're missing later

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -78,10 +77,7 @@ namespace DllUnitTest
 
             // parse the source, keeping track of the errors
             var errors = new List<ContextError>();
-            var parser = new JSParser(source);
-
-            // set it to something we won't actually see
-            parser.FileContext = OriginalFileContext;
+            var parser = new JSParser();
             parser.CompilerError += (sender, ea) =>
                 {
                     errors.Add(ea.Error);
@@ -91,8 +87,8 @@ namespace DllUnitTest
             {
                 LocalRenaming = LocalRenaming.KeepAll
             };
-            var block = parser.Parse(settings);
-            var minified = block.ToCode();
+            var block = parser.Parse(new DocumentContext(source) { FileContext = OriginalFileContext }, settings);
+            var minified = OutputVisitor.Apply(block, parser.Settings);
 
             // write the output so we can diagnose later if we need to
             if (!Directory.Exists(OutputFolder))

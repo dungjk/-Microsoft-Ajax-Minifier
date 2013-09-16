@@ -3,11 +3,11 @@
   <Description>This is a default test run configuration for a local test run.</Description>
   <Deployment>
     <DeploymentItem filename="CssUnitTest\TestData\" />
-    <DeploymentItem filename="DllUnitTest\TestData\" />
     <DeploymentItem filename="JSUnitTest\TestData\" />
+    <DeploymentItem filename="DllUnitTest\TestData\" />
   </Deployment>
   <Execution>
-    <Timeouts testTimeout="300000" />
+    <Timeouts runTimeout="1800000" testTimeout="10000" />
     <TestTypeSpecific>
       <WebTestRunConfiguration testTypeId="4e7599fa-5ecb-43e9-a887-cd63cf72d207">
         <Browser name="Internet Explorer 8.0" MaxConnections="6">

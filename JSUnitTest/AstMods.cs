@@ -184,7 +184,7 @@ namespace JSUnitTest
         [TestMethod]
         public void IfContinue()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-unused:keep");
         }
 
         [TestMethod]

@@ -94,7 +94,7 @@ namespace DllUnitTest
             // run the framework file through a parser with standard settings (except for multi-line mode)
             // there should be only the errors specified in the other columns in the CSV file (if any)
             var errorCount = 0;
-            var parser = new JSParser(sourceCode);
+            var parser = new JSParser();
             parser.CompilerError += (sender, ea) =>
                 {
                     if (ea.Error.IsError)
@@ -103,8 +103,8 @@ namespace DllUnitTest
                         ++errorCount;
                     }
                 };
-            var block = parser.Parse(null);//new CodeSettings() { OutputMode = OutputMode.MultipleLines });
-            var minifiedCode = block.ToCode();
+            var block = parser.Parse(new DocumentContext(sourceCode) { FileContext = filePath });//, new CodeSettings() { OutputMode = OutputMode.MultipleLines });
+            var minifiedCode = OutputVisitor.Apply(block, parser.Settings);
 
             // save the results in Output folder
             var outputPath = Path.Combine(TestContext.DeploymentDirectory, @"Dll\Output\Frameworks", fileName);
@@ -128,7 +128,7 @@ namespace DllUnitTest
 
             // now run the output through another parser with no minify
             // settings -- there should DEFINITELY be no errors this time.
-            parser = new JSParser(minifiedCode);
+            parser = new JSParser();
             parser.CompilerError += (sender, ea) =>
             {
                 if (ea.Error.IsError)
@@ -137,7 +137,7 @@ namespace DllUnitTest
                     ++errorCount;
                 }
             };
-            block = parser.Parse(new CodeSettings() { MinifyCode = false });
+            block = parser.Parse(minifiedCode, new CodeSettings() { MinifyCode = false });
 
             Assert.IsTrue(errorCount == 0, "Parsing minified " + fileName + " produces errors!");
         }

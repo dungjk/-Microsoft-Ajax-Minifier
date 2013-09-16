@@ -86,5 +86,12 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-rename:all -evals:immediate");
         }
+
+        [TestMethod]
+        public void LabelKeyword()
+        {
+            // ignore the unused-label warning
+            TestHelper.Instance.RunErrorTest("-ignore:JS1021");
+        }
     }
 }

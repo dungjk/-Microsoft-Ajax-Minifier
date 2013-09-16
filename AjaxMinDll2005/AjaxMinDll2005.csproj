@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>..\AjaxMinDll\Migrated rules for AjaxMinDll.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -36,6 +37,7 @@
     <DefineConstants>TRACE;NET_20</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -48,6 +50,9 @@
   <ItemGroup>
     <Compile Include="..\AjaxMinDll\CommonSettings.cs">
       <Link>CommonSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\CommonStrings.Designer.cs">
+      <Link>CommonStrings.Designer.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\Configuration.cs">
       <Link>Configuration.cs</Link>
@@ -109,6 +114,15 @@
     <Compile Include="..\AjaxMinDll\JavaScript\binaryop.cs">
       <Link>JavaScript\binaryop.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\BindingIdentifier.cs">
+      <Link>JavaScript\BindingIdentifier.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\BindingsVisitor.cs">
+      <Link>JavaScript\BindingsVisitor.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\BindingTransform.cs">
+      <Link>JavaScript\BindingTransform.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\block.cs">
       <Link>JavaScript\block.cs</Link>
     </Compile>
@@ -148,11 +162,26 @@
     <Compile Include="..\AjaxMinDll\JavaScript\ccstatement.cs">
       <Link>JavaScript\ccstatement.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ClassNode.cs">
+      <Link>JavaScript\ClassNode.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\codesettings.cs">
       <Link>JavaScript\codesettings.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\CommaOperator.cs">
       <Link>JavaScript\CommaOperator.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ComprehensionClause.cs">
+      <Link>JavaScript\ComprehensionClause.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ComprehensionForClause.cs">
+      <Link>JavaScript\ComprehensionForClause.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ComprehensionIfClause.cs">
+      <Link>JavaScript\ComprehensionIfClause.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ComprehensionNode.cs">
+      <Link>JavaScript\ComprehensionNode.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\conditional.cs">
       <Link>JavaScript\conditional.cs</Link>
@@ -202,6 +231,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\EvaluateLiteralVisitor.cs">
       <Link>JavaScript\EvaluateLiteralVisitor.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ExportNode.cs">
+      <Link>JavaScript\ExportNode.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\expr.cs">
       <Link>JavaScript\expr.cs</Link>
     </Compile>
@@ -232,14 +264,32 @@
     <Compile Include="..\AjaxMinDll\JavaScript\if.cs">
       <Link>JavaScript\if.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\IModuleReference.cs">
+      <Link>JavaScript\IModuleReference.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\importantcomment.cs">
       <Link>JavaScript\importantcomment.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ImportExportSpecifier.cs">
+      <Link>JavaScript\ImportExportSpecifier.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ImportExportStatement.cs">
+      <Link>JavaScript\ImportExportStatement.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ImportNode.cs">
+      <Link>JavaScript\ImportNode.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\INameDeclaration.cs">
       <Link>JavaScript\INameDeclaration.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\INameReference.cs">
       <Link>JavaScript\INameReference.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\Initializer.cs">
+      <Link>JavaScript\Initializer.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\IRenameable.cs">
+      <Link>JavaScript\IRenameable.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\ISourceMap.cs">
       <Link>JavaScript\ISourceMap.cs</Link>
@@ -255,9 +305,6 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>JScript.resx</DependentUpon>
-    </Compile>
-    <Compile Include="..\AjaxMinDll\JavaScript\jscriptexception.cs">
-      <Link>JavaScript\jscriptexception.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\jserror.cs">
       <Link>JavaScript\jserror.cs</Link>
@@ -301,6 +348,12 @@
     <Compile Include="..\AjaxMinDll\JavaScript\missing.cs">
       <Link>JavaScript\missing.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ModuleDeclaration.cs">
+      <Link>JavaScript\ModuleDeclaration.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ModuleScope.cs">
+      <Link>JavaScript\ModuleScope.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\NewParensVisitor.cs">
       <Link>JavaScript\NewParensVisitor.cs</Link>
     </Compile>
@@ -328,6 +381,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\ReorderScopeVisitor.cs">
       <Link>JavaScript\ReorderScopeVisitor.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\RequiresSeparatorVisitor.cs">
+      <Link>JavaScript\RequiresSeparatorVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\ResolutionVisitor.cs">
       <Link>JavaScript\ResolutionVisitor.cs</Link>
     </Compile>
@@ -348,6 +404,12 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\switchcase.cs">
       <Link>JavaScript\switchcase.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\TemplateLiteral.cs">
+      <Link>JavaScript\TemplateLiteral.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\TemplateLiteralExpression.cs">
+      <Link>JavaScript\TemplateLiteralExpression.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\thisliteral.cs">
       <Link>JavaScript\thisliteral.cs</Link>
@@ -401,6 +463,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\AjaxMinDll\CommonStrings.resx">
+      <Link>CommonStrings.resx</Link>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\AjaxMinDll\Css\CssStrings.resx">
       <Link>Css\CssStrings.resx</Link>
       <Generator>ResXFileCodeGenerator</Generator>

@@ -13,9 +13,22 @@ function yes2()
     return [1,,,,5].length;
 }
 
+function yes3()
+{
+    // recurse the spreads
+    return [1, 2, ...[3, ...[4, 5], 6], 7].length;
+}
+
 function no1()
 {
     // the trailing commas mean there are cross-browser differences in the
     // length of the literal, so don't evaluate it
     return [1,2,3,,].length;
+}
+
+function no2()
+{
+    // one of the spreads isn't actually an array literal, so don't
+    // evaluate it, even though it's a constant.
+    return [1, 2, ...[3, ...4, 5], 6].length;
 }

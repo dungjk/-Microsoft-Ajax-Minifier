@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -59,7 +60,35 @@ namespace JSUnitTest
         public void ES6()
         {
             // no errors
+            TestHelper.Instance.RunErrorTest("-rename:none");
+        }
+
+        [TestMethod]
+        public void ES6_h()
+        {
+            // no errors
             TestHelper.Instance.RunErrorTest();
+        }
+
+        [TestMethod]
+        public void NonES6Yield()
+        {
+            // no errors
+            TestHelper.Instance.RunErrorTest();
+        }
+
+        [TestMethod]
+        public void NonES6Yield_norename()
+        {
+            // no errors
+            TestHelper.Instance.RunErrorTest("-rename:none");
+        }
+
+        [TestMethod]
+        public void BindingPatterns()
+        {
+            // no errors other than unreferenced arguments
+            TestHelper.Instance.RunErrorTest("-ignore:JS1270,JS1268", JSError.BindingPatternRequiresInitializer);
         }
     }
 }

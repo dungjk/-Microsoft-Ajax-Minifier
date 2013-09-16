@@ -13,10 +13,10 @@
       for(var i in window) alert(i);
     ***********************************************************************/
 
-    //@if(true){alert('Hi');} 
+    //@if(true){alert('first');} 
 
     /*@
-    if(true){alert('Hi');}
+    if(true){alert('second');}
     @*/ 
 }
 

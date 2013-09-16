@@ -27,3 +27,21 @@ function resetTop(elem)
     $elem.css({marginTop: "auto"});
     return prev;
 }
+
+var es6 = {
+        // regular property/value syntax
+        myProperty: 42,
+
+        // ES5 getter/setter syntax
+        get foo() { return this.foo; },
+        set foo(value) { this.foo = value; },
+
+        // ES6 implicit property name from a lookup name
+        location,
+
+        // ES6 method (with an unused parameter)
+        myMethod(one, two, three) { alert(one + two); },
+
+        // ES6 generator method (with an unsed parameter)
+        *myGenerator(array, max) { for(var item of array) yield item; },
+    };

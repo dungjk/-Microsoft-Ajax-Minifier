@@ -1,1 +1,1 @@
-function foo(bar,ack){return bar+ack}
+function foo(bar,...ack){return bar+ack.join(" and ")}

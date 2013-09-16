@@ -17,6 +17,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Resources;
@@ -600,7 +601,6 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "Microsoft.Ajax.Utilities.ManifestUtilities+FileReadBuilder.Annotate(System.String)", Justification = "context comment string is not localizeable")]
         private static void ReadFileWithContext(FileReadBuilder fileReadBuilder, string filePath, CodeType codeType, Encoding encoding)
         {
             if (fileReadBuilder.Length > 0)
@@ -669,6 +669,8 @@ namespace Microsoft.Ajax.Utilities
                 m_rawContent.Append(text);
             }
 
+
+            [Localizable(false)]
             public void Annotate(string text)
             {
                 m_annotatedContent.Append(text);

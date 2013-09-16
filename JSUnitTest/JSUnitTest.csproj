@@ -47,6 +47,7 @@
     <OutputPath>.\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>false</DebugSymbols>
@@ -54,6 +55,7 @@
     <OutputPath>.\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
@@ -70,9 +72,11 @@
     <Compile Include="BlockOpts.cs" />
     <Compile Include="Booleans.cs" />
     <Compile Include="CatchVariable.cs" />
+    <Compile Include="Classes.cs" />
     <Compile Include="CommandLine.cs" />
     <Compile Include="Comments.cs" />
     <Compile Include="Common\TestHelper.cs" />
+    <Compile Include="Comprehensions.cs" />
     <Compile Include="ConditionalCompilation.cs" />
     <Compile Include="ControlFlow.cs" />
     <Compile Include="DebugNamespaces.cs" />
@@ -81,6 +85,7 @@
     <Compile Include="GlobalMethods.cs" />
     <Compile Include="LexicalDeclarations.cs" />
     <Compile Include="Literals.cs" />
+    <Compile Include="Modules.cs" />
     <Compile Include="NoMinify.cs" />
     <Compile Include="ObjectCreation.cs" />
     <Compile Include="Operators.cs" />
@@ -105,11 +110,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestData\JS\Expected\ArrayHandling\Array.js" />
+    <Content Include="TestData\JS\Expected\Classes\ClassDecl.js" />
+    <Content Include="TestData\JS\Expected\Classes\ClassErrors.js" />
+    <Content Include="TestData\JS\Expected\Classes\ClassExpr.js" />
+    <Content Include="TestData\JS\Expected\Comprehensions\ArrayComp.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Array_L.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Join.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Length.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Reverse.js" />
     <Content Include="TestData\JS\Expected\ArrayHandling\Sort.js" />
+    <Content Include="TestData\JS\Expected\ArrayHandling\Spread.js" />
     <Content Include="TestData\JS\Expected\AspNet\Blocks.js" />
     <Content Include="TestData\JS\Expected\AspNet\Expressions.js" />
     <Content Include="TestData\JS\Expected\AspNet\Identifiers.js" />
@@ -183,6 +193,8 @@
     <Content Include="TestData\JS\Expected\Comments\ImportantIgnore.js" />
     <Content Include="TestData\JS\Expected\Comments\OnlyImportantComment.js" />
     <Content Include="TestData\JS\Expected\Comments\TwoImportantComments.js" />
+    <Content Include="TestData\JS\Expected\Comprehensions\GeneratorComp.js" />
+    <Content Include="TestData\JS\Expected\Comprehensions\NoParens.js" />
     <Content Include="TestData\JS\Expected\ConditionalCompilation\EndEOF.js" />
     <Content Include="TestData\JS\Expected\ConditionalCompilation\FuncDecl.js" />
     <Content Include="TestData\JS\Expected\ConditionalCompilation\TypeComments.js" />
@@ -222,6 +234,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\If.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Labels.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Labels_H.js" />
+    <Content Include="TestData\JS\Expected\ControlFlow\Labels_keep.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Return.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Switch.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\Switch_h.js" />
@@ -232,6 +245,7 @@
     <Content Include="TestData\JS\Expected\ControlFlow\While.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_ForNoVar.js" />
     <Content Include="TestData\JS\Expected\ControlFlow\While_NoFor.js" />
+    <Content Include="TestData\JS\Expected\DebugNamespaces\ConsoleDebug.js" />
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal.js" />
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_debug.js" />
     <Content Include="TestData\JS\Expected\DebugNamespaces\DebugAsKnownGlobal_release.js" />
@@ -241,6 +255,8 @@
     <Content Include="TestData\JS\Expected\Declarations\Const_moz.js" />
     <Content Include="TestData\JS\Expected\Declarations\Function.js" />
     <Content Include="TestData\JS\Expected\Declarations\Identifiers.js" />
+    <Content Include="TestData\JS\Expected\Declarations\Identifiers_ascii.js" />
+    <Content Include="TestData\JS\Expected\Declarations\Identifiers_h.js" />
     <Content Include="TestData\JS\Expected\Declarations\LocalizationVars.js" />
     <Content Include="TestData\JS\Expected\Declarations\LocalizationVars_H.js" />
     <Content Include="TestData\JS\Expected\Declarations\LocalizationVars_HL.js" />
@@ -251,10 +267,15 @@
     <Content Include="TestData\JS\Expected\Declarations\With.js" />
     <Content Include="TestData\JS\Expected\Declarations\With_H.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\Arguments.js" />
+    <Content Include="TestData\JS\Expected\FunctionCreation\ArrowConstructor.js" />
+    <Content Include="TestData\JS\Expected\FunctionCreation\ArrowFunctions.js" />
+    <Content Include="TestData\JS\Expected\FunctionCreation\ArrowFunctions_h.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\BadLocation.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\BadSemicolon.js" />
+    <Content Include="TestData\JS\Expected\FunctionCreation\DefaultValues.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\FuncExpr.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\FunctionNames.js" />
+    <Content Include="TestData\JS\Expected\FunctionCreation\Generator.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\NamedFuncExpr.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\NamedFuncExpr_h.js" />
     <Content Include="TestData\JS\Expected\FunctionCreation\NamedFuncExpr_hlock.js" />
@@ -304,6 +325,22 @@
     <Content Include="TestData\JS\Expected\Literals\Strings_h.js" />
     <Content Include="TestData\JS\Expected\Literals\strings_k.js" />
     <Content Include="TestData\JS\Expected\Literals\Strings_utf.js" />
+    <Content Include="TestData\JS\Expected\Literals\TemplateLiterals.js" />
+    <Content Include="TestData\JS\Expected\Literals\TemplateLiterals_nomin.js" />
+    <Content Include="TestData\JS\Expected\Modules\BadExport.js" />
+    <Content Include="TestData\JS\Expected\Modules\CircularExternal.js" />
+    <Content Include="TestData\JS\Expected\Modules\ExportCombine.js" />
+    <Content Include="TestData\JS\Expected\Modules\ExportRename.js" />
+    <Content Include="TestData\JS\Expected\Modules\Exports.js" />
+    <Content Include="TestData\JS\Expected\Modules\ImportAssign.js" />
+    <Content Include="TestData\JS\Expected\Modules\NoExportExternal.js" />
+    <Content Include="TestData\JS\Expected\Modules\NoExportExternal_flatten.js" />
+    <Content Include="TestData\JS\Expected\Modules\NoExportInline.js" />
+    <Content Include="TestData\JS\Expected\Modules\ImportRename.js" />
+    <Content Include="TestData\JS\Expected\Modules\Imports.js" />
+    <Content Include="TestData\JS\Expected\Modules\Module.js" />
+    <Content Include="TestData\JS\Expected\Modules\NotModules.js" />
+    <Content Include="TestData\JS\Expected\Modules\ReExport.js" />
     <Content Include="TestData\JS\Expected\NoMinify\EmptyElse.js" />
     <Content Include="TestData\JS\Expected\ObjectCreation\CompareObjects.js" />
     <Content Include="TestData\JS\Expected\ObjectCreation\Constructor.js" />
@@ -345,6 +382,7 @@
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbarmeow.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Expected\Renaming\IfFunction.js" />
+    <Content Include="TestData\JS\Expected\Renaming\LabelKeyword.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_all.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename_cmd.js" />
@@ -357,6 +395,7 @@
     <Content Include="TestData\JS\Expected\Renaming\SafeAll.js" />
     <Content Include="TestData\JS\Expected\Renaming\SafeAll_imm.js" />
     <Content Include="TestData\JS\Expected\Renaming\Super.js" />
+    <Content Include="TestData\JS\Expected\ResourceMerge\ReplacementTokens.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceJS.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx.js" />
     <Content Include="TestData\JS\Expected\ResourceMerge\ResourceResx_I.js" />
@@ -415,11 +454,15 @@
     <Content Include="TestData\JS\Expected\Switch\SwitchLabels.js" />
     <Content Include="TestData\JS\Expected\Switch\SwitchLabels_h.js" />
     <Content Include="TestData\JS\Expected\Switch\Unreachable.js" />
+    <Content Include="TestData\JS\Expected\Syntax\BindingPatterns.js" />
     <Content Include="TestData\JS\Expected\Syntax\BOM.js" />
     <Content Include="TestData\JS\Expected\Syntax\EmptyStatement.js" />
     <Content Include="TestData\JS\Expected\Syntax\EmptyStatement_P.js" />
     <Content Include="TestData\JS\Expected\Syntax\ES6.js" />
+    <Content Include="TestData\JS\Expected\Syntax\ES6_h.js" />
     <Content Include="TestData\JS\Expected\Syntax\NestedBlocks.js" />
+    <Content Include="TestData\JS\Expected\Syntax\NonES6Yield.js" />
+    <Content Include="TestData\JS\Expected\Syntax\NonES6Yield_norename.js" />
     <Content Include="TestData\JS\Expected\Syntax\SlashSpacing.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Expected\UnknownScope\Eval_Immediate.js" />
@@ -440,10 +483,15 @@
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.js" />
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.xml" />
     <Content Include="TestData\JS\Input\ArrayHandling\Array.js" />
+    <Content Include="TestData\JS\Input\Classes\ClassDecl.js" />
+    <Content Include="TestData\JS\Input\Classes\ClassErrors.js" />
+    <Content Include="TestData\JS\Input\Classes\ClassExpr.js" />
+    <Content Include="TestData\JS\Input\Comprehensions\ArrayComp.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Join.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Length.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Reverse.js" />
     <Content Include="TestData\JS\Input\ArrayHandling\Sort.js" />
+    <Content Include="TestData\JS\Input\ArrayHandling\Spread.js" />
     <Content Include="TestData\JS\Input\AspNet\Blocks.js" />
     <Content Include="TestData\JS\Input\AspNet\Expressions.js" />
     <Content Include="TestData\JS\Input\AspNet\Identifiers.js" />
@@ -511,6 +559,8 @@
     <Content Include="TestData\JS\Input\Comments\ImportantIgnore.js" />
     <Content Include="TestData\JS\Input\Comments\OnlyImportantComment.js" />
     <Content Include="TestData\JS\Input\Comments\TwoImportantComments.js" />
+    <Content Include="TestData\JS\Input\Comprehensions\GeneratorComp.js" />
+    <Content Include="TestData\JS\Input\Comprehensions\NoParens.js" />
     <Content Include="TestData\JS\Input\ConditionalCompilation\EndEOF.js" />
     <Content Include="TestData\JS\Input\ConditionalCompilation\FuncDecl.js" />
     <Content Include="TestData\JS\Input\ConditionalCompilation\TypeComments.js" />
@@ -543,6 +593,7 @@
     <Content Include="TestData\JS\Input\ControlFlow\Throw.js" />
     <Content Include="TestData\JS\Input\ControlFlow\TryCatch.js" />
     <Content Include="TestData\JS\Input\ControlFlow\While.js" />
+    <Content Include="TestData\JS\Input\DebugNamespaces\ConsoleDebug.js" />
     <Content Include="TestData\JS\Input\DebugNamespaces\DebugAsKnownGlobal.js" />
     <Content Include="TestData\JS\Input\DebugNamespaces\DebugNamespaceDirective.js" />
     <Content Include="TestData\JS\Input\DebugNamespaces\EmptyIf.js" />
@@ -555,10 +606,14 @@
     <Content Include="TestData\JS\Input\Declarations\Var.js" />
     <Content Include="TestData\JS\Input\Declarations\With.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\Arguments.js" />
+    <Content Include="TestData\JS\Input\FunctionCreation\ArrowConstructor.js" />
+    <Content Include="TestData\JS\Input\FunctionCreation\ArrowFunctions.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\BadLocation.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\BadSemicolon.js" />
+    <Content Include="TestData\JS\Input\FunctionCreation\DefaultValues.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\FuncExpr.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\FunctionNames.js" />
+    <Content Include="TestData\JS\Input\FunctionCreation\Generator.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\NamedFuncExpr.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\NewFunction.js" />
     <Content Include="TestData\JS\Input\FunctionCreation\VarArgList.js" />
@@ -592,6 +647,23 @@
     <Content Include="TestData\JS\Input\Literals\Replace.js" />
     <Content Include="TestData\JS\Input\Literals\StrictEncoding.js" />
     <Content Include="TestData\JS\Input\Literals\Strings.js" />
+    <Content Include="TestData\JS\Input\Literals\TemplateLiterals.js" />
+    <Content Include="TestData\JS\Input\Modules\BadExport.js" />
+    <Content Include="TestData\JS\Input\Modules\CircularExternal.js" />
+    <Content Include="TestData\JS\Input\Modules\ExportCombine.js" />
+    <Content Include="TestData\JS\Input\Modules\ExportRename.js" />
+    <Content Include="TestData\JS\Input\Modules\Exports.js" />
+    <Content Include="TestData\JS\Input\Modules\ImportAssign.js" />
+    <Content Include="TestData\JS\Input\Modules\lib\Even.js" />
+    <Content Include="TestData\JS\Input\Modules\lib\Odd.js" />
+    <Content Include="TestData\JS\Input\Modules\NoExportExternal.js" />
+    <Content Include="TestData\JS\Input\Modules\NoExportInline.js" />
+    <Content Include="TestData\JS\Input\Modules\ImportRename.js" />
+    <Content Include="TestData\JS\Input\Modules\Imports.js" />
+    <Content Include="TestData\JS\Input\Modules\Module.js" />
+    <Content Include="TestData\JS\Input\Modules\NotModules.js" />
+    <Content Include="TestData\JS\Input\Modules\lib\TestModule.js" />
+    <Content Include="TestData\JS\Input\Modules\ReExport.js" />
     <Content Include="TestData\JS\Input\NoMinify\EmptyElse.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\CompareObjects.js" />
     <Content Include="TestData\JS\Input\ObjectCreation\Constructor.js" />
@@ -624,6 +696,7 @@
     <Content Include="TestData\JS\Input\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Input\Renaming\Collide.xml" />
     <Content Include="TestData\JS\Input\Renaming\IfFunction.js" />
+    <Content Include="TestData\JS\Input\Renaming\LabelKeyword.js" />
     <Content Include="TestData\JS\Input\Renaming\ManualRename.js" />
     <Content Include="TestData\JS\Input\Renaming\NestedGlobals.js" />
     <Content Include="TestData\JS\Input\Renaming\NoMunge.js" />
@@ -631,6 +704,7 @@
     <Content Include="TestData\JS\Input\Renaming\Rename.xml" />
     <Content Include="TestData\JS\Input\Renaming\SafeAll.js" />
     <Content Include="TestData\JS\Input\Renaming\Super.js" />
+    <Content Include="TestData\JS\Input\ResourceMerge\ReplacementTokens.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceResx.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS.js" />
     <Content Include="TestData\JS\Input\ResourceMerge\ResourceJS_res.js" />
@@ -678,10 +752,12 @@
     <Content Include="TestData\JS\Input\Switch\PromoteBreak.js" />
     <Content Include="TestData\JS\Input\Switch\SwitchLabels.js" />
     <Content Include="TestData\JS\Input\Switch\Unreachable.js" />
+    <Content Include="TestData\JS\Input\Syntax\BindingPatterns.js" />
     <Content Include="TestData\JS\Input\Syntax\BOM.js" />
     <Content Include="TestData\JS\Input\Syntax\EmptyStatement.js" />
     <Content Include="TestData\JS\Input\Syntax\ES6.js" />
     <Content Include="TestData\JS\Input\Syntax\NestedBlocks.js" />
+    <Content Include="TestData\JS\Input\Syntax\NonES6Yield.js" />
     <Content Include="TestData\JS\Input\Syntax\SlashSpacing.js" />
     <Content Include="TestData\JS\Input\UnknownScope\Eval.js" />
     <Content Include="TestData\JS\Input\UnknownScope\WindowEval.js" />

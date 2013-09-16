@@ -123,30 +123,25 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // save the original term settings. We'll make sure to set this back again
                 // for the last item in the group, but we'll make sure it's TRUE for all the others.
                 var originalTermSetting = settings.TermSemicolons;
+                var currentSourceOrigin = SourceOrigin.Project;
+
+                var parser = new JSParser();
+                parser.CompilerError += (sender, ea) =>
+                {
+                    // if the input group isn't project, then we only want to report sev-0 errors
+                    if (currentSourceOrigin == SourceOrigin.Project || ea.Error.Severity == 0)
+                    {
+                        LogContextError(ea.Error);
+                    }
+                };
 
                 var outputBuilder = new StringBuilder();
                 using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                 {
-                    GlobalScope sharedGlobalScope = null;
                     for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
                     {
                         var inputGroup = inputGroups[inputGroupIndex];
-
-                        // create and setup parser
-                        var parser = new JSParser(inputGroup.Source);
-
-                        // set the shared global object
-                        parser.GlobalScope = sharedGlobalScope;
-
-                        // set up the error handler
-                        parser.CompilerError += (sender, ea) =>
-                        {
-                            // if the input group isn't project, then we only want to report sev-0 errors
-                            if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
-                            {
-                                LogContextError(ea.Error);
-                            }
-                        };
+                        currentSourceOrigin = inputGroup.Origin;
 
                         // for all but the last item, we want the term-semicolons setting to be true.
                         // but for the last entry, set it back to its original value
@@ -163,9 +158,14 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                 writer.Write(settings.LineTerminator);
                             }
                         }
+                        else
+                        {
+                            // not preprocess-only, so make sure the echo writer is null
+                            parser.EchoWriter = null;
+                        }
 
                         // parse the input
-                        var block = parser.Parse(settings);
+                        var block = parser.Parse(inputGroup.Source, settings);
                         if (block != null && !settings.PreprocessOnly)
                         {
                             if (inputGroupIndex > 0)
@@ -188,12 +188,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                 OutputVisitor.Apply(writer, block, settings);
                             }
                         }
-
-                        // save the global scope for the next group (if any).
-                        // we need to do this in case an earlier input group defines some global
-                        // functions or variables, and later groups reference them. We don't want the
-                        // later parse to say "undefined global"
-                        sharedGlobalScope = parser.GlobalScope;
                     }
                 }
 

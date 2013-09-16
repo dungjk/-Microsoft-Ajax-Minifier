@@ -14,13 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Reflection;
-using System.Text;
 using System.Xml;
 
 namespace Microsoft.Ajax.Utilities
@@ -103,135 +99,188 @@ namespace Microsoft.Ajax.Utilities
 
         #region private methods
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification="lower-case by design")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "lower-case by design")]
         private void ProcessScope(ActivationObject scope)
         {
-            var functionScope = scope as FunctionScope;
-            if (functionScope != null)
+            switch (scope.ScopeType)
             {
-                m_writer.WriteStartElement("function");
-
-                var functionObject = functionScope.FunctionObject;
-                if (functionObject != null)
-                {
-                    m_writer.WriteAttributeString("type", functionObject.FunctionType.ToString().ToLowerInvariant());
-
-                    if (string.IsNullOrEmpty(functionObject.Name))
+                case ScopeType.Block:
+                case ScopeType.Lexical:
+                case ScopeType.None:
+                    // must be generic block scope
+                    m_writer.WriteStartElement("block");
+                    if (scope.UseStrict)
                     {
-                        if (!functionObject.NameGuess.IsNullOrWhiteSpace())
+                        m_writer.WriteAttributeString("strict", "true");
+                    }
+                    break;
+
+                case ScopeType.Class:
+                    m_writer.WriteStartElement("class");
+                    if (!scope.ScopeName.IsNullOrWhiteSpace())
+                    {
+                        m_writer.WriteAttributeString("src", scope.ScopeName);
+                    }
+
+                    if (scope.UseStrict)
+                    {
+                        m_writer.WriteAttributeString("strict", "true");
+                    }
+                    break;
+
+                case ScopeType.Catch:
+                    var catchScope = (CatchScope)scope;
+                    m_writer.WriteStartElement("catch");
+                    if (scope.UseStrict)
+                    {
+                        m_writer.WriteAttributeString("strict", "true");
+                    }
+
+                    foreach (var bindingIdentifier in BindingsVisitor.Bindings(catchScope.CatchParameter))
+                    {
+                        m_writer.WriteStartElement("catchvar");
+                        m_writer.WriteAttributeString("src", bindingIdentifier.Name);
+
+                        OutputContextPosition(bindingIdentifier.Context);
+
+                        var catchVariable = bindingIdentifier.VariableField;
+                        if (catchVariable != null)
                         {
-                            if (functionObject.NameGuess.StartsWith("\"", StringComparison.Ordinal))
+                            if (catchVariable.CrunchedName != null)
+                            {
+                                m_writer.WriteAttributeString("min", catchVariable.CrunchedName);
+                            }
+
+                            if (m_useReferenceCounts)
+                            {
+                                m_writer.WriteAttributeString("refcount", catchVariable.RefCount.ToStringInvariant());
+                            }
+                        }
+
+                        m_writer.WriteEndElement();
+                    }
+                    break;
+
+                case ScopeType.Module:
+                    m_writer.WriteStartElement("module");
+                    if (!scope.ScopeName.IsNullOrWhiteSpace())
+                    {
+                        m_writer.WriteAttributeString("name", scope.ScopeName);
+                    }
+                    
+                    if (scope.UseStrict)
+                    {
+                        m_writer.WriteAttributeString("strict", "true");
+                    }
+
+                    (scope as ModuleScope).IfNotNull(m =>
+                        {
+                            m_writer.WriteAttributeString("default", m.HasDefaultExport ? "true" : "false");
+                            if (m.IsNotComplete)
+                            {
+                                m_writer.WriteAttributeString("incomplete", "true");
+                            }
+                        });
+                    break;
+
+                case ScopeType.Function:
+                    var functionScope = (FunctionScope)scope;
+                    m_writer.WriteStartElement("function");
+
+                    // for source name, use the scope name
+                    if (!scope.ScopeName.IsNullOrWhiteSpace())
+                    {
+                        m_writer.WriteAttributeString("src", scope.ScopeName);
+                    }
+
+                    var functionObject = functionScope.Owner as FunctionObject;
+                    if (functionObject != null)
+                    {
+                        if (functionObject.Binding == null || functionObject.Binding.Name.IsNullOrWhiteSpace())
+                        {
+                            if (!functionObject.NameGuess.IsNullOrWhiteSpace())
                             {
                                 // strip enclosing quotes
-                                m_writer.WriteAttributeString("guess", functionObject.NameGuess.Substring(1, functionObject.NameGuess.Length - 2));
-                            }
-                            else
-                            {
-                                m_writer.WriteAttributeString("guess", functionObject.NameGuess);
+                                m_writer.WriteAttributeString("guess", functionObject.NameGuess.Trim('\"'));
                             }
                         }
-                    }
-                    else
-                    {
-                        m_writer.WriteAttributeString("src", functionObject.Name);
-                        if (functionObject.VariableField != null
-                            && functionObject.VariableField.CrunchedName != null)
+                        else
                         {
-                            m_writer.WriteAttributeString("min", functionObject.VariableField.CrunchedName);
-                        }
-                    }
-
-                    OutputContextPosition(functionObject.Context);
-
-                    if (m_useReferenceCounts && functionObject.VariableField != null)
-                    {
-                        var refCount = functionObject.VariableField.RefCount;
-                        m_writer.WriteAttributeString("refcount", refCount.ToStringInvariant());
-
-                        if (refCount == 0
-                            && functionObject.FunctionType == FunctionType.Declaration
-                            && functionObject.VariableField.FieldType == FieldType.Local)
-                        {
-                            // local function declaration with zero references? unreachable code!
-                            m_writer.WriteAttributeString("unreachable", "true");
-                        }
-                    }
-
-                    // add the arguments
-                    m_writer.WriteStartElement("arguments");
-                    if (functionObject.ParameterDeclarations != null)
-                    {
-                        foreach (var item in functionObject.ParameterDeclarations)
-                        {
-                            m_writer.WriteStartElement("argument");
-
-                            var parameter = item as ParameterDeclaration;
-                            if (parameter != null)
+                            if (functionObject.Binding.VariableField != null
+                                && functionObject.Binding.VariableField.CrunchedName != null)
                             {
-                                m_writer.WriteAttributeString("src", parameter.Name);
-                                if (parameter.VariableField.CrunchedName != null)
+                                m_writer.WriteAttributeString("min", functionObject.Binding.VariableField.CrunchedName);
+                            }
+                        }
+
+                        m_writer.WriteAttributeString("type", functionObject.FunctionType.ToString().ToLowerInvariant());
+                        OutputContextPosition(functionObject.Context);
+
+                        if (m_useReferenceCounts
+                            && functionObject.Binding != null
+                            && functionObject.Binding.VariableField != null)
+                        {
+                            var refCount = functionObject.Binding.VariableField.RefCount;
+                            m_writer.WriteAttributeString("refcount", refCount.ToStringInvariant());
+
+                            if (refCount == 0
+                                && functionObject.FunctionType == FunctionType.Declaration
+                                && functionObject.Binding.VariableField.FieldType == FieldType.Local)
+                            {
+                                // local function declaration with zero references? unreachable code!
+                                m_writer.WriteAttributeString("unreachable", "true");
+                            }
+                        }
+
+                        if (scope.UseStrict)
+                        {
+                            m_writer.WriteAttributeString("strict", "true");
+                        }
+
+                        // add the arguments
+                        m_writer.WriteStartElement("arguments");
+                        if (functionObject.ParameterDeclarations != null)
+                        {
+                            foreach (var bindingIdentifier in BindingsVisitor.Bindings(functionObject.ParameterDeclarations))
+                            {
+                                m_writer.WriteStartElement("argument");
+
+                                m_writer.WriteAttributeString("src", bindingIdentifier.Name);
+                                if (bindingIdentifier.VariableField.IfNotNull(v => v.CrunchedName != null))
                                 {
-                                    m_writer.WriteAttributeString("min", parameter.VariableField.CrunchedName);
+                                    m_writer.WriteAttributeString("min", bindingIdentifier.VariableField.CrunchedName);
                                 }
 
-                                OutputContextPosition(item.Context);
-                                if (m_useReferenceCounts && parameter.VariableField != null)
+                                OutputContextPosition(bindingIdentifier.Context);
+                                if (m_useReferenceCounts)
                                 {
-                                    m_writer.WriteAttributeString("refcount", parameter.VariableField.RefCount.ToStringInvariant());
+                                    bindingIdentifier.VariableField.IfNotNull(v => m_writer.WriteAttributeString("refcount", v.RefCount.ToStringInvariant()));
                                 }
 
+                                m_writer.WriteEndElement();
                             }
-                            else
-                            {
-                                OutputContextPosition(item.Context);
-                            }
-
-                            m_writer.WriteEndElement();
                         }
+
+                        m_writer.WriteEndElement();
                     }
+                    break;
 
-                    m_writer.WriteEndElement();
-                }
-            }
-            else if (scope is WithScope)
-            {
-                m_writer.WriteStartElement("with");
-            }
-            else if (scope is GlobalScope)
-            {
-                Debug.Fail("shouldn't get here!");
-                m_writer.WriteStartElement("global");
-            }
-            else
-            {
-                var catchScope = scope as CatchScope;
-                if (catchScope != null)
-                {
-                    m_writer.WriteStartElement("catch");
+                case ScopeType.Global:
+                    Debug.Assert(scope is GlobalScope);
+                    Debug.Fail("shouldn't get here!");
+                    m_writer.WriteStartElement("global");
+                    break;
 
-                    var catchVariable = catchScope.CatchParameter.VariableField;
-                    m_writer.WriteStartElement("catchvar");
-                    m_writer.WriteAttributeString("src", catchVariable.Name);
-                    if (catchVariable.CrunchedName != null)
+                case ScopeType.With:
+                    Debug.Assert(scope is WithScope);
+                    m_writer.WriteStartElement("with");
+
+                    // with-scopes should never be strict because the with-statement is not allowed in strict code
+                    if (scope.UseStrict)
                     {
-                        m_writer.WriteAttributeString("min", catchVariable.CrunchedName);
+                        m_writer.WriteAttributeString("strict", "true");
                     }
-
-                    OutputContextPosition(catchVariable.OriginalContext);
-
-                    if (m_useReferenceCounts)
-                    {
-                        m_writer.WriteAttributeString("refcount", catchVariable.RefCount.ToStringInvariant());
-                    }
-
-                    m_writer.WriteEndElement();
-                }
-                else
-                {
-                    // must be generic block scope
-                    Debug.Assert(scope is BlockScope);
-                    m_writer.WriteStartElement("block");
-                }
+                    break;
             }
 
             // process the defined and referenced fields
@@ -289,6 +338,10 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 referencedFields.Add(field);
                             }
+                            break;
+
+                        case FieldType.Super:
+                            referencedFields.Add(field);
                             break;
 
                         case FieldType.UndefinedGlobal:
@@ -356,6 +409,11 @@ namespace Microsoft.Ajax.Utilities
 
             m_writer.WriteStartElement("field");
 
+            if (field.IsExported)
+            {
+                m_writer.WriteAttributeString("exported", "true");    
+            }
+
             var typeValue = field.FieldType.ToString();
             switch (field.FieldType)
             {
@@ -398,6 +456,7 @@ namespace Microsoft.Ajax.Utilities
                 case FieldType.GhostCatch:
                 case FieldType.GhostFunction:
                 case FieldType.Predefined:
+                case FieldType.Super:
                     break;
             }
 

@@ -182,5 +182,18 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void TemplateLiterals()
+        {
+            TestHelper.Instance.RunErrorTest();
+        }
+
+        [TestMethod]
+        public void TemplateLiterals_nomin()
+        {
+            // don't minify the string or template literals
+            TestHelper.Instance.RunErrorTest("-kill:0x100000");
+        }
     }
 }

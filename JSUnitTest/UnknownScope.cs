@@ -95,7 +95,7 @@ namespace JSUnitTest
         [TestMethod]
         public void With()
         {
-            TestHelper.Instance.RunTest("-rename:all");
+            TestHelper.Instance.RunTest("-rename:all -debug:N,$Debug");
         }
     }
 }

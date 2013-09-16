@@ -15,7 +15,6 @@
 // limitations under the License.
 
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace Microsoft.Ajax.Utilities
@@ -130,7 +129,7 @@ namespace Microsoft.Ajax.Utilities
             // if we're not done with the current buffer, we're being recursive.
             if (m_position < m_fallbackString.Length)
             {
-                throw new ArgumentException(CssStrings.FallbackEncodingFailed);
+                throw new ArgumentException(CommonStrings.FallbackEncodingFailed);
             }
 
             // Go ahead and get our fallback
@@ -153,7 +152,7 @@ namespace Microsoft.Ajax.Utilities
             // if we're not done with the current buffer, we're being recursive.
             if (m_position < m_fallbackString.Length)
             {
-                throw new ArgumentException(CssStrings.FallbackEncodingFailed);
+                throw new ArgumentException(CommonStrings.FallbackEncodingFailed);
             }
 
             // de-surrogate the pair into a single value in the range 0x010000 to 0x10ffff

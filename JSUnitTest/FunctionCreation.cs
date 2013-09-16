@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -101,6 +102,36 @@ namespace JSUnitTest
         public void FunctionNames()
         {
             TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod()]
+        public void ArrowFunctions()
+        {
+            TestHelper.Instance.RunErrorTest("-rename:none", JSError.ArgumentNotReferenced, JSError.ArgumentNotReferenced, JSError.ArgumentNotReferenced);
+        }
+
+        [TestMethod()]
+        public void ArrowFunctions_h()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.ArgumentNotReferenced, JSError.ArgumentNotReferenced, JSError.ArgumentNotReferenced);
+        }
+
+        [TestMethod()]
+        public void DefaultValues()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod()]
+        public void Generator()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.ArgumentNotReferenced);
+        }
+
+        [TestMethod()]
+        public void ArrowConstructor()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.ArrowCannotBeConstructor);
         }
     }
 }

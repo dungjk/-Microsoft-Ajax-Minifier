@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
+﻿using System.Diagnostics;
 
 using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,18 +26,18 @@ namespace DllUnitTest
             var expectedResult = TestContext.DataRow[1].ToString();
 
             // parse the source into an AST
-            var parser = new JSParser(expressionSource);
-            var block = parser.Parse(new CodeSettings() { MinifyCode = false, SourceMode = JavaScriptSourceMode.Expression });
+            var parser = new JSParser();
+            var block = parser.Parse(expressionSource, new CodeSettings() { MinifyCode = false, SourceMode = JavaScriptSourceMode.Expression });
 
             if (block.Count == 1)
             {
                 var expression = block[0];
 
                 // create the logical-not visitor on the expression
-                var logicalNot = new Microsoft.Ajax.Utilities.LogicalNot(expression, parser);
+                var logicalNot = new Microsoft.Ajax.Utilities.LogicalNot(expression, parser.Settings);
 
                 // get the original code
-                var original = expression.ToCode();
+                var original = OutputVisitor.Apply(expression, parser.Settings);
 
                 Trace.Write("ORIGINAL EXPRESSION:    ");
                 Trace.WriteLine(original);
@@ -52,7 +49,7 @@ namespace DllUnitTest
                 logicalNot.Apply();
 
                 // get the resulting code -- should still be only one statement in the block
-                var notted = block[0].ToCode();
+                var notted = OutputVisitor.Apply(block[0], parser.Settings);
 
                 Trace.Write("LOGICAL-NOT EXPRESSION: ");
                 Trace.WriteLine(notted);

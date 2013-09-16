@@ -125,4 +125,40 @@ namespace Microsoft.Ajax.Utilities
 
 #endif
 
+#if DEBUG
+    public static class ErrorStringHelper
+    {
+        public static System.Collections.Generic.IEnumerable<string> AvailableCssStrings
+        {
+            get
+            {
+                var type = typeof(CssStrings);
+                var properties = type.GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.GetProperty | System.Reflection.BindingFlags.NonPublic);
+                foreach (var property in properties)
+                {
+                    if (property.PropertyType == typeof(string))
+                    {
+                        yield return property.Name;
+                    }
+                }
+            }
+        }
+
+        public static System.Collections.Generic.IEnumerable<string> AvailableJSStrings
+        {
+            get
+            {
+                var type = typeof(JScript);
+                var properties = type.GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.GetProperty | System.Reflection.BindingFlags.NonPublic);
+                foreach (var property in properties)
+                {
+                    if (property.PropertyType == typeof(string))
+                    {
+                        yield return property.Name;
+                    }
+                }
+            }
+        }
+    }
+#endif
 }

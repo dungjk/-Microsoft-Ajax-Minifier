@@ -107,5 +107,11 @@ namespace JSUnitTest
             // it should NOT be in the output, though, because we have debug mode turned off.
             TestHelper.Instance.RunTest("-debug:N,console,window.console,Debug");
         }
+
+        [TestMethod]
+        public void ConsoleDebug()
+        {
+            TestHelper.Instance.RunErrorTest("-debug:N,console");
+        }
     }
 }

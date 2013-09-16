@@ -46,18 +46,15 @@ namespace Microsoft.Ajax.Utilities
                 m_useReferenceCounts = useReferenceCounts;
 
                 // output global scope report
-                WriteScopeReport(null, globalScope);
+                WriteScopeReport(globalScope);
 
                 // generate a flat array of function scopes ordered by context line start
-                ActivationObject[] scopes = GetAllFunctionScopes(globalScope);
+                var scopes = GetAllFunctionScopes(globalScope);
 
                 // for each function scope, output a scope report
                 foreach (ActivationObject scope in scopes)
                 {
-                    FunctionScope funcScope = scope as FunctionScope;
-                    WriteScopeReport(
-                      (funcScope != null ? funcScope.FunctionObject : null),
-                      scope);
+                    WriteScopeReport(scope);
                 }
 
                 // write the unreferenced global report
@@ -105,17 +102,17 @@ namespace Microsoft.Ajax.Utilities
             foreach (ActivationObject scope in parentScope.ChildScopes)
             {
                 // add the scope to the list if it's not a globalscopes
-                // which leaves function scopes and block scopes (from catch blocks)
                 if (!(scope is GlobalScope))
                 {
                     list.Add(scope);
                 }
+
                 // recurse...
                 AddScopes(list, scope);
             }
         }
 
-        private void WriteScopeReport(FunctionObject funcObj, ActivationObject scope)
+        private void WriteScopeReport(ActivationObject scope)
         {
             // output the function header
             if (scope is GlobalScope)
@@ -124,26 +121,48 @@ namespace Microsoft.Ajax.Utilities
             }
             else
             {
-                FunctionScope functionScope = scope as FunctionScope;
-                if (functionScope != null && funcObj != null)
+                ModuleScope moduleScope;
+                if (scope is FunctionScope)
                 {
-                    WriteFunctionHeader(funcObj, scope.IsKnownAtCompileTime);
+                    WriteFunctionHeader(scope.Owner as FunctionObject, scope.IsKnownAtCompileTime, scope.UseStrict);
+                }
+                else if ((moduleScope = scope as ModuleScope) != null)
+                {
+                    WriteModuleHeader(moduleScope);
                 }
                 else
                 {
-                    BlockScope blockScope = scope as BlockScope;
-                    if (blockScope is CatchScope)
+                    string blockType;
+                    switch (scope.ScopeType)
                     {
-                        WriteBlockHeader(blockScope, AjaxMin.BlockTypeCatch);
+                        case ScopeType.Catch:
+                            blockType = AjaxMin.BlockTypeCatch;
+                            break;
+
+                        case ScopeType.With:
+                            blockType = AjaxMin.BlockTypeWith;
+                            break;
+
+                        case ScopeType.Class:
+                            blockType = AjaxMin.BlockTypeClass.FormatInvariant(scope.ScopeName.IfNullOrWhiteSpace(AjaxMin.AnonymousName));
+                            break;
+
+                        case ScopeType.Block:
+                        case ScopeType.Lexical:
+                            blockType = AjaxMin.BlockTypeLexical;
+                            break;
+
+                        case ScopeType.Module:
+                        case ScopeType.Function:
+                        case ScopeType.Global:
+                        case ScopeType.None:
+                        default:
+                            blockType = string.Empty;
+                            System.Diagnostics.Debug.Fail("shouldn't get here");
+                            break;
                     }
-                    else if (blockScope is WithScope)
-                    {
-                        WriteBlockHeader(blockScope, AjaxMin.BlockTypeWith);
-                    }
-                    else
-                    {
-                        WriteBlockHeader(blockScope, AjaxMin.BlockTypeLexical);
-                    }
+
+                    WriteBlockHeader(scope as BlockScope, blockType);
                 }
             }
 
@@ -165,35 +184,76 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        private void WriteBlockHeader(BlockScope blockScope, string blockType)
+        private void WriteModuleHeader(ModuleScope moduleScope)
         {
-            string knownMarker = string.Empty;
-            if (!blockScope.IsKnownAtCompileTime)
+            var blockType = AjaxMin.BlockTypeModule.FormatInvariant(moduleScope.ScopeName.IfNullOrWhiteSpace(AjaxMin.ModuleNameImplicit));
+            var sb = new StringBuilder();
+            if (!moduleScope.IsKnownAtCompileTime)
             {
-                StringBuilder sb = new StringBuilder();
                 sb.Append('[');
                 sb.Append(AjaxMin.NotKnown);
                 sb.Append(']');
-                knownMarker = sb.ToString();
             }
 
+            if (moduleScope.UseStrict)
+            {
+                sb.Append(AjaxMin.ScopeIsStrictFlag);
+            }
+
+            if (moduleScope.IsNotComplete)
+            {
+                sb.Append(AjaxMin.ModuleIncompleteFlag);
+            }
+
+            var scopeFlags = sb.ToString();
             WriteProgress();
             WriteProgress(AjaxMin.BlockScopeHeader.FormatInvariant(
               blockType,
-              blockScope.Context.StartLineNumber,
-              blockScope.Context.StartColumn + 1,
-              knownMarker));
+              moduleScope.Owner.Context.StartLineNumber,
+              moduleScope.Owner.Context.StartColumn + 1,
+              scopeFlags));
+
+            if (moduleScope.HasDefaultExport)
+            {
+                // when there's a default export, we want to flag a line under the module
+                // header that indicates that it's okay to bind to the default export.
+                WriteProgress(AjaxMin.ModuleHasDefaultExport);
+            }
+        }
+
+        private void WriteBlockHeader(BlockScope blockScope, string blockType)
+        {
+            var sb = new StringBuilder();
+            if (!blockScope.IsKnownAtCompileTime)
+            {
+                sb.Append('[');
+                sb.Append(AjaxMin.NotKnown);
+                sb.Append(']');
+            }
+
+            if (blockScope.UseStrict)
+            {
+                sb.Append(AjaxMin.ScopeIsStrictFlag);
+            }
+
+            var scopeFlags = sb.ToString();
+            WriteProgress();
+            WriteProgress(AjaxMin.BlockScopeHeader.FormatInvariant(
+              blockType,
+              blockScope.Owner.Context.StartLineNumber,
+              blockScope.Owner.Context.StartColumn + 1,
+              scopeFlags));
         }
 
         //TYPE "NAME" - Starts at line LINE, col COLUMN STATUS [crunched to CRUNCH]
         //
         //TYPE: Function, Function getter, Function setter
         //STATUS: '', Unknown, Unreachable
-        private void WriteFunctionHeader(FunctionObject funcObj, bool isKnown)
+        private void WriteFunctionHeader(FunctionObject funcObj, bool isKnown, bool useStrict)
         {
             // get the crunched value (if any)
             string crunched = string.Empty;
-            var functionField = funcObj.VariableField;
+            var functionField = funcObj.Binding.IfNotNull(b => b.VariableField);
             if (functionField != null && functionField.CrunchedName != null)
             {
                 crunched = AjaxMin.CrunchedTo.FormatInvariant(functionField.CrunchedName, functionField.RefCount);
@@ -206,12 +266,14 @@ namespace Microsoft.Ajax.Utilities
                 statusBuilder.Append('[');
                 statusBuilder.Append(AjaxMin.NotKnown);
             }
-            if (funcObj.FunctionScope.Parent is GlobalScope)
+            if (funcObj.EnclosingScope.Parent is GlobalScope)
             {
                 // global function.
                 // if this is a named function expression, we still want to know if it's
                 // referenced by anyone
-                if (funcObj.FunctionType == FunctionType.Expression && !string.IsNullOrEmpty(funcObj.Name))
+                if (funcObj.FunctionType == FunctionType.Expression 
+                    && funcObj.Binding != null
+                    && !funcObj.Binding.Name.IsNullOrWhiteSpace())
                 {
                     // output a comma separator if not the first item, otherwise 
                     // open the square bracket
@@ -224,7 +286,7 @@ namespace Microsoft.Ajax.Utilities
                         statusBuilder.Append('[');
                     }
                     statusBuilder.Append(AjaxMin.FunctionInfoReferences.FormatInvariant(
-                        funcObj.RefCount
+                        funcObj.Binding.VariableField.IfNotNull(v => v.RefCount)
                         ));
                 }
             }
@@ -250,44 +312,58 @@ namespace Microsoft.Ajax.Utilities
                 statusBuilder.Append(']');
             }
 
+            if (useStrict)
+            {
+                statusBuilder.Append(AjaxMin.ScopeIsStrictFlag);
+            }
+
             string status = statusBuilder.ToString();
             string functionType;
             switch (funcObj.FunctionType)
             {
                 case FunctionType.Getter:
-                    functionType = "FunctionTypePropGet";
+                    functionType = AjaxMin.FunctionTypePropGet;
                     break;
 
                 case FunctionType.Setter:
-                    functionType = "FunctionTypePropSet";
+                    functionType = AjaxMin.FunctionTypePropSet;
                     break;
 
                 case FunctionType.Expression:
-                    functionType = "FunctionTypeExpression";
+                    functionType = AjaxMin.FunctionTypeExpression;
+                    break;
+
+                case FunctionType.ArrowFunction:
+                    functionType = AjaxMin.FunctionTypeArrow;
+                    break;
+
+                case FunctionType.Method:
+                    functionType = AjaxMin.FunctionTypeMethod;
                     break;
 
                 default:
-                    functionType = "FunctionTypeFunction";
+                    functionType = AjaxMin.FunctionTypeFunction;
                     break;
             }
 
-            var functionName = funcObj.Name;
+            var functionName = funcObj.Binding.IfNotNull(b => b.Name);
             if (functionName.IsNullOrWhiteSpace())
             {
                 functionName = !funcObj.NameGuess.IsNullOrWhiteSpace()
                     ? '"' + funcObj.NameGuess + '"'
-                    : AjaxMin.AnonymousFunction;
+                    : AjaxMin.AnonymousName;
             }
 
             // output
             WriteProgress();
             WriteProgress(AjaxMin.FunctionHeader.FormatInvariant(
-                AjaxMin.ResourceManager.GetString(functionType, AjaxMin.Culture),
+                functionType,
                 functionName,
                 funcObj.Context.StartLineNumber,
                 funcObj.Context.StartColumn + 1,
                 status,
-                crunched));
+                crunched,
+                funcObj.IsGenerator ? AjaxMin.FunctionTypeGenerator : string.Empty));
         }
 
         // NAME [SCOPE TYPE] [crunched to CRUNCH]
@@ -388,7 +464,7 @@ namespace Microsoft.Ajax.Utilities
                 foreach (var declaration in variableField.Declarations)
                 {
                     // we only care about the FIRST declaration, so return the context of the name
-                    return declaration.NameContext;
+                    return declaration.Context;
                 }
             }
 
@@ -426,6 +502,14 @@ namespace Microsoft.Ajax.Utilities
                     }
                     break;
 
+                case FieldType.Super:
+                    type = AjaxMin.MemberInfoTypeSuper;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
+                    break;
+
                 case FieldType.GhostCatch:
                 case FieldType.GhostFunction:
                 default:
@@ -441,24 +525,13 @@ namespace Microsoft.Ajax.Utilities
                         // in a with scope somewhere down the line.
                         type = AjaxMin.MemberInfoPossiblyUndefined;
                     }
-                    else if (variableField.FieldValue is FunctionObject)
+                    else if (variableField.FieldValue is FunctionObject && variableField.GhostedField != null)
                     {
-                        if (variableField.GhostedField == null)
-                        {
-                            type = AjaxMin.MemberInfoGlobalFunction;
-                        }
-                        else
-                        {
-                            type = AjaxMin.MemberInfoFunctionExpression;
-                        }
-                    }
-                    else if (variableField.InitializationOnly)
-                    {
-                        type = AjaxMin.MemberInfoGlobalConst;
+                        type = AjaxMin.MemberInfoFunctionExpression;
                     }
                     else
                     {
-                        type = AjaxMin.MemberInfoGlobalVar;
+                        goto case FieldType.Local;
                     }
                     break;
 
@@ -468,30 +541,43 @@ namespace Microsoft.Ajax.Utilities
                     {
                         if (variableField.GhostedField == null)
                         {
-                            type = AjaxMin.MemberInfoLocalFunction;
+                            type = AjaxMin.MemberInfoFunction;
                         }
                         else
                         {
                             type = AjaxMin.MemberInfoFunctionExpression;
                         }
                     }
+                    else if (variableField.FieldValue is ClassNode)
+                    {
+                        type = AjaxMin.MemberInfoClass;
+                    }
                     else if (variableField.IsLiteral)
                     {
-                        type = AjaxMin.MemberInfoLocalLiteral;
+                        type = AjaxMin.MemberInfoLiteral;
                     }
                     else if (variableField.InitializationOnly)
                     {
-                        type = AjaxMin.MemberInfoLocalConst;
+                        type = AjaxMin.MemberInfoConst;
                     }
                     else
                     {
-                        type = AjaxMin.MemberInfoLocalVar;
+                        type = AjaxMin.MemberInfoVar;
                     }
 
                     // scope string
-                    scope = variableField.IsOuterReference
-                        ? AjaxMin.MemberInfoScopeOuter
-                        : AjaxMin.MemberInfoScopeLocal;
+                    if (variableField.IsOuterReference)
+                    {
+                        scope = AjaxMin.MemberInfoScopeOuter;
+                    }
+                    else if (variableField.FieldType == FieldType.Global || variableField.FieldType == FieldType.UndefinedGlobal)
+                    {
+                        scope = AjaxMin.MemberInfoScopeGlobal;
+                    }
+                    else
+                    {
+                        scope = AjaxMin.MemberInfoScopeLocal;
+                    }
                     break;
 
                 case FieldType.Predefined:
@@ -509,6 +595,11 @@ namespace Microsoft.Ajax.Utilities
                     }
                     break;
             }
+
+            if (variableField.IsExported)
+            {
+                scope = AjaxMin.MemberInfoScopeExported + scope;
+            }
         }
 
         private void WriteUnrefedReport(GlobalScope globalScope)
@@ -516,13 +607,46 @@ namespace Microsoft.Ajax.Utilities
             if (globalScope.UndefinedReferences != null && globalScope.UndefinedReferences.Count > 0)
             {
                 // sort the undefined reference exceptions
-                var undefinedList = new List<UndefinedReferenceException>(globalScope.UndefinedReferences);
-                undefinedList.Sort(UndefinedComparer.Instance);
+                var undefinedList = new List<UndefinedReference>(globalScope.UndefinedReferences);
+                undefinedList.Sort((left, right) =>
+                    {
+                        // first do the right thing if one or both are null
+                        if (left == null && right == null)
+                        {
+                            // both null -- equal
+                            return 0;
+                        }
+
+                        if (left == null)
+                        {
+                            // left is null, right is not -- left is less
+                            return -1;
+                        }
+
+                        if (right == null)
+                        {
+                            // left is not null, right is -- left is more
+                            return 1;
+                        }
+
+                        // neither are null
+                        int comparison = string.Compare(left.ToString(), right.ToString(), StringComparison.OrdinalIgnoreCase);
+                        if (comparison == 0)
+                        {
+                            comparison = left.Line - right.Line;
+                            if (comparison == 0)
+                            {
+                                comparison = left.Column - right.Column;
+                            }
+                        }
+
+                        return comparison;
+                    });
 
                 // write the report
                 WriteProgress();
                 WriteProgress(AjaxMin.UndefinedGlobalHeader);
-                foreach (UndefinedReferenceException ex in undefinedList)
+                foreach (UndefinedReference ex in undefinedList)
                 {
                     WriteProgress(AjaxMin.UndefinedInfo.FormatInvariant(
                       ex.Name,
@@ -592,26 +716,38 @@ namespace Microsoft.Ajax.Utilities
                 if (comparison == 0)
                 {
                     comparison = leftContext.StartColumn - rightContext.StartColumn;
+                    if (comparison == 0)
+                    {
+                        // starts at the same place. It could be the named-function expression
+                        // scopes - there's one just for the name that contains the real function
+                        // scope so the function expression name doesn't pollute the containing scope.
+                        // that one should go before the regular one
+                        if (IsFunctionExpressionName(left))
+                        {
+                            comparison = -1;
+                        }
+                        else if (IsFunctionExpressionName(right))
+                        {
+                            comparison = 1;
+                        }
+                    }
                 }
                 return comparison;
             }
 
+            private static bool IsFunctionExpressionName(ActivationObject scope)
+            {
+                // for this to be a function expression name scope:
+                // 1. the owner must not be null (well, it shouldn't ever be null)
+                // 2. the owner must have its own scope (all function objects should point to their own scope)
+                // 3. and this scope's owner's scope must point to a scope different than the current scope.
+                return scope.Owner.IfNotNull(o => o.HasOwnScope && o.EnclosingScope != scope);
+            }
+
             private static Context GetContext(ActivationObject obj)
             {
-                FunctionScope funcScope = obj as FunctionScope;
-                if (funcScope != null && funcScope.FunctionObject != null)
-                {
-                    return funcScope.FunctionObject.Context;
-                }
-                else
-                {
-                    BlockScope blockScope = obj as BlockScope;
-                    if (blockScope != null)
-                    {
-                        return blockScope.Context;
-                    }
-                }
-                return null;
+                // return the owner context, or null
+                return obj.IfNotNull(s => s.Owner.Context);
             }
 
             #endregion
@@ -675,6 +811,21 @@ namespace Microsoft.Ajax.Utilities
                     return obj.IsOuterReference ? FieldOrder.OuterArgumentsObject : FieldOrder.LocalArgumentsObject;
                 }
 
+                if (obj.FieldType == FieldType.Super)
+                {
+                    return FieldOrder.LocalSuperReference;
+                }
+
+                if (obj.IsExported)
+                {
+                    if (obj.OuterField == null)
+                    {
+                        return FieldOrder.ExportedDeclaration;
+                    }
+
+                    return FieldOrder.ExportedReferences;
+                }
+
                 if (obj.FieldType == FieldType.Global)
                 {
                     return (
@@ -707,6 +858,9 @@ namespace Microsoft.Ajax.Utilities
             {
                 LocalArgument = 0,
                 LocalArgumentsObject,
+                LocalSuperReference,
+                ExportedDeclaration,
+                ExportedReferences,
                 LocalFieldDefined,
                 LocalFunctionDefined,
                 OuterArgumentReferenced,
@@ -718,54 +872,6 @@ namespace Microsoft.Ajax.Utilities
                 Predefined,
                 Other
             }
-        }
-
-        private class UndefinedComparer : IComparer<UndefinedReferenceException>
-        {
-            // singleton instance
-            public static readonly IComparer<UndefinedReferenceException> Instance = new UndefinedComparer();
-
-            // private constructor -- use singleton
-            private UndefinedComparer() { }
-
-            #region IComparer<UndefinedReferenceException> Members
-
-            public int Compare(UndefinedReferenceException left, UndefinedReferenceException right)
-            {
-                // first do the right thing if one or both are null
-                if (left == null && right == null)
-                {
-                    // both null -- equal
-                    return 0;
-                }
-
-                if (left == null)
-                {
-                    // left is null, right is not -- left is less
-                    return -1;
-                }
-
-                if (right == null)
-                {
-                    // left is not null, right is -- left is more
-                    return 1;
-                }
-
-                // neither are null
-                int comparison = string.Compare(left.ToString(), right.ToString(), StringComparison.OrdinalIgnoreCase);
-                if (comparison == 0)
-                {
-                    comparison = left.Line - right.Line;
-                    if (comparison == 0)
-                    {
-                        comparison = left.Column - right.Column;
-                    }
-                }
-
-                return comparison;
-            }
-
-            #endregion
         }
 
         #endregion
