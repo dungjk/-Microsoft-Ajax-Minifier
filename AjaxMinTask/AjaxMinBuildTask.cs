@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Resources;
@@ -186,7 +187,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
                         if (isValid)
                         {
-                            ResourceStrings resourceStrings = null;
+                            var resourceStrings = new ResourceStrings();
 
                             // process the appropriate resource type
                             switch(Path.GetExtension(resourceFile).ToUpperInvariant())
@@ -194,21 +195,21 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                 case ".RESX":
                                     using (var reader = new ResXResourceReader(resourceFile))
                                     {
-                                        // create an object out of the dictionary
-                                        resourceStrings = new ResourceStrings(reader.GetEnumerator());
+                                        foreach (DictionaryEntry item in reader)
+                                        {
+                                            resourceStrings[item.Key.ToString()] = item.Value.ToString();
+                                        }
                                     }
-
-                                    m_otherInputFiles.Add(resourceFile);
                                     break;
 
                                 case ".RESOURCES":
                                     using (var reader = new ResourceReader(resourceFile))
                                     {
-                                        // create an object out of the dictionary
-                                        resourceStrings = new ResourceStrings(reader.GetEnumerator());
+                                        foreach (DictionaryEntry item in reader)
+                                        {
+                                            resourceStrings[item.Key.ToString()] = item.Value.ToString();
+                                        }
                                     }
-
-                                    m_otherInputFiles.Add(resourceFile);
                                     break;
 
                                 default:
@@ -217,8 +218,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             }
 
                             // add it to the settings objects
-                            if (resourceStrings != null)
+                            if (resourceStrings.Count > 0)
                             {
+                                m_otherInputFiles.Add(resourceFile);
+
                                 // set the object name
                                 resourceStrings.Name = objectName;
 

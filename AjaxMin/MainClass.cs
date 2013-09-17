@@ -1374,32 +1374,32 @@ namespace Microsoft.Ajax.Utilities
         {
             // default return object is null, meaning we are outputting the JS code directly
             // and don't want to replace any referenced resources in the sources
-            ResourceStrings resourceStrings = null;
+            var resourceStrings = new ResourceStrings();
             using (ResourceReader reader = new ResourceReader(resourceFileName))
             {
-                // get an enumerator so we can itemize all the key/value pairs
-                IDictionaryEnumerator enumerator = reader.GetEnumerator();
-
-                // create an object out of the dictionary
-                resourceStrings = new ResourceStrings(enumerator);
+                foreach (DictionaryEntry item in reader)
+                {
+                    resourceStrings[item.Key.ToString()] = item.Value.ToString();
+                }
             }
-            return resourceStrings;
+
+            return resourceStrings.Count == 0 ? null : resourceStrings;
         }
 
         private static ResourceStrings ProcessResXResources(string resourceFileName)
         {
             // default return object is null, meaning we are outputting the JS code directly
             // and don't want to replace any referenced resources in the sources
-            ResourceStrings resourceStrings = null;
+            var resourceStrings = new ResourceStrings();
             using (ResXResourceReader reader = new ResXResourceReader(resourceFileName))
             {
-                // get an enumerator so we can itemize all the key/value pairs
-                IDictionaryEnumerator enumerator = reader.GetEnumerator();
-
-                // create an object out of the dictionary
-                resourceStrings = new ResourceStrings(enumerator);
+                foreach(DictionaryEntry item in reader)
+                {
+                    resourceStrings[item.Key.ToString()] = item.Value.ToString();
+                }
             }
-            return resourceStrings;
+
+            return resourceStrings.Count == 0 ? null : resourceStrings;
         }
 
         #endregion
