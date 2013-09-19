@@ -4,7 +4,8 @@
 <?define VersionNumber = "5.0"?>
 <?define ProductId = "{7A9F3C32-6AF7-4B42-BE24-A27D69581938}"?>
 
-<?define Manufacturer = "Microsoft"?>
+<?define Manufacturer = "Microsoft Corporation"?>
+<?define ManufacturerFolder = "Microsoft"?>
 <?define ProductName = "Microsoft Ajax Minifier"?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
@@ -40,14 +41,14 @@
     <Fragment>
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder">
-                <Directory Id="MicrosoftAppFolder" Name="$(var.Manufacturer)">
+                <Directory Id="MicrosoftAppFolder" Name="$(var.ManufacturerFolder)">
                     <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)">
                         <Directory Id="Install20Folder" Name="net20"/>
                         <Directory Id="Install35Folder" Name="net35"/>
                     </Directory>
                 </Directory>
                 <Directory Id="MSBuildFolder" Name="MSBuild">
-                    <Directory Id="MicrosoftBuildFolder" Name="$(var.Manufacturer)">
+                    <Directory Id="MicrosoftBuildFolder" Name="$(var.ManufacturerFolder)">
                         <Directory Id="AjaxMinBuildFolder" Name="MicrosoftAjax">
                             <Directory Id="AjaxMinBuild35Folder" Name="net35"/>
                         </Directory>
@@ -143,7 +144,7 @@
                                        Name="Online Documentation"
                                        Target="http://ajaxmin.codeplex.com/documentation/"/>
                 <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
-                <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+                <RegistryValue Root="HKCU" Key="Software\[ManufacturerFolder]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
             </Component>
         </ComponentGroup>
     </Fragment>
