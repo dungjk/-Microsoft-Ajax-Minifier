@@ -68,10 +68,6 @@ namespace Microsoft.Ajax.Utilities
             @"^\s*(?:\+|(?<neg>\-))?0*(?<mag>(?<sig>\d*[1-9])(?<zer>0*))?(\.(?<man>\d*[1-9])?0*)?(?<exp>E\+?(?<eng>\-?)0*(?<pow>[1-9]\d*))?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private static Regex s_replacementToken = new Regex(
-            @"%(?<token>[\w\.]+)(?:\:(?<fallback>\w*))?%",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
         private OutputVisitor(TextWriter writer, CodeSettings settings)
         {
             m_outputStream = writer;
@@ -1155,7 +1151,7 @@ namespace Microsoft.Ajax.Utilities
                         // string, so if there's a match, make sure the match is the whole string.
                         Match match;
                         if (m_hasReplacementTokens
-                            && (match = s_replacementToken.Match(node.Value.ToString())).Success
+                            && (match = CommonData.ReplacementToken.Match(node.Value.ToString())).Success
                             && match.Value.Equals(node.Value))
                         {
                             // this is a token value, and we are replacing tokens.
@@ -1212,7 +1208,7 @@ namespace Microsoft.Ajax.Utilities
             // will look up the token and replace it with the appropriate string.
             if (m_hasReplacementTokens)
             {
-                text = s_replacementToken.Replace(text, GetReplacementToken);
+                text = CommonData.ReplacementToken.Replace(text, GetReplacementToken);
             }
 
             // no replacement; output as-is

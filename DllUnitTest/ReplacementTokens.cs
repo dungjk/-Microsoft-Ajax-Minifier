@@ -56,24 +56,24 @@ namespace DllUnitTest
 
             // default should leave tokens intact
             var settings = new CodeSettings();
-            var source = "var a = 'He said, %MyToken:foo%'";
+            var source = "var a = 'He said, %My.Token:foo%'";
             var actual = Parse(parser, settings, source);
-            Assert.AreEqual("var a=\"He said, %MyToken:foo%\"", actual);
+            Assert.AreEqual("var a=\"He said, %My.Token:foo%\"", actual);
 
             settings.ReplacementTokensApplyDefaults(new Dictionary<string, string> { 
-                    { "mytoken", "\"Now he's done it!\"" },
-                    { "numtoken", "123" },
-                    { "myjson", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
+                    { "my.token", "\"Now he's done it!\"" },
+                    { "num_token", "123" },
+                    { "my-json", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
                 });
             settings.ReplacementFallbacks.Add("zero", "0");
 
             actual = Parse(parser, settings, source);
             Assert.AreEqual("var a='He said, \"Now he\\'s done it!\"'", actual);
 
-            actual = Parse(parser, settings, "var b = '%NumToken%';");
+            actual = Parse(parser, settings, "var b = '%Num_Token%';");
             Assert.AreEqual("var b=\"123\"", actual);
 
-            actual = Parse(parser, settings, "var c = '%MyJSON%';");
+            actual = Parse(parser, settings, "var c = '%My-JSON%';");
             Assert.AreEqual("var c='{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }'", actual);
         }
 
@@ -85,24 +85,24 @@ namespace DllUnitTest
 
             // default should leave tokens intact
             var settings = new CodeSettings();
-            var source = "var a = %MyToken:foo%;";
+            var source = "var a = %My.Token:foo%;";
             var actual = Parse(parser, settings, source);
-            Assert.AreEqual("var a=%MyToken:foo%", actual);
+            Assert.AreEqual("var a=%My.Token:foo%", actual);
 
             settings.ReplacementTokensApplyDefaults(new Dictionary<string, string> { 
-                    { "mytoken", "\"Now he's done it!\"" },
-                    { "numtoken", "123" },
-                    { "myjson", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
+                    { "my.token", "\"Now he's done it!\"" },
+                    { "num_token", "123" },
+                    { "my-json", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
                 });
             settings.ReplacementFallbacks.Add("zero", "0");
 
             actual = Parse(parser, settings, source);
             Assert.AreEqual("var a=\"Now he's done it!\"", actual);
 
-            actual = Parse(parser, settings, "var b = %NumToken%;");
+            actual = Parse(parser, settings, "var b = %Num_Token%;");
             Assert.AreEqual("var b=123", actual);
 
-            actual = Parse(parser, settings, "var c = %MyJSON%;");
+            actual = Parse(parser, settings, "var c = %My-JSON%;");
             Assert.AreEqual("var c={\"a\":1,\"b\":2,\"c\":[1,2,3]}", actual);
 
             actual = Parse(parser, settings, "var d = '*%MissingToken:zero%*';");
@@ -125,9 +125,9 @@ namespace DllUnitTest
             var settings = new CodeSettings();
 
             settings.ReplacementTokensApplyDefaults(new Dictionary<string, string> { 
-                    { "mytoken", "\"Now he's done it!\"" },
-                    { "numtoken", "123" },
-                    { "myjson", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
+                    { "my.token", "\"Now he's done it!\"" },
+                    { "num_token", "123" },
+                    { "my-json", "{\"a\": 1, \"b\": 2, \"c\": [ 1, 2, 3 ] }" },
                 });
             settings.ReplacementFallbacks.Add("zero", "0");
 

@@ -91,10 +91,6 @@ namespace Microsoft.Ajax.Utilities
             @"^(\-(?<vendor>[^\-]+)\-)?(?<root>.+)$",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-        private static Regex s_replacementToken = new Regex(
-            @"%(?<token>[\w\._-]+)(?:\:(?<fallback>\w*))?%",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
         #region Comment-related fields
 
         /// <summary>
@@ -3750,7 +3746,7 @@ namespace Microsoft.Ajax.Utilities
                 // replace any tokens with the appropriate replacement values
                 if (Settings.ReplacementTokens.Count > 0)
                 {
-                    text = s_replacementToken.Replace(text, GetReplacementValue);
+                    text = CommonData.ReplacementToken.Replace(text, GetReplacementValue);
                 }
 
                 if (tokenType == TokenType.Identifier || tokenType == TokenType.Dimension)
