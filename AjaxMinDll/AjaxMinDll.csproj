@@ -216,6 +216,7 @@
     </Compile>
     <Compile Include="JavaScript\jserror.cs" />
     <Compile Include="JavaScript\jskeyword.cs" />
+    <Compile Include="JavaScript\JSON.cs" />
     <Compile Include="JavaScript\JSONOutputVisitor.cs" />
     <Compile Include="JavaScript\jsparser.cs" />
     <Compile Include="JavaScript\jsscanner.cs" />

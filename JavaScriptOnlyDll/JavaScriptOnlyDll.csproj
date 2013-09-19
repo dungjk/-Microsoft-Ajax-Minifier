@@ -287,6 +287,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\jskeyword.cs">
       <Link>JavaScript\jskeyword.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\JSON.cs">
+      <Link>JavaScript\JSON.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\JSONOutputVisitor.cs">
       <Link>JavaScript\JSONOutputVisitor.cs</Link>
     </Compile>

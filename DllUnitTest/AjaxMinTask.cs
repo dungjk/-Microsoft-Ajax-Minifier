@@ -22,10 +22,6 @@
 
         #endregion
 
-        public AjaxMinTask()
-        {
-        }
-
         private TestContext testContextInstance;
 
         /// <summary>
@@ -59,18 +55,6 @@
             // make sure the output folder exists
             Directory.CreateDirectory(s_outputFolder);
         }
-
-        // Use ClassCleanup to run code after all tests in a class have run
-        // [ClassCleanup()]
-        // public static void MyClassCleanup() { }
-        //
-        // Use TestInitialize to run code before running each test 
-        // [TestInitialize()]
-        // public void MyTestInitialize() { }
-        //
-        // Use TestCleanup to run code after each test has run
-        // [TestCleanup()]
-        // public void MyTestCleanup() { }
 
         #endregion
 
