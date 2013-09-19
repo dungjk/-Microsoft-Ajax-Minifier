@@ -71,6 +71,9 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>whether to suppress output of the parsed code</summary>
         private bool m_noOutput;
 
+        /// <summary>Whether to skip the size-comparison output</summary>
+        private bool m_skipSizeComparisons;
+
         #endregion
 
         #region private static fields
@@ -363,24 +366,6 @@ namespace Microsoft.Ajax.Utilities
                         m_configuration = ea.ParameterPart;
                         break;
 
-                    case "NOCLOBBER":
-                        // putting the noclobber switch on the command line without any arguments
-                        // is the same as putting -noclobber:true and perfectly valid.
-                        if (ea.ParameterPart == null)
-                        {
-                            m_clobber = ClobberType.NoClobber;
-                        }
-                        else if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out flag))
-                        {
-                            m_clobber = flag ? ClobberType.NoClobber : ClobberType.Auto;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
-                        }
-
-                        break;
-
                     case "ECHO":
                     case "I": // <-- old style
                         // ignore any arguments
@@ -397,48 +382,6 @@ namespace Microsoft.Ajax.Utilities
                     case "?":
                         // just show usage
                         throw new NotSupportedException(string.Empty);
-
-                    case "OUT":
-                    case "O": // <-- old style
-                        // cannot have two out arguments. If we've already seen an out statement,
-                        // either we will have an output file or the no-output flag will be set
-                        if (!string.IsNullOrEmpty(m_outputFile) || m_noOutput)
-                        {
-                            throw new NotSupportedException(AjaxMin.MultipleOutputArg);
-                        }
-                        else
-                        {
-                            // first instance of the -out switch. 
-                            // First check to see if there's a flag on the output switch
-                            if (!string.IsNullOrEmpty(ea.ParameterPart))
-                            {
-                                // there is. See if it's a boolean false. If it is, then we want no output 
-                                // and we don't follow this switch with an output path.
-                                bool outputSwitch;
-                                if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out outputSwitch))
-                                {
-                                    // the no-output flag is the opposite of the boolean flag
-                                    m_noOutput = !outputSwitch;
-                                }
-                                else
-                                {
-                                    // invalid argument switch
-                                    throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
-                                }
-                            }
-
-                            // if we still want output, then the next argument is the output path
-                            if (!m_noOutput)
-                            {
-                                if (ea.Index >= ea.Arguments.Count - 1)
-                                {
-                                    throw new NotSupportedException(AjaxMin.OutputArgNeedsPath);
-                                }
-
-                                m_outputFile = ea.Arguments[++ea.Index];
-                            }
-                        }
-                        break;
 
                     case "MAP":
                         if (!string.IsNullOrEmpty(m_xmlInputFile))
@@ -509,6 +452,81 @@ namespace Microsoft.Ajax.Utilities
                             {
                                 // invalid argument switch
                                 throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                            }
+                        }
+                        break;
+
+                    case "MODERN":
+                        // some special settings for modern apps
+                        // kill a couple optimizations
+                        m_switchParser.JSSettings.KillSwitch |= (long)(
+                            TreeModifications.CombineAdjacentExpressionStatements | TreeModifications.BooleanLiteralsToNotOperators);
+
+                        // and skip the size-comparison output
+                        m_skipSizeComparisons = true;
+                        break;
+
+                    case "NOCLOBBER":
+                        // putting the noclobber switch on the command line without any arguments
+                        // is the same as putting -noclobber:true and perfectly valid.
+                        if (ea.ParameterPart == null)
+                        {
+                            m_clobber = ClobberType.NoClobber;
+                        }
+                        else if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out flag))
+                        {
+                            m_clobber = flag ? ClobberType.NoClobber : ClobberType.Auto;
+                        }
+                        else
+                        {
+                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
+                        }
+                        break;
+
+                    case "NOSIZE":
+                        // putting -nosize on the command line means we want to suppress the size-comparison
+                        // analysis that we normally output
+                        m_skipSizeComparisons = true;
+                        break;
+
+                    case "OUT":
+                    case "O": // <-- old style
+                        // cannot have two out arguments. If we've already seen an out statement,
+                        // either we will have an output file or the no-output flag will be set
+                        if (!string.IsNullOrEmpty(m_outputFile) || m_noOutput)
+                        {
+                            throw new NotSupportedException(AjaxMin.MultipleOutputArg);
+                        }
+                        else
+                        {
+                            // first instance of the -out switch. 
+                            // First check to see if there's a flag on the output switch
+                            if (!string.IsNullOrEmpty(ea.ParameterPart))
+                            {
+                                // there is. See if it's a boolean false. If it is, then we want no output 
+                                // and we don't follow this switch with an output path.
+                                bool outputSwitch;
+                                if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out outputSwitch))
+                                {
+                                    // the no-output flag is the opposite of the boolean flag
+                                    m_noOutput = !outputSwitch;
+                                }
+                                else
+                                {
+                                    // invalid argument switch
+                                    throw new NotSupportedException(AjaxMin.InvalidArgument.FormatInvariant(ea.Arguments[ea.Index]));
+                                }
+                            }
+
+                            // if we still want output, then the next argument is the output path
+                            if (!m_noOutput)
+                            {
+                                if (ea.Index >= ea.Arguments.Count - 1)
+                                {
+                                    throw new NotSupportedException(AjaxMin.OutputArgNeedsPath);
+                                }
+
+                                m_outputFile = ea.Arguments[++ea.Index];
                             }
                         }
                         break;
@@ -587,6 +605,7 @@ namespace Microsoft.Ajax.Utilities
                     case "S": // <-- old style
                         // ignore any argument part
                         s_silentMode = true;
+                        m_skipSizeComparisons = true;
                         break;
 
                     case "TIME":
@@ -1099,7 +1118,8 @@ namespace Microsoft.Ajax.Utilities
                     byte[] encodedBytes = encodingOutput.GetBytes(outputCode);
 
                     // only output the size analysis if we aren't echoing the input
-                    if (!m_echoInput)
+                    // and we haven't said we want to skip it.
+                    if (!m_echoInput && !s_silentMode && !m_skipSizeComparisons)
                     {
                         // calculate the percentage saved
                         var percentage = Math.Round((1 - ((double)encodedBytes.Length) / sourceLength) * 100, 1);
@@ -1187,7 +1207,7 @@ namespace Microsoft.Ajax.Utilities
 
                         // only output the size analysis if there is actually some output to measure
                         // and we're not echoing the input
-                        if (File.Exists(path) && !m_echoInput)
+                        if (File.Exists(path) && !m_echoInput && !s_silentMode && !m_skipSizeComparisons)
                         {
                             // get the size of the resulting file
                             FileInfo crunchedFileInfo = new FileInfo(path);
