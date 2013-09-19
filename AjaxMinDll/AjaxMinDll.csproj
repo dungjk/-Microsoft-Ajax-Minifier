@@ -116,6 +116,7 @@
     <Compile Include="..\AjaxMin\Properties\ProductAssemblyInfo.cs">
       <Link>Properties\ProductAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CommonData.cs" />
     <Compile Include="CommonSettings.cs" />
     <Compile Include="CommonStrings.Designer.cs">
       <AutoGen>True</AutoGen>

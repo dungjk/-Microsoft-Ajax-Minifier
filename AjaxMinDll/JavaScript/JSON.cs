@@ -19,6 +19,12 @@ using System.Text;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// super-simple JSON parser/validator. Exposes a Validate method
+    /// that takes a string and returns NULL if it isn't valid JSON, or
+    /// a string representing the original JSON text with any whitespace
+    /// removed.
+    /// </summary>
     public class JSON
     {
         private string m_jsonText;
@@ -41,6 +47,14 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        private string Minified
+        {
+            get
+            {
+                return m_builder.ToString();
+            }
+        }
+
         private JSON(string jsonText)
         {
             m_jsonText = jsonText;
@@ -48,15 +62,15 @@ namespace Microsoft.Ajax.Utilities
             m_builder = new StringBuilder();
         }
 
+        /// <summary>
+        /// Validate the given JSON string
+        /// </summary>
+        /// <param name="jsonText">JSON string to validate</param>
+        /// <returns>null if not valid JSON; otherwise the original JSON text with whitespace removed</returns>
         public static string Validate(string jsonText)
         {
             var jsonValidator = new JSON(jsonText);
-            return jsonValidator.IsValidValue() && jsonValidator.IsAtEnd ? jsonValidator.ToString() : null;
-        }
-
-        public override string ToString()
-        {
-            return m_builder.ToString();
+            return jsonValidator.IsValidValue() && jsonValidator.IsAtEnd ? jsonValidator.Minified : null;
         }
 
         private bool IsValidValue()

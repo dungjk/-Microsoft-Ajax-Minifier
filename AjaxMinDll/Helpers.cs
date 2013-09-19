@@ -16,8 +16,6 @@
 
 namespace Microsoft.Ajax.Utilities
 {
-    using System.Text.RegularExpressions;
-
 #if NET_20
     using System.Collections;
     using System.Collections.Generic;
@@ -163,17 +161,4 @@ namespace Microsoft.Ajax.Utilities
         }
     }
 #endif
-
-    /// <summary>
-    /// Helper class to hold common data elements
-    /// </summary>
-    internal static class CommonData
-    {
-        /// <summary>
-        /// Regular expression to identifier replacement token syntax
-        /// </summary>
-        public static readonly Regex ReplacementToken = new Regex(
-            @"%(?<token>[\w\.-]+)(?:\:(?<fallback>\w*))?%",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-    }
 }
