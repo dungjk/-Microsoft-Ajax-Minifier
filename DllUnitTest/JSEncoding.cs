@@ -31,8 +31,12 @@ namespace DllUnitTest
         [TestMethod]
         public void UnicodeEscapedHighSurrogate()
         {
-            var minifier = new Minifier();
+            // we have to do this test in C# because technically if a text file had this code in it,
+            // it would be an invalid surrogate pair and wouldn't even read properly. So this isn't
+            // REALLY a valid valid real-world test scenario, but I still want it to work properly.
+            // the high-surrogate is escaped, and the low isn't -- which mean we have a low without a matching high.
             var source = "var str = '\\ud83d\ude80';";
+            var minifier = new Minifier();
             var minified = minifier.MinifyJavaScript(source);
             foreach (var error in minifier.ErrorList)
             {
@@ -46,8 +50,12 @@ namespace DllUnitTest
         [TestMethod]
         public void UnicodeEscapedLowSurrogate()
         {
-            var minifier = new Minifier();
+            // we have to do this test in C# because technically if a text file had this code in it,
+            // it would be an invalid surrogate pair and wouldn't even read properly. So this isn't
+            // REALLY a valid valid real-world test scenario, but I still want it to work properly.
+            // the low-surrogate is escaped -- which mean we have a high without a matching low.
             var source = "var str = '\ud83d\\ude80';";
+            var minifier = new Minifier();
             var minified = minifier.MinifyJavaScript(source);
             foreach (var error in minifier.ErrorList)
             {
@@ -61,8 +69,9 @@ namespace DllUnitTest
         [TestMethod]
         public void SurrogatePairEscapedIdentifier()
         {
-            var minifier = new Minifier();
+            // escaped surrogate pair as an identifier
             var source = "var \\ud840\\udc2f = 'foo';";
+            var minifier = new Minifier();
             var minified = minifier.MinifyJavaScript(source);
             foreach (var error in minifier.ErrorList)
             {
@@ -76,8 +85,9 @@ namespace DllUnitTest
         [TestMethod]
         public void SurrogatePairIdentifier()
         {
-            var minifier = new Minifier();
+            // raw surrogate pair as an identifier
             var source = "var \ud840\udc2d = 'foo';";
+            var minifier = new Minifier();
             var minified = minifier.MinifyJavaScript(source);
             foreach (var error in minifier.ErrorList)
             {
@@ -86,6 +96,30 @@ namespace DllUnitTest
 
             Assert.AreEqual("var 𠀭=\"foo\"", minified);
             Assert.AreEqual(0, minifier.ErrorList.Count);
+        }
+
+        [TestMethod]
+        public void BadUnicodeIdentifier()
+        {
+            // make sure that a \u that isn't a hex escape is preserved.
+            // although it SHOULD throw an error for not being a valid unicode escape.
+            var source = "var \\umberland = 'north';";
+            var minifier = new Minifier();
+            var minified = minifier.MinifyJavaScript(source);
+
+            string firstErrorCode = null;
+            foreach (var error in minifier.ErrorList)
+            {
+                Trace.WriteLine(error.ToString());
+                if (firstErrorCode == null)
+                {
+                    firstErrorCode = error.ErrorCode;
+                }
+            }
+
+            Assert.AreEqual("var \\umberland=\"north\"", minified);
+            Assert.AreEqual(1, minifier.ErrorList.Count);
+            Assert.AreEqual("JS1023", firstErrorCode);
         }
     }
 }

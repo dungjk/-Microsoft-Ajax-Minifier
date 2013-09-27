@@ -839,8 +839,22 @@ namespace Microsoft.Ajax.Utilities
                         if (GetChar(m_currentPosition + 1) == 'u')
                         {
                             // it was a unicode escape -- move past the whole "character" and mark it as illegal
+                            var beforePeek = m_currentPosition;
                             PeekUnicodeEscape(m_strSourceCode, ref m_currentPosition);
-                            HandleError(JSError.IllegalChar);
+
+                            var count = m_currentPosition - beforePeek;
+                            if (count > 1)
+                            {
+                                // the whole escape sequence is an invalid character
+                                HandleError(JSError.IllegalChar);
+                            }
+                            else
+                            {
+                                // just the slash. Must not be a valid unicode escape.
+                                // treat like a badly-escaped identifier, like: \umber
+                                token = ScanIdentifier(true);
+                                HandleError(JSError.BadHexEscapeSequence);
+                            }
                         }
                         else if (IsValidIdentifierStart(m_strSourceCode, m_currentPosition + 1))
                         {
