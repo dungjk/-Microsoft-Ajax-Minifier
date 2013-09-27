@@ -528,6 +528,11 @@ namespace Microsoft.Ajax.Utilities
 
         private static void CombineWithPreviousVar(Block node, int ndx, Var previousVar)
         {
+            if (previousVar.Count == 0)
+            {
+                return;
+            }
+
             var binaryOp = node[ndx] as BinaryOperator;
             var varDecl = previousVar[previousVar.Count - 1];
             Lookup lookup;

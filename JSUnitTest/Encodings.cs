@@ -36,5 +36,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunErrorTest("-enc:out ascii");
         }
+
+        [TestMethod]
+        public void SurrogateHighError()
+        {
+            TestHelper.Instance.RunErrorTest("-enc:out ascii", JSError.BadHexEscapeSequence);
+        }
+
+        [TestMethod]
+        public void SurrogateLowError()
+        {
+            TestHelper.Instance.RunErrorTest("-enc:out ascii", JSError.BadHexEscapeSequence);
+        }
     }
 }

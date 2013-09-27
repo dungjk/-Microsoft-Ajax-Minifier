@@ -61,6 +61,7 @@
     <Compile Include="ErrorStrings.cs" />
     <Compile Include="DebugBlock.cs" />
     <Compile Include="Frameworks.cs" />
+    <Compile Include="JSEncoding.cs" />
     <Compile Include="JSONValidate.cs" />
     <Compile Include="ManifestTask.cs" />
     <Compile Include="MinifiedNames.cs" />

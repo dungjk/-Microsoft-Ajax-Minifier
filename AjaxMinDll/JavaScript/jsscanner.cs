@@ -836,9 +836,15 @@ namespace Microsoft.Ajax.Utilities
                     token = ScanIdentifier(true);
                     if (token != JSToken.Identifier)
                     {
-                        // if the NEXT character after the backslash is a valid identifier start
-                        if (IsValidIdentifierStart(m_strSourceCode, m_currentPosition + 1))
+                        if (GetChar(m_currentPosition + 1) == 'u')
                         {
+                            // it was a unicode escape -- move past the whole "character" and mark it as illegal
+                            PeekUnicodeEscape(m_strSourceCode, ref m_currentPosition);
+                            HandleError(JSError.IllegalChar);
+                        }
+                        else if (IsValidIdentifierStart(m_strSourceCode, m_currentPosition + 1))
+                        {
+                            // if the NEXT character after the backslash is a valid identifier start
                             // then we're just going to assume we had something like \while,
                             // in which case we scan the identifier AFTER the slash
                             ++m_currentPosition;
@@ -846,6 +852,8 @@ namespace Microsoft.Ajax.Utilities
                         }
                         else
                         {
+                            // the one character is illegal
+                            ++m_currentPosition;
                             HandleError(JSError.IllegalChar);
                         }
                     }
@@ -2184,6 +2192,69 @@ namespace Microsoft.Ajax.Utilities
                         // asp.net blocks insides strings can cause issues
                         m_literalIssues = true;
                     }
+                    else if (0xd800 <= ch && ch <= 0xdbff)
+                    {
+                        // high-surrogate! Make sure the next character is a low surrogate
+                        // or we'll throw an error.
+                        ch = GetChar(m_currentPosition);
+                        if (0xdc00 <= ch && ch <= 0xdfff)
+                        {
+                            // we're good. Advance past the pair.
+                            ++m_currentPosition;
+                        }
+                        else if (ch == '\\' && GetChar(m_currentPosition + 1) == 'u')
+                        {
+                            // we have a unicode escape. Start working on that escaped value.
+                            if (null == result)
+                            {
+                                result = new StringBuilder(128);
+                            }
+
+                            // start points to the first position that has not been written to the StringBuilder.
+                            // The first time we get in here that position is the beginning of the string, after that
+                            // is the character immediately following the escape sequence
+                            if (m_currentPosition - start > 0)
+                            {
+                                // append all the non escape chars to the string builder
+                                result.Append(m_strSourceCode, start, m_currentPosition - start);
+                            }
+
+                            int lowSurrogate;
+                            if (ScanHexSequence(m_currentPosition += 2, 'u', out lowSurrogate))
+                            {
+                                // valid escape, so make sure the unescaped value is added to the result regardless.
+                                result.Append((char)lowSurrogate);
+                                start = m_currentPosition;
+
+                                // now make sure it's in low-surrogate range
+                                if (lowSurrogate < 0xdc00 || 0xdfff < lowSurrogate)
+                                {
+                                    // not a low-surrogate
+                                    m_literalIssues = true;
+                                    HandleError(JSError.HighSurrogate);
+                                }
+                            }
+                            else
+                            {
+                                // not a valid unicode escape sequence, so no -- we are not 
+                                // followed by a low-surrogate
+                                m_literalIssues = true;
+                                HandleError(JSError.HighSurrogate);
+                            }
+                        }
+                        else
+                        {
+                            // not followed by a low-surrogate
+                            m_literalIssues = true;
+                            HandleError(JSError.HighSurrogate);
+                        }
+                    }
+                    else if (0xdc00 <= ch && ch <= 0xdfff)
+                    {
+                        // low-surrogate by itself! This is an error, but keep going
+                        m_literalIssues = true;
+                        HandleError(JSError.LowSurrogate);
+                    }
                 }
                 else
                 {
@@ -2441,6 +2512,11 @@ namespace Microsoft.Ajax.Utilities
                             isValidHex = false;
                         }
                     }
+                }
+                else if (0xdc00 <= numeric && numeric <= 0xdfff)
+                {
+                    // low surrogate -- shouldn't have one by itself!
+                    isValidHex = false;
                 }
             }
 
