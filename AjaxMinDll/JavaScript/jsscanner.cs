@@ -2384,10 +2384,74 @@ namespace Microsoft.Ajax.Utilities
 
         private bool ScanHexEscape(char hexType, out string unescaped)
         {
-            var isValidHex = true;
+            // current character should be the first character AFTER the "\u" pair
+            int numeric;
 
             // save this in case there's an error and we back up to where we started
             var startOfDigits = m_currentPosition;
+            var isValidHex = ScanHexSequence(startOfDigits, hexType, out numeric);
+            if (isValidHex)
+            {
+                if (0xd800 <= numeric && numeric <= 0xdbff)
+                {
+                    // high surrogate! Cannot be a valid unicode character on its own -- must
+                    // be followed by a low surrogate character. Get the next character. If it's 
+                    // an unescaped low surrogate, use it. But if the next character is a backslash,
+                    // check for U, decode the escape, and then use it. If it's not okay, return
+                    // false.
+                    var ch = GetChar(m_currentPosition);
+                    if (0xdc00 <= ch && ch <= 0xdfff)
+                    {
+                        // skip the single low-surrogate character and return a valid two-character string
+                        // using the raw numeric values for the high and low surrogate pairs.
+                        // (strings internally are UTF-16)
+                        ++m_currentPosition;
+                        unescaped = new string(new[] { (char)numeric, ch });
+                        return true;
+                    }
+                    else
+                    {
+                        if (ch == '\\')
+                        {
+                            if (GetChar(m_currentPosition + 1) == 'u')
+                            {
+                                // advance to the character AFTER the \u and recurse
+                                m_currentPosition += 2;
+                                int lowSurrogate;
+                                isValidHex = ScanHexSequence(m_currentPosition, hexType, out lowSurrogate);
+                                if (isValidHex)
+                                {
+                                    // return a valid two-character string using the raw numeric values 
+                                    // for the high and low surrogate pairs. (strings internally are UTF-16)
+                                    unescaped = new string(new[] { (char)numeric, (char)lowSurrogate });
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                // not a \u escape sequence
+                                // not valid to have a high surrogate that ISN'T followed by a low-surrogate!
+                                isValidHex = false;
+                            }
+                        }
+                        else
+                        {
+                            // not an escape sequence either!
+                            // not valid to have a high surrogate that ISN'T followed by a low-surrogate!
+                            isValidHex = false;
+                        }
+                    }
+                }
+            }
+
+            unescaped = isValidHex ? char.ConvertFromUtf32(numeric) : null;
+            return isValidHex;
+        }
+
+        private bool ScanHexSequence(int startOfDigits, char hexType, out int accumulator)
+        {
+            // current character should be the first character AFTER the "\u" pair
+            var isValidHex = true;
 
             // how many digits we parse depends on the type. x = 2 digits, u = 4 digits.
             // UNLESS this is a type 'u' followed by a left brace. Then it's between 1 and 6.
@@ -2398,7 +2462,7 @@ namespace Microsoft.Ajax.Utilities
                 digits = 6;
             }
 
-            int accumulator = 0;
+            accumulator = 0;
             var ch = GetChar(m_currentPosition);
             while (m_currentPosition - startOfDigits < digits && IsHexDigit(ch))
             {
@@ -2418,10 +2482,12 @@ namespace Microsoft.Ajax.Utilities
                 ch = GetChar(++m_currentPosition);
             }
 
+            // if we didn't find any digits at all, or
             // if we didn't find the exact number of digits we were looking for,
             // then it's an error unless we were looking for 6 and the current character is
             // a closing brace (in which case we skip the brace).
-            if ((digits != 6 && m_currentPosition - startOfDigits != digits) || (digits == 6 && ch != '}'))
+            var digitsFound = m_currentPosition - startOfDigits;
+            if (digitsFound == 0 || (digits != 6 && digitsFound != digits) || (digits == 6 && ch != '}'))
             {
                 isValidHex = false;
                 m_currentPosition = startOfDigits;
@@ -2431,7 +2497,6 @@ namespace Microsoft.Ajax.Utilities
                 ++m_currentPosition;
             }
 
-            unescaped = char.ConvertFromUtf32(accumulator);
             return isValidHex;
         }
 
