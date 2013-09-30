@@ -47,6 +47,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AjaxMinDll\CommonData.cs">
+      <Link>CommonData.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\CommonSettings.cs">
       <Link>CommonSettings.cs</Link>
     </Compile>

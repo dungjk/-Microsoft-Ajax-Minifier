@@ -84,18 +84,18 @@
         </ComponentGroup>
         <ComponentGroup Id="Product35Components" Directory="Install35Folder">
             <Component Id="C_Application35.dll" Guid="{8078A0F9-1A4B-4FCC-A856-075CB104FFF1}">
-                <File Id="Application35.dll" Name="$(var.AjaxMinDll2008.TargetFileName)" Source="$(var.AjaxMinDll.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="Application35.dll" Name="$(var.AjaxMinDll2008.TargetFileName)" Source="$(var.AjaxMinDll2008.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
             <Component Id="C_ApplicationTask35.dll" Guid="{13822898-1BBB-45B0-92C1-2663D87711F0}">
-                <File Id="ApplicationTask35.dll" Name="$(var.AjaxMinTask2008.TargetFileName)" Source="$(var.AjaxMinTask.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="ApplicationTask35.dll" Name="$(var.AjaxMinTask2008.TargetFileName)" Source="$(var.AjaxMinTask2008.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
         </ComponentGroup>
         <ComponentGroup Id="Product20Components" Directory="Install20Folder">
             <Component Id="C_Application20.exe" Guid="{2380DD55-4420-4C9D-8D98-C1A8A23F0921}">
-                <File Id="Application20.exe" Name="$(var.AjaxMin2005.TargetFileName)" Source="$(var.AjaxMin.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="Application20.exe" Name="$(var.AjaxMin2005.TargetFileName)" Source="$(var.AjaxMin2005.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
             <Component Id="C_Application20.dll" Guid="{E93A891B-39EB-4D24-97F5-10A1FF6BF400}">
-                <File Id="Application20.dll" Name="$(var.AjaxMinDll2005.TargetFileName)" Source="$(var.AjaxMinDll.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="Application20.dll" Name="$(var.AjaxMinDll2005.TargetFileName)" Source="$(var.AjaxMinDll2005.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
         </ComponentGroup>
         <ComponentGroup Id="ProductBuildComponents" Directory="AjaxMinBuildFolder">
@@ -117,10 +117,10 @@
         </ComponentGroup>
         <ComponentGroup Id="ProductBuild35Components" Directory="AjaxMinBuild35Folder">
             <Component Id="B35_Application.dll" Guid="{C1FC0868-15F3-427C-A79E-680D945CBEA3}">
-                <File Id="BF35_Application.dll" Name="$(var.AjaxMinDll2008.TargetFileName)" Source="$(var.AjaxMinDll.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="BF35_Application.dll" Name="$(var.AjaxMinDll2008.TargetFileName)" Source="$(var.AjaxMinDll2008.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
             <Component Id="B35_ApplicationTask.dll" Guid="{981BF84F-A860-419A-8548-DFDB1FB60787}">
-                <File Id="BF35_ApplicationTask.dll" Name="$(var.AjaxMinTask2008.TargetFileName)" Source="$(var.AjaxMinTask.TargetPath)" KeyPath="yes" Checksum="yes"></File>
+                <File Id="BF35_ApplicationTask.dll" Name="$(var.AjaxMinTask2008.TargetFileName)" Source="$(var.AjaxMinTask2008.TargetPath)" KeyPath="yes" Checksum="yes"></File>
             </Component>
             <Component Id="B35_TaskTasks" Guid="{BF2203A7-2987-4E2A-B666-912DB47B4F92}">
                 <File Id="BF35_TaskTasks" Name="AjaxMin.tasks" Source="$(var.AjaxMinTask.ProjectDir)AjaxMin.tasks" KeyPath="yes"></File>
