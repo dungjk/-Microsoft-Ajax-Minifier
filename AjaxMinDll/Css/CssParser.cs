@@ -3767,33 +3767,35 @@ namespace Microsoft.Ajax.Utilities
                         // for identifiers, if the first character is a hyphen or an underscore, then it's a prefix
                         // and we want to look at the next character for nmstart.
                         firstIndex = text[0] == '_' || text[0] == '-' ? 1 : 0;
-
-                        // the only valid non-escaped first characters are A-Z (and a-z)
-                        var firstChar = text[firstIndex];
-
-                        // anything at or above 0x80 is okay for identifiers
-                        if (firstChar < 0x80)
+                        if (firstIndex < text.Length)
                         {
-                            // if it's not an a-z or A-Z, we want to escape it
-                            // also leave literal back-slashes as-is, too. The identifier might start with an escape
-                            // sequence that we didn't decode to its Unicode character for whatever reason.
-                            if ((firstChar < 'A' || 'Z' < firstChar)
-                                && (firstChar < 'a' || 'z' < firstChar)
-                                && firstChar != '\\')
+                            // the only valid non-escaped first characters are A-Z (and a-z)
+                            var firstChar = text[firstIndex];
+
+                            // anything at or above 0x80 is okay for identifiers
+                            if (firstChar < 0x80)
                             {
-                                // invalid first character -- create the string builder
-                                escapedBuilder = new StringBuilder();
-
-                                // if we had a prefix, output it
-                                if (firstIndex > 0)
+                                // if it's not an a-z or A-Z, we want to escape it
+                                // also leave literal back-slashes as-is, too. The identifier might start with an escape
+                                // sequence that we didn't decode to its Unicode character for whatever reason.
+                                if ((firstChar < 'A' || 'Z' < firstChar)
+                                    && (firstChar < 'a' || 'z' < firstChar)
+                                    && firstChar != '\\')
                                 {
-                                    escapedBuilder.Append(text[0]);
-                                }
+                                    // invalid first character -- create the string builder
+                                    escapedBuilder = new StringBuilder();
 
-                                // output the escaped first character
-                                protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[firstIndex]);
-                                textEndsInEscapeSequence = true;
-                                startIndex = firstIndex + 1;
+                                    // if we had a prefix, output it
+                                    if (firstIndex > 0)
+                                    {
+                                        escapedBuilder.Append(text[0]);
+                                    }
+
+                                    // output the escaped first character
+                                    protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[firstIndex]);
+                                    textEndsInEscapeSequence = true;
+                                    startIndex = firstIndex + 1;
+                                }
                             }
                         }
                     }
