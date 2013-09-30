@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- update BOTH of these two values for every release -->
-<?define VersionNumber = "5.0"?>
-<?define ProductId = "{7A9F3C32-6AF7-4B42-BE24-A27D69581938}"?>
+<?define VersionNumber = "5.2"?>
+<?define ProductId = "{2E180F4B-9FC0-45E9-9BAE-53A07CEC5B35}"?>
 
 <?define Manufacturer = "Microsoft Corporation"?>
 <?define ManufacturerFolder = "Microsoft"?>
