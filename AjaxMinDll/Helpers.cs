@@ -61,13 +61,7 @@ namespace Microsoft.Ajax.Utilities
 
         public bool Add(T item)
         {
-            var added = !m_table.ContainsKey(item);
-            if (added)
-            {
-                m_table.Add(item, default(T));
-            }
-
-            return added;
+            return SafeAdd(item);
         }
 
         public bool Contains(T key)
@@ -97,7 +91,7 @@ namespace Microsoft.Ajax.Utilities
 
         void ICollection<T>.Add(T item)
         {
-            m_table.Add(item, default(T));
+            SafeAdd(item);
         }
 
         public void Clear()
@@ -118,6 +112,21 @@ namespace Microsoft.Ajax.Utilities
         public bool Remove(T item)
         {
             return m_table.Remove(item);
+        }
+
+        #endregion
+
+        #region private helpers
+
+        private bool SafeAdd(T item)
+        {
+            var added = !m_table.ContainsKey(item);
+            if (added)
+            {
+                m_table.Add(item, default(T));
+            }
+
+            return added;
         }
 
         #endregion
