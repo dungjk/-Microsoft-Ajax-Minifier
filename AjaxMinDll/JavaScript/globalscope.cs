@@ -35,21 +35,67 @@ namespace Microsoft.Ajax.Utilities
             ScopeType = ScopeType.Global;
 
             // define the Global object's properties, and methods
-            m_globalProperties = new HashSet<string>(new[] { 
-                "DOMParser", "Image", "Infinity", "JSON", "Math", "NaN", "System", "Windows", "WinJS", "XMLHttpRequest", 
-                "applicationCache", "clientInformation", "clipboardData", "closed", "console", "document", "event", 
-                "external", "frameElement", "frames", "history", "length", "localStorage", "location", "name", "navigator", 
-                "opener", "parent", "screen", "self", "sessionStorage", "status", "top", "undefined", "window"});
+            m_globalProperties = new HashSet<string> { 
+                "DOMParser", 
+                "Image", "Infinity", 
+                "JSON", 
+                "Math", "MSApp", "MSManipulationEvent",
+                "NaN", 
+                "System", 
+                "Windows", "WinJS", 
+                "XMLHttpRequest", 
+                "applicationCache", 
+                "clientInformation", "clipboardData", "closed", "console", 
+                "document", "event", 
+                "external", 
+                "frameElement", "frames", 
+                "history", 
+                "length", "localStorage", "location", 
+                "name", "navigator", 
+                "opener", 
+                "parent", 
+                "screen", "self", "sessionStorage", "status", 
+                "top", 
+                "undefined", 
+                "window"};
 
-            m_globalFunctions = new HashSet<string>(new[] {
-                "ActiveXObject", "Array", "Boolean", "Date", "Error", "EvalError", "EventSource", "File", "FileList", "FileReader", "Function", 
-                "GeckoActiveXObject", "HTMLElement", "Iterator", "Map", "Number", "Object", "Proxy", "RangeError", "ReferenceError", "RegExp", 
-                "Set", "SharedWorker", "String", "SyntaxError", "TypeError", "URIError", "WeakMap", "WebSocket", "Worker",
-                "addEventListener", "alert", "attachEvent", "blur", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", 
-                "decodeURI", "decodeURIComponent", "detachEvent", "dispatchEvent", "encodeURI", "encodeURIComponent", "escape", "eval", "execScript", 
-                "focus", "getComputedStyle", "getSelection", "importScripts", "isFinite", "isNaN", "moveBy", "moveTo", "navigate", "open", 
-                "parseFloat", "parseInt", "postMessage", "prompt", "removeEventListener", "resizeBy", "resizeTo", "scroll", "scrollBy", "scrollTo", 
-                "setActive", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog",  "unescape"});
+            m_globalFunctions = new HashSet<string> {
+                "ActiveXObject", "Array", 
+                "Boolean", 
+                "Date", "Debug", 
+                "Error", "EvalError", "EventSource", 
+                "File", "FileList", "FileReader", "Function", 
+                "GeckoActiveXObject", 
+                "HTMLCollection", "HTMLElement", "HTMLIFrameElement", 
+                "Iterator", 
+                "Map", "MSGesture",
+                "Node", "NodeList", "Number", 
+                "Object", 
+                "Proxy", 
+                "RangeError", 
+                "ReferenceError", 
+                "RegExp", 
+                "Set", "SharedWorker", "String", "SyntaxError", 
+                "TypeError", 
+                "URIError", "URL",
+                "WeakMap", "WebSocket", "Worker",
+                "addEventListener", "alert", "attachEvent", 
+                "blur", 
+                "clearInterval", "clearTimeout", "close", "confirm", "createPopup", 
+                "decodeURI", "decodeURIComponent", "detachEvent", "dispatchEvent", 
+                "encodeURI", "encodeURIComponent", "escape", "eval", "execScript", 
+                "focus", 
+                "getComputedStyle", "getSelection", 
+                "importScripts", "isFinite", "isNaN", 
+                "moveBy", "moveTo", "mozRequestAnimationFrame",
+                "msGetWeakWinRTProperty", "msReleaseWinRTObject", "msRequestAnimationFrame", "msSetImmediate", "msSetWeakWinRTProperty", "msWriteProfilerMark",
+                "navigate", 
+                "oRequestAnimationFrame", "open", 
+                "parseFloat", "parseInt", "postMessage", "prompt", 
+                "removeEventListener", "requestAnimationFrame", "resizeBy", "resizeTo", 
+                "scroll", "scrollBy", "scrollTo", "setActive", "setImmediate", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog", 
+                "unescape",
+                "webkitRequestAnimationFrame"};
         }
 
         public void AddUndefinedReference(UndefinedReference exception)
