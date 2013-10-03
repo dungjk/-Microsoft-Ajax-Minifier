@@ -42,5 +42,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunErrorTest();
         }
+
+        [TestMethod]
+        public void BrowserSpecific()
+        {
+            TestHelper.Instance.RunErrorTest();
+        }
+
+        [TestMethod]
+        public void DOMElements()
+        {
+            TestHelper.Instance.RunErrorTest();
+        }
     }
 }

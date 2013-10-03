@@ -17,11 +17,18 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
 {
     public sealed class GlobalScope : ActivationObject
     {
+        // rather than itemizing all the browser- and DOM-specific global API for all the browsers, we're just going to
+        // look for a few common prefixes, and the pattern: prefix + Pascal-case identifier.
+        // this will allow us to catch things like msRequestAutomationFrame, msmsGetWeakWinRTProperty, mozPaintCount, etc.
+        // and will also pick up the dozens of DOM element names like HTMLAnchorElement and HTMLTableColElement.
+        private static Regex s_blanketPrefixes = new Regex(@"^(?:ms|MS|o|webkit|moz|Gecko|HTML)(?:[A-Z][a-z0-9]*)+$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
         private HashSet<string> m_globalProperties;
         private HashSet<string> m_globalFunctions;
         private HashSet<string> m_assumedGlobals;
@@ -39,7 +46,7 @@ namespace Microsoft.Ajax.Utilities
                 "DOMParser", 
                 "Image", "Infinity", 
                 "JSON", 
-                "Math", "MSApp", "MSManipulationEvent",
+                "Math",
                 "NaN", 
                 "System", 
                 "Windows", "WinJS", 
@@ -65,11 +72,9 @@ namespace Microsoft.Ajax.Utilities
                 "Date", "Debug", 
                 "Error", "EvalError", "EventSource", 
                 "File", "FileList", "FileReader", "Function", 
-                "GeckoActiveXObject", 
-                "HTMLCollection", "HTMLElement", "HTMLIFrameElement", 
                 "Iterator", 
-                "Map", "MSGesture",
-                "Node", "NodeList", "Number", 
+                "Map",
+                "Node", "NodeFilter", "NodeIterator", "NodeList", "NodeSelector", "Number", 
                 "Object", 
                 "Proxy", 
                 "RangeError", 
@@ -81,21 +86,19 @@ namespace Microsoft.Ajax.Utilities
                 "WeakMap", "WebSocket", "Worker",
                 "addEventListener", "alert", "attachEvent", 
                 "blur", 
-                "clearInterval", "clearTimeout", "close", "confirm", "createPopup", 
+                "clearImmediate", "clearInterval", "clearTimeout", "close", "confirm", "createPopup", 
                 "decodeURI", "decodeURIComponent", "detachEvent", "dispatchEvent", 
                 "encodeURI", "encodeURIComponent", "escape", "eval", "execScript", 
                 "focus", 
                 "getComputedStyle", "getSelection", 
                 "importScripts", "isFinite", "isNaN", 
-                "moveBy", "moveTo", "mozRequestAnimationFrame",
-                "msGetWeakWinRTProperty", "msReleaseWinRTObject", "msRequestAnimationFrame", "msSetImmediate", "msSetWeakWinRTProperty", "msWriteProfilerMark",
+                "moveBy", "moveTo",
                 "navigate", 
-                "oRequestAnimationFrame", "open", 
+                "open", 
                 "parseFloat", "parseInt", "postMessage", "prompt", 
                 "removeEventListener", "requestAnimationFrame", "resizeBy", "resizeTo", 
                 "scroll", "scrollBy", "scrollTo", "setActive", "setImmediate", "setInterval", "setTimeout", "showModalDialog", "showModelessDialog", 
-                "unescape",
-                "webkitRequestAnimationFrame"};
+                "unescape"};
         }
 
         public void AddUndefinedReference(UndefinedReference exception)
@@ -193,6 +196,16 @@ namespace Microsoft.Ajax.Utilities
                 if (variableField == null)
                 {
                     variableField = ResolveFromCollection(name, m_assumedGlobals, FieldType.Global, false);
+                }
+
+                // if it's not something explicitly defined so far, check to see if it
+                // matches the browser-specific pattern (prefixes followed by Pascal-cased identifiers).
+                // Plus, most browsers expose dozens of DOM elements prefixed by "HTML" 
+                // (eg: HTMLAnchorElement and HTMLTableColElement).
+                if (variableField == null && s_blanketPrefixes.IsMatch(name))
+                {
+                    variableField = new JSVariableField(FieldType.Predefined, name, 0, null);
+                    AddField(variableField);
                 }
 
                 return variableField;
