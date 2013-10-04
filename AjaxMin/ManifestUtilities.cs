@@ -65,15 +65,14 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         /// <param name="xmlPath">path to the file</param>
         /// <returns>nanifest read</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
         public static Manifest ReadManifestFile(string xmlPath)
         {
             Manifest manifest = null;
-            StreamReader fileReader = null;
-            try
-            {
-                // create the file reader
-                fileReader = new StreamReader(xmlPath);
 
+            // create the file reader
+            using (var fileReader = new StreamReader(xmlPath))
+            {
                 // create the xml reader from the file string using these settings
                 var settings = new XmlReaderSettings()
                 {
@@ -84,16 +83,7 @@ namespace Microsoft.Ajax.Utilities
 
                 using (var reader = XmlReader.Create(fileReader, settings))
                 {
-                    fileReader = null;
                     manifest = ManifestFactory.Create(reader);
-                }
-            }
-            finally
-            {
-                if (fileReader != null)
-                {
-                    fileReader.Close();
-                    fileReader = null;
                 }
             }
 

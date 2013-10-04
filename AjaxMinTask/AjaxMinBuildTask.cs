@@ -99,6 +99,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         }
         private string m_switches = null;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
         private void OnUnknownParameter(object sender, UnknownParameterEventArgs ea)
         {
             // we only care about rename, res, and r -- ignore all other switches.
@@ -119,13 +120,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             }
 
                             // the renaming file is specified as the NEXT argument
-                            var fileReader = new StreamReader(renamePath);
-                            try
+                            using (var fileReader = new StreamReader(renamePath))
                             {
                                 using (var reader = XmlReader.Create(fileReader))
                                 {
-                                    fileReader = null;
-
                                     // let the manifest factory do all the heavy lifting of parsing the XML
                                     // into config objects
                                     var config = Microsoft.Ajax.Utilities.Configuration.ManifestFactory.Create(reader);
@@ -140,14 +138,6 @@ namespace Microsoft.Ajax.Minifier.Tasks
                                         // add any no-rename identifiers
                                         m_switchParser.JSSettings.SetNoAutoRenames(config.NoRenameIdentifiers);
                                     }
-                                }
-                            }
-                            finally
-                            {
-                                if (fileReader != null)
-                                {
-                                    fileReader.Close();
-                                    fileReader = null;
                                 }
                             }
                         }

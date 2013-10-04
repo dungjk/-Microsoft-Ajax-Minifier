@@ -272,43 +272,36 @@ namespace Microsoft.Ajax.Utilities
 
         #region Variable Renaming method
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
         private void ProcessRenamingFile(string filePath)
         {
-            var fileReader = new StreamReader(filePath);
-            try
+            using (var fileReader = new StreamReader(filePath))
             {
-                using (var reader = XmlReader.Create(fileReader))
+                try
                 {
-                    fileReader = null;
-
-                    // let the manifest factory do all the heavy lifting of parsing the XML
-                    // into config objects
-                    var config = ManifestFactory.Create(reader);
-                    if (config != null)
+                    using (var reader = XmlReader.Create(fileReader))
                     {
-                        // add any rename pairs
-                        foreach (var pair in config.RenameIdentifiers)
+                        // let the manifest factory do all the heavy lifting of parsing the XML
+                        // into config objects
+                        var config = ManifestFactory.Create(reader);
+                        if (config != null)
                         {
-                            m_switchParser.JSSettings.AddRenamePair(pair.Key, pair.Value);
-                        }
+                            // add any rename pairs
+                            foreach (var pair in config.RenameIdentifiers)
+                            {
+                                m_switchParser.JSSettings.AddRenamePair(pair.Key, pair.Value);
+                            }
 
-                        // add any no-rename identifiers
-                        m_switchParser.JSSettings.SetNoAutoRenames(config.NoRenameIdentifiers);
+                            // add any no-rename identifiers
+                            m_switchParser.JSSettings.SetNoAutoRenames(config.NoRenameIdentifiers);
+                        }
                     }
                 }
-            }
-            catch (XmlException e)
-            {
-                // throw an error indicating the XML error
-                System.Diagnostics.Debug.WriteLine(e.ToString());
-                throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(e.Message));
-            }
-            finally
-            {
-                if (fileReader != null)
+                catch (XmlException e)
                 {
-                    fileReader.Close();
-                    fileReader = null;
+                    // throw an error indicating the XML error
+                    System.Diagnostics.Debug.WriteLine(e.ToString());
+                    throw new NotSupportedException(AjaxMin.InputXmlError.FormatInvariant(e.Message));
                 }
             }
         }
