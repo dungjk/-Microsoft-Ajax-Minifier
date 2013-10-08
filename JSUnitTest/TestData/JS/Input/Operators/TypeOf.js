@@ -16,3 +16,11 @@ with(window.ackbar)
 {
     alert(typeof window.qwerty);
 }
+
+// and don't do it if the name would map to something NOT in the global space
+function test(foop)
+{
+    // actually, if the parameter gets renamed, then "foop" WOULD resolve to the
+    // global namespace. Might want to consider that possibility!
+    alert(foop + typeof(window.foop));
+}
