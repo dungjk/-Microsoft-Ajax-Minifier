@@ -374,6 +374,7 @@
     <Content Include="TestData\JS\Expected\Operators\New.js" />
     <Content Include="TestData\JS\Expected\Operators\NewPrecedence.js" />
     <Content Include="TestData\JS\Expected\Operators\Strict.js" />
+    <Content Include="TestData\JS\Expected\Operators\TypeOf.js" />
     <Content Include="TestData\JS\Expected\Operators\Unary.js" />
     <Content Include="TestData\JS\Expected\Operators\Void.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\BadDefines.js" />
@@ -696,6 +697,7 @@
     <Content Include="TestData\JS\Input\Operators\New.js" />
     <Content Include="TestData\JS\Input\Operators\NewPrecedence.js" />
     <Content Include="TestData\JS\Input\Operators\Strict.js" />
+    <Content Include="TestData\JS\Input\Operators\TypeOf.js" />
     <Content Include="TestData\JS\Input\Operators\Unary.js" />
     <Content Include="TestData\JS\Input\Operators\Void.js" />
     <Content Include="TestData\JS\Input\Preprocessor\BadDefines.js" />

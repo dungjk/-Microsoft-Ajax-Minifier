@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Ajax.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JSUnitTest
@@ -100,6 +101,12 @@ namespace JSUnitTest
         public void ConditionalPrecedence()
         {
             TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod()]
+        public void TypeOf()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.WithNotRecommended);
         }
     }
 }
