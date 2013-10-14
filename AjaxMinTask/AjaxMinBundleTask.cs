@@ -43,56 +43,74 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #endregion
 
-        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
             // create the output file, clobbering any existing content
-            using (var writer = new StreamWriter(outputPath, false, outputEncoding))
-            {
-                if (inputGroups != null && inputGroups.Count > 0)
+            if (!FileWriteOperation(outputPath, switchParser.IfNotNull(p => p.Clobber), () =>
                 {
-                    // for each input file, copy to the output, separating them with a newline, a semicolon, and another newline
-                    var addSeparator = false;
-                    foreach (var inputGroup in inputGroups)
+                    using (var writer = new StreamWriter(outputPath, false, outputEncoding))
                     {
-                        if (addSeparator)
+                        if (inputGroups != null && inputGroups.Count > 0)
                         {
-                            writer.WriteLine();
-                            writer.WriteLine(';');
-                        }
-                        else
-                        {
-                            addSeparator = true;
-                        }
+                            // for each input file, copy to the output, separating them with a newline, a semicolon, and another newline
+                            var addSeparator = false;
+                            foreach (var inputGroup in inputGroups)
+                            {
+                                if (addSeparator)
+                                {
+                                    writer.WriteLine();
+                                    writer.WriteLine(';');
+                                }
+                                else
+                                {
+                                    addSeparator = true;
+                                }
 
-                        writer.Write(inputGroup.Source);
+                                writer.Write(inputGroup.Source);
+                            }
+                        }
                     }
-                }
+
+                    return true;
+                }))
+            {
+                // could not write file
+                Log.LogError(Strings.CouldNotWriteOutputFile, outputPath);
             }
         }
 
-        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, CssSettings cssSettings, CodeSettings codeSettings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
-            // create the output file, clobbering any existing content
-            using (var writer = new StreamWriter(outputPath, false, outputEncoding))
-            {
-                if (inputGroups != null && inputGroups.Count > 0)
+            if (!FileWriteOperation(outputPath, switchParser.IfNotNull(p => p.Clobber), () =>
                 {
-                    // for each input file, copy to the output, separating them with a newline (don't need a semicolon like JavaScript does)
-                    var addSeparator = false;
-                    foreach (var inputGroup in inputGroups)
+                    // create the output file, clobbering any existing content
+                    using (var writer = new StreamWriter(outputPath, false, outputEncoding))
                     {
-                        if (addSeparator)
+                        if (inputGroups != null && inputGroups.Count > 0)
                         {
-                            writer.WriteLine();
-                        }
-                        else
-                        {
-                            addSeparator = true;
-                        }
+                            // for each input file, copy to the output, separating them with a newline (don't need a semicolon like JavaScript does)
+                            var addSeparator = false;
+                            foreach (var inputGroup in inputGroups)
+                            {
+                                if (addSeparator)
+                                {
+                                    writer.WriteLine();
+                                }
+                                else
+                                {
+                                    addSeparator = true;
+                                }
 
-                        writer.Write(inputGroup.Source);
+                                writer.Write(inputGroup.Source);
+                            }
+                        }
                     }
-                }
+
+                    return true;
+                }))
+            {
+                // could not write file
+                Log.LogError(Strings.CouldNotWriteOutputFile, outputPath);
             }
         }
     }

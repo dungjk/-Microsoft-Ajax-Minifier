@@ -252,7 +252,19 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <summary>
         /// Whether to attempt to over-write read-only files (default is false)
         /// </summary>
-        public bool Clobber { get; set; }
+        public bool Clobber
+        {
+            get
+            {
+                // we return true for this property only if we are, indeed, clobbering all files.
+                return m_switchParser.Clobber == ExistingFileTreatment.Overwrite;
+            }
+            set
+            {
+                // since this is a boolean property, we don't care about the Preserve treatment
+                m_switchParser.Clobber = value ? ExistingFileTreatment.Overwrite : ExistingFileTreatment.Auto;
+            }
+        }
 
         /// <summary>
         /// <see cref="CodeSettings.IgnoreErrorList"/> for more information.

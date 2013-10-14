@@ -54,18 +54,66 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <param name="manifestModifiedTime">modified time for the manifest</param>
         protected override void ProcessOutputGroup(OutputGroup outputGroup, FileInfo outputFileInfo, FileInfo symbolsFileInfo, SwitchParser defaultSettings, DateTime manifestModifiedTime)
         {
+            // get the settings to use -- take the configuration for this output group
+            // and apply them over the default settings
+            var settings = ParseConfigSettings(outputGroup.GetConfigArguments(this.Configuration), defaultSettings);
+
+            // we really only care about the clobber setting -- if the file is read-only, don't bother deleting it
+            // unless we have the clobber setting. If the current setting is Preserve, then we want to change it to
+            // Auto because it makes no sense to not delete a non-readonly file during a "clean"
+            var clobber = settings.Clobber == ExistingFileTreatment.Preserve 
+                ? ExistingFileTreatment.Auto 
+                : settings.Clobber;
+
             // we don't care about the inputs, we just want to delete the outputs and be done
-            outputFileInfo.IfNotNull( fi => fi.Delete());
-            symbolsFileInfo.IfNotNull(fi => fi.Delete());
+            if (outputFileInfo != null)
+            {
+                if (!FileWriteOperation(outputFileInfo.FullName, clobber, () =>
+                    {
+                        outputFileInfo.IfNotNull(fi =>
+                            {
+                                if (fi.Exists)
+                                {
+                                    Log.LogMessage(MessageImportance.Normal, Strings.DeletingFile, fi.FullName);
+                                    fi.Delete();
+                                }
+                            });
+                        return true;
+                    }))
+                {
+                    // can't delete the file - not an error; just informational
+                    Log.LogMessage(MessageImportance.Normal, Strings.CouldNotDeleteOutputFile, outputFileInfo.FullName);
+                }
+            }
+
+            if (symbolsFileInfo != null)
+            {
+                if (!FileWriteOperation(symbolsFileInfo.FullName, clobber, () =>
+                    {
+                        symbolsFileInfo.IfNotNull(fi =>
+                            {
+                                if (fi.Exists)
+                                {
+                                    Log.LogMessage(MessageImportance.Normal, Strings.DeletingFile, fi.FullName);
+                                    fi.Delete();
+                                }
+                            });
+                        return true;
+                    }))
+                {
+                    // can't delete the file - not an error; just informational
+                    Log.LogMessage(MessageImportance.Normal, Strings.CouldNotDeleteOutputFile, symbolsFileInfo.FullName);
+                }
+            }
         }
 
-        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
             // shouldn't get called because we override the ProcessOutputGroup method
             throw new NotImplementedException();
         }
 
-        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, CssSettings cssSettings, CodeSettings codeSettings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
             // shouldn't get called because we override the ProcessOutputGroup method
             throw new NotImplementedException();

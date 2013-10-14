@@ -43,10 +43,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region base task overrides
 
-        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
+            if (switchParser == null)
+            {
+                throw new ArgumentNullException("switchParser");
+            }
+
             try
             {
+                var settings = switchParser.JSSettings;
+
                 // process the resources for this output group into the settings list
                 // if there are any to be processed
                 if (outputGroup != null && settings != null
@@ -58,7 +65,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // then process the javascript output group
                 ProcessJavaScript(
                     inputGroups,
-                    settings,
+                    switchParser,
                     outputPath,
                     outputGroup.IfNotNull(og => og.SymbolMap),
                     outputEncoding);
@@ -70,12 +77,16 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, CssSettings cssSettings, CodeSettings codeSettings, string outputPath, Encoding outputEncoding)
+        protected override void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding)
         {
+            if (switchParser == null)
+            {
+                throw new ArgumentNullException("switchParser");
+            }
+
             ProcessStylesheet(
                 inputGroups,
-                cssSettings,
-                codeSettings,
+                switchParser,
                 outputPath,
                 outputEncoding);
         }
@@ -84,8 +95,9 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region code processing methods
 
-        private void ProcessJavaScript(IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, SymbolMap symbolMap, Encoding outputEncoding)
+        private void ProcessJavaScript(IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, SymbolMap symbolMap, Encoding outputEncoding)
         {
+            var settings = switchParser.JSSettings;
             TextWriter mapWriter = null;
             ISourceMap sourceMap = null;
             try
@@ -102,21 +114,30 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     // create the map writer and the source map implementation.
                     // look at the Name attribute and implement the proper one.
                     // the encoding needs to be UTF-8 WITHOUT a BOM or it won't work.
-                    mapWriter = new StreamWriter(symbolMapPath, false, new UTF8Encoding(false));
-                    sourceMap = SourceMapFactory.Create(mapWriter, symbolMap.Name);
-                    if (sourceMap != null)
+                    if (!FileWriteOperation(symbolMapPath, switchParser.Clobber, () =>
+                        {
+                            mapWriter = new StreamWriter(symbolMapPath, false, new UTF8Encoding(false));
+                            sourceMap = SourceMapFactory.Create(mapWriter, symbolMap.Name);
+                            if (sourceMap != null)
+                            {
+                                // if we get here, the symbol map now owns the stream and we can null it out so
+                                // we don't double-close it
+                                mapWriter = null;
+                                settings.SymbolsMap = sourceMap;
+
+                                // copy some property values
+                                sourceMap.SourceRoot = symbolMap.SourceRoot.IfNullOrWhiteSpace(null);
+                                sourceMap.SafeHeader = symbolMap.SafeHeader.GetValueOrDefault(false);
+
+                                // start the package
+                                sourceMap.StartPackage(outputPath, symbolMapPath);
+                            }
+
+                            return true;
+                        }))
                     {
-                        // if we get here, the symbol map now owns the stream and we can null it out so
-                        // we don't double-close it
-                        mapWriter = null;
-                        settings.SymbolsMap = sourceMap;
-
-                        // copy some property values
-                        sourceMap.SourceRoot = symbolMap.SourceRoot.IfNullOrWhiteSpace(null);
-                        sourceMap.SafeHeader = symbolMap.SafeHeader.GetValueOrDefault(false);
-
-                        // start the package
-                        sourceMap.StartPackage(outputPath, symbolMapPath);
+                        // could not write file
+                        Log.LogError(Strings.CouldNotWriteOutputFile, symbolMapPath);
                     }
                 }
 
@@ -194,18 +215,27 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // write output
                 if (!Log.HasLoggedErrors)
                 {
-                    using (var writer = new StreamWriter(outputPath, false, outputEncoding))
-                    {
-                        // write the combined minified code
-                        writer.Write(outputBuilder.ToString());
-
-                        if (!settings.PreprocessOnly)
+                    if (!FileWriteOperation(outputPath, switchParser.Clobber, () =>
                         {
-                            // give the map (if any) a chance to add something
-                            settings.SymbolsMap.IfNotNull(m => m.EndFile(
-                                writer,
-                                settings.LineTerminator));
-                        }
+                            using (var writer = new StreamWriter(outputPath, false, outputEncoding))
+                            {
+                                // write the combined minified code
+                                writer.Write(outputBuilder.ToString());
+
+                                if (!settings.PreprocessOnly)
+                                {
+                                    // give the map (if any) a chance to add something
+                                    settings.SymbolsMap.IfNotNull(m => m.EndFile(
+                                        writer,
+                                        settings.LineTerminator));
+                                }
+                            }
+
+                            return true;
+                        }))
+                    {
+                        // could not write file
+                        Log.LogError(Strings.CouldNotWriteOutputFile, outputPath);
                     }
                 }
                 else
@@ -234,15 +264,15 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        private void ProcessStylesheet(IList<InputGroup> inputGroups, CssSettings settings, CodeSettings jsSettings, string outputPath, Encoding encoding)
+        private void ProcessStylesheet(IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding encoding)
         {
             var outputBuilder = new StringBuilder();
             foreach (var inputGroup in inputGroups)
             {
                 // create and setup parser
                 var parser = new CssParser();
-                parser.Settings = settings;
-                parser.JSSettings = jsSettings;
+                parser.Settings = switchParser.CssSettings;
+                parser.JSSettings = switchParser.JSSettings;
                 parser.CssError += (sender, ea) =>
                 {
                     // if the input group is not project, then only report sev-0 errors
@@ -259,9 +289,18 @@ namespace Microsoft.Ajax.Minifier.Tasks
             // write output
             if (!Log.HasLoggedErrors)
             {
-                using (var writer = new StreamWriter(outputPath, false, encoding))
+                if (!FileWriteOperation(outputPath, switchParser.Clobber, () =>
+                    {
+                        using (var writer = new StreamWriter(outputPath, false, encoding))
+                        {
+                            writer.Write(outputBuilder.ToString());
+                        }
+
+                        return true;
+                    }))
                 {
-                    writer.Write(outputBuilder.ToString());
+                    // could not write file
+                    Log.LogError(Strings.CouldNotWriteOutputFile, outputPath);
                 }
             }
             else

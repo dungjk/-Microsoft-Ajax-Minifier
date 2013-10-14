@@ -92,9 +92,6 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private SwitchParser m_switchParser;
 
-        // whether to clobber existing output files
-        private ClobberType m_clobber; // = ClobberType.Auto
-
         // simply echo the input code, not the crunched code
         private bool m_echoInput;// = false;
 
@@ -130,16 +127,6 @@ namespace Microsoft.Ajax.Utilities
         /// instead of specifying a single output and the input file(s) on the command line.
         /// </summary>
         private string m_xmlInputFile;// = null;
-
-        /// <summary>
-        /// clobber type
-        /// </summary>
-        private enum ClobberType
-        {
-            Auto = 0,
-            Clobber,
-            NoClobber
-        }
 
         #endregion
 
@@ -339,24 +326,6 @@ namespace Microsoft.Ajax.Utilities
                 // see if the switch is okay
                 switch (ea.SwitchPart)
                 {
-                    case "CLOBBER":
-                        // just putting the clobber switch on the command line without any arguments
-                        // is the same as putting -clobber:true and perfectly valid.
-                        if (ea.ParameterPart == null)
-                        {
-                            m_clobber = ClobberType.Clobber;
-                        }
-                        else if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out flag))
-                        {
-                            m_clobber = flag ? ClobberType.Clobber : ClobberType.Auto;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
-                        }
-
-                        break;
-
                     case "CONFIG":
                         if (ea.ParameterPart == null)
                         {
@@ -464,23 +433,6 @@ namespace Microsoft.Ajax.Utilities
 
                         // and skip the size-comparison output
                         m_skipSizeComparisons = true;
-                        break;
-
-                    case "NOCLOBBER":
-                        // putting the noclobber switch on the command line without any arguments
-                        // is the same as putting -noclobber:true and perfectly valid.
-                        if (ea.ParameterPart == null)
-                        {
-                            m_clobber = ClobberType.NoClobber;
-                        }
-                        else if (SwitchParser.BooleanSwitch(ea.ParameterPart.ToUpperInvariant(), true, out flag))
-                        {
-                            m_clobber = flag ? ClobberType.NoClobber : ClobberType.Auto;
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(AjaxMin.InvalidSwitchArg.FormatInvariant(ea.SwitchPart, ea.ParameterPart));
-                        }
                         break;
 
                     case "NOSIZE":
@@ -1271,14 +1223,14 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // file exists. determine read-only status
                     var isReadOnly = (File.GetAttributes(filePath) & FileAttributes.ReadOnly) != 0;
-                    if (!isReadOnly && m_clobber != ClobberType.NoClobber)
+                    if (!isReadOnly && m_switchParser.Clobber != ExistingFileTreatment.Preserve)
                     {
                         // file exists, it's not read-only, and we don't have noclobber set.
                         // noclobber will never write over an existing file, but auto will
                         // write over an existing file that doesn't have read-only set.
                         doWrite = true;
                     }
-                    else if (isReadOnly && m_clobber == ClobberType.Clobber)
+                    else if (isReadOnly && m_switchParser.Clobber == ExistingFileTreatment.Overwrite)
                     {
                         // file exists, it IS read-only, and we want to clobber.
                         // noclobber will never write over an existing file, and auto

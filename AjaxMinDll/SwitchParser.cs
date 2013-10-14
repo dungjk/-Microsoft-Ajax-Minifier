@@ -41,6 +41,28 @@ namespace Microsoft.Ajax.Utilities
         }
     }
 
+    /// <summary>
+    /// Enumeration indicating how existing files will be treated
+    /// </summary>
+    public enum ExistingFileTreatment
+    {
+        /// <summary>
+        /// Existing files will be overwritten, but existing files marked with the read-only flag will not
+        /// </summary>
+        Auto = 0,
+        
+        /// <summary>
+        /// Any existing file will be overwritten, regardless of the state of its read-only flag
+        /// </summary>
+        Overwrite,
+
+        /// <summary>
+        /// 
+        /// Existing files will be preserved (not overwritten)
+        /// </summary>
+        Preserve
+    }
+
     public class SwitchParser
     {
         #region private fields
@@ -85,6 +107,11 @@ namespace Microsoft.Ajax.Utilities
         /// Gets or sets an integer value indicating the warning severity threshold for reporting. Default is zero (syntax errors only).
         /// </summary>
         public int WarningLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets a flag indicating how existing files should be treated.
+        /// </summary>
+        public ExistingFileTreatment Clobber { get; set; }
 
         /// <summary>
         /// Gets the string output encoding name. Default is null, indicating the default output encoding should be used.
@@ -434,6 +461,24 @@ namespace Microsoft.Ajax.Utilities
                                     OnInvalidSwitch(switchPart, paramPart);
                                 }
                                 OnJSOnlyParameter();
+                                break;
+
+                            case "CLOBBER":
+                                // just putting the clobber switch on the command line without any arguments
+                                // is the same as putting -clobber:true and perfectly valid.
+                                if (paramPartUpper == null)
+                                {
+                                    Clobber = ExistingFileTreatment.Overwrite;
+                                }
+                                else if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    Clobber = parameterFlag ? ExistingFileTreatment.Overwrite : ExistingFileTreatment.Auto;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 break;
 
                             case "COLORS":
@@ -1224,6 +1269,23 @@ namespace Microsoft.Ajax.Utilities
 
                                 // this is a JS-only switch
                                 OnJSOnlyParameter();
+                                break;
+
+                            case "NOCLOBBER":
+                                // putting the noclobber switch on the command line without any arguments
+                                // is the same as putting -noclobber:true and perfectly valid.
+                                if (paramPartUpper == null)
+                                {
+                                    Clobber = ExistingFileTreatment.Preserve;
+                                }
+                                else if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    Clobber = parameterFlag ? ExistingFileTreatment.Preserve : ExistingFileTreatment.Auto;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
                                 break;
 
                             case "NORENAME":

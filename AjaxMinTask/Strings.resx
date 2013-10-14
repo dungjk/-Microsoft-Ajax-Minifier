@@ -123,6 +123,15 @@
   <data name="CannotUseCombinedAndIndividual" xml:space="preserve">
     <value>Cannot use Combined- and Individual-file properties at the same time.</value>
   </data>
+  <data name="CouldNotDeleteOutputFile" xml:space="preserve">
+    <value>Could not delete output file: {0}</value>
+  </data>
+  <data name="CouldNotWriteOutputFile" xml:space="preserve">
+    <value>Could not write expected output file: {0}</value>
+  </data>
+  <data name="DeletingFile" xml:space="preserve">
+    <value>Deleting file "{0}".</value>
+  </data>
   <data name="DestinationIsReadOnly" xml:space="preserve">
     <value>Did not minify '{0}': destination file '{1}' is read-only.</value>
   </data>

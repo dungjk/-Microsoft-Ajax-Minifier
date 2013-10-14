@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Xml;
 using Microsoft.Ajax.Utilities;
@@ -197,26 +198,26 @@ namespace Microsoft.Ajax.Minifier.Tasks
             }
         }
 
-        protected abstract void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, CodeSettings settings, string outputPath, Encoding outputEncoding);
+        protected abstract void GenerateJavaScript(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding);
 
-        protected abstract void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, CssSettings cssSettings, CodeSettings codeSettings, string outputPath, Encoding outputEncoding);
+        protected abstract void GenerateStyleSheet(OutputGroup outputGroup, IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding outputEncoding);
 
-        private void GenerateOutputFiles(OutputGroup outputGroup, FileInfo outputFileInfo, SwitchParser settings)
+        private void GenerateOutputFiles(OutputGroup outputGroup, FileInfo outputFileInfo, SwitchParser switchParser)
         {
             // create combined input source
-            var inputGroups = outputGroup.ReadInputGroups(settings.EncodingInputName);
+            var inputGroups = outputGroup.ReadInputGroups(switchParser.EncodingInputName);
             if (inputGroups.Count > 0)
             {
                 switch (outputGroup.CodeType)
                 {
                     case CodeType.JavaScript:
                         // call the virtual function to generate the JavaScript output file from the inputs
-                        GenerateJavaScript(outputGroup, inputGroups, settings.JSSettings, outputFileInfo.FullName, outputGroup.GetEncoding(settings.EncodingOutputName));
+                        GenerateJavaScript(outputGroup, inputGroups, switchParser, outputFileInfo.FullName, outputGroup.GetEncoding(switchParser.EncodingOutputName));
                         break;
 
                     case CodeType.StyleSheet:
                         // call the virtual function to generate the stylesheet output file from the inputs
-                        GenerateStyleSheet(outputGroup, inputGroups, settings.CssSettings, settings.JSSettings, outputFileInfo.FullName, outputGroup.GetEncoding(settings.EncodingOutputName));
+                        GenerateStyleSheet(outputGroup, inputGroups, switchParser, outputFileInfo.FullName, outputGroup.GetEncoding(switchParser.EncodingOutputName));
                         break;
 
                     case CodeType.Unknown:
@@ -227,9 +228,17 @@ namespace Microsoft.Ajax.Minifier.Tasks
             else
             {
                 // no input! write an empty output file
-                using (var stream = outputFileInfo.Create())
+                if (!FileWriteOperation(outputFileInfo.FullName, switchParser.Clobber, () =>
+                    {
+                        using (var stream = outputFileInfo.Create())
+                        {
+                            // write nothing; just create the empty file
+                            return true;
+                        }
+                    }))
                 {
-                    // write nothing; just create the empty file
+                    // could not write file
+                    Log.LogError(Strings.CouldNotWriteOutputFile, outputFileInfo.FullName);
                 }
             }
         }
@@ -356,11 +365,90 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         #region helper methods
 
-        private static SwitchParser ParseConfigSettings(string arguments, SwitchParser defaults)
+        protected static TResult FileWriteOperation<TResult>(string filePath, ExistingFileTreatment treatment, Func<TResult> operation)
+        {
+            // the default value by default
+            var result = default(TResult);
+
+            // send output to file
+            try
+            {
+                // make sure the destination folder exists
+                var fileInfo = new FileInfo(filePath);
+                var destFolder = new DirectoryInfo(fileInfo.DirectoryName);
+                if (!destFolder.Exists)
+                {
+                    destFolder.Create();
+                }
+
+                // if the file doesn't exist, we write.
+                // else (it does exist)
+                //      determine read-only state
+                //      if not readonly and clobber is not noclobber, we write
+                //      else if it is readonly and clobber is clobber, we change flag and write
+                var doWrite = !File.Exists(filePath);
+                if (!doWrite)
+                {
+                    // file exists, so doWrite will be false.
+                    // if our clobber state is set to preserve, then we don't want to write.
+                    if (treatment != ExistingFileTreatment.Preserve)
+                    {
+                        // determine read-only status
+                        var isReadOnly = (File.GetAttributes(filePath) & FileAttributes.ReadOnly) != 0;
+                        if (!isReadOnly && treatment != ExistingFileTreatment.Preserve)
+                        {
+                            // file exists, it's not read-only, and we don't have noclobber set.
+                            // noclobber will never write over an existing file, but auto will
+                            // write over an existing file that doesn't have read-only set.
+                            doWrite = true;
+                        }
+                        else if (isReadOnly && treatment == ExistingFileTreatment.Overwrite)
+                        {
+                            // file exists, it IS read-only, and we want to clobber.
+                            // noclobber will never write over an existing file, and auto
+                            // won't write over a read-only file. But clobber writes over anything.
+                            File.SetAttributes(
+                                filePath,
+                                (File.GetAttributes(filePath) & ~FileAttributes.ReadOnly));
+                            doWrite = true;
+                        }
+                    }
+                }
+
+                if (doWrite && operation != null)
+                {
+                    result = operation();
+                }
+            }
+            catch (ArgumentException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+            }
+            catch (PathTooLongException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+            }
+            catch (SecurityException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+            }
+            catch (IOException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
+            }
+
+            return result;
+        }
+
+        protected static SwitchParser ParseConfigSettings(string arguments, SwitchParser defaults)
         {
             // clone the default switch settings, parse the arguments on top of the clone,
             // and then return the clone.
-            var switchParser = defaults.Clone();
+            var switchParser = defaults.IfNotNull(d => d.Clone(), new SwitchParser());
             switchParser.Parse(arguments);
             return switchParser;
         }
