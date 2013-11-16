@@ -195,5 +195,17 @@ namespace JSUnitTest
             // don't minify the string or template literals
             TestHelper.Instance.RunErrorTest("-kill:0x100000");
         }
+
+        [TestMethod]
+        public void LoneHighSurrogate()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.HighSurrogate);
+        }
+
+        [TestMethod]
+        public void LoneLowSurrogate()
+        {
+            TestHelper.Instance.RunErrorTest(JSError.LowSurrogate);
+        }
     }
 }

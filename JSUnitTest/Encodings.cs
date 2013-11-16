@@ -40,13 +40,13 @@ namespace JSUnitTest
         [TestMethod]
         public void SurrogateHighError()
         {
-            TestHelper.Instance.RunErrorTest("-enc:out ascii", JSError.BadHexEscapeSequence);
+            TestHelper.Instance.RunErrorTest(JSError.HighSurrogate);
         }
 
         [TestMethod]
         public void SurrogateLowError()
         {
-            TestHelper.Instance.RunErrorTest("-enc:out ascii", JSError.BadHexEscapeSequence);
+            TestHelper.Instance.RunErrorTest(JSError.LowSurrogate);
         }
     }
 }

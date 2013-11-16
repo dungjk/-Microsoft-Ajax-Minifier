@@ -2512,25 +2512,25 @@ namespace Microsoft.Ajax.Utilities
                                     return true;
                                 }
                             }
-                            else
-                            {
-                                // not a \u escape sequence
-                                // not valid to have a high surrogate that ISN'T followed by a low-surrogate!
-                                isValidHex = false;
-                            }
                         }
-                        else
-                        {
-                            // not an escape sequence either!
-                            // not valid to have a high surrogate that ISN'T followed by a low-surrogate!
-                            isValidHex = false;
-                        }
+
+                        // not a \u escape sequence
+                        // not valid to have a high surrogate that ISN'T followed by a low-surrogate!
+                        // throw the error, but return true
+                        HandleError(JSError.HighSurrogate);
+                        m_literalIssues = true;
+                        unescaped = new string((char)numeric, 1);
+                        return true;
                     }
                 }
                 else if (0xdc00 <= numeric && numeric <= 0xdfff)
                 {
                     // low surrogate -- shouldn't have one by itself!
-                    isValidHex = false;
+                    // throw the error, but return true
+                    HandleError(JSError.LowSurrogate);
+                    m_literalIssues = true;
+                    unescaped = new string((char)numeric, 1);
+                    return true;
                 }
             }
 
