@@ -467,6 +467,7 @@
     <Content Include="TestData\JS\Expected\Syntax\EmptyStatement_P.js" />
     <Content Include="TestData\JS\Expected\Syntax\ES6.js" />
     <Content Include="TestData\JS\Expected\Syntax\ES6_h.js" />
+    <Content Include="TestData\JS\Expected\Syntax\MissingMemberRoot.js" />
     <Content Include="TestData\JS\Expected\Syntax\NestedBlocks.js" />
     <Content Include="TestData\JS\Expected\Syntax\NonES6Yield.js" />
     <Content Include="TestData\JS\Expected\Syntax\NonES6Yield_norename.js" />
@@ -769,6 +770,7 @@
     <Content Include="TestData\JS\Input\Syntax\BOM.js" />
     <Content Include="TestData\JS\Input\Syntax\EmptyStatement.js" />
     <Content Include="TestData\JS\Input\Syntax\ES6.js" />
+    <Content Include="TestData\JS\Input\Syntax\MissingMemberRoot.js" />
     <Content Include="TestData\JS\Input\Syntax\NestedBlocks.js" />
     <Content Include="TestData\JS\Input\Syntax\NonES6Yield.js" />
     <Content Include="TestData\JS\Input\Syntax\SlashSpacing.js" />

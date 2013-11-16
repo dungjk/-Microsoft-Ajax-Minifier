@@ -90,5 +90,12 @@ namespace JSUnitTest
             // no errors other than unreferenced arguments
             TestHelper.Instance.RunErrorTest("-ignore:JS1270,JS1268", JSError.BindingPatternRequiresInitializer);
         }
+
+        [TestMethod]
+        public void MissingMemberRoot()
+        {
+            // ignore the undefined variable, but make sure there's an expected-expression error
+            TestHelper.Instance.RunErrorTest("-ignore:js1135", JSError.ExpressionExpected);
+        }
     }
 }

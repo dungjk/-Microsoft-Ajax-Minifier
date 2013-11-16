@@ -3185,7 +3185,7 @@ namespace Microsoft.Ajax.Utilities
                 if (m_stripDebug)
                 {
                     var parentIsMember = node.Parent is Member;
-                    if (node.Root.IsDebugOnly)
+                    if (node.Root.IfNotNull(r => r.IsDebugOnly))
                     {
                         // if the root is debug-only, WE are debug-only
                         node.IsDebugOnly = true;
