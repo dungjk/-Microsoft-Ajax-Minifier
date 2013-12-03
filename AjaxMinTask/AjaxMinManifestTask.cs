@@ -199,7 +199,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                             // minify the AST to the output
                             if (settings.Format == JavaScriptFormat.JSON)
                             {
-                                if (!JSONOutputVisitor.Apply(writer, block))
+                                if (!JSONOutputVisitor.Apply(writer, block, settings))
                                 {
                                     Log.LogError(Strings.InvalidJSONOutput);
                                 }

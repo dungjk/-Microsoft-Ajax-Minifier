@@ -1013,6 +1013,7 @@ namespace Microsoft.Ajax.Utilities
                 while (parentScope != null && variableField == null)
                 {
                     variableField = parentScope[name];
+                    parentScope = parentScope.Parent;
                 }
             }
 

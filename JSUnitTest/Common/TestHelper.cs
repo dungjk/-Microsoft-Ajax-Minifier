@@ -792,7 +792,7 @@ namespace JSUnitTest
                     if (switchParser.JSSettings.Format == JavaScriptFormat.JSON)
                     {
                         {
-                            if (!JSONOutputVisitor.Apply(writer, block))
+                            if (!JSONOutputVisitor.Apply(writer, block, switchParser.JSSettings))
                             {
                                 Trace.WriteLine("JSON OUTPUT ERRORS!");
                             }

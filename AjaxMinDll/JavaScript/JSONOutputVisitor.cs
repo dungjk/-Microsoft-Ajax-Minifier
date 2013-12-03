@@ -27,6 +27,7 @@ namespace Microsoft.Ajax.Utilities
     public class JSONOutputVisitor : IVisitor
     {
         private TextWriter m_writer;
+        private CodeSettings m_settings;
 
         public bool IsValid
         {
@@ -34,17 +35,18 @@ namespace Microsoft.Ajax.Utilities
             private set;
         }
 
-        private JSONOutputVisitor(TextWriter writer)
+        private JSONOutputVisitor(TextWriter writer, CodeSettings settings)
         {
             m_writer = writer;
+            m_settings = settings;
             IsValid = true;
         }
 
-        public static bool Apply(TextWriter writer, AstNode node)
+        public static bool Apply(TextWriter writer, AstNode node, CodeSettings settings)
         {
             if (node != null)
             {
-                var visitor = new JSONOutputVisitor(writer);
+                var visitor = new JSONOutputVisitor(writer, settings);
                 node.Accept(visitor);
                 return visitor.IsValid;
             }
@@ -58,10 +60,30 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                m_writer.Write('[');
-                if (node.Elements != null)
+                // if this is multi-line output, we're going to want to run some checks first
+                // to see if we want to put the array all on one line or put elements on separate lines.
+                var multiLine = false;
+                if (m_settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    node.Elements.Accept(this);
+                    if (node.Elements.Count > 5 || NotJustPrimitives(node.Elements))
+                    {
+                        multiLine = true;
+                    }
+                }
+
+                m_writer.Write('[');
+
+                if (multiLine)
+                {
+                    // multiline -- let's pretty it up a bit
+                }
+                else
+                {
+                    // not multiline, so just run through all the items
+                    if (node.Elements != null)
+                    {
+                        node.Elements.Accept(this);
+                    }
                 }
 
                 m_writer.Write(']');
@@ -77,6 +99,10 @@ namespace Microsoft.Ajax.Utilities
                     if (ndx > 0)
                     {
                         m_writer.Write(',');
+                        if (m_settings.OutputMode == OutputMode.MultipleLines)
+                        {
+                            m_writer.Write(' ');
+                        }
                     }
 
                     if (node[ndx] != null)
@@ -707,6 +733,27 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return number;
+        }
+
+        #endregion
+
+        #region other helper methods
+
+        private static bool NotJustPrimitives(AstNodeList nodeList)
+        {
+            // if any node in the list isn't a constant wrapper (boolean, number, string)
+            // or a unary (presumably a negative number), then we've got something other than
+            // a primitive in the list (array or object)
+            foreach (var child in nodeList)
+            {
+                if (!(child is ConstantWrapper) && !(child is UnaryOperator))
+                {
+                    return true;
+                }
+            }
+
+            // if we get here, then everything is a primitive
+            return false;
         }
 
         #endregion
