@@ -107,7 +107,7 @@ namespace Microsoft.Ajax.Utilities
             return false;
         }
 
-        internal void Append(AstNode elem)
+        public void Append(AstNode elem)
         {
             var decl = elem as VariableDeclaration;
             if (decl != null)
@@ -139,7 +139,7 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
-        internal void InsertAt(int index, AstNode elem)
+        public void InsertAt(int index, AstNode elem)
         {
             VariableDeclaration decl = elem as VariableDeclaration;
             if (decl != null)
