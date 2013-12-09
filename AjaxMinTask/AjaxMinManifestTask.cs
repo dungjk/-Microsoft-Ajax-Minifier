@@ -149,8 +149,11 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 var parser = new JSParser();
                 parser.CompilerError += (sender, ea) =>
                 {
-                    // if the input group isn't project, then we only want to report sev-0 errors
-                    if (currentSourceOrigin == SourceOrigin.Project || ea.Error.Severity == 0)
+                    // if the input group isn't project, then we only want to report sev-0 errors.
+                    // regardless, don't show any errors that have a severity lower (greater numeric value)
+                    // than the warning level specified.
+                    if ((currentSourceOrigin == SourceOrigin.Project || ea.Error.Severity == 0)
+                        && ea.Error.Severity <= switchParser.WarningLevel)
                     {
                         LogContextError(ea.Error);
                     }
@@ -276,7 +279,10 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 parser.CssError += (sender, ea) =>
                 {
                     // if the input group is not project, then only report sev-0 errors
-                    if (inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
+                    // regardless, don't show any errors that have a severity lower (greater numeric value)
+                    // than the warning level specified.
+                    if ((inputGroup.Origin == SourceOrigin.Project || ea.Error.Severity == 0)
+                        && ea.Error.Severity <= switchParser.WarningLevel)
                     {
                         LogContextError(ea.Error);
                     }

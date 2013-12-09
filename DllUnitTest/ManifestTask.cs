@@ -223,6 +223,44 @@
             Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_jq2.js")), "test_jq2.js does not exist");
         }
 
+        [TestMethod]
+        public void ManifestWithWarnings()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.TreatWarningsAsErrors = false;
+            task.Manifests = new[] { new TaskItem { ItemSpec = @"Dll\Input\ManifestTask\ManifestWarn.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            var testEngine = task.BuildEngine as TestBuildEngine;
+            Assert.AreEqual(testEngine.NumWarnings, 4, "should be 4 warnings");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_warn.js")), "test_warn.js does not exist");
+        }
+
+        [TestMethod]
+        public void ManifestWithSuppressedWarnings()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.TreatWarningsAsErrors = false;
+            task.Manifests = new[] { new TaskItem { ItemSpec = @"Dll\Input\ManifestTask\ManifestNoWarn.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            var testEngine = task.BuildEngine as TestBuildEngine;
+            Assert.AreEqual(testEngine.NumWarnings, 0, "should NOT be any warnings");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_nowarn.js")), "test_nowarn.js does not exist");
+        }
+
         private AjaxMinManifestTask CreateAndSetupTask()
         {
             var task = new AjaxMinManifestTask();

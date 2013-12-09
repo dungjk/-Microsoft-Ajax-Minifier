@@ -18,6 +18,10 @@ namespace DllUnitTest
             LogMessages = new List<string>();
         }
 
+        public int NumErrors { get; private set; }
+
+        public int NumWarnings { get; private set; }
+
         #region IBuildEngine Members
 
         public bool BuildProjectFile(string projectFileName, string[] targetNames, System.Collections.IDictionary globalProperties, System.Collections.IDictionary targetOutputs)
@@ -47,6 +51,7 @@ namespace DllUnitTest
 
         public void LogErrorEvent(BuildErrorEventArgs e)
         {
+            ++NumErrors;
             LogMessages.Add(FormatMessage(true, e.File, e.LineNumber, e.EndLineNumber, e.ColumnNumber, e.EndColumnNumber, e.Code, e.Subcategory, e.Message));
         }
 
@@ -57,6 +62,7 @@ namespace DllUnitTest
 
         public void LogWarningEvent(BuildWarningEventArgs e)
         {
+            ++NumWarnings;
             LogMessages.Add(FormatMessage(false, e.File, e.LineNumber, e.EndLineNumber, e.ColumnNumber, e.EndColumnNumber, e.Code, e.Subcategory, e.Message));
         }
 

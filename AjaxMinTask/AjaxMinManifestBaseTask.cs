@@ -90,7 +90,12 @@ namespace Microsoft.Ajax.Minifier.Tasks
             if (Manifests != null && Manifests.Length > 0)
             {
                 // create the project default settings
-                var projectDefaultSettings = new SwitchParser();
+                // with a default warning level of maxvalue so everything is reported unless otherwise changed
+                // with a -warn switch
+                var projectDefaultSettings = new SwitchParser
+                    {
+                        WarningLevel = int.MaxValue
+                    };
                 if (!ProjectDefaultSwitches.IsNullOrWhiteSpace())
                 {
                     projectDefaultSettings.Parse(ProjectDefaultSwitches);
