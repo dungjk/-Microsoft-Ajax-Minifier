@@ -72,16 +72,40 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 m_writer.Write('[');
-
-                if (multiLine)
+                if (node.Elements != null)
                 {
-                    // multiline -- let's pretty it up a bit
-                }
-                else
-                {
-                    // not multiline, so just run through all the items
-                    if (node.Elements != null)
+                    if (multiLine)
                     {
+                        // multiline -- let's pretty it up a bit
+                        m_settings.Indent();
+                        try
+                        {
+                            var first = true;
+                            foreach (var element in node.Elements)
+                            {
+                                if (first)
+                                {
+                                    first = false;
+                                }
+                                else
+                                {
+                                    m_writer.Write(',');
+                                }
+
+                                NewLine();
+                                element.Accept(this);
+                            }
+                        }
+                        finally
+                        {
+                            m_settings.Unindent();
+                        }
+
+                        NewLine();
+                    }
+                    else
+                    {
+                        // not multiline, so just run through all the items
                         node.Elements.Accept(this);
                     }
                 }
@@ -188,7 +212,50 @@ namespace Microsoft.Ajax.Utilities
                 m_writer.Write('{');
                 if (node.Properties != null)
                 {
-                    node.Properties.Accept(this);
+                    // if this is multi-line output, we're going to want to run some checks first
+                    // to see if we want to put the array all on one line or put elements on separate lines.
+                    var multiLine = false;
+                    if (m_settings.OutputMode == OutputMode.MultipleLines)
+                    {
+                        if (node.Properties.Count > 5 || NotJustPrimitives(node.Properties))
+                        {
+                            multiLine = true;
+                        }
+                    }
+
+                    if (multiLine)
+                    {
+                        // multiline -- let's pretty it up a bit
+                        m_settings.Indent();
+                        try
+                        {
+                            var first = true;
+                            foreach (var property in node.Properties)
+                            {
+                                if (first)
+                                {
+                                    first = false;
+                                }
+                                else
+                                {
+                                    m_writer.Write(',');
+                                }
+
+                                NewLine();
+                                property.Accept(this);
+                            }
+                        }
+                        finally
+                        {
+                            m_settings.Unindent();
+                        }
+
+                        NewLine();
+                    }
+                    else
+                    {
+                        node.Properties.Accept(this);
+                    }
                 }
 
                 m_writer.Write('}');
@@ -754,6 +821,15 @@ namespace Microsoft.Ajax.Utilities
 
             // if we get here, then everything is a primitive
             return false;
+        }
+
+        /// <summary>
+        ///  output a new line and setup the proper indent level
+        /// </summary>
+        private void NewLine()
+        {
+            m_writer.WriteLine();
+            m_writer.Write(m_settings.TabSpaces);
         }
 
         #endregion
