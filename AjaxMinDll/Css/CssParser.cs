@@ -2372,7 +2372,7 @@ namespace Microsoft.Ajax.Utilities
                         // we expected the hash token to be a proper color -- but it's not.
                         // we threw an error -- go ahead and output the token as-is and keep going.
                         AppendCurrent();
-                        NextToken();
+                        SkipSpace();
                     }
                     parsed = Parsed.True;
                     break;
