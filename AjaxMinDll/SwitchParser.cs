@@ -68,6 +68,7 @@ namespace Microsoft.Ajax.Utilities
         #region private fields
 
         private bool m_isMono;
+        private bool m_noPretty;
 
         #endregion
 
@@ -575,6 +576,14 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "DEBUG":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                // this seems to be a common one for people to wonder why it's not working properly.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // see if the param part is a comma-delimited list
                                 if (paramPartUpper != null && paramPartUpper.IndexOf(',') >= 0)
                                 {
@@ -794,6 +803,14 @@ namespace Microsoft.Ajax.Utilities
 
                                     // and rename them if we so desire
                                     JSSettings.PreserveFunctionNames = false;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    // this seems to be a common one for people to wonder why it's not working properly.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
                                 else
                                 {
@@ -1182,6 +1199,14 @@ namespace Microsoft.Ajax.Utilities
                                 else if (paramPartUpper == "EVAL")
                                 {
                                     JSSettings.EvalLiteralExpressions = true;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    // this seems to be a common one for people to wonder why it's not working properly.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
                                 else if (paramPartUpper == "NOEVAL")
                                 {
@@ -1224,6 +1249,17 @@ namespace Microsoft.Ajax.Utilities
                                     // optional boolean switch
                                     // no arg is a valid scenario (default is true)
                                     JSSettings.MinifyCode = parameterFlag;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    // this seems to be a common one for people to wonder why it's not working properly.
+                                    if (parameterFlag)
+                                    {
+                                        m_noPretty = true;
+                                        if (PrettyPrint)
+                                        {
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                        }
+                                    }
                                 }
                                 else
                                 {
@@ -1243,6 +1279,14 @@ namespace Microsoft.Ajax.Utilities
                                 else if (paramPartUpper == "COLLAPSE")
                                 {
                                     JSSettings.CollapseToLiteral = true;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    // this seems to be a common one for people to wonder why it's not working properly.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
                                 else
                                 {
@@ -1261,6 +1305,14 @@ namespace Microsoft.Ajax.Utilities
                                 else if (paramPartUpper == "ONLYREF")
                                 {
                                     JSSettings.RemoveFunctionExpressionNames = true;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    // this seems to be a common one for people to wonder why it's not working properly.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
                                 else
                                 {
@@ -1311,6 +1363,13 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "OBJ":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // two options: MINify or QUOTE
                                 if (paramPartUpper == "MIN")
                                 {
@@ -1330,6 +1389,13 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "PPONLY":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // just putting the pponly switch on the command line without any arguments
                                 // is the same as putting -pponly:true and perfectly valid.
                                 if (paramPart == null)
@@ -1352,7 +1418,12 @@ namespace Microsoft.Ajax.Utilities
                             case "PRETTY":
                             case "P": // <-- old style
                                 // doesn't take a flag -- just set to pretty
-                                PrettyPrint = true;            
+                                PrettyPrint = true;
+                                if (m_noPretty)
+                                {
+                                    // already encountered a switch that is incompatible with -pretty
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
 
                                 // by default, pretty mode turns off minification, which sets a bunch of other flags as well
                                 JSSettings.MinifyCode = false;
@@ -1388,6 +1459,13 @@ namespace Microsoft.Ajax.Utilities
                                 }
                                 else if (paramPartUpper.IndexOf('=') > 0)
                                 {
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
+
                                     // there is at least one equal sign -- treat this as a set of JS identifier
                                     // pairs. split on commas -- multiple pairs can be specified
                                     var paramPairs = paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries);
@@ -1452,6 +1530,13 @@ namespace Microsoft.Ajax.Utilities
 
                                         // automatic renaming strategy has been specified by this option
                                         renamingSpecified = true;
+
+                                        // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                        m_noPretty = true;
+                                        if (PrettyPrint)
+                                        {
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                        }
                                     }
                                     else if (paramPartUpper == "LOCALIZATION")
                                     {
@@ -1459,6 +1544,13 @@ namespace Microsoft.Ajax.Utilities
 
                                         // automatic renaming strategy has been specified by this option
                                         renamingSpecified = true;
+
+                                        // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                        m_noPretty = true;
+                                        if (PrettyPrint)
+                                        {
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                        }
                                     }
                                     else if (paramPartUpper == "NONE")
                                     {
@@ -1501,6 +1593,16 @@ namespace Microsoft.Ajax.Utilities
                                 if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
                                 {
                                     JSSettings.ReorderScopeDeclarations = parameterFlag;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    if (parameterFlag)
+                                    {
+                                        m_noPretty = true;
+                                        if (PrettyPrint)
+                                        {
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                        }
+                                    }
                                 }
                                 else
                                 {
@@ -1549,6 +1651,13 @@ namespace Microsoft.Ajax.Utilities
                                 else if (paramPartUpper == "REMOVE")
                                 {
                                     JSSettings.RemoveUnneededCode = true;
+
+                                    // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                    m_noPretty = true;
+                                    if (PrettyPrint)
+                                    {
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
                                 }
                                 else
                                 {
@@ -1560,7 +1669,8 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "VAR":
-                                if (string.IsNullOrEmpty(paramPartUpper))
+                                m_noPretty = true;
+                                if (PrettyPrint || string.IsNullOrEmpty(paramPartUpper))
                                 {
                                     OnInvalidSwitch(switchPart, paramPart);
                                 }
@@ -1633,6 +1743,13 @@ namespace Microsoft.Ajax.Utilities
                             //
 
                             case "D":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // equivalent to -debug:false (default behavior)
                                 JSSettings.StripDebugStatements = true;
                                 OnJSOnlyParameter();
@@ -1665,6 +1782,13 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "H":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // equivalent to -rename:all -unused:remove (default behavior)
                                 JSSettings.LocalRenaming = LocalRenaming.CrunchAll;
                                 JSSettings.RemoveUnneededCode = true;
@@ -1686,6 +1810,13 @@ namespace Microsoft.Ajax.Utilities
                                 break;
 
                             case "HL":
+                                // if the -pretty switch has been specified, we have an incompatible set of switches.
+                                m_noPretty = true;
+                                if (PrettyPrint)
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+
                                 // equivalent to -rename:localization -unused:remove
                                 JSSettings.LocalRenaming = LocalRenaming.KeepLocalizationVars;
                                 JSSettings.RemoveUnneededCode = true;

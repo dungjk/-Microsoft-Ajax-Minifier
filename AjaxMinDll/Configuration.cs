@@ -93,6 +93,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
         #region private read methods
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static OutputGroup ReadOutputElement(XmlReader reader)
         {
             var outputNode = new OutputGroup();
