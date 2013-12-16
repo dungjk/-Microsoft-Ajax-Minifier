@@ -34,6 +34,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
 
         private const string PathAttributeName = "path";
         private const string EncodingAttributeName = "encoding";
+        private const string EncodingAttributeShortName = "enc";
         private const string TypeAttributeName = "type";
         private const string OriginAttributeName = "origin";
         private const string MapPathAttributeName = "mappath";
@@ -109,6 +110,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
                                 break;
 
                             case EncodingAttributeName:
+                            case EncodingAttributeShortName:
                                 outputNode.EncodingName = reader.Value;
                                 break;
 
@@ -338,6 +340,7 @@ namespace Microsoft.Ajax.Utilities.Configuration
                                 break;
 
                             case EncodingAttributeName:
+                            case EncodingAttributeShortName:
                                 inputNode.EncodingName = reader.Value;
                                 break;
 
