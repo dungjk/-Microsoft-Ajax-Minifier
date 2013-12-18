@@ -6,3 +6,5 @@ a[title="f\22oo\22"], a[title='f\27oo\27']
 {
   color: red;
 }
+
+div:after { content: "\a"; white-space: pre; }

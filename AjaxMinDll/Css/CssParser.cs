@@ -3942,39 +3942,16 @@ namespace Microsoft.Ajax.Utilities
                                 sb.Append(text.Substring(startRaw, ndx - startRaw));
                             }
 
-                            // add the escaped control character
-                            switch (ch)
+                            // regular unicode escape
+                            sb.Append("\\{0:x}".FormatInvariant(char.ConvertToUtf32(text, ndx)));
+
+                            // if the NEXT character (if there is one) is a hex digit, 
+                            // we will need to append a space to signify the end of the escape sequence, since this
+                            // will never have more than two digits (0 - 1f).
+                            if (ndx + 1 < text.Length
+                                && CssScanner.IsH(text[ndx + 1]))
                             {
-                                case '\n':
-                                    sb.Append(@"\n");
-                                    break;
-
-                                case '\f':
-                                    sb.Append(@"\f");
-                                    break;
-
-                                case '\r':
-                                    sb.Append(@"\r");
-                                    break;
-
-                                case '\\':
-                                    sb.Append(@"\\");
-                                    break;
-
-                                default:
-                                    // regular unicode escape
-                                    sb.Append("\\{0:x}".FormatInvariant(char.ConvertToUtf32(text, ndx)));
-
-                                    // if the NEXT character (if there is one) is a hex digit, 
-                                    // we will need to append a space to signify the end of the escape sequence, since this
-                                    // will never have more than two digits (0 - 1f).
-                                    if (ndx + 1 < text.Length
-                                        && CssScanner.IsH(text[ndx + 1]))
-                                    {
-                                        sb.Append(' ');
-                                    }
-
-                                    break;
+                                sb.Append(' ');
                             }
 
                             // and update the raw pointer to the next character
