@@ -68,12 +68,12 @@ namespace Microsoft.Ajax.Utilities
                 "window"};
 
             m_globalFunctions = new HashSet<string> {
-                "ActiveXObject", "Array", 
+                "ActiveXObject", "Array", "ArrayBuffer", "ArrayBufferView", 
                 "Boolean", 
-                "Date", "Debug", 
+                "DataView", "Date", "Debug", 
                 "Error", "EvalError", "EventSource", 
-                "File", "FileList", "FileReader", "Function", 
-                "Iterator", 
+                "File", "FileList", "FileReader", "Float32Array", "Float64Array", "Function", 
+                "Int16Array", "Int32Array", "Int8Array", "Iterator", 
                 "Map",
                 "Node", "NodeFilter", "NodeIterator", "NodeList", "NodeSelector", "Number", 
                 "Object", 
@@ -83,7 +83,7 @@ namespace Microsoft.Ajax.Utilities
                 "RegExp", 
                 "Set", "SharedWorker", "String", "SyntaxError", 
                 "TypeError", 
-                "URIError", "URL",
+                "Uint8Array", "Uint8ClampedArray", "Uint16Array", "Uint32Array", "URIError", "URL",
                 "WeakMap", "WebSocket", "Worker",
                 "addEventListener", "alert", "attachEvent", 
                 "blur", 
