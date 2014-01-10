@@ -1109,8 +1109,11 @@ namespace Microsoft.Ajax.Utilities
                 // no media type -- straight to an expression
                 ParseMediaQueryExpression();
 
-                // the expression ends in a close paren, so we don't need the space
-                mightNeedSpace = false;
+                // the expression ends in a close paren, so we don't need the space.
+                // HOWEVER, Chrome apparently has a bug whereby the "and" between query expressions
+                // has to have a space before it or it chokes (contrary to the grammar). So put
+                // a space in there so we don't break in Chrome.
+                mightNeedSpace = true;
 
                 // the next item should be either AND or the start of the block
                 parsed = Parsed.True;
@@ -1135,7 +1138,8 @@ namespace Microsoft.Ajax.Utilities
                     Append(' ');
 
                     // the media expression ends in a close-paren, so we never need another space
-                    mightNeedSpace = false;
+                    // because of the Chrome bug, we might still need spaces for future and-connectors.
+                    //mightNeedSpace = false;
                 }
 
                 // output the AND text.

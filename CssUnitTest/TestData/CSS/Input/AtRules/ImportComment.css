@@ -1,5 +1,5 @@
 /* Before import */
-@import /* inside import */ "bar2.css" print and(orientation:landscape)and (color);
+@import /* inside import */ "bar2.css" print and(orientation:landscape) and (color);
 /* After import */
 .foo {
 background: white;
