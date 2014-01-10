@@ -1109,10 +1109,15 @@ namespace Microsoft.Ajax.Utilities
                 // no media type -- straight to an expression
                 ParseMediaQueryExpression();
 
-                // the expression ends in a close paren, so we don't need the space.
-                // HOWEVER, Chrome apparently has a bug whereby the "and" between query expressions
-                // has to have a space before it or it chokes (contrary to the grammar). So put
-                // a space in there so we don't break in Chrome.
+                // The straight-up spec says the whitespace is optional, so at this point you'd
+                // THINK we wouldn't need whitespace between a close-paren and the word "and."
+                // However, there is an errata published:
+                // http://www.w3.org/Style/2012/REC-mediaqueries-20120619-errata.html
+                // that makes whitespace before the AND mandatory.
+                // The errata is completely correct with regards to making the whitespace AFTER
+                // the "and" mandatory -- we need to be disambiguous: is it "and" followed by a "(",
+                // or is it the FUNCTION "and("? Not sure the before is strictly mandatory, but
+                // let's roll with it.
                 mightNeedSpace = true;
 
                 // the next item should be either AND or the start of the block
@@ -1136,10 +1141,6 @@ namespace Microsoft.Ajax.Utilities
                 if (mightNeedSpace || Settings.OutputMode == OutputMode.MultipleLines)
                 {
                     Append(' ');
-
-                    // the media expression ends in a close-paren, so we never need another space
-                    // because of the Chrome bug, we might still need spaces for future and-connectors.
-                    //mightNeedSpace = false;
                 }
 
                 // output the AND text.
