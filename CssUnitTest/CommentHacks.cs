@@ -157,5 +157,17 @@ namespace CssUnitTest
         // they aren't valid CSS comments
         TestHelper.Instance.RunTest("-comments:all");
     }
+
+    [TestMethod]
+    public void SharepointThemes()
+    {
+        TestHelper.Instance.RunTest();
+    }
+
+    [TestMethod]
+    public void SharepointThemes_None()
+    {
+        TestHelper.Instance.RunTest("-comments:none");
+    }
   }
 }

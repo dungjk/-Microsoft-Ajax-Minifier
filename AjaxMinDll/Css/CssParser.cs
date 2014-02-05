@@ -204,7 +204,7 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// regular expression for matching css comments containing special formatted identifiers
         /// for value-replacement matching
-        /// Format: /*[id]*/
+        /// Format: /* [id] */
         /// </summary>
         private static Regex s_valueReplacement = new Regex(
             @"/\*\s*\[(?<id>\w+)\]\s*\*/",
@@ -213,6 +213,21 @@ namespace Microsoft.Ajax.Utilities
         // this variable will be set whenever we encounter a value-replacement comment
         // and have a string to replace it with
         private string m_valueReplacement;// = null;
+
+        #endregion
+
+        #region Sharepoint replacement comment regex
+
+        /// <summary>
+        /// regular expression for matching Sharepoint Theme css comments
+        /// Format: /* [ReplaceBGImage] */
+        ///         /* [id(parameters)] */
+        ///     where id is one of: ReplaceColor, ReplaceFont, or RecolorImage
+        ///     and parameters is anything other than a close square-bracket
+        /// </summary>
+        private static Regex s_sharepointReplacement = new Regex(
+            @"/\*\s*\[(ReplaceBGImage|((ReplaceColor|ReplaceFont|RecolorImage)\([^\]]*))\]\s*\*/",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         #endregion
 
@@ -3372,39 +3387,48 @@ namespace Microsoft.Ajax.Utilities
 
                     if (!importantComment)
                     {
-                        // see if this is a value-replacement id
-                        Match match = s_valueReplacement.Match(commentText);
-                        if (match.Success)
+                        if (s_sharepointReplacement.IsMatch(commentText))
                         {
-                            // check all the resource strings objects to see if one is a match.
-                            m_valueReplacement = null;
-
-                            var resourceList = Settings.ResourceStrings;
-                            if (resourceList.Count > 0)
+                            // we ALWAYS want to output sharepoint styling comments
+                            // (unless settings say NO comments)
+                            writeComment = Settings.CommentMode != CssComment.None;
+                        }
+                        else
+                        {
+                            // see if this is a value-replacement id
+                            Match match = s_valueReplacement.Match(commentText);
+                            if (match.Success)
                             {
-                                // get the id of the string we want to substitute
-                                string ident = match.Result("${id}");
+                                // check all the resource strings objects to see if one is a match.
+                                m_valueReplacement = null;
 
-                                // walk the list BACKWARDS so later resource string objects override previous ones
-                                for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                                var resourceList = Settings.ResourceStrings;
+                                if (resourceList.Count > 0)
                                 {
-                                    m_valueReplacement = resourceList[ndx][ident];
-                                    if (m_valueReplacement != null)
+                                    // get the id of the string we want to substitute
+                                    string ident = match.Result("${id}");
+
+                                    // walk the list BACKWARDS so later resource string objects override previous ones
+                                    for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
                                     {
-                                        break;
+                                        m_valueReplacement = resourceList[ndx][ident];
+                                        if (m_valueReplacement != null)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            // if there is such a string, we will have saved the value in the value replacement
-                            // variable so it will be substituted for the next value.
-                            // if there is no such string, we ALWAYS want to output the comment so we know 
-                            // there was a problem (even if the comments mode is to output none)
-                            writeComment = m_valueReplacement == null;
-                            if (writeComment)
-                            {
-                                // make sure the comment is normalized
-                                commentText = NormalizedValueReplacementComment(commentText);
+                                // if there is such a string, we will have saved the value in the value replacement
+                                // variable so it will be substituted for the next value.
+                                // if there is no such string, we ALWAYS want to output the comment so we know 
+                                // there was a problem (even if the comments mode is to output none)
+                                writeComment = m_valueReplacement == null;
+                                if (writeComment)
+                                {
+                                    // make sure the comment is normalized
+                                    commentText = NormalizedValueReplacementComment(commentText);
+                                }
                             }
                         }
                     }
@@ -3981,7 +4005,6 @@ namespace Microsoft.Ajax.Utilities
                 outputText = (tokenType != TokenType.Comment);
                 if (!outputText)
                 {
-                    // we have a comment.
                     // if the comment mode is none, we never want to output it.
                     // if the comment mode is all, then we always want to output it.
                     // otherwise we only want to output if it's an important /*! */ comment
@@ -4013,8 +4036,18 @@ namespace Microsoft.Ajax.Utilities
                             }
                         }
                     }
+                    else if (s_sharepointReplacement.IsMatch(text))
+                    {
+                        // if it's a sharepoint replacement comment, then  always output it
+                        // (unless settings say NO comments)
+                        if (Settings.CommentMode == CssComment.None)
+                        {
+                            return false;
+                        }
+                    }
                     else
                     {
+                        // not important, and not sharepoint.
                         // check to see if it's a special value-replacement comment
                         Match match = s_valueReplacement.Match(CurrentTokenText);
                         if (match.Success)
