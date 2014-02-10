@@ -75,6 +75,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestData\Dll\Input\ManifestTask\test.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>test.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="TestData\Dll\Input\Frameworks\NoErrors.csv" />
@@ -97,6 +102,7 @@
     <Content Include="TestData\Dll\Expected\ManifestTask\test2.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test2_pponly.js" />
     <Content Include="TestData\Dll\Expected\ManifestTask\test_ext.js" />
+    <Content Include="TestData\Dll\Expected\ManifestTask\test_resx.js" />
     <Content Include="TestData\Dll\Expected\ReplacementTokens\Replacements.css" />
     <Content Include="TestData\Dll\Expected\SourceChange.js" />
     <Content Include="TestData\Dll\Input\AjaxMinTask\Fail.css" />
@@ -135,6 +141,7 @@
     <Content Include="TestData\Dll\Input\ManifestTask\file3.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file4.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\file5.js" />
+    <Content Include="TestData\Dll\Input\ManifestTask\file_resx.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.css" />
     <Content Include="TestData\Dll\Input\ManifestTask\HasError.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\jquery-2.0.0.min.js" />
@@ -145,6 +152,7 @@
     <Content Include="TestData\Dll\Input\ManifestTask\ManifestWarn.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\Manifest_bundle.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\manifest_pponly.xml" />
+    <Content Include="TestData\Dll\Input\ManifestTask\Manifest_resx.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\WithWarnings.js" />
     <Content Include="TestData\Dll\Input\ReplacementTokens\Replacements.css" />
     <Content Include="TestData\Dll\Input\SourceChange.js" />
@@ -165,6 +173,10 @@
     <EmbeddedResource Include="TestData\Dll\Input\ManifestTask\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TestData\Dll\Input\ManifestTask\test.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>test.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

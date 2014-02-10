@@ -57,7 +57,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                 // process the resources for this output group into the settings list
                 // if there are any to be processed
                 if (outputGroup != null && settings != null
-                    && settings.ResourceStrings.IfNotNull(rs => rs.Count > 0))
+                    && outputGroup.Resources.IfNotNull(rs => rs.Count > 0))
                 {
                     outputGroup.ProcessResourceStrings(settings.ResourceStrings, null);
                 }

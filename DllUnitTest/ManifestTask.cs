@@ -137,6 +137,24 @@
         }
 
         [TestMethod]
+        public void ManifestWithResources()
+        {
+            // create the task, set it up, and execute it
+            var task = CreateAndSetupTask();
+            task.Manifests = new[] { new TaskItem() { ItemSpec = @"Dll\Input\ManifestTask\Manifest_resx.xml" } };
+
+            // check overall success
+            var success = ExecuteAndLog(task);
+            Assert.IsTrue(success, "expected the task to succeed");
+
+            // make sure all the files we expect were created
+            Assert.IsTrue(File.Exists(Path.Combine(s_outputFolder, "test_resx.js")), "test_resx.js does not exist");
+
+            // verify output file contents
+            Assert.IsTrue(VerifyFileContents("test_resx.js"), "Test_resx.js output doesn't match");
+        }
+
+        [TestMethod]
         public void ManifestBundle()
         {
             // create the task, set it up, and execute it
