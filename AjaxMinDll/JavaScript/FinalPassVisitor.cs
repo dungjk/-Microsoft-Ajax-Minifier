@@ -37,14 +37,15 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                // if this isn't a comma-operator, just recurse normal.
-                // if it is and this is the root block (parent is null) or a function block
+                // if this isn't a comma-operator or we are in expression mode, just recurse normal.
+                // OTHERWISE (comma and not expression) if this is the root block (parent is null) or a function block
                 // (but not an arrow-function block with a single statement)
                 // or there's already more than one statement in the block, we will want to possibly break
                 // this comma-operator expression statement into separate expression statements.
                 Block parentBlock;
                 FunctionObject functionObject;
                 if (node.OperatorToken == JSToken.Comma
+                    && m_settings.SourceMode != JavaScriptSourceMode.Expression
                     && m_settings.IsModificationAllowed(TreeModifications.UnfoldCommaExpressionStatements)
                     && ((parentBlock = node.Parent as Block) != null)
                     && (parentBlock.Parent == null
