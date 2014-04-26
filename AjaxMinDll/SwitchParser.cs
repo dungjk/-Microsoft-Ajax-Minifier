@@ -2005,7 +2005,11 @@ namespace Microsoft.Ajax.Utilities
                 cultureInfo = CultureInfo.GetCultureInfo(name);
                 return true;
             }
+#if NET_20 || NET_35
+            catch (ArgumentException)
+#else
             catch (CultureNotFoundException)
+#endif
             {
                 // nope
                 cultureInfo = null;
