@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Ajax.Utilities
 {
@@ -583,6 +584,38 @@ namespace Microsoft.Ajax.Utilities
                                             // not an expected value
                                             OnInvalidSwitch(switchPart, paramPart);
                                             break;
+                                    }
+                                }
+                                break;
+
+                            case "CULTURE":
+                                if (paramPart.IsNullOrWhiteSpace())
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                else
+                                {
+                                    CultureInfo cultureInfo;
+                                    if (!TryCreateCultureInfo(paramPart, out cultureInfo))
+                                    {
+                                        // no such culture. Try just the language part, if there is one and it's
+                                        // different than what we already tried
+                                        var cultureParts = paramPart.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+                                        if (!cultureParts[0].Equals(paramPart, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            TryCreateCultureInfo(cultureParts[0], out cultureInfo);
+                                        }
+                                    }
+
+                                    if (cultureInfo == null)
+                                    {
+                                        // not valid
+                                        OnInvalidSwitch(switchPart, paramPart);
+                                    }
+                                    else
+                                    {
+                                        // set the thread's current culture to what was specified
+                                        Thread.CurrentThread.CurrentCulture = cultureInfo;
                                     }
                                 }
                                 break;
@@ -1964,6 +1997,21 @@ namespace Microsoft.Ajax.Utilities
         #endregion
 
         #region helper methods
+
+        private static bool TryCreateCultureInfo(string name, out CultureInfo cultureInfo)
+        {
+            try
+            {
+                cultureInfo = CultureInfo.GetCultureInfo(name);
+                return true;
+            }
+            catch (CultureNotFoundException)
+            {
+                // nope
+                cultureInfo = null;
+                return false;
+            }
+        }
 
         private static void AlignDebugDefine(bool stripDebugStatements, IDictionary<string, string> defines)
         {

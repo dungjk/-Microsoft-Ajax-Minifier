@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
@@ -2174,6 +2176,26 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
+                if ((node.PrimitiveType == PrimitiveType.Other || node.PrimitiveType == PrimitiveType.String)
+                    && m_parser.Settings.IsModificationAllowed(TreeModifications.CultureInfoTokenReplacement)
+                    && JSScanner.IsReplacementToken(node.Value.ToString()))
+                {
+                    // either this is a regular replacement token, or it's a string that contains
+                    // only a replacement token. See if we want to potentially replace it with the
+                    // actual cultureinfo value.
+                    var newNode = ReplaceCultureValue(node);
+
+                    // cast the new node back to a constant wrapper. If it is, keep on processing
+                    // as if nothing changed.
+                    node = newNode as ConstantWrapper;
+                    if (node == null)
+                    {
+                        // otherwise we're going to want to recurse this new node and exit this one.
+                        newNode.Accept(this);
+                        return;
+                    }
+                }
+
                 // if we want to throw an error when the string's source isn't inline safe...
                 if (node.PrimitiveType == PrimitiveType.String
                     && m_parser.Settings.ErrorIfNotInlineSafe
@@ -4420,6 +4442,167 @@ namespace Microsoft.Ajax.Utilities
 
             // if we get here, we're not in a loop
             return insideLoop;
+        }
+
+        private static AstNode ReplaceCultureValue(ConstantWrapper node)
+        {
+            // get the name of the token.
+            var tokenName = node.Value.ToString().Trim('%');
+            var path = tokenName.Split('.');
+            if (path.Length > 0 && path[0].Equals("CurrentCulture", StringComparison.Ordinal))
+            {
+                object currentObject = CultureInfo.CurrentCulture;
+                for(var ndx = 1; ndx < path.Length; ++ndx)
+                {
+                    var objectType = currentObject.GetType();
+                    int index;
+                    if (objectType.IsArray && int.TryParse(path[ndx], out index))
+                    {
+                        // integer index into an array
+                        try
+                        {
+                            var getMethod = objectType.GetMethod("Get", new[] { typeof(int) });
+                            if (getMethod != null)
+                            {
+                                currentObject = getMethod.Invoke(currentObject, new object[] { index });
+                                continue;
+                            }
+                        }
+                        catch(AmbiguousMatchException)
+                        {
+                            // eat this exception
+                        }
+                    }
+                    else
+                    {
+                        // not an integer array index
+                        try
+                        {
+                            var propertyInfo = objectType.GetProperty(path[ndx]);
+                            if (propertyInfo != null)
+                            {
+                                currentObject = propertyInfo.GetValue(currentObject, null);
+                                continue;
+                            }
+                        }
+                        catch (AmbiguousMatchException)
+                        {
+                            // eat this exception
+                        }
+                    }
+
+                    // if we get here, never mind
+                    currentObject = null;
+                    break;
+                }
+
+                if (currentObject != null)
+                {
+                    if (node.PrimitiveType == PrimitiveType.String)
+                    {
+                        // just make the value of the string be the string representation
+                        // of the current object
+                        node.Value = currentObject.ToString();
+                    }
+                    else 
+                    {
+                        // create an appropriate node and replace the token node with it
+                        var newNode = CreateNodeFromObject(node.Context, currentObject);
+                        node.Parent.ReplaceChild(node, newNode);
+                        return newNode;
+                    }
+                }
+            }
+
+            return node;
+        }
+
+        private static AstNode CreateNodeFromObject(Context context, object item)
+        {
+            if (item == null)
+            {
+                return new ConstantWrapper(null, PrimitiveType.Null, context);
+            }
+            
+            if (item is String)
+            {
+                // create a string literal
+                return  new ConstantWrapper(item, PrimitiveType.String, context);
+            }
+            
+            if (item is Boolean)
+            {
+                // create a boolean literal
+                return new ConstantWrapper(item, PrimitiveType.Boolean, context);
+            }
+            
+            if (item is Int16
+                || item is UInt16
+                || item is Int32
+                || item is UInt32
+                || item is Int64
+                || item is UInt64
+                || item is Single
+                || item is Double)
+            {
+                // create a numeric literal, forcing the number to double
+                return new ConstantWrapper(Convert.ToDouble(item, CultureInfo.InvariantCulture), PrimitiveType.Number, context);
+            }
+
+            if (item is DateTime)
+            {
+                return new ConstantWrapper(((DateTime)item).ToString("s", CultureInfo.InvariantCulture), PrimitiveType.String, context);
+            }
+
+            if (item.GetType().IsValueType)
+            {
+                return new ConstantWrapper(item.ToString(), PrimitiveType.String, context);
+            }
+
+            var arrayObject = item as Array;
+            if (arrayObject != null)
+            {
+                // create an array literal from the array
+                var arrayLiteral = new ArrayLiteral(context)
+                    {
+                        Elements = new AstNodeList(context)
+                    };
+                foreach (var element in arrayObject)
+                {
+                    arrayLiteral.Elements.Append(CreateNodeFromObject(context, element));
+                }
+
+                return arrayLiteral;
+            }
+
+            // create an object literal from all the public unambiguous properties on the item object
+            var objectLiteral = new ObjectLiteral(context)
+                {
+                    Properties = new AstNodeList(context)
+                };
+            var properties = item.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach(var property in properties)
+            {
+                try
+                {
+                    var propertyValue = property.GetValue(item, null);
+                    if (propertyValue != item)
+                    {
+                        var valueNode = CreateNodeFromObject(context, propertyValue);
+                        objectLiteral.Properties.Append(new ObjectLiteralProperty(context)
+                        {
+                            Name = new ObjectLiteralField(property.Name, PrimitiveType.String, context),
+                            Value = valueNode,
+                        });
+                    }
+                }
+                catch(AmbiguousMatchException)
+                {
+                    // ignore this property
+                }
+            }
+
+            return objectLiteral;
         }
     }
 }

@@ -216,5 +216,32 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-line:4");
         }
+
+        [TestMethod]
+        public void Culture_fr()
+        {
+            TestHelper.Instance.RunTest("-culture:fr-fr");
+        }
+
+        [TestMethod]
+        public void Culture_esZW()
+        {
+            // doesn't exist, but should use es instead
+            TestHelper.Instance.RunTest("-culture:es-zw");
+        }
+
+        [TestMethod]
+        public void Culture_hawUS()
+        {
+            // doesn't exist, but should use es instead
+            TestHelper.Instance.RunTest("-culture:haw-US");
+        }
+
+        [TestMethod]
+        public void Culture_zhCN()
+        {
+            // doesn't exist, but should use es instead
+            TestHelper.Instance.RunTest("-culture:zh-cn");
+        }
     }
 }

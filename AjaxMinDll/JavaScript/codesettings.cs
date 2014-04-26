@@ -1228,5 +1228,10 @@ namespace Microsoft.Ajax.Utilities
         /// Whether to remove the "window." portion of a typeof operand
         /// </summary>
         RemoveWindowDotFromTypeOf                   = 0x0010000000000000,
+
+        /// <summary>
+        /// Whether to perform CultureInfo.CurrentCulture replacements on stand-alone and full-string tokens
+        /// </summary>
+        CultureInfoTokenReplacement                 = 0x0020000000000000,
     }
 }

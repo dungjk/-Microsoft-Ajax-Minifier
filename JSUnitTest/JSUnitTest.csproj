@@ -437,6 +437,10 @@
     <Content Include="TestData\JS\Expected\Switch\Braces_new.js" />
     <Content Include="TestData\JS\Expected\Switch\Braces_same.js" />
     <Content Include="TestData\JS\Expected\Switch\Braces_source.js" />
+    <Content Include="TestData\JS\Expected\Switch\culture_esZW.js" />
+    <Content Include="TestData\JS\Expected\Switch\culture_fr.js" />
+    <Content Include="TestData\JS\Expected\Switch\culture_hawUS.js" />
+    <Content Include="TestData\JS\Expected\Switch\culture_zhCN.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Expected\Switch\EmptyDefault_h.js" />
     <Content Include="TestData\JS\Expected\Switch\IgnoreErrors.js" />
@@ -757,6 +761,7 @@
     <Content Include="TestData\JS\Input\Strict\UnknownGlobal.js" />
     <Content Include="TestData\JS\Input\Strict\With.js" />
     <Content Include="TestData\JS\Input\Switch\Braces.js" />
+    <Content Include="TestData\JS\Input\Switch\culture.js" />
     <Content Include="TestData\JS\Input\Switch\EmptyDefault.js" />
     <Content Include="TestData\JS\Input\Switch\IgnoreErrors.js" />
     <Content Include="TestData\JS\Input\Switch\LineBreak.js" />

@@ -1433,6 +1433,68 @@ namespace Microsoft.Ajax.Utilities
             return JSToken.Assign <= token && token <= JSToken.ConditionalIf;
         }
 
+        /// <summary>
+        /// determines whether a string is a replacement token value
+        /// </summary>
+        /// <param name="value">string to tet</param>
+        /// <returns>true if in the format %name(.name)*(:ident)?%</returns>
+        public static bool IsReplacementToken(string value)
+        {
+            // must be in the format %name(.name)*(:name)?%
+            // so must start and end with a percent with at least ONE character between,
+            // and can't start or end with a period. name can be identifier part character,
+            // or a hyphen. Can optionally be followed by a colon and a name.
+            if (value != null
+                && value.Length > 2
+                && value.StartsWith("%", StringComparison.Ordinal)
+                && value.EndsWith("%", StringComparison.Ordinal)
+                && value[1] != '.'
+                && value[value.Length - 2] != '.')
+            {
+                var ndx = 1;
+                char ch = '\0';
+                for (; ndx < value.Length - 1; ++ndx)
+                {
+                    if (value[ndx] == ':' && ch != '.')
+                    {
+                        ch = ':';
+                        break;
+                    }
+
+                    ch = value[ndx];
+                    if (!IsValidIdentifierPart(ch)
+                        && ch != '-'
+                        && ch != '.')
+                    {
+                        // invalid -- not a replacement token
+                        return false;
+                    }
+                }
+
+                if (ch == ':')
+                {
+                    // must be followed by an identifier
+                    for (; ndx < value.Length - 1; ++ndx)
+                    {
+                        if (!IsValidIdentifierPart(value[ndx]))
+                        {
+                            // invalid -- not a replacement token
+                            return false;
+                        }
+                    }
+                }
+
+                // if we're at the last character, we're good (we already know it's a %)
+                if (ndx == value.Length - 1)
+                {
+                    return true;
+                }
+            }
+
+            // nope
+            return false;
+        }
+
         #endregion
 
         #region Safe identifier helper methods
