@@ -369,6 +369,18 @@ namespace Microsoft.Ajax.Utilities
                         // switch off the switch part
                         switch (switchPart)
                         {
+                            case "AMD":
+                                // amd support
+                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    JSSettings.AmdSupport = parameterFlag;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                break;
+
                             case "ANALYZE":
                             case "A": // <-- old-style
                                 // ignore any arguments

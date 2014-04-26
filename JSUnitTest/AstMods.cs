@@ -210,5 +210,17 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest();
         }
+
+        [TestMethod]
+        public void Amd()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
+        public void Amd_amd()
+        {
+            TestHelper.Instance.RunTest("-amd");
+        }
     }
 }

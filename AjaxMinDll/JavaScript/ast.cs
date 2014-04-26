@@ -221,6 +221,39 @@ namespace Microsoft.Ajax.Utilities
         }
 
         /// <summary>
+        /// Gets a boolean value representing whether this node is a Lookup node resolving to the global name, or
+        /// a member off the global window object with the given name.
+        /// </summary>
+        public bool IsGlobalNamed(string name)
+        {
+            if (name != null)
+            {
+                var lookup = this as Lookup;
+                if (lookup != null
+                    && lookup.VariableField != null
+                    && (lookup.VariableField.FieldType == FieldType.Global || lookup.VariableField.FieldType == FieldType.Predefined || lookup.VariableField.FieldType == FieldType.UndefinedGlobal)
+                    && name.Equals(lookup.Name, StringComparison.Ordinal))
+                {
+                    // match on a lookup pointing to a global with that name
+                    return true;
+                }
+
+                var member = this as Member;
+                if (member != null
+                    && member.Root != null
+                    && member.Root.IsWindowLookup
+                    && name.Equals(member.Name, StringComparison.Ordinal))
+                {
+                    // match on a member lookup off the global object with the target name
+                    return true;
+                }
+            }
+
+            // nope
+            return false;
+        }
+
+        /// <summary>
         /// Abstract method to be implemented by every concrete node class
         /// </summary>
         /// <param name="visitor">visitor to accept</param>

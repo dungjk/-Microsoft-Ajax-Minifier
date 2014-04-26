@@ -105,6 +105,7 @@ namespace Microsoft.Ajax.Utilities
         #region private fields
 
         private bool m_minify;
+        private bool m_amdSupport;
 
         #endregion
 
@@ -156,6 +157,7 @@ namespace Microsoft.Ajax.Utilities
 
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 AlwaysEscapeNonAscii = this.AlwaysEscapeNonAscii,
+                AmdSupport = this.AmdSupport,
                 CollapseToLiteral = this.CollapseToLiteral,
                 ConstStatementsMozilla = this.ConstStatementsMozilla,
                 DebugLookupList = this.DebugLookupList,
@@ -598,6 +600,33 @@ namespace Microsoft.Ajax.Utilities
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to perform extra tasks on AMD-style defines.
+        /// </summary>
+        public bool AmdSupport
+        {
+            get
+            {
+                return m_amdSupport;
+            }
+            set
+            {
+                m_amdSupport = value;
+                if (m_amdSupport)
+                {
+                    // make sure define and require are added to the known globals list
+                    m_knownGlobals.Add("define");
+                    m_knownGlobals.Add("require");
+                }
+                else
+                {
+                    // remove define and require from the known globals list (if they are there already)
+                    m_knownGlobals.Remove("define");
+                    m_knownGlobals.Remove("require");
+                }
+            }
         }
 
         /// <summary>

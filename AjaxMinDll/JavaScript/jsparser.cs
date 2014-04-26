@@ -423,6 +423,14 @@ namespace Microsoft.Ajax.Utilities
             ResolutionVisitor.Apply(scriptBlock, GlobalScope, this);
             timePoints[--timeIndex] = stopWatch.ElapsedTicks;
 
+            if (Settings.AmdSupport)
+            {
+                // we're doing some AMD support. At this time, walk through the top-level
+                // statements and if there are any duplicate define(name... calls, remove all
+                // but the last one.
+                RemoveDuplicateDefines(scriptBlock);
+            }
+
             if (scriptBlock != null && Settings.MinifyCode && !Settings.PreprocessOnly)
             {
                 // this visitor doesn't just reorder scopes. It also combines the adjacent var variables,
@@ -496,6 +504,40 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return returnBlock;
+        }
+
+        /// <summary>
+        /// Remove duplicate define calls, defined as defines with the same module name specified as the first
+        /// parameter, if it's a string literal. Only the last define with a given name is preserved.
+        /// </summary>
+        /// <param name="scriptBlock">script block to remove defines from; not recursed</param>
+        private static void RemoveDuplicateDefines(Block scriptBlock)
+        {
+            var defines = new HashSet<string>();
+
+            // walk backwards so we keep the last one
+            for(var ndx = scriptBlock.Count - 1; ndx >= 0; --ndx)
+            {
+                var callNode = scriptBlock[ndx] as CallNode;
+                if (callNode != null)
+                {
+                    if (callNode.Function.IsGlobalNamed("define") 
+                        && callNode.Arguments.IfNotNull(args => args.Count) > 0)
+                    {
+                        var firstArg = callNode.Arguments[0] as ConstantWrapper;
+                        if (firstArg != null && firstArg.PrimitiveType == PrimitiveType.String)
+                        {
+                            var moduleName = firstArg.ToString();
+                            if (!defines.Add(moduleName))
+                            {
+                                // couldn't add the name to the set -- must be a dupe!
+                                // remove it altogether
+                                scriptBlock.RemoveAt(ndx);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         #endregion

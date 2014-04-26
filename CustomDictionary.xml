@@ -2,6 +2,7 @@
   <Words>
     <Recognized>
       <Word>ajaxmin</Word>
+      <Word>amd</Word>
       <Word>approx</Word>
       <Word>ascii</Word>
       <Word>aspnet</Word>
@@ -46,6 +47,7 @@
   </Words>
   <Acronyms>
     <CasingExceptions>
+      <Acronym>Amd</Acronym>
       <Acronym>Ast</Acronym>
       <Acronym>Js</Acronym>
       <Acronym>JSON</Acronym>
