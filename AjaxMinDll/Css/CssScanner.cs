@@ -53,7 +53,9 @@ namespace Microsoft.Ajax.Utilities
 
         private static Regex s_trailingZeros = new Regex("^([0-9]+?)0*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        private static Regex s_sourceDirective = new Regex(@"#SOURCE\s+(?<line>\d+)\s+(?<col>\d+)\s+(?<path>.*)\s*\*/", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static Regex s_sourceDirective = new Regex(@"#SOURCE\s+(?<line>\d+)\s+(?<col>\d+)\s+(?<path>[^*\n\r\f]+)(\s*$|([\n\r\f][^*]*)?\s*\*/$)", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+        private static Regex s_sassSourceDirective = new Regex(@"^/\*\s+line\s+(?<line>\d+),\s+(?<path>[^*]+)\s+\*/$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         public bool AllowEmbeddedAspNetBlocks { get; set; }
 
@@ -258,11 +260,15 @@ namespace Microsoft.Ajax.Utilities
         {
             CssToken token = null;
             NextChar();
+
+            // build up the comment text in a string builder so we can look at it
+            // afterwards, because we might not outut it if it's a special comment.
+            var sb = new StringBuilder();
             if (m_currentChar == '*')
             {
                 NextChar();
+
                 // everything is a comment until we get to */
-                StringBuilder sb = new StringBuilder();
                 sb.Append("/*");
 
                 bool terminated = false;
@@ -299,150 +305,141 @@ namespace Microsoft.Ajax.Utilities
                 {
                     ReportError(0, CssErrorCode.UnterminatedComment);
                 }
-                
-                var comment = sb.ToString();
-                if (string.Compare(comment, 2, "/#SOURCE", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    // found our special comment: /*/#SOURCE line col path */
-                    var match = s_sourceDirective.Match(comment);
-                    if (match != null)
-                    {
-                        int line, column;
-                        if (int.TryParse(match.Result("${line}"), out line)
-                            && int.TryParse(match.Result("${col}"), out column))
-                        {
-                            // we got a proper line, column, and non-blank path. reset our context
-                            // with the new line and column.
-                            this.OnContextChange(
-                                match.Result("${path}"),
-                                line,
-                                column);
-
-                            // now, this is weird. by AjaxMin convention, there should be NOTHING after this comment
-                            // but whitespace and a single line-terminator. So we will skip EVERYTHING after this comment up
-                            // to the first line-terminator, and then eat that first line-terminator. So it's possible to
-                            // completely ignore code by putting it between this multiline comment and the end of its line.
-                            SkipToNextLineWithoutUpdate();
-
-                            // return null so this token gets skipped
-                            return null;
-                        }
-                    }
-                }
-
-                token = new CssToken(TokenType.Comment, comment, m_context);
             }
             else if (m_currentChar == '/')
             {
                 // we found '//' -- it's a JS-style single-line comment which isn't strictly
                 // supported by CSS, but we're going to treat as a valid comment because 
-                // developers like using them. We're not going to persist them, though -- we're
-                // going to eat these comments, since they're not valid CSS.
+                // developers like using them. We're not going to persist them, though, since 
+                // they're not valid CSS.
+                NextChar();
+                sb.Append("//");
 
-                // first check for our special ///#source directive. 
-                // We're on the second slash; see if the NEXT character is a third slash
-                if (PeekChar() == '/')
-                {
-                    // found '///'
-                    NextChar();
-
-                    // now w're on the third slash; see if the NEXT character is a pound-sign
-                    if (PeekChar() == '#')
-                    {
-                        // okay, we have ///#, which we are going to reserve for all AjaxMin directive comments.
-                        // so the source better not have something meaningful for the rest of the line.
-                        NextChar();
-
-                        // now we're on the pound-sign. See if we have the source directive
-                        if (ReadString("#SOURCE"))
-                        {
-                            // we have a source directive: ///#source line col file
-                            // skip space
-                            DirectiveSkipSpace();
-
-                            // pull the line and column numbers. Must be positive integers greater than zero.
-                            int line = DirectiveScanInteger();
-                            if (line > 0)
-                            {
-                                DirectiveSkipSpace();
-                                int column = DirectiveScanInteger();
-                                if (column > 0)
-                                {
-                                    DirectiveSkipSpace();
-
-                                    // the rest of the comment line is the file path.
-                                    var sb = new StringBuilder();
-                                    while (m_currentChar != '\n' && m_currentChar != '\r')
-                                    {
-                                        sb.Append(m_currentChar);
-                                        DirectiveNextChar();
-                                    }
-
-                                    var fileContext = sb.ToString().TrimEnd();
-                                    if (!string.IsNullOrEmpty(fileContext))
-                                    {
-                                        // we got a proper line, column, and non-blank path. reset our context
-                                        // with the new line and column.
-                                        this.OnContextChange(fileContext, line, column);
-
-                                        // START SPECIAL PROCESSING
-                                        SkipToNextLineWithoutUpdate();
-
-                                        // return null here so we don't fall through and return a / character.
-                                        return null;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // eat the comment up to, but not including, the next line terminator
+                // we'll find the comment up to, but not including, the next line terminator
                 while (m_currentChar != '\n' && m_currentChar != '\r' && m_currentChar != '\0')
                 {
+                    sb.Append(m_currentChar);
                     NextChar();
                 }
-
-                // if we wanted to maintain these comments, we would set the token
-                // variable to a new CssToken object of type comment. But we don't, so
-                // just return null so that the scanner will go around again.
-                return null;
+            }
+            else
+            {
+                // not a comment; just return the slash character token and we're done
+                return new CssToken(TokenType.Character, '/', m_context);
             }
 
-            if (token == null)
+            // done finding the whole comment.
+            // now let's look at the comment we built and see if it's a preprocessing directive
+            var comment = sb.ToString();
+
+            // we know the first two characters are either // or /*.
+            // see if this is a special pre-processing comment format of /*/# or ///#
+            // signifying a preprocessing directive
+            if (string.CompareOrdinal(comment, 2, "/#", 0, 2) == 0)
             {
-                // not a comment
-                token = new CssToken(TokenType.Character, '/', m_context);
+                // special-case /*/# or ///# comment!
+                // and don't preserve any we may discover.
+                if (PreprocessingDirective(comment))
+                {
+                    return null;
+                }
+            }
+            
+            if (comment[1] == '*')
+            {
+                // if this is a multi-line comment (/* ... */)
+                // we want to return it as a token so the parser can decide to output it or not
+                token = new CssToken(TokenType.Comment, comment, m_context);
+
+                // see if this is a SASS-style source-directive comment
+                var match = s_sassSourceDirective.Match(comment);
+                if (match.Success)
+                {
+                    int line;
+                    if (int.TryParse(match.Result("${line}"), out line))
+                    {
+                        // if the next character is a line-break, then we want to subtract one
+                        // from the new context line so that we end up on the right position
+                        // after consuming that line-break next.
+                        if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
+                        {
+                            --line;
+                        }
+
+                        this.OnContextChange(
+                            match.Result("${path}").Trim(),
+                            line,
+                            1);
+                    }
+                }
+            }
+            else
+            {
+                // we don't want to preserve single-line (// ...)
+                // so eat its terminating line break, too
+                EatOneLineBreak();
             }
 
             return token;
         }
 
-        private void SkipToNextLineWithoutUpdate()
+        /// <summary>
+        /// If the current character is a linebreak, eat it without advancing
+        /// our position.
+        /// </summary>
+        private void EatOneLineBreak()
         {
-            // don't use NextChar here because that method updates the line/col position.
-            // at this stage, we have processed a directive, and we may have set the line/col
-            // that we're supposed to be at for the start of the next line. So make SURE we
-            // don't update line/col until we get to the next line.
-            // skip anything remaining up to a line terminator
-            while (m_currentChar != '\n' && m_currentChar != '\r')
+            switch (m_currentChar)
             {
-                DirectiveNextChar();
+                case '\r':
+                    NextChar();
+                    if (m_currentChar == '\n')
+                    {
+                        NextChar();
+                    }
+                    break;
+
+                case '\n':
+                case '\f':
+                    NextChar();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Scan a preprocessing directive.
+        /// </summary>
+        /// <param name="comment">comment text</param>
+        /// <returns>true if this is one of our preprocessing directives; false otherwise</returns>
+        private bool PreprocessingDirective(string comment)
+        {
+            if (string.Compare(comment, 4, "SOURCE", 0, 6, StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                // found our special comment: /*/#SOURCE line col path */
+                var match = s_sourceDirective.Match(comment);
+                if (match.Success)
+                {
+                    int line, column;
+                    if (int.TryParse(match.Result("${line}"), out line)
+                        && int.TryParse(match.Result("${col}"), out column))
+                    {
+                        // we got a proper line, column, and non-blank path. 
+                        // if the next character is a line-break, eat it without advancing our line number
+                        EatOneLineBreak();
+                        
+                        // reset our context with the new line and column.
+                        this.OnContextChange(
+                            match.Result("${path}").Trim(),
+                            line,
+                            column);
+                    }
+                }
+
+                return true;
             }
 
-            // then skip a SINGLE line terminator without advancing the line
-            // (although a \r\n pair is a single line terminator)
-            if (m_currentChar == '\n' || m_currentChar == '\f')
-            {
-                DirectiveNextChar();
-            }
-            else if (m_currentChar == '\r')
-            {
-                if (DirectiveNextChar() == '\n')
-                {
-                    DirectiveNextChar();
-                }
-            }
+            // not one of ours!
+            return false;
         }
 
         private CssToken ScanAspNetBlock()
@@ -2042,38 +2039,6 @@ namespace Microsoft.Ajax.Utilities
             {
                 m_context.End.PreviousChar();
             }
-        }
-
-        #endregion
-
-        #region special directive-processing (non-CSS) methods
-
-        private char DirectiveNextChar()
-        {
-            var next = m_reader.Read();
-            m_currentChar = next < 0 ? '\0' : (char)next;
-            return m_currentChar;
-        }
-
-        private void DirectiveSkipSpace()
-        {
-            while (m_currentChar == ' ' || m_currentChar == '\t')
-            {
-                NextChar();
-            }
-        }
-
-        private int DirectiveScanInteger()
-        {
-            // returns 0 if there is no number at the current position
-            var number = 0;
-            while ('0' <= m_currentChar && m_currentChar <= '9')
-            {
-                number = number * 10 + (m_currentChar - '0');
-                NextChar();
-            }
-
-            return number;
         }
 
         #endregion

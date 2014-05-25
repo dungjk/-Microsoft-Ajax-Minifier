@@ -80,6 +80,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>test.resx</DependentUpon>
     </Compile>
+    <Compile Include="Preprocessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestData\Dll\Input\Frameworks\NoErrors.csv" />
@@ -154,6 +155,8 @@
     <Content Include="TestData\Dll\Input\ManifestTask\manifest_pponly.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\Manifest_resx.xml" />
     <Content Include="TestData\Dll\Input\ManifestTask\WithWarnings.js" />
+    <Content Include="TestData\Dll\Input\Preprocessor\SourceDirective.css" />
+    <Content Include="TestData\Dll\Input\Preprocessor\SourceDirective.js" />
     <Content Include="TestData\Dll\Input\ReplacementTokens\Replacements.css" />
     <Content Include="TestData\Dll\Input\SourceChange.js" />
     <Content Include="TestData\Dll\Input\ManifestTask\manifest.xml" />

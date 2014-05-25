@@ -117,5 +117,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-define:version=2.0,ackbar=ADMIRAL,MEOW=hiss -reorder:n");
         }
+
+        [TestMethod]
+        public void SourceDirective()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }

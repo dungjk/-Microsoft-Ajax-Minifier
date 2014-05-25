@@ -504,7 +504,9 @@ namespace Microsoft.Ajax.Utilities
 
                         case '*':
                             m_inMultipleLineComment = true;
-                            if (GetChar(++m_currentPosition) == '@' && !IgnoreConditionalCompilation)
+                            token = JSToken.MultipleLineComment;
+                            ch = GetChar(++m_currentPosition);
+                            if (ch == '@' && !IgnoreConditionalCompilation)
                             {
                                 // we have /*@
                                 // if we have not turned on conditional-compilation yet, then let's peek to see if the next
@@ -534,9 +536,28 @@ namespace Microsoft.Ajax.Utilities
                                 token = JSToken.ConditionalCommentStart;
                                 break;
                             }
+                            else if (ch == '/')
+                            {
+                                // We have /*/
+                                // advance past the slash and see if we have one of our special preprocessing directives
+                                if (GetChar(++m_currentPosition) == '#')
+                                {
+                                    // scan preprocessing directives. When it exits we will still be within
+                                    // the multiline comment, since none of the directives should eat the closing */.
+                                    // therefore no matter the reason we exist the scan, we always want to skip
+                                    // the rest of the multiline comment.
+                                    token = JSToken.PreprocessorDirective;
+                                    if (!ScanPreprocessingDirective())
+                                    {
+                                        // if it returns false, we fully-procesesed the comment and
+                                        // and just want to exit now.
+                                        break;
+                                    }
+                                }
+                            }
 
+                            // skip the rest of the comment
                             SkipMultilineComment();
-                            token = JSToken.MultipleLineComment;
                             break;
 
                         case '=':
@@ -2875,6 +2896,37 @@ namespace Microsoft.Ajax.Utilities
             }
         }
 
+        /// <summary>
+        /// skip to either the end of the line or the comment, whichever comes first, but
+        /// DON'T consume either of them.
+        /// </summary>
+        private void SkipToEndOfLineOrComment()
+        {
+            if (m_inSingleLineComment)
+            {
+                // single line comments are easy; the end of the line IS the end of the comment
+                SkipToEndOfLine();
+            }
+            else
+            {
+                // multiline comments stop at the end of line OR the closing */, whichever comes first
+                var c = GetChar(m_currentPosition);
+                while (c != 0
+                    && c != '\n'
+                    && c != '\r'
+                    && c != '\x2028'
+                    && c != '\x2029')
+                {
+                    if (c == '*' && GetChar(m_currentPosition + 1) == '/')
+                    {
+                        break;
+                    }
+
+                    c = GetChar(++m_currentPosition);
+                }
+            }
+        }
+
         private void SkipOneLineTerminator()
         {
             var c = GetChar(m_currentPosition);
@@ -2888,6 +2940,7 @@ namespace Microsoft.Ajax.Utilities
 
                 m_currentLine++;
                 m_startLinePosition = m_currentPosition;
+                m_inSingleLineComment = false;
             }
             else if (c == '\n'
                 || c == '\x2028'
@@ -2898,6 +2951,7 @@ namespace Microsoft.Ajax.Utilities
 
                 m_currentLine++;
                 m_startLinePosition = m_currentPosition;
+                m_inSingleLineComment = false;
             }
         }
 
@@ -3474,7 +3528,7 @@ namespace Microsoft.Ajax.Utilities
 
         private bool ScanSourceDirective()
         {
-            // found ///#SOURCE comment
+            // found ///#SOURCE or /*/#SOURCE */ comment
             SkipBlanks();
 
             // pull the line, the column, and the source path off the line
@@ -3494,17 +3548,28 @@ namespace Microsoft.Ajax.Utilities
                     // the path should be the last part of the line.
                     // skip to the end and then use the part between.
                     var ndxStart = m_currentPosition;
-                    SkipToEndOfLine();
+                    SkipToEndOfLineOrComment();
                     if (m_currentPosition > ndxStart)
                     {
                         // there is a non-blank source token.
                         // so we have the line and the column and the source.
-                        // use them. Remember, though: we stopped BEFORE the line terminator,
-                        // so read ONE line terminator for the end of this line.
+                        // use them. change the file context
+                        var newModule = m_strSourceCode.Substring(ndxStart, m_currentPosition - ndxStart).TrimEnd();
+
+                        if (m_inMultipleLineComment)
+                        {
+                            // for a multi-line comment, we want to read the rest of the comment.
+                            // this will leave us right after the */
+                            SkipMultilineComment();
+                        }
+
+                        // for single-line comments, we stopped BEFORE the line terminator,
+                        // so we still need to read ONE line terminator for the end of this line.
+                        // for multi-line comments we skipped the terminating */, and we also want 
+                        // to skip one line terminator, too, if there is one.
                         SkipOneLineTerminator();
 
-                        // change the file context
-                        var newModule = m_strSourceCode.Substring(ndxStart, m_currentPosition - ndxStart).TrimEnd();
+                        // fire the event
                         m_currentToken.ChangeFileContext(newModule);
 
                         // adjust the line number
@@ -3598,7 +3663,7 @@ namespace Microsoft.Ajax.Utilities
                             var ndxStart = m_currentPosition;
                             if (!IsAtEndOfLine)
                             {
-                                SkipToEndOfLine();
+                                SkipToEndOfLineOrComment();
                             }
 
                             // the value to compare against is the substring between the start and the current.
@@ -3685,7 +3750,7 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // we are! get the rest of the line as the trimmed string
                         var ndxStart = ++m_currentPosition;
-                        SkipToEndOfLine();
+                        SkipToEndOfLineOrComment();
                         value = m_strSourceCode.Substring(ndxStart, m_currentPosition - ndxStart).Trim();
                     }
 

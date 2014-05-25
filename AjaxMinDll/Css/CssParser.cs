@@ -399,17 +399,33 @@ namespace Microsoft.Ajax.Utilities
             // We SHOULD also check for a @charset rule to see if we need to re-decode the string. But for now, just
             // throw a low-pri warning if we see an improperly-decided BOM.
 
+            // but first, if it starts with a source comment that we probably added, then we need to pull it off
+            // and save it for later.
+            var initialSourceDirective = string.Empty;
             if (source.StartsWith("/*/#SOURCE", StringComparison.OrdinalIgnoreCase))
             {
-                var firstLineBreak = source.IndexOfAny(new[] { '\n', '\r' });
-                if (firstLineBreak >= 0)
+                // find the end of the comment
+                var endOfComment = source.IndexOf("*/", 10, StringComparison.Ordinal);
+                if (endOfComment > 0)
                 {
-                    if (source[firstLineBreak] == '\r' && source[firstLineBreak + 1] == '\n')
+                    // now skip the first line break if there is one
+                    endOfComment += 2;
+                    if (source[endOfComment] == '\r')
                     {
-                        ++firstLineBreak;
+                        ++endOfComment;
+                        if (source[endOfComment] == '\n')
+                        {
+                            ++endOfComment;
+                        }
+                    }
+                    else if (source[endOfComment] == '\n' || source[endOfComment] == '\f')
+                    {
+                        ++endOfComment;
                     }
 
-                    source = source.Substring(firstLineBreak + 1);
+                    // save the comment and strip it off the source (for now)
+                    initialSourceDirective = source.Substring(0, endOfComment);
+                    source = source.Substring(endOfComment);
                 }
             }
 
@@ -460,7 +476,7 @@ namespace Microsoft.Ajax.Utilities
                 source = source.Substring(1);
             }
 
-            return source;
+            return string.Concat(initialSourceDirective, source);
         }
 
         #endregion
