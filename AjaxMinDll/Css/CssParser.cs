@@ -53,6 +53,9 @@ namespace Microsoft.Ajax.Utilities
             get; set;
         }
 
+        // sets a text writer that gets raw tokens written to it
+        public TextWriter EchoWriter { get; set; }
+
         private readonly HashSet<string> m_namespaces;
 
         public string FileContext { get; set; }
@@ -3349,6 +3352,8 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextToken()
         {
             m_currentToken = m_scanner.NextToken();
+            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Comment)
             {
@@ -3359,6 +3364,8 @@ namespace Microsoft.Ajax.Utilities
                     NewLine();
                 }
                 m_currentToken = m_scanner.NextToken();
+                EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+
                 m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
             return CurrentTokenType;
@@ -3368,6 +3375,7 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextRawToken()
         {
             m_currentToken = m_scanner.NextToken();
+            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             return CurrentTokenType;
         }
@@ -3380,6 +3388,7 @@ namespace Microsoft.Ajax.Utilities
 
             // get the next token
             m_currentToken = m_scanner.NextToken();
+            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Space || CurrentTokenType == TokenType.Comment)
             {
@@ -3464,6 +3473,7 @@ namespace Microsoft.Ajax.Utilities
 
                 // next token
                 m_currentToken = m_scanner.NextToken();
+                EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
                 m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
 

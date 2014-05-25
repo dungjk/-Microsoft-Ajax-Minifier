@@ -42,6 +42,12 @@ namespace Microsoft.Ajax.Utilities
         private TextReader m_reader;
         private string m_readAhead;
 
+        // one string builder that can be used in scan methods
+        private StringBuilder m_scanBuilder = new StringBuilder();
+
+        // one string builder that can be used for scanning string and number literals, and identifiers
+        private StringBuilder m_literalBuilder = new StringBuilder();
+
         private char m_currentChar;
 
         private string m_rawNumber;
@@ -108,19 +114,7 @@ namespace Microsoft.Ajax.Utilities
 
                     case ' ':
                     case '\t':
-                        // no matter how much whitespace is actually in
-                        // the stream, we're just going to encode a single
-                        // space in the token itself
-                        while (IsSpace(m_currentChar))
-                        {
-                            if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
-                            {
-                                GotEndOfLine = true;
-                            }
-
-                            NextChar();
-                        }
-                        token = new CssToken(TokenType.Space, ' ', m_context);
+                        token = ScanWhiteSpace();
                         break;
 
                     case '/':
@@ -255,6 +249,23 @@ namespace Microsoft.Ajax.Utilities
 
         #region Scan... methods
 
+        private CssToken ScanWhiteSpace()
+        {
+            m_scanBuilder.Clear();
+            while (IsSpace(m_currentChar))
+            {
+                if (m_currentChar == '\r' || m_currentChar == '\n' || m_currentChar == '\f')
+                {
+                    GotEndOfLine = true;
+                }
+
+                m_scanBuilder.Append(m_currentChar);
+                NextChar();
+            }
+
+            return new CssToken(TokenType.Space, m_scanBuilder.ToString(), m_context);
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private CssToken ScanComment()
         {
@@ -263,21 +274,21 @@ namespace Microsoft.Ajax.Utilities
 
             // build up the comment text in a string builder so we can look at it
             // afterwards, because we might not outut it if it's a special comment.
-            var sb = new StringBuilder();
+            m_scanBuilder.Clear();
             if (m_currentChar == '*')
             {
                 NextChar();
 
                 // everything is a comment until we get to */
-                sb.Append("/*");
+                m_scanBuilder.Append("/*");
 
                 bool terminated = false;
                 while (m_currentChar != '\0')
                 {
-                    sb.Append(m_currentChar);
+                    m_scanBuilder.Append(m_currentChar);
                     if (m_currentChar == '*' && PeekChar() == '/')
                     {
-                        sb.Append('/');
+                        m_scanBuilder.Append('/');
                         NextChar(); // now points to /
                         NextChar(); // now points to following character
 
@@ -288,12 +299,12 @@ namespace Microsoft.Ajax.Utilities
                         // a comment like /*/*/, check to see if the next characters are /*/. If so,
                         // treat it like the single comment NS4 sees.
                         // (and don't forget that if we want to keep them, we've turned them both into important comments)
-                        if (sb.ToString() == "/*!/*/" && ReadString("/*/"))
+                        if (m_scanBuilder.ToString() == "/*!/*/" && ReadString("/*/"))
                         {
                             // read string will leave the current character after the /*/ string,
                             // so add the part we just read to the string builder and we'll break
                             // out of the loop
-                            sb.Append("/*/");
+                            m_scanBuilder.Append("/*/");
                         }
                         terminated = true;
                         break;
@@ -313,12 +324,12 @@ namespace Microsoft.Ajax.Utilities
                 // developers like using them. We're not going to persist them, though, since 
                 // they're not valid CSS.
                 NextChar();
-                sb.Append("//");
+                m_scanBuilder.Append("//");
 
                 // we'll find the comment up to, but not including, the next line terminator
                 while (m_currentChar != '\n' && m_currentChar != '\r' && m_currentChar != '\0')
                 {
-                    sb.Append(m_currentChar);
+                    m_scanBuilder.Append(m_currentChar);
                     NextChar();
                 }
             }
@@ -330,7 +341,7 @@ namespace Microsoft.Ajax.Utilities
 
             // done finding the whole comment.
             // now let's look at the comment we built and see if it's a preprocessing directive
-            var comment = sb.ToString();
+            var comment = m_scanBuilder.ToString();
 
             // we know the first two characters are either // or /*.
             // see if this is a special pre-processing comment format of /*/# or ///#
@@ -444,23 +455,25 @@ namespace Microsoft.Ajax.Utilities
 
         private CssToken ScanAspNetBlock()
         {
-            StringBuilder sb = new StringBuilder();
+            m_scanBuilder.Clear();
             char prev = ' ';
             while (m_currentChar != '\0' &&
-                   !(m_currentChar == '>' &&
-                     prev == '%'))
+                   !(m_currentChar == '>' && prev == '%'))
             {
-                sb.Append(m_currentChar);
+                m_scanBuilder.Append(m_currentChar);
                 prev = m_currentChar;
                 NextChar();
             }
+
             if (m_currentChar != '\0')
             {
-                sb.Append(m_currentChar);
+                m_scanBuilder.Append(m_currentChar);
+
                 // Read the last '>'
                 NextChar();
             }
-            return new CssToken(TokenType.AspNetBlock, sb.ToString(), m_context);
+
+            return new CssToken(TokenType.AspNetBlock, m_scanBuilder.ToString(), m_context);
         }
 
         private CssToken ScanCDO()
@@ -798,8 +811,8 @@ namespace Microsoft.Ajax.Utilities
         {
             // when called, the current character is the character *after* U+
             CssToken token = null;
-            StringBuilder sb = new StringBuilder();
-            sb.Append("U+");
+            m_scanBuilder.Clear();
+            m_scanBuilder.Append("U+");
 
             bool hasQuestions = false;
             int count = 0;
@@ -829,7 +842,7 @@ namespace Microsoft.Ajax.Utilities
 
                 if (!leadingZero)
                 {
-                    sb.Append(m_currentChar);
+                    m_scanBuilder.Append(m_currentChar);
                 }
 
                 ++count;
@@ -842,7 +855,7 @@ namespace Microsoft.Ajax.Utilities
                 if (firstValue < 0 || 0x10ffff < firstValue)
                 {
                     // throw an error
-                    ReportError(0, CssErrorCode.InvalidUnicodeRange, sb.ToString());
+                    ReportError(0, CssErrorCode.InvalidUnicodeRange, m_scanBuilder.ToString());
                 }
 
                 // if we still have the leading zero flag, then all the numbers were zero
@@ -850,7 +863,7 @@ namespace Microsoft.Ajax.Utilities
                 if (leadingZero)
                 {
                     // add one zero to keep it proper
-                    sb.Append('0');
+                    m_scanBuilder.Append('0');
                 }
 
                 if (hasQuestions)
@@ -858,12 +871,12 @@ namespace Microsoft.Ajax.Utilities
                     // if there are question marks, then we're done
                     token = new CssToken(
                         TokenType.UnicodeRange,
-                        sb.ToString(),
+                        m_scanBuilder.ToString(),
                         m_context);
                 }
                 else if (m_currentChar == '-')
                 {
-                    sb.Append('-');
+                    m_scanBuilder.Append('-');
                     NextChar();
 
                     count = 0;
@@ -881,7 +894,7 @@ namespace Microsoft.Ajax.Utilities
 
                         if (!leadingZero)
                         {
-                            sb.Append(m_currentChar);
+                            m_scanBuilder.Append(m_currentChar);
                         }
 
                         ++count;
@@ -895,7 +908,7 @@ namespace Microsoft.Ajax.Utilities
                         if (leadingZero)
                         {
                             // add one zero to keep it proper
-                            sb.Append('0');
+                            m_scanBuilder.Append('0');
                         }
 
                         // check to make sure the second value is within range
@@ -904,12 +917,12 @@ namespace Microsoft.Ajax.Utilities
                             || firstValue >= secondValue)
                         {
                             // throw an error
-                            ReportError(0, CssErrorCode.InvalidUnicodeRange, sb.ToString());
+                            ReportError(0, CssErrorCode.InvalidUnicodeRange, m_scanBuilder.ToString());
                         }
 
                         token = new CssToken(
                             TokenType.UnicodeRange,
-                            sb.ToString(),
+                            m_scanBuilder.ToString(),
                             m_context);
                     }
                 }
@@ -918,7 +931,7 @@ namespace Microsoft.Ajax.Utilities
                     // single code-point with at least one character
                     token = new CssToken(
                         TokenType.UnicodeRange,
-                        sb.ToString(),
+                        m_scanBuilder.ToString(),
                         m_context);
                 }
             }
@@ -928,7 +941,7 @@ namespace Microsoft.Ajax.Utilities
             if (token == null)
             {
                 // push everything back onto the buffer
-                PushString(sb.ToString());
+                PushString(m_scanBuilder.ToString());
                 token = ScanIdent();
             }
 
@@ -946,8 +959,8 @@ namespace Microsoft.Ajax.Utilities
             }
             else if (ReadString("URL("))
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append("url(");
+                m_scanBuilder.Clear();
+                m_scanBuilder.Append("url(");
 
                 GetW();
 
@@ -959,16 +972,16 @@ namespace Microsoft.Ajax.Utilities
 
                 if (url != null)
                 {
-                    sb.Append(url);
+                    m_scanBuilder.Append(url);
                     GetW();
                     if (m_currentChar == ')')
                     {
-                        sb.Append(')');
+                        m_scanBuilder.Append(')');
                         NextChar();
 
                         token = new CssToken(
                           TokenType.Uri,
-                          sb.ToString(),
+                          m_scanBuilder.ToString(),
                           m_context
                           );
                     }
@@ -1153,25 +1166,25 @@ namespace Microsoft.Ajax.Utilities
         private CssToken ScanProgId()
         {
             CssToken token = null;
-            StringBuilder sb = new StringBuilder();
-            sb.Append("progid:");
+            m_scanBuilder.Clear();
+            m_scanBuilder.Append("progid:");
             string ident = GetIdent();
             while (ident != null)
             {
-                sb.Append(ident);
+                m_scanBuilder.Append(ident);
                 if (m_currentChar == '.')
                 {
-                    sb.Append('.');
+                    m_scanBuilder.Append('.');
                     NextChar();
                 }
                 ident = GetIdent();
             }
             if (m_currentChar == '(')
             {
-                sb.Append('(');
+                m_scanBuilder.Append('(');
                 NextChar();
 
-                token = new CssToken(TokenType.ProgId, sb.ToString(), m_context);
+                token = new CssToken(TokenType.ProgId, m_scanBuilder.ToString(), m_context);
             }
             else
             {
@@ -1516,8 +1529,8 @@ namespace Microsoft.Ajax.Utilities
                 char delimiter = m_currentChar;
                 NextChar();
 
-                StringBuilder sb = new StringBuilder();
-                sb.Append(delimiter);
+                m_literalBuilder.Clear();
+                m_literalBuilder.Append(delimiter);
 
                 while (m_currentChar != '\0' && m_currentChar != delimiter)
                 {
@@ -1534,11 +1547,11 @@ namespace Microsoft.Ajax.Utilities
                             // can save a byte by encoding is as \" or \'
                             str = "\\" + delimiter;
                         }
-                        sb.Append(str);
+                        m_literalBuilder.Append(str);
                     }
                     else if (IsNonAscii(m_currentChar))
                     {
-                        sb.Append(m_currentChar);
+                        m_literalBuilder.Append(m_currentChar);
                         NextChar();
                     }
                     else if (m_currentChar == '\\')
@@ -1575,7 +1588,7 @@ namespace Microsoft.Ajax.Utilities
                         // save the current character, add it to the builder we are keeping,
                         // and get the next character
                         var ch = m_currentChar;
-                        sb.Append(m_currentChar);
+                        m_literalBuilder.Append(m_currentChar);
                         NextChar();
 
                         // if we are allowing embedded ASP.NET blocks and that last character ws
@@ -1587,7 +1600,7 @@ namespace Microsoft.Ajax.Utilities
                             // we have the start of an ASP.NET block. Skip to the end of that block, which
                             // is determined by a closing "%>" string. When this function returns, the current
                             // character should be the first character AFTER the %>
-                            SkipAspNetBlock(sb);
+                            SkipAspNetBlock();
                         }
                     }
                     else if (m_currentChar == '\n'
@@ -1597,10 +1610,10 @@ namespace Microsoft.Ajax.Utilities
                         GotEndOfLine = true;
                         ReportError(
                           0,
-                          CssErrorCode.UnterminatedString, sb.ToString()
+                          CssErrorCode.UnterminatedString, m_literalBuilder.ToString()
                           );
                         // add the newline to the string so it will line-break in the output
-                        sb.AppendLine();
+                        m_literalBuilder.AppendLine();
 
                         // skip the block of whitespace we just encountered so that the current
                         // character will be the first non-whitespace character after the bogus
@@ -1610,7 +1623,7 @@ namespace Microsoft.Ajax.Utilities
                             NextChar();
                         }
                         // return early
-                        return sb.ToString();
+                        return m_literalBuilder.ToString();
                     }
                     else
                     {
@@ -1623,18 +1636,18 @@ namespace Microsoft.Ajax.Utilities
                 }
                 if (m_currentChar == delimiter)
                 {
-                    sb.Append(delimiter);
+                    m_literalBuilder.Append(delimiter);
                     NextChar(); // pass delimiter
                 }
-                str = sb.ToString();
+                str = m_literalBuilder.ToString();
             }
             return str;
         }
 
-        private void SkipAspNetBlock(StringBuilder sb)
+        private void SkipAspNetBlock()
         {
             // add the current character (should be the % character from the <% opening)
-            sb.Append(m_currentChar);
+            m_literalBuilder.Append(m_currentChar);
 
             // loop until we find the %> closing sequence, adding everything inbetween to the string builder
             NextChar();
@@ -1651,7 +1664,7 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // we found hte closing sequence.
                     // output the closing >, advance the character pointer, and bail
-                    sb.Append(m_currentChar);
+                    m_literalBuilder.Append(m_currentChar);
                     NextChar();
                     break;
                 }
@@ -1661,7 +1674,7 @@ namespace Microsoft.Ajax.Utilities
                     mightBeClosing = false;
                 }
 
-                sb.Append(m_currentChar);
+                m_literalBuilder.Append(m_currentChar);
                 NextChar();
             }
         }
@@ -1671,13 +1684,13 @@ namespace Microsoft.Ajax.Utilities
             string ident = GetNmStart();
             if (ident != null)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(ident);
+                m_literalBuilder.Clear();
+                m_literalBuilder.Append(ident);
                 while (m_currentChar != '\0' && (ident = GetNmChar()) != null)
                 {
-                    sb.Append(ident);
+                    m_literalBuilder.Append(ident);
                 }
-                ident = sb.ToString();
+                ident = m_literalBuilder.ToString();
             }
             return ident;
         }
@@ -1687,13 +1700,13 @@ namespace Microsoft.Ajax.Utilities
             string name = GetNmChar();
             if (name != null)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(name);
+                m_literalBuilder.Clear();
+                m_literalBuilder.Append(name);
                 while (m_currentChar != '\0' && (name = GetNmChar()) != null)
                 {
-                    sb.Append(name);
+                    m_literalBuilder.Append(name);
                 }
-                name = sb.ToString();
+                name = m_literalBuilder.ToString();
             }
             return name;
         }
@@ -1707,15 +1720,15 @@ namespace Microsoft.Ajax.Utilities
 
             if (IsD(m_currentChar))
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(m_currentChar);
+                m_literalBuilder.Clear();
+                m_literalBuilder.Append(m_currentChar);
                 NextChar();
                 while (IsD(m_currentChar))
                 {
-                    sb.Append(m_currentChar);
+                    m_literalBuilder.Append(m_currentChar);
                     NextChar();
                 }
-                units = sb.ToString();
+                units = m_literalBuilder.ToString();
             }
             if (m_currentChar == '.')
             {
@@ -1725,14 +1738,14 @@ namespace Microsoft.Ajax.Utilities
                     // move over the decimal point
                     NextChar();
 
-                    StringBuilder sb = new StringBuilder();
+                    m_literalBuilder.Clear();
                     // check for extra digits
                     while (IsD(m_currentChar))
                     {
-                        sb.Append(m_currentChar);
+                        m_literalBuilder.Append(m_currentChar);
                         NextChar();
                     }
-                    fraction = sb.ToString();
+                    fraction = m_literalBuilder.ToString();
                 }
                 else if (units != null)
                 {
@@ -1810,23 +1823,23 @@ namespace Microsoft.Ajax.Utilities
 
         private string GetUrl()
         {
-            StringBuilder sb = new StringBuilder();
+            m_literalBuilder.Clear();
             while (m_currentChar != '\0')
             {
                 string escape = GetEscape();
                 if (escape != null)
                 {
-                    sb.Append(escape);
+                    m_literalBuilder.Append(escape);
                 }
                 else if (IsNonAscii(m_currentChar)
-                  || (m_currentChar == '!')
-                  || (m_currentChar == '#')
-                  || (m_currentChar == '$')
-                  || (m_currentChar == '%')
-                  || (m_currentChar == '&')
-                  || ('*' <= m_currentChar && m_currentChar <= '~'))
+                    || (m_currentChar == '!')
+                    || (m_currentChar == '#')
+                    || (m_currentChar == '$')
+                    || (m_currentChar == '%')
+                    || (m_currentChar == '&')
+                    || ('*' <= m_currentChar && m_currentChar <= '~'))
                 {
-                    sb.Append(m_currentChar);
+                    m_literalBuilder.Append(m_currentChar);
                     NextChar();
                 }
                 else
@@ -1834,7 +1847,7 @@ namespace Microsoft.Ajax.Utilities
                     break;
                 }
             }
-            return sb.ToString();
+            return m_literalBuilder.ToString();
         }
 
         private string GetW()

@@ -77,6 +77,8 @@
     <Compile Include="Replacements.cs" />
     <Compile Include="Selectors.cs" />
     <Compile Include="Syntax.cs" />
+    <Compile Include="Switches.cs" />
+    <Content Include="TestData\CSS\Input\Switches\EchoInput.css" />
     <Compile Include="Values.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -169,6 +171,7 @@
     <Content Include="TestData\CSS\Expected\Selectors\PseudoClass.css" />
     <Content Include="TestData\CSS\Expected\Selectors\Simple.css" />
     <Content Include="TestData\CSS\Expected\Selectors\Universal.css" />
+    <Content Include="TestData\CSS\Expected\Switches\EchoInput.css" />
     <Content Include="TestData\CSS\Expected\Syntax\AlphaHash.css" />
     <Content Include="TestData\CSS\Expected\Syntax\CDO.css" />
     <Content Include="TestData\CSS\Expected\Syntax\Escapes.css" />

@@ -39,11 +39,24 @@ namespace Microsoft.Ajax.Utilities
             parser.Settings = switchParser.CssSettings;
             parser.JSSettings = switchParser.JSSettings;
 
-            var ndx = 0;
-            foreach(var inputGroup in inputGroups)
+            using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
             {
-                // process input source...
-                parser.CssError += (sender, ea) =>
+                // if we are echoing the input, then set the settings echo writer to the output stream
+                // otherwise make sure it's null
+                if (this.m_echoInput)
+                {
+                    parser.EchoWriter = writer;
+                }
+                else
+                {
+                    parser.EchoWriter = null;
+                }
+                
+                var ndx = 0;
+                foreach (var inputGroup in inputGroups)
+                {
+                    // process input source...
+                    parser.CssError += (sender, ea) =>
                     {
                         var error = ea.Error;
                         if (inputGroup.Origin == Configuration.SourceOrigin.Project || error.Severity == 0)
@@ -59,23 +72,32 @@ namespace Microsoft.Ajax.Utilities
                         }
                     };
 
-                // crunch the source and output to the string builder we were passed
-                var crunchedStyles = parser.Parse(inputGroup.Source);
-                if (!string.IsNullOrEmpty(crunchedStyles))
-                {
-                    Debug.WriteLine(crunchedStyles);
-                    if (ndx++ > 0)
+                    if (m_echoInput && ndx > 0)
                     {
-                        // separate input group outputs with an appropriate newline
-                        outputBuilder.Append(switchParser.CssSettings.LineTerminator);
+                        writer.Write(switchParser.CssSettings.LineTerminator);
                     }
 
-                    outputBuilder.Append(crunchedStyles);
-                }
-                else
-                {
-                    // resulting code is null or empty
-                    Debug.WriteLine(AjaxMin.OutputEmpty);
+                    // crunch the source and output to the string builder we were passed
+                    var crunchedStyles = parser.Parse(inputGroup.Source);
+                    if (!string.IsNullOrEmpty(crunchedStyles))
+                    {
+                        Debug.WriteLine(crunchedStyles);
+                        if (!m_echoInput)
+                        {
+                            if (ndx++ > 0)
+                            {
+                                // separate input group outputs with an appropriate newline
+                                writer.Write(switchParser.CssSettings.LineTerminator);
+                            }
+
+                            writer.Write(crunchedStyles);
+                        }
+                    }
+                    else
+                    {
+                        // resulting code is null or empty
+                        Debug.WriteLine(AjaxMin.OutputEmpty);
+                    }
                 }
             }
 
