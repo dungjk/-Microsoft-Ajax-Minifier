@@ -39,6 +39,7 @@ namespace Microsoft.Ajax.Utilities
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Text;
 
     public static class AjaxMinExtensions
     {
@@ -210,5 +211,13 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
         }
+#if NET_20 || NET_35
+        // Clear method introduced in .NET 4.0!
+        public static void Clear(this StringBuilder stringBuilder)
+        {
+            // all it does is set the length to zero
+            stringBuilder.Length = 0;
+        }
+#endif
     }
 }
