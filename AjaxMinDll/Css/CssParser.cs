@@ -2267,10 +2267,12 @@ namespace Microsoft.Ajax.Utilities
             Parsed parsed = Parsed.False;
             if (CurrentTokenType == TokenType.ImportantSymbol)
             {
-                if (Settings.OutputMode == OutputMode.MultipleLines)
+                // issue #21057 - do not trip space before !important keyword.
+                if (m_skippedSpace)
                 {
                     Append(' ');
                 }
+
                 AppendCurrent();
                 SkipSpace();
 

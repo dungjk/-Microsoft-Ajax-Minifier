@@ -4,11 +4,17 @@ body div
 }
 ul div
 {
-  color: #f0f !     important;
+  color: #f0f    !     important;
 }
 
 tr div
 {
   font-weight: bold !important;
   background: #0ff;
+}
+
+ol
+{
+    /* don't add a space if there isn't one */
+    color: blue!important;
 }
