@@ -1717,6 +1717,31 @@ namespace Microsoft.Ajax.Utilities
             return parsed;
         }
 
+        private Parsed ParseSelectorList()
+        {
+            var parsed = ParseSelector();
+            while (CurrentTokenType == TokenType.Character && CurrentTokenText == ",")
+            {
+                // append the comma to the output and skip it any any other
+                // space following it
+                AppendCurrent();
+                SkipSpace();
+
+                // parse another selector. Don't save the parsed result because this
+                // function should return true now, since we parsed at least one selected
+                // successfully
+                if (ParseSelector() != Parsed.True)
+                {
+                    // but if we fail for any reason, then break out of the loop after reporting
+                    // an error
+                    ReportError(0, CssErrorCode.ExpectedSelector, CurrentTokenText);
+                    break;
+                }
+            }
+
+            return parsed;
+        }
+
         private Parsed ParseSelector()
         {
             // should start with a selector
@@ -1749,7 +1774,7 @@ namespace Microsoft.Ajax.Utilities
                         // otherwise we're going to slap a space in the stream (if we found one)
                         // and look for the next selector
                         if (CurrentTokenType == TokenType.Character
-                          && (CurrentTokenText == "," || CurrentTokenText == "{"))
+                          && (CurrentTokenText == "," || CurrentTokenText == "{" || CurrentTokenText == ")"))
                         {
                             break;
                         }
@@ -2074,13 +2099,18 @@ namespace Microsoft.Ajax.Utilities
                         break;
 
                     case TokenType.Not:
+                    case TokenType.Any:
+                    case TokenType.Matches:
                         AppendCurrent();
                         SkipSpace();
-                        // the argument of a NOT operator is a simple selector
-                        parsed = ParseSimpleSelector();
+
+                        // the argument of an ANY/MATCHES pseudo function is a selector list,
+                        // and Selectors 4 standards say NOT is also a selector list. Selectors 3
+                        // says NOT is only a simple selector, but let's go with the later standard
+                        parsed = ParseSelectorList();
                         if (parsed != Parsed.True)
                         {
-                            // TODO: error? shouldn't we ALWAYS have a simple select inside a not() function?
+                            // TODO: error? shouldn't we ALWAYS have a selector list inside a not()/matches()/any() function?
                         }
 
                         // skip any whitespace if we have it

@@ -153,7 +153,7 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     // it is -- consume the parenthesis; it's part of the token
                                     NextChar();
-                                    token = new CssToken(TokenType.Function, "-" + ident + '(', m_context);
+                                    token = new CssToken(GetVendorSpecificFunctionType(ident), "-" + ident + '(', m_context);
                                 }
                                 else
                                 {
@@ -245,6 +245,32 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return token;
+        }
+
+        private TokenType GetVendorSpecificFunctionType(string name)
+        {
+            // the true first hyphen was stripped off, so the first hyphen in the
+            // string passed to us will be the hyphen between the vendor prefix and the
+            // function name. -VENDOR-FUNCTION
+            // if there is no hyphen, then treat as a weird function name.
+            var indexHyphen = name.IndexOf('-');
+            if (indexHyphen > 0)
+            {
+                switch (name.Substring(indexHyphen + 1).ToUpperInvariant())
+                {
+                    case "NOT":
+                        return TokenType.Not;
+
+                    case "ANY":
+                        return TokenType.Any;
+
+                    case "MATCHES":
+                        return TokenType.Matches;
+                }
+            }
+
+            // generic function type
+            return TokenType.Function;
         }
 
         #region Scan... methods
@@ -1130,14 +1156,22 @@ namespace Microsoft.Ajax.Utilities
                 if (m_currentChar == '(')
                 {
                     NextChar();
-                    if (string.Compare(ident, "not", StringComparison.OrdinalIgnoreCase) == 0)
+
+                    var tokenType = TokenType.Function;
+                    if (ident.Equals("not", StringComparison.OrdinalIgnoreCase))
                     {
-                        token = new CssToken(TokenType.Not, ident + '(', m_context);
+                        tokenType = TokenType.Not;
                     }
-                    else
+                    else if (ident.Equals("any", StringComparison.OrdinalIgnoreCase))
                     {
-                        token = new CssToken(TokenType.Function, ident + '(', m_context);
+                        tokenType = TokenType.Any;
                     }
+                    else if (ident.Equals("matches", StringComparison.OrdinalIgnoreCase))
+                    {
+                        tokenType = TokenType.Matches;
+                    }
+
+                    token = new CssToken(tokenType, ident + '(', m_context);
                 }
                 else if (string.Compare(ident, "progid", StringComparison.OrdinalIgnoreCase) == 0 && m_currentChar == ':')
                 {

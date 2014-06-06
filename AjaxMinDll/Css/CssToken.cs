@@ -175,6 +175,8 @@ namespace Microsoft.Ajax.Utilities
         Uri,
         Function,
         Not,
+        Any,
+        Matches,
         UnicodeRange,
         ProgId,
         Character,

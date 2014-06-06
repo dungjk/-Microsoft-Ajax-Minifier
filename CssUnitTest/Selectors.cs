@@ -107,5 +107,11 @@ namespace CssUnitTest
     {
         TestHelper.Instance.RunTest();
     }
+
+    [TestMethod]
+    public void Any()
+    {
+        TestHelper.Instance.RunTest();
+    }
   }
 }

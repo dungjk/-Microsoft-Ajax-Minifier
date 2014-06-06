@@ -78,6 +78,8 @@
     <Compile Include="Selectors.cs" />
     <Compile Include="Syntax.cs" />
     <Compile Include="Switches.cs" />
+    <Content Include="TestData\CSS\Expected\Selectors\Any.css" />
+    <Content Include="TestData\CSS\Input\Selectors\Any.css" />
     <Content Include="TestData\CSS\Input\Switches\EchoInput.css" />
     <Compile Include="Values.cs" />
   </ItemGroup>
