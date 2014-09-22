@@ -35,7 +35,12 @@ namespace Microsoft.Ajax.Utilities
         {
             // requires by default unless a node explicitly says it doesn't need one
             DoesRequire = node != null;
-            node.IfNotNull(n => n.Accept(this));
+
+            if (node != null)
+            {
+                node.Accept(this);
+            }
+
             return DoesRequire;
         }
 

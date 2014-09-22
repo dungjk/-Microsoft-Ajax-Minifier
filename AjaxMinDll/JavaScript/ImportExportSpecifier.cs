@@ -33,9 +33,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_localIdentifier; }
             set
             {
-                m_localIdentifier.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_localIdentifier = value;
-                m_localIdentifier.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_localIdentifier, value);
             }
         }
 

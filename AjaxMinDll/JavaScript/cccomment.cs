@@ -26,9 +26,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_statements; }
             set
             {
-                m_statements.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_statements = value;
-                m_statements.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_statements, value);
             }
         }
 

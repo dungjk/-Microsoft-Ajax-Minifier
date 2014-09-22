@@ -29,13 +29,13 @@ namespace Microsoft.Ajax.Utilities
 
         private int ProcessCssFile(IList<InputGroup> inputGroups, SwitchParser switchParser, StringBuilder outputBuilder)
         {
-            int retVal = 0;
+            var retVal = 0;
 
             // blank line before
             WriteProgress();
 
             // we can share the same parser object
-            CssParser parser = new CssParser();
+            var parser = new CssParser();
             parser.Settings = switchParser.CssSettings;
             parser.JSSettings = switchParser.JSSettings;
 

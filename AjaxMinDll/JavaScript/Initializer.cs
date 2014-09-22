@@ -31,9 +31,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_binding; }
             set
             {
-                m_binding.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_binding = value;
-                m_binding.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_binding, value);
             }
         }
 
@@ -44,9 +42,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_initializer; }
             set
             {
-                m_initializer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_initializer = value;
-                m_initializer.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_initializer, value);
             }
         }
 
@@ -56,7 +52,7 @@ namespace Microsoft.Ajax.Utilities
             {
                 // we are constant if our value is constant.
                 // If we don't have a value, then assume it's constant
-                return Binding.IfNotNull(v => v.IsConstant, true);
+                return Binding != null ? Binding.IsConstant : true;
             }
         }
 

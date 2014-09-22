@@ -28,9 +28,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_expression; }
             set
             {
-                m_expression.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_expression = value;
-                m_expression.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_expression, value);
             }
         }
 
@@ -39,9 +37,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_cases; }
             set
             {
-                m_cases.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_cases = value;
-                m_cases.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_cases, value);
             }
         }
 

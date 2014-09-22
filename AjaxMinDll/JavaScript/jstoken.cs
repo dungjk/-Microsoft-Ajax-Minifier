@@ -19,7 +19,7 @@ namespace Microsoft.Ajax.Utilities
 
     public enum JSToken : int
     {
-        None = -1,
+        None = 0,
         EndOfFile,
 
         // main statement switch
@@ -180,5 +180,7 @@ namespace Microsoft.Ajax.Utilities
         Error, // only returned if the RawTokens flag is set on the scanner
         RegularExpression, // only returned if the RawTokens flag is set on the scanner
 
+        // Do not use this one
+        Limit
     }
 }

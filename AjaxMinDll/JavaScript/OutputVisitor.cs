@@ -62,6 +62,44 @@ namespace Microsoft.Ajax.Utilities
 
         private RequiresSeparatorVisitor m_requiresSeparator;
 
+        private static string[] s_exponents = { 
+            null, 
+            null, 
+            null, 
+            "e3", 
+            "e4",
+            "e5",
+            "e6",
+            "e7",
+            "e8",
+            "e9",
+
+            "e10", 
+            "e11", 
+            "e12", 
+            "e13", 
+            "e14",
+            "e15",
+            "e16",
+            "e17",
+            "e18",
+            "e19",
+
+            "e20", 
+            "e21", 
+            "e22", 
+            "e23", 
+            "e24",
+            "e25",
+            "e26",
+            "e27",
+            "e28",
+            "e29"
+        };
+
+        private static char[] DecimalOrExponentChars = { '.', 'e', 'E' };
+        private static char[] LineFeedCharacters = { '\n', '\r', '\u2028', '\u2029' };
+
         private OutputVisitor(TextWriter writer, CodeSettings settings)
         {
             m_outputStream = writer;
@@ -1979,15 +2017,15 @@ namespace Microsoft.Ajax.Utilities
                 // of whether or not we are in multi- or single-line mode, and the statement after
                 // should also be on a new line.
                 BreakLine(true);
+
                 node.Context.OutputLine = m_lineCount;
 
                 // the output method assumes any text we send it's way doesn't contain any line feed
                 // characters. The important comment, however, may contain some. We don't want to count
                 // the entire comment as a single line, AND we want to normalize the line-feed characters,
                 // so lets process the comment line-by-line
-                var lineFeedChars = new[] { '\n', '\r', '\u2028', '\u2029' };
                 var startIndex = 0;
-                var firstLF = node.Comment.IndexOfAny(lineFeedChars, startIndex);
+                var firstLF = node.Comment.IndexOfAny(LineFeedCharacters, startIndex);
                 if (firstLF < 0)
                 {
                     // no line-breaks at all!
@@ -2015,7 +2053,7 @@ namespace Microsoft.Ajax.Utilities
                         BreakLine(true);
 
                         // look for the next line break
-                        firstLF = node.Comment.IndexOfAny(lineFeedChars, startIndex);
+                        firstLF = node.Comment.IndexOfAny(LineFeedCharacters, startIndex);
 
                         if (firstLF > startIndex)
                         {
@@ -2583,7 +2621,10 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // output the binding
-                node.Binding.IfNotNull(b => b.Accept(this));
+                if (node.Binding != null)
+                {
+                    node.Binding.Accept(this);
+                }
 
                 // optional initializer
                 if (node.Initializer != null)
@@ -3048,7 +3089,10 @@ namespace Microsoft.Ajax.Utilities
                 var symbol = StartSymbol(node);
 
                 // output the binding
-                node.Binding.IfNotNull(b => b.Accept(this));
+                if (node.Binding != null)
+                {
+                    node.Binding.Accept(this);
+                }
 
                 m_startOfStatement = false;
                 if (node.Initializer != null)
@@ -3251,10 +3295,12 @@ namespace Microsoft.Ajax.Utilities
                 m_noLineBreaks = false;
 
                 // if it ends in a newline, we're still on a newline
-                m_onNewLine = (text[text.Length - 1] == '\n' || text[text.Length - 1] == '\r'); ;
+                var lastChar = text[text.Length - 1];
+
+                m_onNewLine = (lastChar == '\n' || lastChar == '\r'); ;
 
                 // now set the "last character" state
-                SetLastCharState(text);
+                SetLastCharState(lastChar, text);
             }
         }
 
@@ -3390,57 +3436,49 @@ namespace Microsoft.Ajax.Utilities
             m_lastCharacter = ch;
         }
 
-        private void SetLastCharState(string text)
+        private void SetLastCharState(char lastChar, string text)
         {
-            // ignore empty strings
-            if (!string.IsNullOrEmpty(text))
+            if (lastChar == '+' || lastChar == '-')
             {
-                // get the last character
-                char lastChar = text[text.Length - 1];
-
-                // if it's not a plus or a minus, we don't care
-                if (lastChar == '+' || lastChar == '-')
+                // see HOW MANY of those characters were at the end of the string
+                var ndxDifferent = text.Length - 1;
+                while (--ndxDifferent >= 0)
                 {
-                    // see HOW MANY of those characters were at the end of the string
-                    var ndxDifferent = text.Length - 1;
-                    while (--ndxDifferent >= 0)
+                    if (text[ndxDifferent] != lastChar)
                     {
-                        if (text[ndxDifferent] != lastChar)
-                        {
-                            break;
-                        }
+                        break;
                     }
+                }
 
-                    // if the first diff index is less than zero, then the whole string is one of
-                    // these two special characters
-                    if (ndxDifferent < 0 && m_lastCharacter == lastChar)
-                    {
-                        // the whole string is the same character, AND it's the same character 
-                        // at the end of the last time we output stuff. We need to take into 
-                        // account the previous state when we set the current state.
-                        // it's a logical XOR -- if the two values are the same, m_lastCountOdd is false;
-                        // it they are different, m_lastCountOdd is true.
-                        m_lastCountOdd = (text.Length % 2 == 1) ^ m_lastCountOdd;
-                    }
-                    else
-                    {
-                        // either the whole string wasn't the same character, OR the previous ending
-                        // wasn't the same character. Either way, the current state is determined 
-                        // exclusively by the number of characters we found at the end of this string
-                        // get the number of same characters ending this string, mod by 2, and if the
-                        // result is 1, it's an odd number of characters.
-                        m_lastCountOdd = (text.Length - 1 - ndxDifferent) % 2 == 1;
-                    }
+                // if the first diff index is less than zero, then the whole string is one of
+                // these two special characters
+                if (ndxDifferent < 0 && m_lastCharacter == lastChar)
+                {
+                    // the whole string is the same character, AND it's the same character 
+                    // at the end of the last time we output stuff. We need to take into 
+                    // account the previous state when we set the current state.
+                    // it's a logical XOR -- if the two values are the same, m_lastCountOdd is false;
+                    // it they are different, m_lastCountOdd is true.
+                    m_lastCountOdd = (text.Length % 2 == 1) ^ m_lastCountOdd;
                 }
                 else
                 {
-                    // say we weren't odd
-                    m_lastCountOdd = false;
+                    // either the whole string wasn't the same character, OR the previous ending
+                    // wasn't the same character. Either way, the current state is determined 
+                    // exclusively by the number of characters we found at the end of this string
+                    // get the number of same characters ending this string, mod by 2, and if the
+                    // result is 1, it's an odd number of characters.
+                    m_lastCountOdd = (text.Length - 1 - ndxDifferent) % 2 == 1;
                 }
-
-                // save the last character for next time
-                m_lastCharacter = lastChar;
             }
+            else
+            {
+                // say we weren't odd
+                m_lastCountOdd = false;
+            }
+
+            // save the last character for next time
+            m_lastCharacter = lastChar;
         }
 
         private void Indent()
@@ -3916,18 +3954,38 @@ namespace Microsoft.Ajax.Utilities
         {
             if (m_settings.InlineSafeStrings)
             {
+                var limit = text.Length - 1;
+
+                var xmlOpen  = false;
+                var datClose = false;
+
+                for (var i = 0; i < limit; i++)
+                {
+                    var ch = text[i];
+
+                    if ((ch == '<') && (text[i + 1] == '/'))
+                    {
+                        xmlOpen = true;
+                    }
+
+                    if ((ch == ']') && (text[i + 1] == ']'))
+                    {
+                        datClose = true;
+                    }
+                }
+
                 // if there are ANY potential XML closing tags, which might confuse the browser
                 // as to where the end of the inline script really is. Go conservative; the specs
                 // say </ should be escaped, even though most browsers are smart enough to look for
                 // </script. Also escape any XML CDATA closing tags.
-                if (text.IndexOf("</", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (xmlOpen)
                 {
                     // replace all of them with an escaped version so a text-compare won't match
                     text = text.Replace("</", @"<\/");
                 }
 
                 // if there are ANY closing CDATA strings...
-                if (text.IndexOf("]]>", StringComparison.Ordinal) >= 0)
+                if (datClose)
                 {
                     // replace all of them with an escaped version so a text-compare won't match
                     text = text.Replace("]]>", @"]\]>");
@@ -4041,7 +4099,39 @@ namespace Microsoft.Ajax.Utilities
 
         private static string GetSmallestRep(string number)
         {
-            Match match = CommonData.DecimalFormat.Match(number);
+            var len = number.Length;
+
+            // Quick check avoid using regular expression
+            if (len <= 2)
+            {
+                return number;
+            }
+
+            if (number.IndexOfAny(DecimalOrExponentChars) < 0)
+            {
+                // integer
+                var zeros = 0;
+                while ((zeros < len) && (number[len - zeros - 1] == '0'))
+                {
+                    zeros++;
+                }
+
+                if (zeros >= 3)
+                {
+                    return number.Substring(0, len - zeros) + s_exponents[zeros];
+                }
+                else
+                {
+                    return number;
+                }
+            }
+
+            return GetSmallestRepReg(number);
+        }
+
+        private static string GetSmallestRepReg(string number)
+        {
+            var match = CommonData.DecimalFormat.Match(number);
             if (match.Success)
             {
                 string mantissa = match.Result("${man}");
@@ -4180,7 +4270,7 @@ namespace Microsoft.Ajax.Utilities
             // there are exactly the same number, so it doesn't matter which delimiter
             // we use. In that case, use double-quotes because I think it's easier to read.
             // More like other languages (C/C++, C#, Java) that way.
-            var delimiterCharacter = QuoteFactor(text) < 0 ? '\'' : '"';
+            var delimiter = QuoteFactor(text) < 0 ? "\'" : "\"";
 
             // we also don't want to build a new string builder object if we don't have to.
             // and we only need to if we end up escaping characters. 
@@ -4199,7 +4289,7 @@ namespace Microsoft.Ajax.Utilities
                         case '\'':
                         case '"':
                             // we only need to escape whichever one we chose as our delimiter
-                            if (ch == delimiterCharacter)
+                            if (ch == delimiter[0])
                             {
                                 // need to escape instances of the delimiter character
                                 goto case '\\';
@@ -4251,7 +4341,7 @@ namespace Microsoft.Ajax.Utilities
                             // output the block of raw characters we have since the last time
                             if (rawStart < index)
                             {
-                                sb.Append(text.Substring(rawStart, index - rawStart));
+                                sb.Append(text, rawStart, index - rawStart);
                             }
 
                             // set raw start to the next character
@@ -4300,7 +4390,7 @@ namespace Microsoft.Ajax.Utilities
                                 // output the block of raw characters we have since the last time
                                 if (rawStart < index)
                                 {
-                                    sb.Append(text.Substring(rawStart, index - rawStart));
+                                    sb.Append(text, rawStart, index - rawStart);
                                 }
 
                                 // set raw start to the next character
@@ -4358,7 +4448,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            return delimiterCharacter + escapedText + delimiterCharacter;
+            return delimiter + escapedText + delimiter;
         }
 
         /// <summary>

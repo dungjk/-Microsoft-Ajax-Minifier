@@ -1075,7 +1075,7 @@ namespace Microsoft.Ajax.Utilities
                     // NaN, +Infinity and -Infinity are also acceptable
                     if (left.IsOkayToCombine && right.IsOkayToCombine)
                     {
-                        newLiteral = new ConstantWrapper(left.ToString() + right.ToString(), PrimitiveType.String, left.Context.FlattenToStart());
+                        newLiteral = new ConstantWrapper(left.Concat(right), PrimitiveType.String, left.Context.FlattenToStart());
                     }
                 }
             }

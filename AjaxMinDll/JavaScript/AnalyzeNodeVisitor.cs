@@ -316,7 +316,7 @@ namespace Microsoft.Ajax.Utilities
                 if (prevBinary.OperatorToken == JSToken.Assign)
                 {
                     // transform: lookup=expr1;lookup[OP]=expr2;  ==>  lookup=expr1[OP]expr2
-                    var binOp = new BinaryOperator(prevBinary.Operand2.Context.Clone().CombineWith(curBinary.Operand2.Context))
+                    var binOp = new BinaryOperator(prevBinary.Operand2.Context.CombineWith(curBinary.Operand2.Context))
                     {
                         Operand1 = prevBinary.Operand2,
                         Operand2 = curBinary.Operand2,
@@ -339,7 +339,7 @@ namespace Microsoft.Ajax.Utilities
                     // there's lots of ins-and-outs in terms of strings versus numerics versus precedence and all 
                     // sorts of stuff. I need to iron this out a little better, but until then, just combine with a comma.
                     // transform: expr1;expr2  ==>  expr1,expr2
-                    var binOp = CommaOperator.CombineWithComma(prevBinary.Context.Clone().CombineWith(curBinary.Context), prevBinary, curBinary);
+                    var binOp = CommaOperator.CombineWithComma(prevBinary.Context.CombineWith(curBinary.Context), prevBinary, curBinary);
 
                     // replace the previous node and delete the current
                     node[ndx - 1] = binOp;
@@ -351,7 +351,7 @@ namespace Microsoft.Ajax.Utilities
                 // transform: expr1;expr2 to expr1,expr2
                 // use the special comma operator object so we can handle it special
                 // and don't create stack-breakingly deep trees
-                var binOp = CommaOperator.CombineWithComma(node[ndx - 1].Context.Clone().CombineWith(node[ndx].Context), node[ndx - 1], node[ndx]);
+                var binOp = CommaOperator.CombineWithComma(node[ndx - 1].Context.CombineWith(node[ndx].Context), node[ndx - 1], node[ndx]);
 
                 // replace the current node and delete the previous
                 node[ndx] = binOp;

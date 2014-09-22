@@ -3384,7 +3384,10 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextToken()
         {
             m_currentToken = m_scanner.NextToken();
-            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+            if (EchoWriter != null)
+            {
+                EchoWriter.Write(CurrentTokenText);
+            }
 
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Comment)
@@ -3396,7 +3399,10 @@ namespace Microsoft.Ajax.Utilities
                     NewLine();
                 }
                 m_currentToken = m_scanner.NextToken();
-                EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+                if (EchoWriter != null)
+                {
+                    EchoWriter.Write(CurrentTokenText);
+                }
 
                 m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
@@ -3407,7 +3413,11 @@ namespace Microsoft.Ajax.Utilities
         private TokenType NextRawToken()
         {
             m_currentToken = m_scanner.NextToken();
-            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+            if (EchoWriter != null)
+            {
+                EchoWriter.Write(CurrentTokenText);
+            }
+
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             return CurrentTokenType;
         }
@@ -3420,7 +3430,11 @@ namespace Microsoft.Ajax.Utilities
 
             // get the next token
             m_currentToken = m_scanner.NextToken();
-            EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+            if (EchoWriter != null)
+            {
+                EchoWriter.Write(CurrentTokenText);
+            }
+
             m_encounteredNewLine = m_scanner.GotEndOfLine;
             while (CurrentTokenType == TokenType.Space || CurrentTokenType == TokenType.Comment)
             {
@@ -3505,7 +3519,11 @@ namespace Microsoft.Ajax.Utilities
 
                 // next token
                 m_currentToken = m_scanner.NextToken();
-                EchoWriter.IfNotNull(w => w.Write(CurrentTokenText));
+                if (EchoWriter != null)
+                {
+                    EchoWriter.Write(CurrentTokenText);
+                }
+
                 m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
             }
 
@@ -3796,12 +3814,12 @@ namespace Microsoft.Ajax.Utilities
 
         private static bool NeedsSpaceBefore(string text)
         {
-            return text.IfNotNull(t => !("{}()[],;".Contains(t)));
+            return text == null ? false : !("{}()[],;".Contains(text));
         }
 
         private static bool NeedsSpaceAfter(string text)
         {
-            return text.IfNotNull(t => !("{}()[],;:".Contains(t)));
+            return text == null ? false : !("{}()[],;:".Contains(text));
         }
 
         #endregion
@@ -4488,10 +4506,14 @@ namespace Microsoft.Ajax.Utilities
                     File = FileContext,
                     ErrorNumber = (int)errorNumber,
                     ErrorCode = "CSS{0}".FormatInvariant(((int)errorNumber) & (0xffff)),
-                    StartLine = context.IfNotNull(c => c.Start.Line),
-                    StartColumn = context.IfNotNull(c => c.Start.Char),
                     Message = message,
                 };
+
+            if (context != null)
+            {
+                error.StartLine = context.Start.Line;
+                error.StartColumn = context.Start.Char;
+            }
 
             // but warnings we want to just report and carry on
             OnCssError(error);
@@ -4500,7 +4522,7 @@ namespace Microsoft.Ajax.Utilities
         // just use the current context for the error
         private void ReportError(int severity, CssErrorCode errorNumber, params object[] arguments)
         {
-            ReportError(severity, errorNumber, m_currentToken.IfNotNull(c => c.Context), arguments);
+            ReportError(severity, errorNumber, m_currentToken != null ? m_currentToken.Context : null, arguments);
         }
 
         public event EventHandler<ContextErrorEventArgs> CssError;

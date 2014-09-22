@@ -76,7 +76,18 @@ namespace Microsoft.Ajax.Utilities
             // add the names for each item in the list
             // this assumes that the items are name declarations!
             // (like parameter lists)
-            node.IfNotNull(n => n.Children.ForEach(i => i.Accept(this)));
+            if (node != null)
+            {
+                var count = node.Count;
+                for (var i = 0; i < count; i++)
+                {
+                    var itemNode = node[i];
+                    if (itemNode != null)
+                    {
+                        itemNode.Accept(this);
+                    }
+                }
+            }
         }
 
         public void Visit(BindingIdentifier node)
@@ -201,7 +212,14 @@ namespace Microsoft.Ajax.Utilities
         public void Visit(ParameterDeclaration node)
         {
             // add the names from the binding, but ignore any initializers
-            node.IfNotNull(n => n.Binding.IfNotNull(b => b.Accept(this)));
+            if (node != null)
+            {
+                var binding = node.Binding;
+                if (binding != null)
+                {
+                    binding.Accept(this);
+                }
+            }
         }
 
         public void Visit(Var node)

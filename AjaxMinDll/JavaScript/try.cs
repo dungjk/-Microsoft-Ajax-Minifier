@@ -30,9 +30,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_tryBlock; }
             set
             {
-                m_tryBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_tryBlock = value;
-                m_tryBlock.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_tryBlock, value);
             }
         }
 
@@ -41,9 +39,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_catchBlock; }
             set
             {
-                m_catchBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_catchBlock = value;
-                m_catchBlock.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_catchBlock, value);
             }
         }
 
@@ -52,9 +48,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_finallyBlock; }
             set
             {
-                m_finallyBlock.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_finallyBlock = value;
-                m_finallyBlock.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_finallyBlock, value);
             }
         }
 
@@ -63,9 +57,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_catchParameter; }
             set
             {
-                m_catchParameter.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_catchParameter = value;
-                m_catchParameter.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_catchParameter, value);
             }
         }
 

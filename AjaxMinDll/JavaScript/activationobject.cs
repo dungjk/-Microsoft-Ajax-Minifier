@@ -94,7 +94,10 @@ namespace Microsoft.Ajax.Utilities
                     if (functionObject == null)
                     {
                         // we are not a function, so the parent scope is unknown too
-                        Parent.IfNotNull(p => p.IsKnownAtCompileTime = false);
+                        if (Parent != null)
+                        {
+                            Parent.IsKnownAtCompileTime = false;
+                        }
                     }
                     else
                     {
@@ -283,7 +286,11 @@ namespace Microsoft.Ajax.Utilities
             // first unhook all the declarations in the binding pattern
             foreach (var boundName in BindingsVisitor.Bindings(binding))
             {
-                boundName.VariableField.IfNotNull(v => v.Declarations.Remove(boundName));
+                var variableField = boundName.VariableField;
+                if (variableField != null)
+                {
+                    variableField.Declarations.Remove(boundName);
+                }
             }
 
             // then remove the binding from it's parent and clean up any cascade

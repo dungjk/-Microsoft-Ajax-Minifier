@@ -27,9 +27,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_elements; }
             set
             {
-                m_elements.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_elements = value;
-                m_elements.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_elements, value);
             }
         }
 
@@ -52,7 +50,8 @@ namespace Microsoft.Ajax.Utilities
                     {
                         // it's a spread. we already know it's a constant, but let's make sure it's
                         // also an array literal
-                        var length = (unaryOperator.Operand as ArrayLiteral).IfNotNull(a => a.Length, -1);
+                        var arrayLiteral = unaryOperator.Operand as ArrayLiteral;
+                        var length = arrayLiteral != null ? arrayLiteral.Length : -1;
                         if (length >= 0)
                         {
                             count += length;

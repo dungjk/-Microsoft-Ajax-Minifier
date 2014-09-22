@@ -62,7 +62,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(m_list);
+                return FastEnumerateNonNullNodes(m_list);
             }
         }
 
@@ -151,7 +151,7 @@ namespace Microsoft.Ajax.Utilities
             }
             set
             {
-                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                UnlinkParent(m_list[index]);
                 if (value != null)
                 {
                     m_list[index] = value;

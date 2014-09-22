@@ -290,6 +290,27 @@ namespace Microsoft.Ajax.Utilities
             return block;
         }
 
+        internal static IEnumerable<AstNode> FastEnumerateNonNullNodes<T>(IList<T> nodes) where T : AstNode
+        {
+            var hasNull = false;
+            for (var ndx = 0; ndx < nodes.Count; ++ndx)
+            {
+                if (nodes[ndx] != null)
+                {
+                    hasNull = true;
+                    break;
+                }
+            }
+
+            if (hasNull)
+            {
+                return EnumerateNonNullNodes(nodes);
+            }
+
+            // Return the original list, avoid allocation using yield return
+            return (IEnumerable<AstNode>)nodes;
+        }
+
         internal static IEnumerable<AstNode> EnumerateNonNullNodes<T>(IList<T> nodes) where T : AstNode
         {
             for (int ndx = 0; ndx < nodes.Count; ++ndx)
@@ -304,6 +325,25 @@ namespace Microsoft.Ajax.Utilities
         internal static IEnumerable<AstNode> EnumerateNonNullNodes(AstNode n1, AstNode n2 = null, AstNode n3 = null, AstNode n4 = null)
         {
             return EnumerateNonNullNodes(new[] { n1, n2, n3, n4 });
+        }
+
+        internal void UnlinkParent(AstNode node)
+        {
+            if ((node != null) && (node.Parent == this))
+            {
+                node.Parent = null;
+            }
+        }
+
+        internal void ReplaceNode<T>(ref T node, T value) where T: AstNode
+        {
+            UnlinkParent(node);
+
+            node = value;
+            if (node != null)
+            {
+                node.Parent = this;
+            }
         }
     }
 }

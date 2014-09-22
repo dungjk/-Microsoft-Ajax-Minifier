@@ -24,12 +24,19 @@ namespace Microsoft.Ajax.Utilities
         public DocumentContext Document { get; private set; }
 
         public int StartLineNumber { get; internal set; }
+
         public int StartLinePosition { get; internal set; }
+
         public int StartPosition { get; internal set; }
+
         public int EndLineNumber { get; internal set; }
+
         public int EndLinePosition { get; internal set; }
+
         public int EndPosition { get; internal set; }
+
         public int SourceOffsetStart { get; internal set; }
+
         public int SourceOffsetEnd { get; internal set; }
 
         /// <summary>
@@ -118,7 +125,11 @@ namespace Microsoft.Ajax.Utilities
 
             StartLineNumber = 1;
             EndLineNumber = 1;
-            EndPosition = Document.Source.IfNotNull(s => s.Length);
+
+            if (Document.Source != null)
+            {
+                EndPosition = Document.Source.Length;
+            }
 
             Token = JSToken.None;
         }
@@ -135,20 +146,34 @@ namespace Microsoft.Ajax.Utilities
             Token = token;
         }
 
+        protected Context()
+        {
+        }
+
+        public void SetData(Context input)
+        {
+            if (input != null)
+            {
+                this.Document = input.Document;
+                this.StartLineNumber = input.StartLineNumber;
+                this.StartLinePosition = input.StartLinePosition;
+                this.StartPosition = input.StartPosition;
+                this.EndLineNumber = input.EndLineNumber;
+                this.EndLinePosition = input.EndLinePosition;
+                this.EndPosition = input.EndPosition;
+                this.Token = input.Token;
+                this.SourceOffsetStart = input.SourceOffsetStart;
+                this.SourceOffsetEnd = input.SourceOffsetEnd;
+            }
+        }
+
         public Context Clone()
         {
-            return new Context(this.Document)
-            {
-                StartLineNumber = this.StartLineNumber, 
-                StartLinePosition = this.StartLinePosition, 
-                StartPosition = this.StartPosition,
-                EndLineNumber = this.EndLineNumber, 
-                EndLinePosition = this.EndLinePosition, 
-                EndPosition = this.EndPosition,
-                SourceOffsetStart = this.SourceOffsetStart,
-                SourceOffsetEnd = this.SourceOffsetEnd,
-                Token = this.Token,
-            };
+            Context clone = new Context();
+
+            clone.SetData(this);
+
+            return clone;
         }
 
         public Context FlattenToStart()
@@ -180,7 +205,11 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>new context instance</returns>
         public Context CombineWith(Context other)
         {
-            return this.Clone().UpdateWith(other);
+            var clone = new Context();
+
+            clone.SetData(this);
+
+            return clone.UpdateWith(other);
         }
 
         /// <summary>
@@ -239,6 +268,13 @@ namespace Microsoft.Ajax.Utilities
             return Token == token;
         }
 
+        public bool IsEither(JSToken token1, JSToken token2)
+        {
+            var target = this.Token;
+
+            return (target == token1) || (target == token2);
+        }
+
         public bool IsOne(params JSToken[] tokens)
         {
             // if any one of the tokens match what we have, we're good
@@ -256,6 +292,11 @@ namespace Microsoft.Ajax.Utilities
 
             // otherwise we're not
             return false;
+        }
+
+        public bool IsOne(bool[] tokenMap)
+        {
+            return tokenMap == null ? false : tokenMap[(int)this.Token];
         }
 
         public bool IsNot(JSToken token)

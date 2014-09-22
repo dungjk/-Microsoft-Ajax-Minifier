@@ -158,7 +158,10 @@ namespace Microsoft.Ajax.Utilities
             {
                 foreach (var item in collection)
                 {
-                    item.IfNotNull(i => action(i));
+                    if (item != null)
+                    {
+                        action(item);
+                    }
                 }
             }
         }
@@ -203,7 +206,7 @@ namespace Microsoft.Ajax.Utilities
                 throw new ArgumentNullException("toSet");
             }
 
-            if (fromSet != null)
+            if ((fromSet != null) && (fromSet.Count != 0))
             {
                 foreach (var item in fromSet)
                 {

@@ -42,8 +42,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                foreach (var element in node.Children)
-                {
+                var count = node.Count;
+
+                for (var i = 0; i < count; i++)
+                { 
+                    var element = node[i];
+                    
                     if (element != null)
                     {
                         element.Accept(this);
@@ -701,8 +705,12 @@ namespace Microsoft.Ajax.Utilities
         {
             if (node != null)
             {
-                foreach (var declaration in node.Children)
-                {
+                var count = node.Count;
+
+                for (var i = 0; i < count; i ++)
+                { 
+                    var declaration = node[i];
+                    
                     if (declaration != null)
                     {
                         declaration.Accept(this);

@@ -36,7 +36,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_list[index]; }
             set
             {
-                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                UnlinkParent(m_list[index]);
                 if (value != null)
                 {
                     m_list[index] = value;
@@ -112,7 +112,7 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                return EnumerateNonNullNodes(m_list);
+                return FastEnumerateNonNullNodes(m_list);
             }
         }
 
@@ -163,7 +163,11 @@ namespace Microsoft.Ajax.Utilities
             {
                 if (m_list[ndx] == oldNode)
                 {
-                    m_list[ndx].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                    if ((oldNode != null) && (oldNode.Parent == this))
+                    {
+                        oldNode.Parent = null;
+                    }
+                    
                     if (newNode == null)
                     {
                         // if this was concise, we're not anymore. Don't need to undo
@@ -329,7 +333,7 @@ namespace Microsoft.Ajax.Utilities
                 // to be deleting it.
                 this.IsConcise = false;
 
-                m_list[index].IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
+                UnlinkParent(m_list[index]);
                 m_list.RemoveAt(index);
             }
         }

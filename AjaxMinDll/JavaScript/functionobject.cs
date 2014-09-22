@@ -33,9 +33,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_binding; }
             set
             {
-                m_binding.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_binding = value;
-                m_binding.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_binding, value);
             }
         }
 
@@ -46,9 +44,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_parameters; }
             set
             {
-                m_parameters.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_parameters = value;
-                m_parameters.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_parameters, value);
             }
         }
 
@@ -57,9 +53,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_body; }
             set
             {
-                m_body.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_body = value;
-                m_body.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_body, value);
             }
         }
 

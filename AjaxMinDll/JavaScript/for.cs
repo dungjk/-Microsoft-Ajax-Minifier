@@ -30,9 +30,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_initializer; }
             set
             {
-                m_initializer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_initializer = value;
-                m_initializer.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_initializer, value);
             }
         }
 
@@ -41,9 +39,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_condition; }
             set
             {
-                m_condition.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_condition = value;
-                m_condition.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_condition, value);
             }
         }
 
@@ -52,9 +48,7 @@ namespace Microsoft.Ajax.Utilities
             get { return m_incrementer; }
             set
             {
-                m_incrementer.IfNotNull(n => n.Parent = (n.Parent == this) ? null : n.Parent);
-                m_incrementer = value;
-                m_incrementer.IfNotNull(n => n.Parent = this);
+                ReplaceNode(ref m_incrementer, value);
             }
         }
 

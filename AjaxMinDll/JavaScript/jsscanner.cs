@@ -39,6 +39,8 @@ namespace Microsoft.Ajax.Utilities
 
         private static readonly OperatorPrecedence[] s_OperatorsPrec = InitOperatorsPrec();
 
+        private static bool[] ValidIdentifierPartMap = InitializeValidIdentifierPartMap();
+
         #endregion
 
         #region private fields
@@ -70,6 +72,8 @@ namespace Microsoft.Ajax.Utilities
         private bool m_mightBeKeyword;
         private string m_decodedString;
         private Context m_currentToken;
+
+        private JSScanner m_peekClone;
 
         #endregion
 
@@ -217,6 +221,38 @@ namespace Microsoft.Ajax.Utilities
 
             // create a new set so anything we find doesn't affect the original.
             DebugLookupCollection = new HashSet<string>();
+        }
+
+        /// <summary>
+        /// Clone for peek, reuse the same instance
+        /// </summary>
+        /// <returns></returns>
+        internal JSScanner PeekClone()
+        {
+            if (m_peekClone == null)
+            {
+                m_peekClone = new JSScanner(this.m_defines);
+            }
+
+            m_peekClone.AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks;
+            m_peekClone.IgnoreConditionalCompilation = this.IgnoreConditionalCompilation;
+            m_peekClone.m_conditionalCompilationIfLevel = this.m_conditionalCompilationIfLevel;
+            m_peekClone.m_conditionalCompilationOn = this.m_conditionalCompilationOn;
+            m_peekClone.m_currentLine = this.m_currentLine;
+            m_peekClone.m_currentPosition = this.m_currentPosition;
+            m_peekClone.m_currentToken = this.m_currentToken.Clone();
+            m_peekClone.m_endPos = this.m_endPos;
+            m_peekClone.m_ifDirectiveLevel = this.m_ifDirectiveLevel;
+            m_peekClone.m_inConditionalComment = this.m_inConditionalComment;
+            m_peekClone.m_inMultipleLineComment = this.m_inMultipleLineComment;
+            m_peekClone.m_inSingleLineComment = this.m_inSingleLineComment;
+            m_peekClone.m_lastPosOnBuilder = this.m_lastPosOnBuilder;
+            m_peekClone.m_startLinePosition = this.m_startLinePosition;
+            m_peekClone.m_strSourceCode = this.m_strSourceCode;
+            m_peekClone.UsePreprocessorDefines = this.UsePreprocessorDefines;
+            m_peekClone.StripDebugCommentBlocks = this.StripDebugCommentBlocks;
+
+            return m_peekClone;
         }
 
         public JSScanner Clone()
@@ -1064,7 +1100,7 @@ namespace Microsoft.Ajax.Utilities
         public Context UpdateToken(UpdateHint updateHint)
         {
             if (updateHint == UpdateHint.RegularExpression 
-                && (m_currentToken.IsOne(JSToken.Divide, JSToken.DivideAssign)))
+                && (m_currentToken.IsEither(JSToken.Divide, JSToken.DivideAssign)))
             {
                 m_currentToken.Token = ScanRegExp();
             }
@@ -1431,6 +1467,12 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>true if the given character is a valid identifier part</returns>
         public static bool IsValidIdentifierPart(char letter)
         {
+            var index = (int)letter;
+            if (index < 256)
+            {
+                return ValidIdentifierPartMap[index];
+            }
+
             return IsValidIdentifierPart(new string(letter, 1), 0);
         }
 
@@ -3915,6 +3957,17 @@ namespace Microsoft.Ajax.Utilities
         public static OperatorPrecedence GetOperatorPrecedence(Context op)
         {
             return op == null || op.Token == JSToken.None ? OperatorPrecedence.None : JSScanner.s_OperatorsPrec[op.Token - JSToken.FirstBinaryOperator];
+        }
+
+        private static bool[] InitializeValidIdentifierPartMap()
+        {
+            var validityMap = new bool[256];
+            for (var ansiValue = 0; ansiValue < 256; ansiValue++)
+            {
+                validityMap[ansiValue] = IsValidIdentifierPart(new string((char)ansiValue, 1), 0, 1);
+            }
+
+            return validityMap;
         }
 
         private static OperatorPrecedence[] InitOperatorsPrec()

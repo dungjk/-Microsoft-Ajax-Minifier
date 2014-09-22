@@ -22,6 +22,71 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Ajax.Utilities
 {
+    /// <summary>
+    /// Array of strings which can be converted to string using a single allocation and single copy
+    /// </summary>
+    public class StringList
+    {
+        private string[] m_strings;
+
+        private void Add(StringList source, ref int pos)
+        {
+            for (var i = 0; i < source.m_strings.Length; i ++)
+            {
+                m_strings[pos++] = source.m_strings[i];
+            }
+        }
+
+        public StringList(object left, object right)
+        {
+            var list1 = left  as StringList;
+            var list2 = right as StringList;
+
+            var len = 1;
+
+            if (list1 != null)
+            {
+                len = list1.m_strings.Length;
+            }
+            
+            if (list2 != null)
+            {
+                len += list2.m_strings.Length;
+            }
+            else
+            {
+                len++;
+            }
+
+            m_strings = new string[len];
+
+            len = 0;
+
+            if (list1 != null)
+            {
+                Add(list1, ref len);
+            }
+            else if (left != null)
+            {
+                m_strings[len++] = left.ToString();
+            }
+
+            if (list2 != null)
+            {
+                Add(list2, ref len);
+            }
+            else if (right != null)
+            {
+                m_strings[len++] = right.ToString();
+            }
+        }
+
+        public override string ToString()
+        {
+            return String.Concat(m_strings);
+        }
+    }
+
     public class ConstantWrapper : Expression
     {
         // this is a regular expression that we'll use to strip a leading "0x" from
@@ -517,6 +582,12 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
+                // StringList is already combined strings
+                if ((PrimitiveType == PrimitiveType.String) && (this.Value is StringList))
+                {
+                    return true;
+                }
+
                 // basically, if it's a real number or an integer not in the range
                 // where all integers can be exactly represented by a double,
                 // then we don't want to combine them.
@@ -681,6 +752,32 @@ namespace Microsoft.Ajax.Utilities
                     // (we already know the value is not null)
                     return !string.IsNullOrEmpty(Value.ToString());
             }
+        }
+
+        /// <summary>
+        /// Optimized string literal concatenation for repeat usage pattern, avoiding multiple copying and allocation
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public StringList Concat(ConstantWrapper other)
+        {
+            var left = this.Value;
+            if (this.PrimitiveType != PrimitiveType.String)
+            {
+                left = this.ToString();
+            }
+
+            object right = null;
+            if (other != null)
+            {
+                right = other.Value;
+                if (other.PrimitiveType != PrimitiveType.String)
+                {
+                    right = other.ToString();
+                }
+            }
+
+            return new StringList(left, right);
         }
 
         public override string ToString()

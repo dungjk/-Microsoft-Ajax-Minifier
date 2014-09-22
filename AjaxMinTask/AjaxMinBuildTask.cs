@@ -892,6 +892,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         /// <param name="sourceCode">source code to minify</param>
         /// <param name="sourceName">name of the source</param>
         /// <param name="outputPath">destination path for resulting minified code</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "disposes in the finally block")]
         private void MinifyJavaScript(string sourceCode, string sourceName, string outputPath, string mapFilePath)
         {
             TextWriter mapWriter = null;

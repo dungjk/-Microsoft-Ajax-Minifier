@@ -41,7 +41,12 @@ namespace Microsoft.Ajax.Utilities
         {
             // assume it is unless preven otherwise
             m_isSafe = true;
-            node.IfNotNull(n => n.Accept(this));
+
+            if (node != null)
+            {
+                node.Accept(this);
+            }
+            
             return m_isSafe;
         }
 

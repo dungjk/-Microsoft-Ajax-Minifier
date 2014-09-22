@@ -38,6 +38,8 @@ namespace Microsoft.Ajax.Utilities
     {
         #region private fields
 
+        private static bool[] s_skippableTokens = InitializeSkippableTokens();
+
         private GlobalScope m_globalScope;
         private JSScanner m_scanner;
         private Context m_currentToken;
@@ -1241,7 +1243,7 @@ namespace Microsoft.Ajax.Utilities
                         KeywordContext = m_currentToken.Clone()
                     };
             }
-            else if (m_currentToken.IsOne(JSToken.Const, JSToken.Let))
+            else if (m_currentToken.IsEither(JSToken.Const, JSToken.Let))
             {
                 if (m_currentToken.Is(JSToken.Const) && m_settings.ConstStatementsMozilla)
                 {
@@ -1317,7 +1319,7 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
 
-                if (m_currentToken.IsOne(JSToken.Assign, JSToken.Equal))
+                if (m_currentToken.IsEither(JSToken.Assign, JSToken.Equal))
                 {
                     assignContext = m_currentToken.Clone();
                     if (m_currentToken.Is(JSToken.Equal))
@@ -3029,7 +3031,10 @@ namespace Microsoft.Ajax.Utilities
                     if (token == JSToken.Comma)
                     {
                         // append the comma context as the terminator for the parameter
-                        paramDecl.IfNotNull(p => p.TerminatingContext = m_currentToken.Clone());
+                        if (paramDecl != null)
+                        {
+                            paramDecl.TerminatingContext = m_currentToken.Clone();
+                        }
                     }
                     else if (token != JSToken.RightParenthesis)
                     {
@@ -3283,12 +3288,10 @@ namespace Microsoft.Ajax.Utilities
         private AstNode ParseExpression(AstNode leftHandSide, bool single, bool bCanAssign, JSToken inToken)
         {
             // new op stack with dummy op
-            Stack<Context> opsStack = new Stack<Context>();
-            opsStack.Push(null);
+            Stack<Context> opsStack = null;
 
             // term stack, push left-hand side onto it
-            Stack<AstNode> termStack = new Stack<AstNode>();
-            termStack.Push(leftHandSide);
+            Stack<AstNode> termStack = null;
 
             AstNode expr = null;
             for (; ; )
@@ -3302,6 +3305,15 @@ namespace Microsoft.Ajax.Utilities
                     && m_currentToken.IsNot(inToken)
                     && (!single || m_currentToken.IsNot(JSToken.Comma)))
                 {
+                    if (opsStack == null)
+                    {
+                        opsStack = new Stack<Context>();
+                        opsStack.Push(null);
+
+                        termStack = new Stack<AstNode>();
+                        termStack.Push(leftHandSide);
+                    }
+
                     // for the current token, get the operator precedence and whether it's a right-association operator
                     var prec = JSScanner.GetOperatorPrecedence(m_currentToken);
                     bool rightAssoc = JSScanner.IsRightAssociativeOperator(m_currentToken.Token);
@@ -3410,24 +3422,33 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            // there are still operators to be processed
-            while (opsStack.Peek() != null)
+            if (opsStack != null)
             {
-                // pop the top two term and the top operator, combine them into a new term,
-                // and push the results back onto the term stacck
-                AstNode operand2 = termStack.Pop();
-                AstNode operand1 = termStack.Pop();
-                expr = CreateExpressionNode(opsStack.Pop(), operand1, operand2);
+                // there are still operators to be processed
+                while (opsStack.Peek() != null)
+                {
+                    // pop the top two term and the top operator, combine them into a new term,
+                    // and push the results back onto the term stacck
+                    AstNode operand2 = termStack.Pop();
+                    AstNode operand1 = termStack.Pop();
+                    expr = CreateExpressionNode(opsStack.Pop(), operand1, operand2);
 
-                // push node onto the stack
-                termStack.Push(expr);
+                    // push node onto the stack
+                    termStack.Push(expr);
+                }
             }
 
-            Debug.Assert(termStack.Count == 1);
+            AstNode term = leftHandSide;
 
-            // see if the one remaining term is "yield". If so, that means we had a lone
-            // yield token -- it might be a Mozilla yield operator
-            var term = termStack.Pop();
+            if (termStack != null)
+            {
+                Debug.Assert(termStack.Count == 1);
+
+                // see if the one remaining term is "yield". If so, that means we had a lone
+                // yield token -- it might be a Mozilla yield operator
+                term = termStack.Pop();
+            }
+
             if (term != null)
             {
                 if (term.Context.Token == JSToken.Yield && term is Lookup)
@@ -4373,7 +4394,11 @@ namespace Microsoft.Ajax.Utilities
                 if (m_currentToken.Is(JSToken.Comma))
                 {
                     commaContext = m_currentToken.Clone();
-                    element.IfNotNull(e => e.TerminatingContext = commaContext);
+
+                    if (element != null)
+                    {
+                        element.TerminatingContext = commaContext;
+                    }
                 }
             }
             while (m_currentToken.Is(JSToken.Comma));
@@ -4407,7 +4432,7 @@ namespace Microsoft.Ajax.Utilities
             var clauseList = new AstNodeList(m_currentToken.Clone());
             do
             {
-                if (m_currentToken.IsOne(JSToken.For, JSToken.If))
+                if (m_currentToken.IsEither(JSToken.For, JSToken.If))
                 {
                     var clause = ParseComprehensionClause();
                     clause.IfNotNull(c => context.UpdateWith(c.Context));
@@ -4418,7 +4443,8 @@ namespace Microsoft.Ajax.Utilities
                     ReportError(JSError.NoForOrIf);
                 }
             }
-            while (m_currentToken.IsOne(JSToken.For, JSToken.If));
+            while (m_currentToken.IsEither(JSToken.For, JSToken.If));
+            
             context.UpdateWith(clauseList.Context);
 
             // if we didn't get an expression yet (and we shouldn't for ES6-spec comprehensions), 
@@ -4592,7 +4618,11 @@ namespace Microsoft.Ajax.Utilities
                 field = ParseObjectLiteralFieldName();
                 if (m_currentToken.Is(JSToken.Colon))
                 {
-                    field.IfNotNull(f => f.ColonContext = m_currentToken.Clone());
+                    if (field != null)
+                    {
+                        field.ColonContext = m_currentToken.Clone();
+                    }
+
                     GetNextToken();
                     value = ParseObjectPropertyValue(isBindingPattern);
 
@@ -4627,11 +4657,12 @@ namespace Microsoft.Ajax.Utilities
                     };
                 }
             }
-            else if (m_currentToken.IsOne(JSToken.Get, JSToken.Set))
+            else if (m_currentToken.IsEither(JSToken.Get, JSToken.Set))
             {
                 bool isGet = (m_currentToken.Is(JSToken.Get));
                 var funcContext = m_currentToken.Clone();
                 var funcExpr = ParseFunction(isGet ? FunctionType.Getter : FunctionType.Setter, funcContext);
+                
                 if (funcExpr != null)
                 {
                     // getter/setter is just the literal name with a get/set flag
@@ -4845,7 +4876,7 @@ namespace Microsoft.Ajax.Utilities
                             args.Append(accessor);
                         }
 
-                        expression = new CallNode(expression.Context.CombineWith(m_currentToken.Clone()))
+                        expression = new CallNode(expression.Context.CombineWith(m_currentToken))
                             {
                                 Function = expression,
                                 Arguments = args,
@@ -4904,7 +4935,7 @@ namespace Microsoft.Ajax.Utilities
                         }
 
                         GetNextToken();
-                        expression = new Member(expression.IfNotNull(e => e.Context.CombineWith(nameContext), nameContext.Clone()))
+                        expression = new Member(expression != null ? expression.Context.CombineWith(nameContext) : nameContext.Clone())
                             {
                                 Root = expression,
                                 Name = name,
@@ -4982,7 +5013,10 @@ namespace Microsoft.Ajax.Utilities
 
                 if (m_currentToken.Is(JSToken.Comma))
                 {
-                    item.IfNotNull(i => i.TerminatingContext = m_currentToken.Clone());
+                    if (item != null)
+                    {
+                        item.TerminatingContext = m_currentToken.Clone();
+                    }
                 }
             }
             while (m_currentToken.Is(JSToken.Comma));
@@ -5298,22 +5332,39 @@ namespace Microsoft.Ajax.Utilities
             m_currentToken = ScanNextToken();
         }
 
+        private static bool[] InitializeSkippableTokens()
+        {
+            var skippableTokens = new bool[(int)JSToken.Limit];
+
+            skippableTokens[(int)JSToken.WhiteSpace] =
+                skippableTokens[(int)JSToken.EndOfLine] =
+                skippableTokens[(int)JSToken.SingleLineComment] =
+                skippableTokens[(int)JSToken.MultipleLineComment] =
+                skippableTokens[(int)JSToken.PreprocessorDirective] =
+                skippableTokens[(int)JSToken.Error] = true;
+
+            return skippableTokens;
+        }
+
         private Context ScanNextToken()
         {
-            EchoWriter.IfNotNull(w => { if (m_currentToken.IsNot(JSToken.None)) w.Write(m_currentToken.Code); });
+            if (EchoWriter != null)
+            {
+                if (m_currentToken.IsNot(JSToken.None)) EchoWriter.Write(m_currentToken.Code);
+            }
 
             m_newModule = false;
             m_foundEndOfLine = false;
             m_importantComments.Clear();
 
             var nextToken = m_scanner.ScanNextToken();
-            while (nextToken.IsOne(JSToken.WhiteSpace, JSToken.EndOfLine, JSToken.SingleLineComment, JSToken.MultipleLineComment, JSToken.PreprocessorDirective, JSToken.Error))
+            while (nextToken.IsOne(s_skippableTokens))
             {
                 if (nextToken.Is(JSToken.EndOfLine))
                 {
                     m_foundEndOfLine = true;
                 }
-                else if (nextToken.IsOne(JSToken.MultipleLineComment, JSToken.SingleLineComment))
+                else if (nextToken.IsEither(JSToken.MultipleLineComment, JSToken.SingleLineComment))
                 {
                     if (nextToken.HasCode
                         && ((nextToken.Code.Length > 2 && nextToken.Code[2] == '!')
@@ -5326,7 +5377,11 @@ namespace Microsoft.Ajax.Utilities
                 }
 
                 // if we are preprocess-only, then don't output any preprocessor directive tokens
-                EchoWriter.IfNotNull(w => { if (!Settings.PreprocessOnly || nextToken.Token != JSToken.PreprocessorDirective) w.Write(nextToken.Code); });
+                if (EchoWriter != null)
+                {
+                    if (!Settings.PreprocessOnly || nextToken.Token != JSToken.PreprocessorDirective) EchoWriter.Write(nextToken.Code);
+                }
+
                 nextToken = m_scanner.ScanNextToken();
             }
 
@@ -5341,7 +5396,7 @@ namespace Microsoft.Ajax.Utilities
         private JSToken PeekToken()
         {
             // clone the scanner, turn off any error reporting, and get the next token
-            var clonedScanner = m_scanner.Clone();
+            var clonedScanner = m_scanner.PeekClone();
             clonedScanner.SuppressErrors = true;
             var peekToken = clonedScanner.ScanNextToken();
 
@@ -5393,7 +5448,7 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // clone the scanner, turn off any error reporting, and get the next token
-            var clonedScanner = m_scanner.Clone();
+            var clonedScanner = m_scanner.PeekClone();
             clonedScanner.SuppressErrors = true;
             var peekToken = clonedScanner.ScanNextToken();
 
@@ -5432,7 +5487,7 @@ namespace Microsoft.Ajax.Utilities
                 node.TerminatingContext = m_currentToken.Clone();
                 GetNextToken();
             }
-            else if (m_foundEndOfLine || m_currentToken.IsOne(JSToken.RightCurly, JSToken.EndOfFile))
+            else if (m_foundEndOfLine || m_currentToken.IsEither(JSToken.RightCurly, JSToken.EndOfFile))
             {
                 // semicolon insertion rules
                 // a right-curly or an end of line is something we don't WANT to throw a warning for. 

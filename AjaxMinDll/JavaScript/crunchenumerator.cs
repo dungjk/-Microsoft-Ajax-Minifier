@@ -34,12 +34,15 @@ namespace Microsoft.Ajax.Utilities
         public static string FirstLetters { get { return s_varFirstLetters; } set { s_varFirstLetters = value; } }
 
         private static string s_varPartLetters  = "tirufeoshclavypwbkdgn";//"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
-        public static string PartLetters { get { return s_varPartLetters ?? s_varFirstLetters; } set { s_varPartLetters = value; } }     
+        public static string PartLetters { get { return s_varPartLetters ?? s_varFirstLetters; } set { s_varPartLetters = value; } }
 
-        internal CrunchEnumerator(IEnumerable<string> avoidNames)
+        private const int PrecalculateLength = 32;
+        private static string[] s_smallNames = PrecalculateFrequentNames();
+
+        internal CrunchEnumerator(HashSet<string> avoidNames)
         {
-            // just use the dictionary we were passed
-            m_skipNames = new HashSet<string>(avoidNames);
+            // just use the hashset we were passed
+            m_skipNames = avoidNames;
         }
 
         internal string NextName()
@@ -63,6 +66,17 @@ namespace Microsoft.Ajax.Utilities
             {
                 return GenerateNameFromNumber(m_currentName);
             }
+        }
+
+        private static string[] PrecalculateFrequentNames()
+        {
+            var small = new string[PrecalculateLength];
+            for (var i = 0; i < PrecalculateLength; i++)
+            {
+                small[i] = GenerateNameFromNumber(i);
+            }
+
+            return small;
         }
 
         public static string CrunchedLabel(int nestLevel)
@@ -93,7 +107,12 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>minified variable name</returns>
         public static string GenerateNameFromNumber(int index)
         {
-            StringBuilder sb = new StringBuilder();
+            if ((s_smallNames != null) && (index >= 0) && (index < PrecalculateLength))
+            {
+                return s_smallNames[index];
+            }
+
+            var sb = new StringBuilder();
 
             // this REALLY needs some 'splainin.
             // first off, we want to use a different set of characters for the first digit

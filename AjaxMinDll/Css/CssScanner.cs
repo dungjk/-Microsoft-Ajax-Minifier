@@ -247,7 +247,7 @@ namespace Microsoft.Ajax.Utilities
             return token;
         }
 
-        private TokenType GetVendorSpecificFunctionType(string name)
+        private static TokenType GetVendorSpecificFunctionType(string name)
         {
             // the true first hyphen was stripped off, so the first hyphen in the
             // string passed to us will be the hyphen between the vendor prefix and the
