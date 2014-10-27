@@ -140,6 +140,13 @@ namespace Microsoft.Ajax.Utilities
                         {
                             // just use the normal output visitor
                             OutputVisitor.Apply(stringWriter, scriptBlock, codeSettings);
+
+                            // if we are asking for a symbols map, give it a chance to output a little something
+                            // to the minified file.
+                            if (codeSettings != null && codeSettings.SymbolsMap != null)
+                            {
+                                codeSettings.SymbolsMap.EndFile(stringWriter, codeSettings.LineTerminator);
+                            }
                         }
                     }
                 }

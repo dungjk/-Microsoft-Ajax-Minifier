@@ -81,6 +81,7 @@
       <DependentUpon>test.resx</DependentUpon>
     </Compile>
     <Compile Include="Preprocessor.cs" />
+    <Compile Include="SymbolsMapTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestData\Dll\Input\Frameworks\NoErrors.csv" />
