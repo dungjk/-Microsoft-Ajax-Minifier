@@ -165,6 +165,7 @@ namespace Microsoft.Ajax.Utilities
             // this should only be true for the function NAME segment.
             var functionObject = node as FunctionObject;
             if (functionObject != null 
+                && functionObject.Binding != null
                 && string.CompareOrdinal(name, functionObject.Binding.Name) == 0
                 && context != functionObject.Context)
             {
