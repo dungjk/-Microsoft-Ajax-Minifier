@@ -166,17 +166,24 @@ namespace Microsoft.Ajax.Utilities
                 ResolveLookups(childScope, settings);
             }
 
-            // mark any variables defined in this scope that don't have any references
-            // so we can throw warnings later. We can't rely on the reference count because
-            // we might remove references while optimizing code -- if we throw an error when
-            // the count gets to zero, then we would be reporting errors that don't exist.
-            // but we DO know right now what isn't referenced at all.
             foreach (var field in scope.NameTable.Values)
             {
-                if (field.RefCount == 0)
+                if (!scope.IsKnownAtCompileTime && settings.EvalTreatment != EvalTreatment.Ignore)
                 {
+                    // if this scope isn't known, mark all references as "can't crunch" so we don't
+                    // remove it or rename it. This will apply to any outer fields we reference, too.
+                    field.CanCrunch = false;
+                }
+                else if (field.RefCount == 0)
+                {
+                    // mark any variables defined in this scope that don't have any references
+                    // so we can throw warnings later. We can't rely on the reference count because
+                    // we might remove references while optimizing code -- if we throw an error when
+                    // the count gets to zero, then we would be reporting errors that don't exist.
+                    // but we DO know right now what isn't referenced at all.
                     field.HasNoReferences = true;
                 }
+
             }
         }
 

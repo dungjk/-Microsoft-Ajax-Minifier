@@ -93,5 +93,12 @@ namespace JSUnitTest
             // ignore the unused-label warning
             TestHelper.Instance.RunErrorTest("-ignore:JS1021");
         }
+
+        [TestMethod]
+        public void evalImmediate()
+        {
+            // ignore the unused-label warning
+            TestHelper.Instance.RunErrorTest("-evals:immediate");
+        }
     }
 }

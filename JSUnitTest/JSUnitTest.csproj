@@ -393,6 +393,7 @@
     <Content Include="TestData\JS\Expected\Preprocessor\Defines_ackbarmeow.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Expected\Preprocessor\SourceDirective.js" />
+    <Content Include="TestData\JS\Expected\Renaming\evalImmediate.js" />
     <Content Include="TestData\JS\Expected\Renaming\IfFunction.js" />
     <Content Include="TestData\JS\Expected\Renaming\LabelKeyword.js" />
     <Content Include="TestData\JS\Expected\Renaming\ManualRename.js" />
@@ -722,6 +723,7 @@
     <Content Include="TestData\JS\Input\Preprocessor\Nested.js" />
     <Content Include="TestData\JS\Input\Preprocessor\SourceDirective.js" />
     <Content Include="TestData\JS\Input\Renaming\Collide.xml" />
+    <Content Include="TestData\JS\Input\Renaming\evalImmediate.js" />
     <Content Include="TestData\JS\Input\Renaming\IfFunction.js" />
     <Content Include="TestData\JS\Input\Renaming\LabelKeyword.js" />
     <Content Include="TestData\JS\Input\Renaming\ManualRename.js" />
