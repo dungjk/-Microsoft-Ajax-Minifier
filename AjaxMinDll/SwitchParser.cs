@@ -1476,6 +1476,7 @@ namespace Microsoft.Ajax.Utilities
                                 // and some other flags for pretty-mode
                                 JSSettings.OutputMode = CssSettings.OutputMode = OutputMode.MultipleLines;
                                 CssSettings.KillSwitch = ~((long)TreeModifications.PreserveImportantComments);
+                                CssSettings.RemoveEmptyBlocks = false;
 
                                 // optional integer switch argument
                                 if (paramPartUpper != null)
@@ -1692,10 +1693,12 @@ namespace Microsoft.Ajax.Utilities
                                 if (paramPartUpper == "KEEP")
                                 {
                                     JSSettings.RemoveUnneededCode = false;
+                                    CssSettings.RemoveEmptyBlocks = false;
                                 }
                                 else if (paramPartUpper == "REMOVE")
                                 {
                                     JSSettings.RemoveUnneededCode = true;
+                                    CssSettings.RemoveEmptyBlocks = true;
 
                                     // if the -pretty switch has been specified, we have an incompatible set of switches.
                                     m_noPretty = true;

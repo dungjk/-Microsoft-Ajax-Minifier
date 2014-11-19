@@ -32,7 +32,6 @@ namespace Microsoft.Ajax.Utilities
 
         private CssScanner m_scanner;
         private CssToken m_currentToken;
-        private StringBuilder m_parsed;
         private bool m_noOutput;
         private string m_lastOutputString;
         private bool m_mightNeedSpace;
@@ -40,6 +39,7 @@ namespace Microsoft.Ajax.Utilities
         private int m_lineLength;
         private bool m_noColorAbbreviation;
         private bool m_encounteredNewLine;
+        private Stack<StringBuilder> m_builders;
 
         // this is used to make sure we don't output two newlines in a row.
         // start it as true so we don't start off with a blank line
@@ -328,9 +328,10 @@ namespace Microsoft.Ajax.Utilities
                                 FileContext = ea.FileContext;
                             };
 
-                        // create the string builder into which we will be 
+                        // create the initial string builder into which we will be 
                         // building our crunched stylesheet
-                        m_parsed = new StringBuilder();
+                        m_builders = new Stack<StringBuilder>();
+                        m_builders.Push(new StringBuilder());
 
                         // get the first token
                         NextToken();
@@ -371,8 +372,8 @@ namespace Microsoft.Ajax.Utilities
 
                         // get the crunched string and dump the string builder
                         // (we don't need it anymore)
-                        source = m_parsed.ToString();
-                        m_parsed = null;
+                        source = UnwindStackCompletely();
+                        m_builders = null;
                     }
                 }
                 finally
@@ -388,6 +389,62 @@ namespace Microsoft.Ajax.Utilities
 
             return source;
         }
+
+        #region output builders stack methods
+
+        /// <summary>
+        /// Push a new string builder onto the builders stack
+        /// </summary>
+        private void PushWaypoint()
+        {
+            m_builders.Push(new StringBuilder());
+        }
+
+        /// <summary>
+        /// Pop the top waypoint off the stack.
+        /// If the Settings RemoveEmptyBlocks property is false, will keep the text, regardless of the passed-in setting.
+        /// </summary>
+        /// <param name="keepText">true if push the text of the popped waypoint onto the new top waypoint; false to discard</param>
+        /// <returns>true if the popped builder has any text within it</returns>
+        private bool PopWaypoint(bool keepText)
+        {
+            var topBuilder = m_builders.Pop();
+            if (keepText || !Settings.RemoveEmptyBlocks)
+            {
+                m_builders.Peek().Append(topBuilder.ToString());
+            }
+
+            return topBuilder.Length > 0;
+        }
+
+        /// <summary>
+        /// Get all the text that has been accumulting in the string builders
+        /// on the stack, unwinding the stack until it's empty
+        /// </summary>
+        /// <returns>string representation of all parsed text</returns>
+        private string UnwindStackCompletely()
+        {
+            var output = string.Empty;
+            while(m_builders.Count > 0)
+            {
+                // pop the topmost builder from the stack and get the text that
+                // has been built up inside it.
+                var topBuilder = m_builders.Pop();
+                output = topBuilder.ToString();
+
+                // if there are still builders on the stack, push the previously
+                // topmost text onto the builder that is now topmost, and we'll loop
+                // around again
+                if (m_builders.Count > 0)
+                {
+                    m_builders.Peek().Append(output);
+                }
+            }
+
+            return output;
+        }
+
+        #endregion
 
         #region Character set rule handling
 
@@ -981,6 +1038,11 @@ namespace Microsoft.Ajax.Utilities
             Parsed parsed = Parsed.False;
             if (CurrentTokenType == TokenType.MediaSymbol)
             {
+                // push a waypoint. We're not going to want to output this @media directive
+                // if the rule collection is empty
+                var keepDirective = true;
+                PushWaypoint();
+
                 NewLine();
                 AppendCurrent();
                 SkipSpace();
@@ -1007,6 +1069,9 @@ namespace Microsoft.Ajax.Utilities
                         indented = true;
                         SkipSpace();
 
+                        // push a waypoint for the rules inside the @media directive
+                        PushWaypoint();
+
                         // the main guts of stuff
                         while (ParseRule() == Parsed.True
                           || ParseMedia() == Parsed.True
@@ -1018,6 +1083,10 @@ namespace Microsoft.Ajax.Utilities
                             // any number of S, Comment, CDO or CDC elements
                             ParseSCDOCDCComments();
                         }
+
+                        // we want to keep this directive if we've actually parsed anything;
+                        // otherwise we'll throw out the whole thing.
+                        keepDirective = PopWaypoint(true);
                     }
                     else
                     {
@@ -1065,6 +1134,8 @@ namespace Microsoft.Ajax.Utilities
                 {
                     SkipToEndOfStatement();
                 }
+
+                PopWaypoint(keepDirective);
             }
 
             return parsed;
@@ -1291,6 +1362,8 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseDeclarationBlock(bool allowMargins)
         {
+            var parsed = Parsed.True;
+
             // expect current token to be the opening brace when calling
             if (CurrentTokenType != TokenType.Character || CurrentTokenText != "{")
             {
@@ -1322,6 +1395,9 @@ namespace Microsoft.Ajax.Utilities
                     Unindent();
                     AppendCurrent();
                     SkipSpace();
+
+                    // return parsed empty to indicate that the block is a valid, empty block
+                    parsed = Parsed.Empty;
                 }
                 else
                 {
@@ -1352,7 +1428,7 @@ namespace Microsoft.Ajax.Utilities
                 }
             }
 
-            return Parsed.True;
+            return parsed;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -1495,6 +1571,9 @@ namespace Microsoft.Ajax.Utilities
             Parsed parsed = Parsed.False;
             if (CurrentTokenType == TokenType.PageSymbol)
             {
+                var keepDirective = true;
+                PushWaypoint();
+
                 NewLine();
                 AppendCurrent();
                 SkipSpace();
@@ -1517,6 +1596,12 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // allow margin at-keywords
                     parsed = ParseDeclarationBlock(true);
+                    if (parsed == Parsed.Empty)
+                    {
+                        keepDirective = false;
+                        parsed = Parsed.True;
+                    }
+
                     NewLine();
                 }
                 else
@@ -1525,6 +1610,8 @@ namespace Microsoft.Ajax.Utilities
                     AppendCurrent();
                     SkipSpace();
                 }
+
+                PopWaypoint(keepDirective);
             }
             return parsed;
         }
@@ -1551,7 +1638,8 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseMargin()
         {
-            Parsed parsed = Parsed.Empty;
+            var parsed = Parsed.Empty;
+            var keepDirective = true;
             switch (CurrentTokenType)
             {
                 case TokenType.TopLeftCornerSymbol:
@@ -1571,13 +1659,21 @@ namespace Microsoft.Ajax.Utilities
                 case TokenType.RightMiddleSymbol:
                 case TokenType.RightBottomSymbol:
                     // these are the margin at-keywords
+                    PushWaypoint();
                     NewLine();
                     AppendCurrent();
                     SkipSpace();
 
                     // don't allow margin at-keywords
                     parsed = ParseDeclarationBlock(false);
+                    if (parsed == Parsed.Empty)
+                    {
+                        keepDirective = false;
+                        parsed = Parsed.True;
+                    }
+
                     NewLine();
+                    PopWaypoint(keepDirective);
                     break;
 
                 default:
@@ -1589,16 +1685,26 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseFontFace()
         {
-            Parsed parsed = Parsed.False;
+            var parsed = Parsed.False;
             if (CurrentTokenType == TokenType.FontFaceSymbol)
             {
+                var keepDirective = true;
+                PushWaypoint();
+
                 NewLine();
                 AppendCurrent();
                 SkipSpace();
 
                 // don't allow margin at-keywords
                 parsed = ParseDeclarationBlock(false);
+                if (parsed == Parsed.Empty)
+                {
+                    keepDirective = false;
+                    parsed = Parsed.True;
+                }
+
                 NewLine();
+                PopWaypoint(keepDirective);
             }
             return parsed;
         }
@@ -1631,6 +1737,9 @@ namespace Microsoft.Ajax.Utilities
 
         private Parsed ParseRule()
         {
+            var keepRule = true;
+            PushWaypoint();
+
             // check the line length before each new declaration -- if we're past the threshold, start a new line
             if (m_lineLength >= Settings.LineBreakThreshold)
             {
@@ -1659,6 +1768,7 @@ namespace Microsoft.Ajax.Utilities
                         SkipSpace();
                         break;
                     }
+
                     if (CurrentTokenText == "{")
                     {
                         // REVIEW: IE6 has an issue where the "first-letter" and "first-line" 
@@ -1675,6 +1785,12 @@ namespace Microsoft.Ajax.Utilities
 
                         // don't allow margin at-keywords
                         parsed = ParseDeclarationBlock(false);
+                        if (parsed == Parsed.Empty)
+                        {
+                            keepRule = false;
+                            parsed = Parsed.True;
+                        }
+
                         break;
                     }
 
@@ -1714,6 +1830,8 @@ namespace Microsoft.Ajax.Utilities
                     }
                 }
             }
+
+            PopWaypoint(keepRule);
             return parsed;
         }
 
@@ -3845,7 +3963,8 @@ namespace Microsoft.Ajax.Utilities
             // or process value replacement comments
             if (!m_noOutput)
             {
-                string text = obj.ToString();
+                var parsed = m_builders.Peek();
+                var text = obj.ToString();
 
                 // first if there are replacement tokens in the settings, then we'll want to
                 // replace any tokens with the appropriate replacement values
@@ -4249,7 +4368,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         // output a space on the same line
-                        m_parsed.Append(' ');
+                        parsed.Append(' ');
                         ++m_lineLength;
                     }
                 }
@@ -4273,7 +4392,7 @@ namespace Microsoft.Ajax.Utilities
                     else
                     {
                         // just output a space, and don't change the newline flag
-                        m_parsed.Append(' ');
+                        parsed.Append(' ');
                         ++m_lineLength;
                     }
                 }
@@ -4294,7 +4413,7 @@ namespace Microsoft.Ajax.Utilities
                         m_forceNewLine = false;
                     }
 
-                    m_parsed.Append(text);
+                    parsed.Append(text);
                     m_outputNewLine = false;
 
                     if (tokenType == TokenType.Comment && isImportant)
@@ -4376,20 +4495,21 @@ namespace Microsoft.Ajax.Utilities
         {
             if (!m_outputNewLine)
             {
+                var parsed = m_builders.Peek();
                 if (Settings.OutputMode == OutputMode.MultipleLines)
                 {
-                    m_parsed.AppendLine();
+                    parsed.AppendLine();
 
                     var indentSpaces = Settings.TabSpaces;
                     m_lineLength = indentSpaces.Length;
                     if (m_lineLength > 0)
                     {
-                        m_parsed.Append(indentSpaces);
+                        parsed.Append(indentSpaces);
                     }
                 }
                 else
                 {
-                    m_parsed.Append('\n');
+                    parsed.Append('\n');
                     m_lineLength = 0;
                 }
 

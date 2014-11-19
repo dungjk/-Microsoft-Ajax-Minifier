@@ -41,6 +41,12 @@
 @page :right { @bottom-right-corner { font-size: 4pt; }}
 @page :first { @bottom-left-corner { font-size: 5pt; }
                @bottom-right-corner { font-size: 6pt; } }
+ 
+/* empty @page should be removed. And since that's the only thing in the @media, it should be removed, too */
+@media print and (width: 8.5in) and (height: 11in) {
+    @page:first {
+    }
+}
 
 /* style sheet for "A4" printing */ 
 @media print and (width: 21cm) and (height: 29.7cm) {

@@ -29,6 +29,12 @@
 /* AND and opening paren has no space between so it gets parsed as a function, not an identifier */
 @media screen AND(orientation: portrait) and (color) { div {font-size: 4pt;} }
 
+/* empty media rule should be removed entirely */
+@media screen and (orientation: portrait) and (min-width: 1024px)
+{
+    /* nothing */
+}
+
 /* multiple media queries */
 /* AND and opening paren has no space between so it gets parsed as a function, not an identifier */
 @media screen and ( orientation : portrait ) and ( color ), print and(color) { div {font-size: 5pt;} }
@@ -42,4 +48,3 @@
 
 /* single expression (no media type) and a NOT */
 @media not (color) { div {font-size:8pt;} }
-

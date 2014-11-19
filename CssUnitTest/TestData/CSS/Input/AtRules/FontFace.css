@@ -10,6 +10,12 @@
   unicode-range: U+001234; /* one to six character is okay, so crunch out the leading zeros */
 }
 
+/* empty font-face should be removed */
+@font-face
+{
+    /* rien */
+}
+
 @font-face {
   src: local("Helvetica Oblique"),
        url("http://www.fonts.org/sans/Helvetica_family") format("truedoc");

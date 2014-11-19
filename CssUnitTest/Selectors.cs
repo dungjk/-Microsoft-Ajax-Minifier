@@ -85,6 +85,18 @@ namespace CssUnitTest
     }
 
     [TestMethod]
+    public void CSS3_all()
+    {
+        TestHelper.Instance.RunTest("-unused:keep");
+    }
+
+    [TestMethod]
+    public void CSS3_pretty()
+    {
+        TestHelper.Instance.RunTest("-pretty");
+    }
+
+    [TestMethod]
     public void Namespace()
     {
         TestHelper.Instance.RunTest("-css:full");

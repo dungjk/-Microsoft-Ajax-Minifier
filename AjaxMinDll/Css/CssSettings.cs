@@ -96,6 +96,7 @@ namespace Microsoft.Ajax.Utilities
             CommentMode = CssComment.Important;
             MinifyExpressions = true;
             CssType = CssType.FullStyleSheet;
+            RemoveEmptyBlocks = true;
         }
 
         public CssSettings Clone()
@@ -118,6 +119,7 @@ namespace Microsoft.Ajax.Utilities
                 TermSemicolons = this.TermSemicolons,
                 CssType = this.CssType,
                 BlocksStartOnSameLine = this.BlocksStartOnSameLine,
+                RemoveEmptyBlocks = this.RemoveEmptyBlocks,
             };
 
             // add the resource strings (if any)
@@ -167,6 +169,15 @@ namespace Microsoft.Ajax.Utilities
         { 
             get; 
             set; 
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether empty blocks removes the corresponding rule or directive. Default is true.
+        /// </summary>
+        public bool RemoveEmptyBlocks
+        {
+            get;
+            set;
         }
     }
 }

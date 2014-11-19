@@ -380,6 +380,8 @@ Valid CSSOPTS are zero or more of:
         browser color names if shorter. Default is strict.
   -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw),
         or minify them as JavaScript expressions (minify). Default is minify.
+  -unused:(remove|keep) &gt; whether to keep or remove rules or directives that 
+        have empty blocks. Default is remove.
 
 CSSTYP can be full (full style sheet) or decls (just a declaration list).
         Default is full.
