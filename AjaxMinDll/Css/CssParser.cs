@@ -329,9 +329,9 @@ namespace Microsoft.Ajax.Utilities
                             };
 
                         // create the initial string builder into which we will be 
-                        // building our crunched stylesheet
+                        // building our crunched stylesheet.
                         m_builders = new Stack<StringBuilder>();
-                        m_builders.Push(new StringBuilder());
+                        m_builders.Push(StringBuilderPool.Acquire(source.Length / 2));
 
                         // get the first token
                         NextToken();
@@ -397,7 +397,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private void PushWaypoint()
         {
-            m_builders.Push(new StringBuilder());
+            m_builders.Push(StringBuilderPool.Acquire());
         }
 
         /// <summary>
@@ -414,7 +414,9 @@ namespace Microsoft.Ajax.Utilities
                 m_builders.Peek().Append(topBuilder.ToString());
             }
 
-            return topBuilder.Length > 0;
+            var isNotEmpty = topBuilder.Length > 0;
+            topBuilder.Release();
+            return isNotEmpty;
         }
 
         /// <summary>
@@ -431,6 +433,7 @@ namespace Microsoft.Ajax.Utilities
                 // has been built up inside it.
                 var topBuilder = m_builders.Pop();
                 output = topBuilder.ToString();
+                topBuilder.Release();
 
                 // if there are still builders on the stack, push the previously
                 // topmost text onto the builder that is now topmost, and we'll loop
@@ -2904,42 +2907,145 @@ namespace Microsoft.Ajax.Utilities
                 var rgb = new int[3];
 
                 // we're going to be building up the rgb function just in case we need it
-                var sbRGB = new StringBuilder();
-                sbRGB.Append(CurrentTokenText.ToLowerInvariant());
-
-                var comments = NextSignificantToken();
-                if (comments.Length > 0)
+                var sbRGB = StringBuilderPool.Acquire();
+                try
                 {
-                    // add the comments
-                    sbRGB.Append(comments);
-                    // and signal that we need to use the RGB function because of them
-                    useRGB = true;
-                }
+                    sbRGB.Append(CurrentTokenText.ToLowerInvariant());
 
-                for (var ndx = 0; ndx < 3; ++ndx)
-                {
-                    // if this isn't the first number, we better find a comma separator
-                    if (ndx > 0)
+                    var comments = NextSignificantToken();
+                    if (comments.Length > 0)
                     {
-                        if (CurrentTokenType == TokenType.Character && CurrentTokenText == ",")
-                        {
-                            // add it to the rgb string builder
-                            sbRGB.Append(',');
-                        }
-                        else if (CurrentTokenType == TokenType.Character && CurrentTokenText == ")")
-                        {
-                            ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
+                        // add the comments
+                        sbRGB.Append(comments);
+                        // and signal that we need to use the RGB function because of them
+                        useRGB = true;
+                    }
 
-                            // closing paren is the end of the function! exit the loop
+                    for (var ndx = 0; ndx < 3; ++ndx)
+                    {
+                        // if this isn't the first number, we better find a comma separator
+                        if (ndx > 0)
+                        {
+                            if (CurrentTokenType == TokenType.Character && CurrentTokenText == ",")
+                            {
+                                // add it to the rgb string builder
+                                sbRGB.Append(',');
+                            }
+                            else if (CurrentTokenType == TokenType.Character && CurrentTokenText == ")")
+                            {
+                                ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
+
+                                // closing paren is the end of the function! exit the loop
+                                useRGB = true;
+                                break;
+                            }
+                            else
+                            {
+                                ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
+                                sbRGB.Append(CurrentTokenText);
+                                useRGB = true;
+                            }
+
+                            // skip to the next significant
+                            comments = NextSignificantToken();
+                            if (comments.Length > 0)
+                            {
+                                // add the comments
+                                sbRGB.Append(comments);
+                                // and signal that we need to use the RGB function because of them
+                                useRGB = true;
+                            }
+                        }
+
+                        // although we ALLOW negative numbers here, we'll trim them
+                        // later. But in the mean time, save a negation flag.
+                        var negateNumber = false;
+                        if (CurrentTokenType == TokenType.Character && CurrentTokenText == "-")
+                        {
+                            negateNumber = true;
+                            comments = NextSignificantToken();
+                            if (comments.Length > 0)
+                            {
+                                // add the comments
+                                sbRGB.Append(comments);
+                                // and signal that we need to use the RGB function because of them
+                                useRGB = true;
+                            }
+                        }
+
+                        // we might adjust the value, so save the token text
+                        var tokenText = CurrentTokenText;
+
+                        if (CurrentTokenType != TokenType.Number && CurrentTokenType != TokenType.Percentage)
+                        {
+                            ReportError(0, CssErrorCode.ExpectedRgbNumberOrPercentage, CurrentTokenText);
                             useRGB = true;
-                            break;
                         }
                         else
                         {
-                            ReportError(0, CssErrorCode.ExpectedComma, CurrentTokenText);
-                            sbRGB.Append(CurrentTokenText);
-                            useRGB = true;
+                            if (CurrentTokenType == TokenType.Number)
+                            {
+                                // get the number value
+                                float numberValue;
+                                if (tokenText.TryParseSingleInvariant(out numberValue))
+                                {
+                                    numberValue *= (negateNumber ? -1 : 1);
+                                    // make sure it's between 0 and 255
+                                    if (numberValue < 0)
+                                    {
+                                        tokenText = "0";
+                                        rgb[ndx] = 0;
+                                    }
+                                    else if (numberValue > 255)
+                                    {
+                                        tokenText = "255";
+                                        rgb[ndx] = 255;
+                                    }
+                                    else
+                                    {
+                                        rgb[ndx] = System.Convert.ToInt32(numberValue);
+                                    }
+                                }
+                                else
+                                {
+                                    // error -- not even a number. Keep the rgb function
+                                    // (and don't change the token)
+                                    useRGB = true;
+                                }
+                            }
+                            else
+                            {
+                                // percentage
+                                float percentageValue;
+                                if (tokenText.Substring(0, tokenText.Length - 1).TryParseSingleInvariant(out percentageValue))
+                                {
+                                    percentageValue *= (negateNumber ? -1 : 1);
+                                    if (percentageValue < 0)
+                                    {
+                                        tokenText = "0%";
+                                        rgb[ndx] = 0;
+                                    }
+                                    else if (percentageValue > 100)
+                                    {
+                                        tokenText = "100%";
+                                        rgb[ndx] = 255;
+                                    }
+                                    else
+                                    {
+                                        rgb[ndx] = System.Convert.ToInt32(percentageValue * 255 / 100);
+                                    }
+                                }
+                                else
+                                {
+                                    // error -- not even a number. Keep the rgb function
+                                    // (and don't change the token)
+                                    useRGB = true;
+                                }
+                            }
                         }
+
+                        // add the number to the rgb string builder
+                        sbRGB.Append(tokenText);
 
                         // skip to the next significant
                         comments = NextSignificantToken();
@@ -2952,123 +3058,27 @@ namespace Microsoft.Ajax.Utilities
                         }
                     }
 
-                    // although we ALLOW negative numbers here, we'll trim them
-                    // later. But in the mean time, save a negation flag.
-                    var negateNumber = false;
-                    if (CurrentTokenType == TokenType.Character && CurrentTokenText == "-")
+                    if (useRGB)
                     {
-                        negateNumber = true;
-                        comments = NextSignificantToken();
-                        if (comments.Length > 0)
-                        {
-                            // add the comments
-                            sbRGB.Append(comments);
-                            // and signal that we need to use the RGB function because of them
-                            useRGB = true;
-                        }
-                    }
-
-                    // we might adjust the value, so save the token text
-                    var tokenText = CurrentTokenText;
-
-                    if (CurrentTokenType != TokenType.Number && CurrentTokenType != TokenType.Percentage)
-                    {
-                        ReportError(0, CssErrorCode.ExpectedRgbNumberOrPercentage, CurrentTokenText);
-                        useRGB = true;
+                        // something prevented us from collapsing the rgb function
+                        // just output the rgb function we've been building up
+                        Append(sbRGB.ToString());
                     }
                     else
                     {
-                        if (CurrentTokenType == TokenType.Number)
-                        {
-                            // get the number value
-                            float numberValue;
-                            if (tokenText.TryParseSingleInvariant(out numberValue))
-                            {
-                                numberValue *= (negateNumber ? -1 : 1);
-                                // make sure it's between 0 and 255
-                                if (numberValue < 0)
-                                {
-                                    tokenText = "0";
-                                    rgb[ndx] = 0;
-                                }
-                                else if (numberValue > 255)
-                                {
-                                    tokenText = "255";
-                                    rgb[ndx] = 255;
-                                }
-                                else
-                                {
-                                    rgb[ndx] = System.Convert.ToInt32(numberValue);
-                                }
-                            }
-                            else
-                            {
-                                // error -- not even a number. Keep the rgb function
-                                // (and don't change the token)
-                                useRGB = true;
-                            }
-                        }
-                        else
-                        {
-                            // percentage
-                            float percentageValue;
-                            if (tokenText.Substring(0, tokenText.Length - 1).TryParseSingleInvariant(out percentageValue))
-                            {
-                                percentageValue *= (negateNumber ? -1 : 1);
-                                if (percentageValue < 0)
-                                {
-                                    tokenText = "0%";
-                                    rgb[ndx] = 0;
-                                }
-                                else if (percentageValue > 100)
-                                {
-                                    tokenText = "100%";
-                                    rgb[ndx] = 255;
-                                }
-                                else
-                                {
-                                    rgb[ndx] = System.Convert.ToInt32(percentageValue * 255 / 100);
-                                }
-                            }
-                            else
-                            {
-                                // error -- not even a number. Keep the rgb function
-                                // (and don't change the token)
-                                useRGB = true;
-                            }
-                        }
-                    }
+                        // we can collapse it to either #rrggbb or #rgb
+                        // calculate the full hex string and crunch it
+                        var fullCode = "#{0:x2}{1:x2}{2:x2}".FormatInvariant(rgb[0], rgb[1], rgb[2]);
+                        var hexString = CrunchHexColor(fullCode, Settings.ColorNames, m_noColorAbbreviation);
+                        Append(hexString);
 
-                    // add the number to the rgb string builder
-                    sbRGB.Append(tokenText);
-
-                    // skip to the next significant
-                    comments = NextSignificantToken();
-                    if (comments.Length > 0)
-                    {
-                        // add the comments
-                        sbRGB.Append(comments);
-                        // and signal that we need to use the RGB function because of them
-                        useRGB = true;
+                        // set the flag so we know we don't want to add the closing paren
+                        crunchedRGB = true;
                     }
                 }
-
-                if (useRGB)
+                finally
                 {
-                    // something prevented us from collapsing the rgb function
-                    // just output the rgb function we've been building up
-                    Append(sbRGB.ToString());
-                }
-                else
-                {
-                    // we can collapse it to either #rrggbb or #rgb
-                    // calculate the full hex string and crunch it
-                    var fullCode = "#{0:x2}{1:x2}{2:x2}".FormatInvariant(rgb[0], rgb[1], rgb[2]);
-                    var hexString = CrunchHexColor(fullCode, Settings.ColorNames, m_noColorAbbreviation);
-                    Append(hexString);
-
-                    // set the flag so we know we don't want to add the closing paren
-                    crunchedRGB = true;
+                    sbRGB.Release();
                 }
 
                 if (CurrentTokenType == TokenType.Character && CurrentTokenText == ")")
@@ -3105,47 +3115,56 @@ namespace Microsoft.Ajax.Utilities
                 // The content of the expression is JavaScript, so we'd really
                 // need a full-blown JS-parser to crunch it properly. Kinda scary.
                 // Start the parenLevel at 0 because the "expression(" token contains the first paren.
-                var jsBuilder = new StringBuilder();
-                int parenLevel = 0;
-
-                while (!m_scanner.EndOfFile
-                  && (CurrentTokenType != TokenType.Character
-                    || CurrentTokenText != ")"
-                    || parenLevel > 0))
+                string expressionCode = null;
+                var jsBuilder = StringBuilderPool.Acquire();
+                try
                 {
-                    if (CurrentTokenType == TokenType.Function)
-                    {
-                        // the function token INCLUDES the opening parenthesis,
-                        // so up the paren level whenever we find a function.
-                        // AND this includes the actual expression( token -- so we'll
-                        // hit this branch at the beginning. Make sure the parenLevel
-                        // is initialized to take that into account
-                        ++parenLevel;
-                    }
-                    else if (CurrentTokenType == TokenType.Character)
-                    {
-                        switch (CurrentTokenText)
-                        {
-                            case "(":
-                                // start a nested paren
-                                ++parenLevel;
-                                break;
+                    int parenLevel = 0;
 
-                            case ")":
-                                // end a nested paren 
-                                // (we know it's nested because if it wasn't, we wouldn't
-                                // have entered the loop)
-                                --parenLevel;
-                                break;
+                    while (!m_scanner.EndOfFile
+                      && (CurrentTokenType != TokenType.Character
+                        || CurrentTokenText != ")"
+                        || parenLevel > 0))
+                    {
+                        if (CurrentTokenType == TokenType.Function)
+                        {
+                            // the function token INCLUDES the opening parenthesis,
+                            // so up the paren level whenever we find a function.
+                            // AND this includes the actual expression( token -- so we'll
+                            // hit this branch at the beginning. Make sure the parenLevel
+                            // is initialized to take that into account
+                            ++parenLevel;
                         }
+                        else if (CurrentTokenType == TokenType.Character)
+                        {
+                            switch (CurrentTokenText)
+                            {
+                                case "(":
+                                    // start a nested paren
+                                    ++parenLevel;
+                                    break;
+
+                                case ")":
+                                    // end a nested paren 
+                                    // (we know it's nested because if it wasn't, we wouldn't
+                                    // have entered the loop)
+                                    --parenLevel;
+                                    break;
+                            }
+                        }
+                        jsBuilder.Append(CurrentTokenText);
+                        NextToken();
                     }
-                    jsBuilder.Append(CurrentTokenText);
-                    NextToken();
+
+                    // create a JSParser object with the source we found, crunch it, and send 
+                    // the minified script to the output
+                    expressionCode = jsBuilder.ToString();
+                }
+                finally
+                {
+                    jsBuilder.Release();
                 }
 
-                // create a JSParser object with the source we found, crunch it, and send 
-                // the minified script to the output
-                var expressionCode = jsBuilder.ToString();
                 if (Settings.MinifyExpressions)
                 {
                     // we want to minify the javascript expressions
@@ -3544,109 +3563,118 @@ namespace Microsoft.Ajax.Utilities
         {
             // MOST of the time we won't need to save anything,
             // so don't bother allocating a string builder unless we need it
+            string text = null;
             StringBuilder sb = null;
-
-            // get the next token
-            m_currentToken = m_scanner.NextToken();
-            if (EchoWriter != null)
+            try
             {
-                EchoWriter.Write(CurrentTokenText);
-            }
-
-            m_encounteredNewLine = m_scanner.GotEndOfLine;
-            while (CurrentTokenType == TokenType.Space || CurrentTokenType == TokenType.Comment)
-            {
-                // if this token is a comment, add it to the builder
-                if (CurrentTokenType == TokenType.Comment)
-                {
-                    // check for important comment
-                    string commentText = CurrentTokenText;
-                    bool importantComment = commentText.StartsWith("/*!", StringComparison.Ordinal);
-                    if (importantComment)
-                    {
-                        // get rid of the exclamation mark in some situations
-                        commentText = NormalizeImportantComment(commentText);
-                    }
-
-                    // if the comment mode is none, don't ever output it.
-                    // if the comment mode is all, always output it.
-                    // otherwise only output it if it is an important comment.
-                    bool writeComment = Settings.CommentMode == CssComment.All
-                        || (importantComment && Settings.CommentMode != CssComment.None);
-
-                    if (!importantComment)
-                    {
-                        if (s_sharepointReplacement.IsMatch(commentText))
-                        {
-                            // we ALWAYS want to output sharepoint styling comments
-                            // (unless settings say NO comments)
-                            writeComment = Settings.CommentMode != CssComment.None;
-                        }
-                        else
-                        {
-                            // see if this is a value-replacement id
-                            Match match = s_valueReplacement.Match(commentText);
-                            if (match.Success)
-                            {
-                                // check all the resource strings objects to see if one is a match.
-                                m_valueReplacement = null;
-
-                                var resourceList = Settings.ResourceStrings;
-                                if (resourceList.Count > 0)
-                                {
-                                    // get the id of the string we want to substitute
-                                    string ident = match.Result("${id}");
-
-                                    // walk the list BACKWARDS so later resource string objects override previous ones
-                                    for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
-                                    {
-                                        m_valueReplacement = resourceList[ndx][ident];
-                                        if (m_valueReplacement != null)
-                                        {
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                // if there is such a string, we will have saved the value in the value replacement
-                                // variable so it will be substituted for the next value.
-                                // if there is no such string, we ALWAYS want to output the comment so we know 
-                                // there was a problem (even if the comments mode is to output none)
-                                writeComment = m_valueReplacement == null;
-                                if (writeComment)
-                                {
-                                    // make sure the comment is normalized
-                                    commentText = NormalizedValueReplacementComment(commentText);
-                                }
-                            }
-                        }
-                    }
-
-                    if (writeComment)
-                    {
-                        // if we haven't yet allocated a string builder, do it now
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder();
-                        }
-
-                        // add the comment to the builder
-                        sb.Append(commentText);
-                    }
-                }
-
-                // next token
+                // get the next token
                 m_currentToken = m_scanner.NextToken();
                 if (EchoWriter != null)
                 {
                     EchoWriter.Write(CurrentTokenText);
                 }
 
-                m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
+                m_encounteredNewLine = m_scanner.GotEndOfLine;
+                while (CurrentTokenType == TokenType.Space || CurrentTokenType == TokenType.Comment)
+                {
+                    // if this token is a comment, add it to the builder
+                    if (CurrentTokenType == TokenType.Comment)
+                    {
+                        // check for important comment
+                        string commentText = CurrentTokenText;
+                        bool importantComment = commentText.StartsWith("/*!", StringComparison.Ordinal);
+                        if (importantComment)
+                        {
+                            // get rid of the exclamation mark in some situations
+                            commentText = NormalizeImportantComment(commentText);
+                        }
+
+                        // if the comment mode is none, don't ever output it.
+                        // if the comment mode is all, always output it.
+                        // otherwise only output it if it is an important comment.
+                        bool writeComment = Settings.CommentMode == CssComment.All
+                            || (importantComment && Settings.CommentMode != CssComment.None);
+
+                        if (!importantComment)
+                        {
+                            if (s_sharepointReplacement.IsMatch(commentText))
+                            {
+                                // we ALWAYS want to output sharepoint styling comments
+                                // (unless settings say NO comments)
+                                writeComment = Settings.CommentMode != CssComment.None;
+                            }
+                            else
+                            {
+                                // see if this is a value-replacement id
+                                Match match = s_valueReplacement.Match(commentText);
+                                if (match.Success)
+                                {
+                                    // check all the resource strings objects to see if one is a match.
+                                    m_valueReplacement = null;
+
+                                    var resourceList = Settings.ResourceStrings;
+                                    if (resourceList.Count > 0)
+                                    {
+                                        // get the id of the string we want to substitute
+                                        string ident = match.Result("${id}");
+
+                                        // walk the list BACKWARDS so later resource string objects override previous ones
+                                        for (var ndx = resourceList.Count - 1; ndx >= 0; --ndx)
+                                        {
+                                            m_valueReplacement = resourceList[ndx][ident];
+                                            if (m_valueReplacement != null)
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // if there is such a string, we will have saved the value in the value replacement
+                                    // variable so it will be substituted for the next value.
+                                    // if there is no such string, we ALWAYS want to output the comment so we know 
+                                    // there was a problem (even if the comments mode is to output none)
+                                    writeComment = m_valueReplacement == null;
+                                    if (writeComment)
+                                    {
+                                        // make sure the comment is normalized
+                                        commentText = NormalizedValueReplacementComment(commentText);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (writeComment)
+                        {
+                            // if we haven't yet allocated a string builder, do it now
+                            if (sb == null)
+                            {
+                                sb = StringBuilderPool.Acquire();
+                            }
+
+                            // add the comment to the builder
+                            sb.Append(commentText);
+                        }
+                    }
+
+                    // next token
+                    m_currentToken = m_scanner.NextToken();
+                    if (EchoWriter != null)
+                    {
+                        EchoWriter.Write(CurrentTokenText);
+                    }
+
+                    m_encounteredNewLine = m_encounteredNewLine || m_scanner.GotEndOfLine;
+                }
+
+                text = sb == null ? string.Empty : sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
             }
 
             // return any comments we found in the mean time
-            return (sb == null ? string.Empty : sb.ToString());
+            return text;
         }
 
         private void UpdateIfReplacementToken()
@@ -3977,220 +4005,234 @@ namespace Microsoft.Ajax.Utilities
                 {
                     // need to make sure invalid identifier characters are properly escaped
                     StringBuilder escapedBuilder = null;
-                    var startIndex = 0;
-                    var protectNextHexCharacter = false;
-                    var firstIndex = 0;
-
-                    // if the token type is an identifier, we need to make sure the first character
-                    // is a proper identifier start, or is escaped. But if it's a dimension, the first
-                    // character will be a numeric digit -- which wouldn't be a valid identifier. So
-                    // for dimensions, skip the first character -- subsequent numeric characters will
-                    // be okay.
-                    if (tokenType == TokenType.Identifier)
+                    try
                     {
-                        // for identifiers, if the first character is a hyphen or an underscore, then it's a prefix
-                        // and we want to look at the next character for nmstart.
-                        firstIndex = text[0] == '_' || text[0] == '-' ? 1 : 0;
-                        if (firstIndex < text.Length)
+                        var startIndex = 0;
+                        var protectNextHexCharacter = false;
+                        var firstIndex = 0;
+
+                        // if the token type is an identifier, we need to make sure the first character
+                        // is a proper identifier start, or is escaped. But if it's a dimension, the first
+                        // character will be a numeric digit -- which wouldn't be a valid identifier. So
+                        // for dimensions, skip the first character -- subsequent numeric characters will
+                        // be okay.
+                        if (tokenType == TokenType.Identifier)
                         {
-                            // the only valid non-escaped first characters are A-Z (and a-z)
-                            var firstChar = text[firstIndex];
-
-                            // anything at or above 0x80 is okay for identifiers
-                            if (firstChar < 0x80)
+                            // for identifiers, if the first character is a hyphen or an underscore, then it's a prefix
+                            // and we want to look at the next character for nmstart.
+                            firstIndex = text[0] == '_' || text[0] == '-' ? 1 : 0;
+                            if (firstIndex < text.Length)
                             {
-                                // if it's not an a-z or A-Z, we want to escape it
-                                // also leave literal back-slashes as-is, too. The identifier might start with an escape
-                                // sequence that we didn't decode to its Unicode character for whatever reason.
-                                if ((firstChar < 'A' || 'Z' < firstChar)
-                                    && (firstChar < 'a' || 'z' < firstChar)
-                                    && firstChar != '\\')
-                                {
-                                    // invalid first character -- create the string builder
-                                    escapedBuilder = new StringBuilder();
+                                // the only valid non-escaped first characters are A-Z (and a-z)
+                                var firstChar = text[firstIndex];
 
-                                    // if we had a prefix, output it
-                                    if (firstIndex > 0)
+                                // anything at or above 0x80 is okay for identifiers
+                                if (firstChar < 0x80)
+                                {
+                                    // if it's not an a-z or A-Z, we want to escape it
+                                    // also leave literal back-slashes as-is, too. The identifier might start with an escape
+                                    // sequence that we didn't decode to its Unicode character for whatever reason.
+                                    if ((firstChar < 'A' || 'Z' < firstChar)
+                                        && (firstChar < 'a' || 'z' < firstChar)
+                                        && firstChar != '\\')
                                     {
-                                        escapedBuilder.Append(text[0]);
+                                        // invalid first character -- create the string builder
+                                        escapedBuilder = StringBuilderPool.Acquire();
+
+                                        // if we had a prefix, output it
+                                        if (firstIndex > 0)
+                                        {
+                                            escapedBuilder.Append(text[0]);
+                                        }
+
+                                        // output the escaped first character
+                                        protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[firstIndex]);
+                                        textEndsInEscapeSequence = true;
+                                        startIndex = firstIndex + 1;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // for dimensions, we want to skip over the numeric part. So any sign, then decimal
+                            // digits, then a decimal point (period), then decimal digits. The rest will be the identifier
+                            // part that we want to escape.
+                            if (text[0] == '+' || text[0] == '-')
+                            {
+                                ++firstIndex;
+                            }
+
+                            while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
+                            {
+                                ++firstIndex;
+                            }
+
+                            if (text[firstIndex] == '.')
+                            {
+                                ++firstIndex;
+                            }
+
+                            while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
+                            {
+                                ++firstIndex;
+                            }
+
+                            // since we start at the first character AFTER firstIndex, subtract
+                            // one so we get back to the first character that isn't a part of
+                            // the number portion
+                            --firstIndex;
+                        }
+
+                        // loop through remaining characters, escaping any invalid nmchar characters
+                        for (var ndx = firstIndex + 1; ndx < text.Length; ++ndx)
+                        {
+                            char nextChar = text[ndx];
+
+                            // anything at or above 0x80, then it's okay and doesnt need to be escaped
+                            if (nextChar < 0x80)
+                            {
+                                // only -, _, 0-9, a-z, A-Z are allowed without escapes
+                                // but we also want to NOT escape \ or space characters. If the identifier had
+                                // an escaped space character, it will still be escaped -- so any spaces would
+                                // be necessary whitespace for the end of unicode escapes.
+                                if (nextChar == '\\')
+                                {
+                                    // escape characters cause the next character -- no matter what it is -- to
+                                    // be part of the escape and not escaped itself. Even if this is part of a
+                                    // unicode or character escape, this will hold true. Increment the index and
+                                    // loop around again so that we skip over both the backslash and the following
+                                    // character.
+                                    ++ndx;
+                                }
+                                else if (nextChar != '-'
+                                    && nextChar != '_'
+                                    && nextChar != ' '
+                                    && ('0' > nextChar || nextChar > '9')
+                                    && ('a' > nextChar || nextChar > 'z')
+                                    && ('A' > nextChar || nextChar > 'Z'))
+                                {
+                                    // need to escape this character -- create the builder if we haven't already
+                                    if (escapedBuilder == null)
+                                    {
+                                        escapedBuilder = StringBuilderPool.Acquire();
                                     }
 
-                                    // output the escaped first character
-                                    protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[firstIndex]);
+                                    // output any okay characters we have so far
+                                    if (startIndex < ndx)
+                                    {
+                                        // if the first character of the unescaped string is a valid hex digit,
+                                        // then we need to add a space so that characer doesn't get parsed as a
+                                        // digit in the previous escaped sequence.
+                                        // and if the first character is a space, we need to protect it from the
+                                        // previous escaped sequence with another space, too.
+                                        string unescapedSubstring = text.Substring(startIndex, ndx - startIndex);
+                                        if ((protectNextHexCharacter && CssScanner.IsH(unescapedSubstring[0]))
+                                            || (textEndsInEscapeSequence && unescapedSubstring[0] == ' '))
+                                        {
+                                            escapedBuilder.Append(' ');
+                                        }
+
+                                        escapedBuilder.Append(unescapedSubstring);
+                                    }
+
+                                    // output the escape sequence for the current character
+                                    protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[ndx]);
                                     textEndsInEscapeSequence = true;
-                                    startIndex = firstIndex + 1;
+
+                                    // update the start pointer to the next character
+                                    startIndex = ndx + 1;
                                 }
                             }
                         }
-                    }
-                    else
-                    {
-                        // for dimensions, we want to skip over the numeric part. So any sign, then decimal
-                        // digits, then a decimal point (period), then decimal digits. The rest will be the identifier
-                        // part that we want to escape.
-                        if (text[0] == '+' || text[0] == '-')
+
+                        // if we escaped anything, get the text from what we built
+                        if (escapedBuilder != null)
                         {
-                            ++firstIndex;
-                        }
-
-                        while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
-                        {
-                            ++firstIndex;
-                        }
-
-                        if (text[firstIndex] == '.')
-                        {
-                            ++firstIndex;
-                        }
-
-                        while ('0' <= text[firstIndex] && text[firstIndex] <= '9')
-                        {
-                            ++firstIndex;
-                        }
-
-                        // since we start at the first character AFTER firstIndex, subtract
-                        // one so we get back to the first character that isn't a part of
-                        // the number portion
-                        --firstIndex;
-                    }
-
-                    // loop through remaining characters, escaping any invalid nmchar characters
-                    for(var ndx = firstIndex + 1; ndx < text.Length; ++ndx)
-                    {
-                        char nextChar = text[ndx];
-
-                        // anything at or above 0x80, then it's okay and doesnt need to be escaped
-                        if (nextChar < 0x80)
-                        {
-                            // only -, _, 0-9, a-z, A-Z are allowed without escapes
-                            // but we also want to NOT escape \ or space characters. If the identifier had
-                            // an escaped space character, it will still be escaped -- so any spaces would
-                            // be necessary whitespace for the end of unicode escapes.
-                            if (nextChar == '\\')
+                            // append whatever is left over
+                            if (startIndex < text.Length)
                             {
-                                // escape characters cause the next character -- no matter what it is -- to
-                                // be part of the escape and not escaped itself. Even if this is part of a
-                                // unicode or character escape, this will hold true. Increment the index and
-                                // loop around again so that we skip over both the backslash and the following
-                                // character.
-                                ++ndx;
-                            }
-                            else if (nextChar != '-'
-                                && nextChar != '_'
-                                && nextChar != ' '
-                                && ('0' > nextChar || nextChar > '9')
-                                && ('a' > nextChar || nextChar > 'z')
-                                && ('A' > nextChar || nextChar > 'Z'))
-                            {
-                                // need to escape this character -- create the builder if we haven't already
-                                if (escapedBuilder == null)
+                                // if the first character of the unescaped string is a valid hex digit,
+                                // then we need to add a space so that characer doesn't get parsed as a
+                                // digit in the previous escaped sequence.
+                                // same for spaces! a trailing space will be part of the escape, so if we need
+                                // a real space to follow, need to make sure there are TWO.
+                                string unescapedSubstring = text.Substring(startIndex);
+                                if ((protectNextHexCharacter && CssScanner.IsH(unescapedSubstring[0]))
+                                    || unescapedSubstring[0] == ' ')
                                 {
-                                    escapedBuilder = new StringBuilder();
+                                    escapedBuilder.Append(' ');
                                 }
 
-                                // output any okay characters we have so far
-                                if (startIndex < ndx)
-                                {
-                                    // if the first character of the unescaped string is a valid hex digit,
-                                    // then we need to add a space so that characer doesn't get parsed as a
-                                    // digit in the previous escaped sequence.
-                                    // and if the first character is a space, we need to protect it from the
-                                    // previous escaped sequence with another space, too.
-                                    string unescapedSubstring = text.Substring(startIndex, ndx - startIndex);
-                                    if ((protectNextHexCharacter && CssScanner.IsH(unescapedSubstring[0]))
-                                        || (textEndsInEscapeSequence && unescapedSubstring[0] == ' '))
-                                    {
-                                        escapedBuilder.Append(' ');
-                                    }
-
-                                    escapedBuilder.Append(unescapedSubstring);
-                                }
-
-                                // output the escape sequence for the current character
-                                protectNextHexCharacter = EscapeCharacter(escapedBuilder, text[ndx]);
-                                textEndsInEscapeSequence = true;
-
-                                // update the start pointer to the next character
-                                startIndex = ndx + 1;
+                                escapedBuilder.Append(unescapedSubstring);
+                                textEndsInEscapeSequence = false;
                             }
+
+                            // get the full string
+                            text = escapedBuilder.ToString();
                         }
                     }
-
-                    // if we escaped anything, get the text from what we built
-                    if (escapedBuilder != null)
+                    finally
                     {
-                        // append whatever is left over
-                        if (startIndex < text.Length)
-                        {
-                            // if the first character of the unescaped string is a valid hex digit,
-                            // then we need to add a space so that characer doesn't get parsed as a
-                            // digit in the previous escaped sequence.
-                            // same for spaces! a trailing space will be part of the escape, so if we need
-                            // a real space to follow, need to make sure there are TWO.
-                            string unescapedSubstring = text.Substring(startIndex);
-                            if ((protectNextHexCharacter && CssScanner.IsH(unescapedSubstring[0])) 
-                                || unescapedSubstring[0] == ' ')
-                            {
-                                escapedBuilder.Append(' ');
-                            }
-
-                            escapedBuilder.Append(unescapedSubstring);
-                            textEndsInEscapeSequence = false;
-                        }
-
-                        // get the full string
-                        text = escapedBuilder.ToString();
+                        escapedBuilder.Release();
                     }
                 }
                 else if (tokenType == TokenType.String)
                 {
                     // we need to make sure that control codes are properly escaped
                     StringBuilder sb = null;
-                    var startRaw = 0;
-                    for (var ndx = 0; ndx < text.Length; ++ndx)
+                    try
                     {
-                        // if it's a control code...
-                        var ch = text[ndx];
-                        if (ch < ' ')
+                        var startRaw = 0;
+                        for (var ndx = 0; ndx < text.Length; ++ndx)
                         {
-                            // if we haven't created our string builder yet, do it now
-                            if (sb == null)
+                            // if it's a control code...
+                            var ch = text[ndx];
+                            if (ch < ' ')
                             {
-                                sb = new StringBuilder();
+                                // if we haven't created our string builder yet, do it now
+                                if (sb == null)
+                                {
+                                    sb = StringBuilderPool.Acquire();
+                                }
+
+                                // add the raw text up to but not including the current character.
+                                // but only if start raw is BEFORE the current index
+                                if (startRaw < ndx)
+                                {
+                                    sb.Append(text.Substring(startRaw, ndx - startRaw));
+                                }
+
+                                // regular unicode escape
+                                sb.Append("\\{0:x}".FormatInvariant(char.ConvertToUtf32(text, ndx)));
+
+                                // if the NEXT character (if there is one) is a hex digit, 
+                                // we will need to append a space to signify the end of the escape sequence, since this
+                                // will never have more than two digits (0 - 1f).
+                                if (ndx + 1 < text.Length
+                                    && CssScanner.IsH(text[ndx + 1]))
+                                {
+                                    sb.Append(' ');
+                                }
+
+                                // and update the raw pointer to the next character
+                                startRaw = ndx + 1;
                             }
-
-                            // add the raw text up to but not including the current character.
-                            // but only if start raw is BEFORE the current index
-                            if (startRaw < ndx)
-                            {
-                                sb.Append(text.Substring(startRaw, ndx - startRaw));
-                            }
-
-                            // regular unicode escape
-                            sb.Append("\\{0:x}".FormatInvariant(char.ConvertToUtf32(text, ndx)));
-
-                            // if the NEXT character (if there is one) is a hex digit, 
-                            // we will need to append a space to signify the end of the escape sequence, since this
-                            // will never have more than two digits (0 - 1f).
-                            if (ndx + 1 < text.Length
-                                && CssScanner.IsH(text[ndx + 1]))
-                            {
-                                sb.Append(' ');
-                            }
-
-                            // and update the raw pointer to the next character
-                            startRaw = ndx + 1;
                         }
-                    }
 
-                    // if we have something left over, add the rest now
-                    if (sb != null && startRaw < text.Length)
+                        // if we have something left over, add the rest now
+                        if (sb != null && startRaw < text.Length)
+                        {
+                            sb.Append(text.Substring(startRaw));
+                        }
+
+                        // if we built up a string, use it. Otherwise just use what we have.
+                        text = sb == null ? text : sb.ToString();
+                    }
+                    finally
                     {
-                        sb.Append(text.Substring(startRaw));
+                        sb.Release();
                     }
-
-                    // if we built up a string, use it. Otherwise just use what we have.
-                    text = sb == null ? text : sb.ToString();
                 }
 
                 // if it's not a comment, we're going to output it.

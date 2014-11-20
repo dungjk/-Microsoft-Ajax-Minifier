@@ -187,25 +187,34 @@ namespace Microsoft.Ajax.Utilities
         private void WriteModuleHeader(ModuleScope moduleScope)
         {
             var blockType = AjaxMin.BlockTypeModule.FormatInvariant(moduleScope.ScopeName.IfNullOrWhiteSpace(AjaxMin.ModuleNameImplicit));
-            var sb = new StringBuilder();
-            if (!moduleScope.IsKnownAtCompileTime)
+            string scopeFlags = null;
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                sb.Append('[');
-                sb.Append(AjaxMin.NotKnown);
-                sb.Append(']');
+                if (!moduleScope.IsKnownAtCompileTime)
+                {
+                    sb.Append('[');
+                    sb.Append(AjaxMin.NotKnown);
+                    sb.Append(']');
+                }
+
+                if (moduleScope.UseStrict)
+                {
+                    sb.Append(AjaxMin.ScopeIsStrictFlag);
+                }
+
+                if (moduleScope.IsNotComplete)
+                {
+                    sb.Append(AjaxMin.ModuleIncompleteFlag);
+                }
+
+                scopeFlags = sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
             }
 
-            if (moduleScope.UseStrict)
-            {
-                sb.Append(AjaxMin.ScopeIsStrictFlag);
-            }
-
-            if (moduleScope.IsNotComplete)
-            {
-                sb.Append(AjaxMin.ModuleIncompleteFlag);
-            }
-
-            var scopeFlags = sb.ToString();
             WriteProgress();
             WriteProgress(AjaxMin.BlockScopeHeader.FormatInvariant(
               blockType,
@@ -223,20 +232,29 @@ namespace Microsoft.Ajax.Utilities
 
         private void WriteBlockHeader(BlockScope blockScope, string blockType)
         {
-            var sb = new StringBuilder();
-            if (!blockScope.IsKnownAtCompileTime)
+            string scopeFlags = null;
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                sb.Append('[');
-                sb.Append(AjaxMin.NotKnown);
-                sb.Append(']');
+                if (!blockScope.IsKnownAtCompileTime)
+                {
+                    sb.Append('[');
+                    sb.Append(AjaxMin.NotKnown);
+                    sb.Append(']');
+                }
+
+                if (blockScope.UseStrict)
+                {
+                    sb.Append(AjaxMin.ScopeIsStrictFlag);
+                }
+
+                scopeFlags = sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
             }
 
-            if (blockScope.UseStrict)
-            {
-                sb.Append(AjaxMin.ScopeIsStrictFlag);
-            }
-
-            var scopeFlags = sb.ToString();
             WriteProgress();
             WriteProgress(AjaxMin.BlockScopeHeader.FormatInvariant(
               blockType,
@@ -260,21 +278,42 @@ namespace Microsoft.Ajax.Utilities
             }
 
             // get the status if the function
-            StringBuilder statusBuilder = new StringBuilder();
-            if (!isKnown)
+            string status = null;
+            var statusBuilder = StringBuilderPool.Acquire();
+            try
             {
-                statusBuilder.Append('[');
-                statusBuilder.Append(AjaxMin.NotKnown);
-            }
-            if (funcObj.EnclosingScope.Parent is GlobalScope)
-            {
-                // global function.
-                // if this is a named function expression, we still want to know if it's
-                // referenced by anyone
-                if (funcObj.FunctionType == FunctionType.Expression 
-                    && funcObj.Binding != null
-                    && !funcObj.Binding.Name.IsNullOrWhiteSpace())
+                if (!isKnown)
                 {
+                    statusBuilder.Append('[');
+                    statusBuilder.Append(AjaxMin.NotKnown);
+                }
+                if (funcObj.EnclosingScope.Parent is GlobalScope)
+                {
+                    // global function.
+                    // if this is a named function expression, we still want to know if it's
+                    // referenced by anyone
+                    if (funcObj.FunctionType == FunctionType.Expression
+                        && funcObj.Binding != null
+                        && !funcObj.Binding.Name.IsNullOrWhiteSpace())
+                    {
+                        // output a comma separator if not the first item, otherwise 
+                        // open the square bracket
+                        if (statusBuilder.Length > 0)
+                        {
+                            statusBuilder.Append(", ");
+                        }
+                        else
+                        {
+                            statusBuilder.Append('[');
+                        }
+                        statusBuilder.Append(AjaxMin.FunctionInfoReferences.FormatInvariant(
+                            funcObj.Binding.VariableField.IfNotNull(v => v.RefCount)
+                            ));
+                    }
+                }
+                else if (!funcObj.IsReferenced && m_useReferenceCounts)
+                {
+                    // local function that isn't referenced -- unreachable!
                     // output a comma separator if not the first item, otherwise 
                     // open the square bracket
                     if (statusBuilder.Length > 0)
@@ -285,39 +324,27 @@ namespace Microsoft.Ajax.Utilities
                     {
                         statusBuilder.Append('[');
                     }
-                    statusBuilder.Append(AjaxMin.FunctionInfoReferences.FormatInvariant(
-                        funcObj.Binding.VariableField.IfNotNull(v => v.RefCount)
-                        ));
+
+                    statusBuilder.Append(AjaxMin.Unreachable);
                 }
-            }
-            else if (!funcObj.IsReferenced && m_useReferenceCounts)
-            {
-                // local function that isn't referenced -- unreachable!
-                // output a comma separator if not the first item, otherwise 
-                // open the square bracket
+
                 if (statusBuilder.Length > 0)
                 {
-                    statusBuilder.Append(", ");
+                    statusBuilder.Append(']');
                 }
-                else
+
+                if (useStrict)
                 {
-                    statusBuilder.Append('[');
+                    statusBuilder.Append(AjaxMin.ScopeIsStrictFlag);
                 }
 
-                statusBuilder.Append(AjaxMin.Unreachable);
+                status = statusBuilder.ToString();
             }
-
-            if (statusBuilder.Length > 0)
+            finally
             {
-                statusBuilder.Append(']');
+                statusBuilder.Release();
             }
 
-            if (useStrict)
-            {
-                statusBuilder.Append(AjaxMin.ScopeIsStrictFlag);
-            }
-
-            string status = statusBuilder.ToString();
             string functionType;
             switch (funcObj.FunctionType)
             {

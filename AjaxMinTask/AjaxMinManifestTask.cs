@@ -159,7 +159,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
                     }
                 };
 
-                var outputBuilder = new StringBuilder();
+                var outputBuilder = new StringBuilder(8192);
                 using (var writer = new StringWriter(outputBuilder, CultureInfo.InvariantCulture))
                 {
                     for (var inputGroupIndex = 0; inputGroupIndex < inputGroups.Count; ++inputGroupIndex)
@@ -269,7 +269,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
 
         private void ProcessStylesheet(IList<InputGroup> inputGroups, SwitchParser switchParser, string outputPath, Encoding encoding)
         {
-            var outputBuilder = new StringBuilder();
+            var outputBuilder = new StringBuilder(8192);
             foreach (var inputGroup in inputGroups)
             {
                 // create and setup parser

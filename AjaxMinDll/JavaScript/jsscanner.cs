@@ -2273,322 +2273,328 @@ namespace Microsoft.Ajax.Utilities
             m_decodedString = null;
             m_literalIssues = false;
             StringBuilder result = null;
-
-            char ch;
-            while((ch = GetChar(m_currentPosition++)) != delimiter)
+            try
             {
-                if (ch != '\\')
+                char ch;
+                while ((ch = GetChar(m_currentPosition++)) != delimiter)
                 {
-                    // this is the common non escape case
-                    if (IsLineTerminator(ch, 0))
+                    if (ch != '\\')
                     {
-                        // TODO: we want to flag this string as unterminated *and having issues*,
-                        // and then somehow output a line-break in the output to duplicate the
-                        // source. However, we will need to figure out how to NOT combine the statement
-                        // with the next statement. For instance:
-                        //      var x = "unterminated
-                        //      var y = 42;
-                        // should NOT get combined to: var x="unterminated,y=42;
-                        // (same for moving it inside for-statements, combining expression statements, etc.)
-                        //m_literalIssues = true;
-                        HandleError(JSError.UnterminatedString);
-
-                        // back up to the start of the line terminator
-                        --m_currentPosition;
-                        if (GetChar(m_currentPosition - 1) == '\r')
+                        // this is the common non escape case
+                        if (IsLineTerminator(ch, 0))
                         {
-                            --m_currentPosition;
-                        }
-
-                        break;
-                    }
-
-                    if ('\0' == ch)
-                    {
-                        // whether it's a null literal character within the string or an
-                        // actual end of file, this string literal has issues....
-                        m_literalIssues = true;
-
-                        if (IsEndOfFile)
-                        {
-                            m_currentPosition--;
+                            // TODO: we want to flag this string as unterminated *and having issues*,
+                            // and then somehow output a line-break in the output to duplicate the
+                            // source. However, we will need to figure out how to NOT combine the statement
+                            // with the next statement. For instance:
+                            //      var x = "unterminated
+                            //      var y = 42;
+                            // should NOT get combined to: var x="unterminated,y=42;
+                            // (same for moving it inside for-statements, combining expression statements, etc.)
+                            //m_literalIssues = true;
                             HandleError(JSError.UnterminatedString);
+
+                            // back up to the start of the line terminator
+                            --m_currentPosition;
+                            if (GetChar(m_currentPosition - 1) == '\r')
+                            {
+                                --m_currentPosition;
+                            }
+
                             break;
                         }
 
-                    }
-
-                    if (AllowEmbeddedAspNetBlocks
-                        && ch == '<'
-                        && GetChar(m_currentPosition) == '%')
-                    {
-                        // start of an ASP.NET block INSIDE a string literal.
-                        // just skip the entire ASP.NET block -- move forward until
-                        // we find the closing %> delimiter, then we'll continue on
-                        // with the next character.
-                        SkipAspNetReplacement();
-
-                        // asp.net blocks insides strings can cause issues
-                        m_literalIssues = true;
-                    }
-                    else if (0xd800 <= ch && ch <= 0xdbff)
-                    {
-                        // high-surrogate! Make sure the next character is a low surrogate
-                        // or we'll throw an error.
-                        ch = GetChar(m_currentPosition);
-                        if (0xdc00 <= ch && ch <= 0xdfff)
+                        if ('\0' == ch)
                         {
-                            // we're good. Advance past the pair.
-                            ++m_currentPosition;
+                            // whether it's a null literal character within the string or an
+                            // actual end of file, this string literal has issues....
+                            m_literalIssues = true;
+
+                            if (IsEndOfFile)
+                            {
+                                m_currentPosition--;
+                                HandleError(JSError.UnterminatedString);
+                                break;
+                            }
+
                         }
-                        else if (ch == '\\' && GetChar(m_currentPosition + 1) == 'u')
+
+                        if (AllowEmbeddedAspNetBlocks
+                            && ch == '<'
+                            && GetChar(m_currentPosition) == '%')
                         {
-                            // we have a unicode escape. Start working on that escaped value.
-                            if (null == result)
+                            // start of an ASP.NET block INSIDE a string literal.
+                            // just skip the entire ASP.NET block -- move forward until
+                            // we find the closing %> delimiter, then we'll continue on
+                            // with the next character.
+                            SkipAspNetReplacement();
+
+                            // asp.net blocks insides strings can cause issues
+                            m_literalIssues = true;
+                        }
+                        else if (0xd800 <= ch && ch <= 0xdbff)
+                        {
+                            // high-surrogate! Make sure the next character is a low surrogate
+                            // or we'll throw an error.
+                            ch = GetChar(m_currentPosition);
+                            if (0xdc00 <= ch && ch <= 0xdfff)
                             {
-                                result = new StringBuilder(128);
+                                // we're good. Advance past the pair.
+                                ++m_currentPosition;
                             }
-
-                            // start points to the first position that has not been written to the StringBuilder.
-                            // The first time we get in here that position is the beginning of the string, after that
-                            // is the character immediately following the escape sequence
-                            if (m_currentPosition - start > 0)
+                            else if (ch == '\\' && GetChar(m_currentPosition + 1) == 'u')
                             {
-                                // append all the non escape chars to the string builder
-                                result.Append(m_strSourceCode, start, m_currentPosition - start);
-                            }
-
-                            int lowSurrogate;
-                            if (ScanHexSequence(m_currentPosition += 2, 'u', out lowSurrogate))
-                            {
-                                // valid escape, so make sure the unescaped value is added to the result regardless.
-                                result.Append((char)lowSurrogate);
-                                start = m_currentPosition;
-
-                                // now make sure it's in low-surrogate range
-                                if (lowSurrogate < 0xdc00 || 0xdfff < lowSurrogate)
+                                // we have a unicode escape. Start working on that escaped value.
+                                if (null == result)
                                 {
-                                    // not a low-surrogate
+                                    result = StringBuilderPool.Acquire();
+                                }
+
+                                // start points to the first position that has not been written to the StringBuilder.
+                                // The first time we get in here that position is the beginning of the string, after that
+                                // is the character immediately following the escape sequence
+                                if (m_currentPosition - start > 0)
+                                {
+                                    // append all the non escape chars to the string builder
+                                    result.Append(m_strSourceCode, start, m_currentPosition - start);
+                                }
+
+                                int lowSurrogate;
+                                if (ScanHexSequence(m_currentPosition += 2, 'u', out lowSurrogate))
+                                {
+                                    // valid escape, so make sure the unescaped value is added to the result regardless.
+                                    result.Append((char)lowSurrogate);
+                                    start = m_currentPosition;
+
+                                    // now make sure it's in low-surrogate range
+                                    if (lowSurrogate < 0xdc00 || 0xdfff < lowSurrogate)
+                                    {
+                                        // not a low-surrogate
+                                        m_literalIssues = true;
+                                        HandleError(JSError.HighSurrogate);
+                                    }
+                                }
+                                else
+                                {
+                                    // not a valid unicode escape sequence, so no -- we are not 
+                                    // followed by a low-surrogate
                                     m_literalIssues = true;
                                     HandleError(JSError.HighSurrogate);
                                 }
                             }
                             else
                             {
-                                // not a valid unicode escape sequence, so no -- we are not 
-                                // followed by a low-surrogate
+                                // not followed by a low-surrogate
                                 m_literalIssues = true;
                                 HandleError(JSError.HighSurrogate);
                             }
                         }
-                        else
+                        else if (0xdc00 <= ch && ch <= 0xdfff)
                         {
-                            // not followed by a low-surrogate
+                            // low-surrogate by itself! This is an error, but keep going
                             m_literalIssues = true;
-                            HandleError(JSError.HighSurrogate);
+                            HandleError(JSError.LowSurrogate);
                         }
                     }
-                    else if (0xdc00 <= ch && ch <= 0xdfff)
+                    else
                     {
-                        // low-surrogate by itself! This is an error, but keep going
-                        m_literalIssues = true;
-                        HandleError(JSError.LowSurrogate);
+                        // ESCAPE CASE
+                        var esc = 0;
+
+                        // got an escape of some sort. Have to use the StringBuilder
+                        if (null == result)
+                        {
+                            result = StringBuilderPool.Acquire();
+                        }
+
+                        // start points to the first position that has not been written to the StringBuilder.
+                        // The first time we get in here that position is the beginning of the string, after that
+                        // is the character immediately following the escape sequence
+                        if (m_currentPosition - start - 1 > 0)
+                        {
+                            // append all the non escape chars to the string builder
+                            result.Append(m_strSourceCode, start, m_currentPosition - start - 1);
+                        }
+
+                        // state variable to be reset
+                        bool seqOfThree = false;
+
+                        ch = GetChar(m_currentPosition++);
+                        switch (ch)
+                        {
+                            // line terminator crap
+                            case '\r':
+                                if ('\n' == GetChar(m_currentPosition))
+                                {
+                                    m_currentPosition++;
+                                }
+
+                                goto case '\n';
+
+                            case '\n':
+                            case '\u2028':
+                            case '\u2029':
+                                m_currentLine++;
+                                m_startLinePosition = m_currentPosition;
+                                break;
+
+                            // classic single char escape sequences
+                            case 'b':
+                                result.Append((char)8);
+                                break;
+
+                            case 't':
+                                result.Append((char)9);
+                                break;
+
+                            case 'n':
+                                result.Append((char)10);
+                                break;
+
+                            case 'v':
+                                // \v inside strings can cause issues
+                                m_literalIssues = true;
+                                result.Append((char)11);
+                                break;
+
+                            case 'f':
+                                result.Append((char)12);
+                                break;
+
+                            case 'r':
+                                result.Append((char)13);
+                                break;
+
+                            case '"':
+                                result.Append('"');
+                                break;
+
+                            case '\'':
+                                result.Append('\'');
+                                break;
+
+                            case '\\':
+                                result.Append('\\');
+                                break;
+
+                            // hexadecimal escape sequence /xHH, \uHHHH, or \u{H+}
+                            case 'u':
+                            case 'x':
+                                string unescaped;
+                                if (ScanHexEscape(ch, out unescaped))
+                                {
+                                    // successfully escaped the character sequence
+                                    result.Append(unescaped);
+                                }
+                                else
+                                {
+                                    // wasn't valid -- keep the original and flag this as having issues
+                                    result.Append(m_strSourceCode.Substring(m_currentPosition - 2, 2));
+                                    m_literalIssues = true;
+                                    HandleError(JSError.BadHexEscapeSequence);
+                                }
+                                break;
+
+                            case '0':
+                            case '1':
+                            case '2':
+                            case '3':
+                                seqOfThree = true;
+                                esc = (ch - '0') << 6;
+                                goto case '4';
+
+                            case '4':
+                            case '5':
+                            case '6':
+                            case '7':
+                                // octal literals inside strings can cause issues
+                                m_literalIssues = true;
+
+                                // esc is reset at the beginning of the loop and it is used to check that we did not go through the cases 1, 2 or 3
+                                if (!seqOfThree)
+                                {
+                                    esc = (ch - '0') << 3;
+                                }
+
+                                ch = GetChar(m_currentPosition++);
+                                if ('0' <= ch && ch <= '7')
+                                {
+                                    if (seqOfThree)
+                                    {
+                                        esc |= (ch - '0') << 3;
+                                        ch = GetChar(m_currentPosition++);
+                                        if ('0' <= ch && ch <= '7')
+                                        {
+                                            esc |= ch - '0';
+                                            result.Append((char)esc);
+                                        }
+                                        else
+                                        {
+                                            result.Append((char)(esc >> 3));
+
+                                            // do not skip over this char we have to read it back
+                                            --m_currentPosition;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        esc |= ch - '0';
+                                        result.Append((char)esc);
+                                    }
+                                }
+                                else
+                                {
+                                    if (seqOfThree)
+                                    {
+                                        result.Append((char)(esc >> 6));
+                                    }
+                                    else
+                                    {
+                                        result.Append((char)(esc >> 3));
+                                    }
+
+                                    // do not skip over this char we have to read it back
+                                    --m_currentPosition;
+                                }
+
+                                HandleError(JSError.OctalLiteralsDeprecated);
+                                break;
+
+                            default:
+                                // not an octal number, ignore the escape '/' and simply append the current char
+                                result.Append(ch);
+                                break;
+                        }
+
+                        start = m_currentPosition;
                     }
                 }
-                else
+
+                // update the unescaped string
+                if (null != result)
                 {
-                    // ESCAPE CASE
-                    var esc = 0;
-
-                    // got an escape of some sort. Have to use the StringBuilder
-                    if (null == result)
-                    {
-                        result = new StringBuilder(128);
-                    }
-
-                    // start points to the first position that has not been written to the StringBuilder.
-                    // The first time we get in here that position is the beginning of the string, after that
-                    // is the character immediately following the escape sequence
                     if (m_currentPosition - start - 1 > 0)
                     {
                         // append all the non escape chars to the string builder
                         result.Append(m_strSourceCode, start, m_currentPosition - start - 1);
                     }
-
-                    // state variable to be reset
-                    bool seqOfThree = false;
-
-                    ch = GetChar(m_currentPosition++);
-                    switch (ch)
-                    {
-                        // line terminator crap
-                        case '\r':
-                            if ('\n' == GetChar(m_currentPosition))
-                            {
-                                m_currentPosition++;
-                            }
-
-                            goto case '\n';
-
-                        case '\n':
-                        case '\u2028':
-                        case '\u2029':
-                            m_currentLine++;
-                            m_startLinePosition = m_currentPosition;
-                            break;
-
-                        // classic single char escape sequences
-                        case 'b':
-                            result.Append((char)8);
-                            break;
-
-                        case 't':
-                            result.Append((char)9);
-                            break;
-
-                        case 'n':
-                            result.Append((char)10);
-                            break;
-
-                        case 'v':
-                            // \v inside strings can cause issues
-                            m_literalIssues = true;
-                            result.Append((char)11);
-                            break;
-
-                        case 'f':
-                            result.Append((char)12);
-                            break;
-
-                        case 'r':
-                            result.Append((char)13);
-                            break;
-
-                        case '"':
-                            result.Append('"');
-                            break;
-
-                        case '\'':
-                            result.Append('\'');
-                            break;
-
-                        case '\\':
-                            result.Append('\\');
-                            break;
-
-                        // hexadecimal escape sequence /xHH, \uHHHH, or \u{H+}
-                        case 'u':
-                        case 'x':
-                            string unescaped;
-                            if (ScanHexEscape(ch, out unescaped))
-                            {
-                                // successfully escaped the character sequence
-                                result.Append(unescaped);
-                            }
-                            else
-                            {
-                                // wasn't valid -- keep the original and flag this as having issues
-                                result.Append(m_strSourceCode.Substring(m_currentPosition - 2, 2));
-                                m_literalIssues = true;
-                                HandleError(JSError.BadHexEscapeSequence);
-                            }
-                            break;
-
-                        case '0':
-                        case '1':
-                        case '2':
-                        case '3':
-                            seqOfThree = true;
-                            esc = (ch - '0') << 6;
-                            goto case '4';
-
-                        case '4':
-                        case '5':
-                        case '6':
-                        case '7':
-                            // octal literals inside strings can cause issues
-                            m_literalIssues = true;
-
-                            // esc is reset at the beginning of the loop and it is used to check that we did not go through the cases 1, 2 or 3
-                            if (!seqOfThree)
-                            {
-                                esc = (ch - '0') << 3;
-                            }
-
-                            ch = GetChar(m_currentPosition++);
-                            if ('0' <= ch && ch <= '7')
-                            {
-                                if (seqOfThree)
-                                {
-                                    esc |= (ch - '0') << 3;
-                                    ch = GetChar(m_currentPosition++);
-                                    if ('0' <= ch && ch <= '7')
-                                    {
-                                        esc |= ch - '0';
-                                        result.Append((char)esc);
-                                    }
-                                    else
-                                    {
-                                        result.Append((char)(esc >> 3));
-
-                                        // do not skip over this char we have to read it back
-                                        --m_currentPosition;
-                                    }
-                                }
-                                else
-                                {
-                                    esc |= ch - '0';
-                                    result.Append((char)esc);
-                                }
-                            }
-                            else
-                            {
-                                if (seqOfThree)
-                                {
-                                    result.Append((char)(esc >> 6));
-                                }
-                                else
-                                {
-                                    result.Append((char)(esc >> 3));
-                                }
-
-                                // do not skip over this char we have to read it back
-                                --m_currentPosition;
-                            }
-
-                            HandleError(JSError.OctalLiteralsDeprecated);
-                            break;
-
-                        default:
-                            // not an octal number, ignore the escape '/' and simply append the current char
-                            result.Append(ch);
-                            break;
-                    }
-
-                    start = m_currentPosition;
+                    m_decodedString = result.ToString();
                 }
-            }
-
-            // update the unescaped string
-            if (null != result)
-            {
-                if (m_currentPosition - start - 1 > 0)
+                else if (m_currentPosition == m_currentToken.StartPosition + 1)
                 {
-                    // append all the non escape chars to the string builder
-                    result.Append(m_strSourceCode, start, m_currentPosition - start - 1);
+                    // empty unterminated string!
+                    m_decodedString = string.Empty;
                 }
-                m_decodedString = result.ToString();
+                else
+                {
+                    // might be an unterminated string, so make sure that last character is the terminator
+                    int numDelimiters = (GetChar(m_currentPosition - 1) == delimiter ? 2 : 1);
+                    m_decodedString = m_strSourceCode.Substring(m_currentToken.StartPosition + 1, m_currentPosition - m_currentToken.StartPosition - numDelimiters);
+                }
             }
-            else if (m_currentPosition == m_currentToken.StartPosition + 1)
+            finally
             {
-                // empty unterminated string!
-                m_decodedString = string.Empty;
-            }
-            else
-            {
-                // might be an unterminated string, so make sure that last character is the terminator
-                int numDelimiters = (GetChar(m_currentPosition - 1) == delimiter ? 2 : 1);
-                m_decodedString = m_strSourceCode.Substring(m_currentToken.StartPosition + 1, m_currentPosition - m_currentToken.StartPosition - numDelimiters);
+                result.Release();
             }
         }
 
@@ -2720,164 +2726,171 @@ namespace Microsoft.Ajax.Utilities
         {
             // save the start of the current run, INCLUDING the delimiter
             StringBuilder decodedLiteral = null;
-            var startOfRun = m_currentToken.StartPosition;
-
-            // if the first character is the open delimiter, skip past it now
-            if (ch == '`')
+            try
             {
-                ++m_currentPosition;
-            }
+                var startOfRun = m_currentToken.StartPosition;
 
-            // get the current character and get the next character
-            ch = GetChar(m_currentPosition);
-            while (ch != '\0' && ch != '`')
-            {
-                if (ch == '$')
+                // if the first character is the open delimiter, skip past it now
+                if (ch == '`')
                 {
-                    // is this the start of a substitution?
-                    // if so, then it's the end of the head. Otherwise it's just
-                    // a simpe dollar-sign.
-                    if (GetChar(m_currentPosition + 1) == '{')
-                    {
-                        m_currentPosition += 2;
-                        break;
-                    }
+                    ++m_currentPosition;
                 }
-                else if (ch == '\\')
+
+                // get the current character and get the next character
+                ch = GetChar(m_currentPosition);
+                while (ch != '\0' && ch != '`')
                 {
-                    // escape sequence. If we haven't already, create a string builder
-                    if (decodedLiteral == null)
+                    if (ch == '$')
                     {
-                        decodedLiteral = new StringBuilder(128);
+                        // is this the start of a substitution?
+                        // if so, then it's the end of the head. Otherwise it's just
+                        // a simpe dollar-sign.
+                        if (GetChar(m_currentPosition + 1) == '{')
+                        {
+                            m_currentPosition += 2;
+                            break;
+                        }
+                    }
+                    else if (ch == '\\')
+                    {
+                        // escape sequence. If we haven't already, create a string builder
+                        if (decodedLiteral == null)
+                        {
+                            decodedLiteral = StringBuilderPool.Acquire();
+                        }
+
+                        // append the previous run of unescaped characters
+                        if (m_currentPosition > startOfRun)
+                        {
+                            decodedLiteral.Append(m_strSourceCode, startOfRun, m_currentPosition - startOfRun);
+                        }
+
+                        // advance past the slash and get the next escaped character
+                        ch = GetChar(++m_currentPosition);
+                        switch (ch)
+                        {
+                            default:
+                            case '\\':
+                            case '\'':
+                            case '"':
+                                // just the escaped character
+                                decodedLiteral.Append(ch);
+                                break;
+
+                            case 'b':
+                                // backspace
+                                decodedLiteral.Append('\b');
+                                break;
+
+                            case 'f':
+                                // form feed
+                                decodedLiteral.Append('\f');
+                                break;
+
+                            case 'n':
+                                // line feed
+                                decodedLiteral.Append('\n');
+                                break;
+
+                            case 'r':
+                                // carriage return
+                                decodedLiteral.Append('\r');
+                                break;
+
+                            case 't':
+                                // tab
+                                decodedLiteral.Append('\t');
+                                break;
+
+                            case 'v':
+                                // vertical tab
+                                // don't need to special-case this as it's ES6 syntax and we don't have
+                                // to worry about older browsers.
+                                decodedLiteral.Append('\v');
+                                break;
+
+                            case '0':
+                                // null character
+                                decodedLiteral.Append('\0');
+                                break;
+
+                            case '\r':
+                                // line continuation - don't add anything to the decoded string.
+                                // carriage return might be followed by a \n, which we will 
+                                // treat together as a single line terminator.
+                                if (GetChar(m_currentPosition + 1) == '\n')
+                                {
+                                    m_currentPosition++;
+                                }
+                                goto case '\n';
+                            case '\n':
+                            case '\u2028':
+                            case '\u2029':
+                                // advance the line number, but the escaped line terminator is not part
+                                // of the decoded string
+                                m_currentLine++;
+                                m_startLinePosition = m_currentPosition;
+                                break;
+
+                            case 'x':
+                            case 'u':
+                                // unicode escape. four hex digits unless enclosed in curly-braces, in which
+                                // case it can be any number of hex digits.
+                                string unescaped;
+                                ++m_currentPosition;
+                                if (ScanHexEscape(ch, out unescaped))
+                                {
+                                    decodedLiteral.Append(unescaped);
+                                }
+                                else
+                                {
+                                    // wasn't valid -- keep the original and flag this as having issues
+                                    decodedLiteral.Append(m_strSourceCode.Substring(m_currentPosition - 2, 2));
+                                    m_literalIssues = true;
+                                    HandleError(JSError.BadHexEscapeSequence);
+                                }
+                                --m_currentPosition;
+                                break;
+                        }
+
+                        // save the start of the next run (if any)
+                        startOfRun = m_currentPosition + 1;
+                    }
+                    else if (IsLineTerminator(ch, 1))
+                    {
+                        // we'll just keep this as part of the unescaped run
+                        ++m_currentPosition;
+                        ++m_currentLine;
+                        m_startLinePosition = m_currentPosition + 1;
                     }
 
-                    // append the previous run of unescaped characters
+                    // keep going
+                    ch = GetChar(++m_currentPosition);
+                }
+
+                if (ch == '`')
+                {
+                    ++m_currentPosition;
+                }
+
+                // if we were unescaping the string, pull in the last run and save the decoded string
+                if (decodedLiteral != null)
+                {
                     if (m_currentPosition > startOfRun)
                     {
                         decodedLiteral.Append(m_strSourceCode, startOfRun, m_currentPosition - startOfRun);
                     }
 
-                    // advance past the slash and get the next escaped character
-                    ch = GetChar(++m_currentPosition);
-                    switch (ch)
-                    {
-                        default:
-                        case '\\':
-                        case '\'':
-                        case '"':
-                            // just the escaped character
-                            decodedLiteral.Append(ch);
-                            break;
-
-                        case 'b':
-                            // backspace
-                            decodedLiteral.Append('\b');
-                            break;
-
-                        case 'f':
-                            // form feed
-                            decodedLiteral.Append('\f');
-                            break;
-
-                        case 'n':
-                            // line feed
-                            decodedLiteral.Append('\n');
-                            break;
-
-                        case 'r':
-                            // carriage return
-                            decodedLiteral.Append('\r');
-                            break;
-
-                        case 't':
-                            // tab
-                            decodedLiteral.Append('\t');
-                            break;
-
-                        case 'v':
-                            // vertical tab
-                            // don't need to special-case this as it's ES6 syntax and we don't have
-                            // to worry about older browsers.
-                            decodedLiteral.Append('\v');
-                            break;
-
-                        case '0':
-                            // null character
-                            decodedLiteral.Append('\0');
-                            break;
-
-                        case '\r':
-                            // line continuation - don't add anything to the decoded string.
-                            // carriage return might be followed by a \n, which we will 
-                            // treat together as a single line terminator.
-                            if (GetChar(m_currentPosition + 1) == '\n')
-                            {
-                                m_currentPosition++;
-                            }
-                            goto case '\n';
-                        case '\n':
-                        case '\u2028':
-                        case '\u2029':
-                            // advance the line number, but the escaped line terminator is not part
-                            // of the decoded string
-                            m_currentLine++;
-                            m_startLinePosition = m_currentPosition;
-                            break;
-
-                        case 'x':
-                        case 'u':
-                            // unicode escape. four hex digits unless enclosed in curly-braces, in which
-                            // case it can be any number of hex digits.
-                            string unescaped;
-                            ++m_currentPosition;
-                            if (ScanHexEscape(ch, out unescaped))
-                            {
-                                decodedLiteral.Append(unescaped);
-                            }
-                            else
-                            {
-                                // wasn't valid -- keep the original and flag this as having issues
-                                decodedLiteral.Append(m_strSourceCode.Substring(m_currentPosition - 2, 2));
-                                m_literalIssues = true;
-                                HandleError(JSError.BadHexEscapeSequence);
-                            }
-                            --m_currentPosition;
-                            break;
-                    }
-
-                    // save the start of the next run (if any)
-                    startOfRun = m_currentPosition + 1;
+                    m_decodedString = decodedLiteral.ToString();
                 }
-                else if (IsLineTerminator(ch, 1))
+                else
                 {
-                    // we'll just keep this as part of the unescaped run
-                    ++m_currentPosition;
-                    ++m_currentLine;
-                    m_startLinePosition = m_currentPosition + 1;
+                    m_decodedString = m_strSourceCode.Substring(m_currentToken.StartPosition, m_currentPosition - m_currentToken.StartPosition);
                 }
-
-                // keep going
-                ch = GetChar(++m_currentPosition);
             }
-
-            if (ch == '`')
+            finally
             {
-                ++m_currentPosition;
-            }
-
-            // if we were unescaping the string, pull in the last run and save the decoded string
-            if (decodedLiteral != null)
-            {
-                if (m_currentPosition > startOfRun)
-                {
-                    decodedLiteral.Append(m_strSourceCode, startOfRun, m_currentPosition - startOfRun);
-                }
-
-                m_decodedString = decodedLiteral.ToString();
-            }
-            else
-            {
-                m_decodedString = m_strSourceCode.Substring(m_currentToken.StartPosition, m_currentPosition - m_currentToken.StartPosition);
+                decodedLiteral.Release();
             }
 
             return JSToken.TemplateLiteral;

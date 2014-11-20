@@ -984,7 +984,7 @@ namespace Microsoft.Ajax.Utilities
             var inputGroups = outputGroup.ReadInputGroups(switchParser.EncodingInputName);
 
             // we are always going to build the combined raw sources so we can run some comparison calcs on them.
-            var rawBuilder = new StringBuilder();
+            var rawBuilder = new StringBuilder(8192);
 
             // for calculation purposes, we're going to want to calculate the length of 
             // all the raw sources, and combine them together
@@ -1002,7 +1002,7 @@ namespace Microsoft.Ajax.Utilities
             var hasCrunchSpecificResources = outputGroup.Resources.Count > 0;
 
             // create a string builder we'll dump our output into
-            var outputBuilder = new StringBuilder();
+            var outputBuilder = new StringBuilder(8192);
 
             // we're just echoing the input -- so if this is a JS output file,
             // we want to output a JS version of all resource dictionaries at the top
@@ -1561,11 +1561,18 @@ namespace Microsoft.Ajax.Utilities
             var assemblyName = assembly.GetName();
 
             // combine the information for output
-            var sb = new StringBuilder();
-            sb.AppendLine("{0} (version {1})".FormatInvariant(string.IsNullOrEmpty(product) ? assemblyName.Name : product, assemblyName.Version));
-            if (!string.IsNullOrEmpty(description)) { sb.AppendLine(description); }
-            if (!string.IsNullOrEmpty(copyright)) { sb.AppendLine(copyright); }
-            return sb.ToString();
+            var sb = StringBuilderPool.Acquire();
+            try
+            {
+                sb.AppendLine("{0} (version {1})".FormatInvariant(string.IsNullOrEmpty(product) ? assemblyName.Name : product, assemblyName.Version));
+                if (!string.IsNullOrEmpty(description)) { sb.AppendLine(description); }
+                if (!string.IsNullOrEmpty(copyright)) { sb.AppendLine(copyright); }
+                return sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times", Justification="incorrect; gzipstream constructor does not close outer stream when third parameter is true")]

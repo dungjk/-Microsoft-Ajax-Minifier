@@ -174,28 +174,38 @@ namespace Microsoft.Ajax.Utilities
             var stepCount = parser.TimingPoints.Count;
             var latestTimingPoint = 0L;
             var previousTimingPoint = 0L;
-            var sb = new StringBuilder();
-            for (var ndx = stepCount - 1; ndx >= 0; --ndx)
+            var message = string.Empty;
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                if (parser.TimingPoints[ndx] != 0)
+                for (var ndx = stepCount - 1; ndx >= 0; --ndx)
                 {
-                    // 1-based step index
-                    var stepIndex = stepCount - ndx;
-                    latestTimingPoint = parser.TimingPoints[ndx];
-                    var deltaMS = (latestTimingPoint - previousTimingPoint) / frequency;
-                    previousTimingPoint = latestTimingPoint;
+                    if (parser.TimingPoints[ndx] != 0)
+                    {
+                        // 1-based step index
+                        var stepIndex = stepCount - ndx;
+                        latestTimingPoint = parser.TimingPoints[ndx];
+                        var deltaMS = (latestTimingPoint - previousTimingPoint) / frequency;
+                        previousTimingPoint = latestTimingPoint;
 
-                    sb.AppendFormat(AjaxMin.Culture, AjaxMin.TimerStepFormat, stepIndex, deltaMS, stepNames[stepIndex - 1]);
-                    sb.AppendLine();
+                        sb.AppendFormat(AjaxMin.Culture, AjaxMin.TimerStepFormat, stepIndex, deltaMS, stepNames[stepIndex - 1]);
+                        sb.AppendLine();
+                    }
                 }
+
+                message = sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
             }
 
             var timerFormat = groupCount > 1 ? AjaxMin.TimerMultiFormat : AjaxMin.TimerFormat;
             var timerMessage = string.Format(CultureInfo.CurrentUICulture, timerFormat, groupIndex + 1, latestTimingPoint / frequency);
             Debug.WriteLine(timerMessage);
-            Debug.Write(sb.ToString());
+            Debug.Write(message);
             WriteProgress(timerMessage);
-            WriteProgress(sb.ToString());
+            WriteProgress(message);
         }
 
         #endregion
@@ -204,68 +214,75 @@ namespace Microsoft.Ajax.Utilities
 
         private static string CreateJSFromResourceStrings(ResourceStrings resourceStrings)
         {
-            StringBuilder sb = new StringBuilder();
-            // start the var statement using the requested name and open the initializer object literal
-            sb.Append("var ");
-            sb.Append(resourceStrings.Name);
-            sb.Append("={");
-
-            // we're going to need to insert commas between each pair, so we'll use a boolean
-            // flag to indicate that we're on the first pair. When we output the first pair, we'll
-            // set the flag to false. When the flag is false, we're about to insert another pair, so
-            // we'll add the comma just before.
-            bool firstItem = true;
-
-            // loop through all items in the collection
-            foreach(var keyPair in resourceStrings.NameValuePairs)
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                // if this isn't the first item, we need to add a comma separator
-                if (!firstItem)
+                // start the var statement using the requested name and open the initializer object literal
+                sb.Append("var ");
+                sb.Append(resourceStrings.Name);
+                sb.Append("={");
+
+                // we're going to need to insert commas between each pair, so we'll use a boolean
+                // flag to indicate that we're on the first pair. When we output the first pair, we'll
+                // set the flag to false. When the flag is false, we're about to insert another pair, so
+                // we'll add the comma just before.
+                bool firstItem = true;
+
+                // loop through all items in the collection
+                foreach (var keyPair in resourceStrings.NameValuePairs)
                 {
-                    sb.Append(',');
-                }
-                else
-                {
-                    // next loop is no longer the first item
-                    firstItem = false;
+                    // if this isn't the first item, we need to add a comma separator
+                    if (!firstItem)
+                    {
+                        sb.Append(',');
+                    }
+                    else
+                    {
+                        // next loop is no longer the first item
+                        firstItem = false;
+                    }
+
+                    // append the key as the name, a colon to separate the name and value,
+                    // and then the value
+                    // must quote if not valid JS identifier format, or if it is, but it's a keyword
+                    // (use strict mode just to be safe)
+                    string propertyName = keyPair.Key;
+                    if (!JSScanner.IsValidIdentifier(propertyName) || JSScanner.IsKeyword(propertyName, true))
+                    {
+                        sb.Append("\"");
+                        // because we are using quotes for the delimiters, replace any instances
+                        // of a quote character (") with an escaped quote character (\")
+                        sb.Append(propertyName.Replace("\"", "\\\""));
+                        sb.Append("\"");
+                    }
+                    else
+                    {
+                        sb.Append(propertyName);
+                    }
+                    sb.Append(':');
+
+                    // make sure the Value is properly escaped, quoted, and whatever we
+                    // need to do to make sure it's a proper JS string.
+                    // pass false for whether this string is an argument to a RegExp constructor.
+                    // pass false for whether to use W3Strict formatting for character escapes (use maximum browser compatibility)
+                    // pass true for ecma strict mode
+                    string stringValue = ConstantWrapper.EscapeString(
+                        keyPair.Value,
+                        false,
+                        false,
+                        true
+                        );
+                    sb.Append(stringValue);
                 }
 
-                // append the key as the name, a colon to separate the name and value,
-                // and then the value
-                // must quote if not valid JS identifier format, or if it is, but it's a keyword
-                // (use strict mode just to be safe)
-                string propertyName = keyPair.Key;
-                if (!JSScanner.IsValidIdentifier(propertyName) || JSScanner.IsKeyword(propertyName, true))
-                {
-                    sb.Append("\"");
-                    // because we are using quotes for the delimiters, replace any instances
-                    // of a quote character (") with an escaped quote character (\")
-                    sb.Append(propertyName.Replace("\"", "\\\""));
-                    sb.Append("\"");
-                }
-                else
-                {
-                    sb.Append(propertyName);
-                }
-                sb.Append(':');
-
-                // make sure the Value is properly escaped, quoted, and whatever we
-                // need to do to make sure it's a proper JS string.
-                // pass false for whether this string is an argument to a RegExp constructor.
-                // pass false for whether to use W3Strict formatting for character escapes (use maximum browser compatibility)
-                // pass true for ecma strict mode
-                string stringValue = ConstantWrapper.EscapeString(
-                    keyPair.Value,
-                    false,
-                    false,
-                    true
-                    );
-                sb.Append(stringValue);
+                // close the object literal and return the string
+                sb.AppendLine("};");
+                return sb.ToString();
             }
-
-            // close the object literal and return the string
-            sb.AppendLine("};");
-            return sb.ToString();
+            finally
+            {
+                sb.Release();
+            }
         }
 
         #endregion

@@ -59,7 +59,7 @@ namespace Microsoft.Ajax.Utilities
         {
             m_jsonText = jsonText;
             m_currentIndex = 0;
-            m_builder = new StringBuilder();
+            m_builder = new StringBuilder(8192);
         }
 
         /// <summary>

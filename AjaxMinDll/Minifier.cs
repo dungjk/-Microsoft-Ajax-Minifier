@@ -106,10 +106,10 @@ namespace Microsoft.Ajax.Utilities
             var parser = new JSParser();
             parser.CompilerError += OnJavaScriptError;
 
+            var sb = StringBuilderPool.Acquire();
             try
             {
                 var preprocessOnly = codeSettings != null && codeSettings.PreprocessOnly;
-                var sb = new StringBuilder();
                 using (var stringWriter = new StringWriter(sb, CultureInfo.InvariantCulture))
                 {
                     if (preprocessOnly)
@@ -162,6 +162,10 @@ namespace Microsoft.Ajax.Utilities
                         Message = e.Message,
                     });
                 throw;
+            }
+            finally
+            {
+                sb.Release();
             }
 
             return crunched;

@@ -997,7 +997,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             // concatenate all the input files together, with each one prefaced by the
             // special #SOURCE comment so the errors and warnings turn out right.
-            var inputBuilder = new StringBuilder();
+            var inputBuilder = new StringBuilder(8192);
             var endsInSemicolon = true;
             foreach (var itemSpec in this.JsSourceFiles)
             {
@@ -1180,7 +1180,7 @@ namespace Microsoft.Ajax.Minifier.Tasks
         {
             // concatenate all the input files together, with each one prefaced by the
             // special #SOURCE comment so the errors and warnings turn out right.
-            var inputBuilder = new StringBuilder();
+            var inputBuilder = new StringBuilder(8192);
             foreach (var itemSpec in this.CssSourceFiles)
             {
                 inputBuilder.AppendFormat("///#SOURCE 1 1 {0}\n", itemSpec.ItemSpec);

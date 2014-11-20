@@ -648,8 +648,8 @@ namespace Microsoft.Ajax.Utilities
 
             public FileReadBuilder()
             {
-                m_annotatedContent = new StringBuilder();
-                m_rawContent = new StringBuilder();
+                m_annotatedContent = new StringBuilder(8192);
+                m_rawContent = new StringBuilder(8192);
             }
 
             public void AppendContent(string text)

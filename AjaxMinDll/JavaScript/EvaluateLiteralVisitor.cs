@@ -1729,22 +1729,29 @@ namespace Microsoft.Ajax.Utilities
             // otherwise it's just the string value of the separator.
             var separator = separatorNode == null ? "," : separatorNode.ToString();
 
-            var sb = new StringBuilder();
-            for (var ndx = 0; ndx < arrayLiteral.Elements.Count; ++ndx)
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                // add the separator between items (if we have one)
-                if (ndx > 0 && !string.IsNullOrEmpty(separator))
+                for (var ndx = 0; ndx < arrayLiteral.Elements.Count; ++ndx)
                 {
-                    sb.Append(separator);
+                    // add the separator between items (if we have one)
+                    if (ndx > 0 && !string.IsNullOrEmpty(separator))
+                    {
+                        sb.Append(separator);
+                    }
+
+                    // the element is a constant wrapper (we wouldn't get this far if it wasn't),
+                    // but we've overloaded the virtual ToString method on ConstantWrappers to convert the
+                    // constant value to a string value.
+                    sb.Append(arrayLiteral.Elements[ndx].ToString());
                 }
 
-                // the element is a constant wrapper (we wouldn't get this far if it wasn't),
-                // but we've overloaded the virtual ToString method on ConstantWrappers to convert the
-                // constant value to a string value.
-                sb.Append(arrayLiteral.Elements[ndx].ToString());
+                return sb.ToString();
             }
-
-            return sb.ToString();
+            finally
+            {
+                sb.Release();
+            }
         }
 
         #endregion

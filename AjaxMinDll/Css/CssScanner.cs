@@ -43,10 +43,10 @@ namespace Microsoft.Ajax.Utilities
         private string m_readAhead;
 
         // one string builder that can be used in scan methods
-        private StringBuilder m_scanBuilder = new StringBuilder();
+        private StringBuilder m_scanBuilder = new StringBuilder(512);
 
         // one string builder that can be used for scanning string and number literals, and identifiers
-        private StringBuilder m_literalBuilder = new StringBuilder();
+        private StringBuilder m_literalBuilder = new StringBuilder(128);
 
         private char m_currentChar;
 
@@ -1306,38 +1306,50 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>valid token text, or null</returns>
         private string GetReplacementToken(bool advancePastDelimiter)
         {
-            var foundToken = false;
-            var previousCurrent = m_currentChar;
-            var sb = new StringBuilder();
-            if (advancePastDelimiter)
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                NextChar();
-            }
-
-            var name = GetName();
-            while (name != null)
-            {
-                sb.Append(name);
-                if (m_currentChar == '.')
+                var foundToken = false;
+                var previousCurrent = m_currentChar;
+                if (advancePastDelimiter)
                 {
-                    // try getting another name, loop
-                    sb.Append('.');
                     NextChar();
-                    name = GetName();
-                    if (name != null)
-                    {
-                        continue;
-                    }
                 }
-                else if (m_currentChar == ':')
-                {
-                    // possibly ending with a fallback class identifier
-                    NextChar();
-                    sb.Append(':');
-                    sb.Append(GetName());
 
-                    // and MUST be followed by the closing percent delimiter
-                    if (m_currentChar == '%')
+                var name = GetName();
+                while (name != null)
+                {
+                    sb.Append(name);
+                    if (m_currentChar == '.')
+                    {
+                        // try getting another name, loop
+                        sb.Append('.');
+                        NextChar();
+                        name = GetName();
+                        if (name != null)
+                        {
+                            continue;
+                        }
+                    }
+                    else if (m_currentChar == ':')
+                    {
+                        // possibly ending with a fallback class identifier
+                        NextChar();
+                        sb.Append(':');
+                        sb.Append(GetName());
+
+                        // and MUST be followed by the closing percent delimiter
+                        if (m_currentChar == '%')
+                        {
+                            // found a valid replacement
+                            // create a new token to encompass the entire replacement token
+                            NextChar();
+                            sb.Append('%');
+                            foundToken = true;
+                            break;
+                        }
+                    }
+                    else if (m_currentChar == '%')
                     {
                         // found a valid replacement
                         // create a new token to encompass the entire replacement token
@@ -1346,30 +1358,25 @@ namespace Microsoft.Ajax.Utilities
                         foundToken = true;
                         break;
                     }
-                }
-                else if (m_currentChar == '%')
-                {
-                    // found a valid replacement
-                    // create a new token to encompass the entire replacement token
-                    NextChar();
-                    sb.Append('%');
-                    foundToken = true;
+
+                    // NOPE
+                    PushString(sb.ToString());
                     break;
                 }
 
-                // NOPE
-                PushString(sb.ToString());
-                break;
-            }
+                if (!foundToken)
+                {
+                    // we didn't find anything; we need to make sure we set the current 
+                    // token back to where we started
+                    m_currentChar = previousCurrent;
+                }
 
-            if (!foundToken)
+                return foundToken ? '%' + sb.ToString() : null;
+            }
+            finally
             {
-                // we didn't find anything; we need to make sure we set the current 
-                // token back to where we started
-                m_currentChar = previousCurrent;
+                sb.Release();
             }
-
-            return foundToken ? '%' + sb.ToString() : null;
         }
 
         /// <summary>
@@ -2018,36 +2025,42 @@ namespace Microsoft.Ajax.Utilities
             // matched characters so far, in case we end up not matching and need
             // to push them back in the read-ahead queue.
             StringBuilder sb = null;
-
-            // we'll start peeking ahead so we have less to push
-            // if we fail
-            for (int ndx = 1; ndx < str.Length; ++ndx)
+            try
             {
-                if (char.ToUpperInvariant(PeekChar()) != char.ToUpperInvariant(str[ndx]))
+                // we'll start peeking ahead so we have less to push
+                // if we fail
+                for (int ndx = 1; ndx < str.Length; ++ndx)
                 {
-                    // not this string. Push what we've matched
-                    if (ndx > 1)
+                    if (char.ToUpperInvariant(PeekChar()) != char.ToUpperInvariant(str[ndx]))
                     {
-                        if (sb != null)
+                        // not this string. Push what we've matched
+                        if (ndx > 1)
                         {
-                            PushString(sb.ToString());
+                            if (sb != null)
+                            {
+                                PushString(sb.ToString());
+                            }
                         }
+                        return false;
                     }
-                    return false;
-                }
 
-                if (sb == null)
-                {
-                    // create the string builder -- we need it now.
-                    // it won't be longer than the string we're trying to match.
-                    sb = new StringBuilder(str.Length);
-                }
+                    if (sb == null)
+                    {
+                        // create the string builder -- we need it now.
+                        // it won't be longer than the string we're trying to match.
+                        sb = StringBuilderPool.Acquire();
+                    }
 
-                sb.Append(m_currentChar);
+                    sb.Append(m_currentChar);
+                    NextChar();
+                }
                 NextChar();
+                return true;
             }
-            NextChar();
-            return true;
+            finally
+            {
+                sb.Release();
+            }
         }
 
         private void PushChar(char ch)

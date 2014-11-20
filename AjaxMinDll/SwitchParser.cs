@@ -190,119 +190,125 @@ namespace Microsoft.Ajax.Utilities
 
                     // don't create it if we don't need it yet
                     StringBuilder sb = null;
-
-                    // if not at the end yet
-                    if (ndx < length)
+                    try
                     {
-                        // grab the first character
-                        var firstCharacter = commandLine[ndx];
-
-                        // see if starts with a double-quote
-                        var inDelimiter = firstCharacter == '"';
-                        if (inDelimiter)
+                        // if not at the end yet
+                        if (ndx < length)
                         {
-                            // we found a delimiter -- we're going to need one
-                            sb = new StringBuilder();
-                        }
+                            // grab the first character
+                            var firstCharacter = commandLine[ndx];
 
-                        // if it is, start at the NEXT character
-                        var start = inDelimiter ? ndx + 1 : ndx;
-
-                        // skip the first character -- we already know it's not whitespace or a delimiter,
-                        // so we don't really care what the heck it is at this point.
-                        while (++ndx < length)
-                        {
-                            // get the current character
-                            var ch = commandLine[ndx];
-
+                            // see if starts with a double-quote
+                            var inDelimiter = firstCharacter == '"';
                             if (inDelimiter)
                             {
-                                // in delimiter mode.
-                                // we only care if we found the closing delimiter
-                                if (ch == '"')
+                                // we found a delimiter -- we're going to need one
+                                sb = StringBuilderPool.Acquire();
+                            }
+
+                            // if it is, start at the NEXT character
+                            var start = inDelimiter ? ndx + 1 : ndx;
+
+                            // skip the first character -- we already know it's not whitespace or a delimiter,
+                            // so we don't really care what the heck it is at this point.
+                            while (++ndx < length)
+                            {
+                                // get the current character
+                                var ch = commandLine[ndx];
+
+                                if (inDelimiter)
                                 {
-                                    // BUT if it's a double double-quote, then treat those two characters as
-                                    // a single double-quote
-                                    if (ndx + 1 < length && commandLine[ndx + 1] == '"')
+                                    // in delimiter mode.
+                                    // we only care if we found the closing delimiter
+                                    if (ch == '"')
                                     {
-                                        // add what we have so far (if anything)
-                                        if (ndx > start)
+                                        // BUT if it's a double double-quote, then treat those two characters as
+                                        // a single double-quote
+                                        if (ndx + 1 < length && commandLine[ndx + 1] == '"')
                                         {
-                                            sb.Append(commandLine.Substring(start, ndx - start));
-                                        }
+                                            // add what we have so far (if anything)
+                                            if (ndx > start)
+                                            {
+                                                sb.Append(commandLine.Substring(start, ndx - start));
+                                            }
 
-                                        // insert a single double-quote into the string builder
-                                        sb.Append('"');
-                                        
-                                        // skip over the quote and start on the NEXT character
-                                        start = ++ndx + 1;
+                                            // insert a single double-quote into the string builder
+                                            sb.Append('"');
+
+                                            // skip over the quote and start on the NEXT character
+                                            start = ++ndx + 1;
+                                        }
+                                        else
+                                        {
+                                            // found it; end delimiter mode
+                                            inDelimiter = false;
+
+                                            if (ndx > start)
+                                            {
+                                                // add what we have so far
+                                                sb.Append(commandLine.Substring(start, ndx - start));
+                                            }
+
+                                            // start is the NEXT character after the quote
+                                            start = ndx + 1;
+                                        }
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    // not in delimiter mode.
+                                    // if it's a whitespace, stop looping -- we found the end
+                                    if (char.IsWhiteSpace(ch))
                                     {
-                                        // found it; end delimiter mode
-                                        inDelimiter = false;
+                                        break;
+                                    }
+                                    else if (ch == '"')
+                                    {
+                                        // we found a start delimiter
+                                        inDelimiter = true;
 
-                                        if (ndx > start)
+                                        // create the string builder now if we haven't already
+                                        if (sb == null)
                                         {
-                                            // add what we have so far
-                                            sb.Append(commandLine.Substring(start, ndx - start));
+                                            sb = StringBuilderPool.Acquire();
                                         }
 
-                                        // start is the NEXT character after the quote
+                                        // add what we have up to the start delimiter into the string builder
+                                        // because we're going to have to add this escaped string to it WITHOUT
+                                        // the double-quotes
+                                        sb.Append(commandLine.Substring(start, ndx - start));
+
+                                        // and start this one at the next character -- not counting the quote
                                         start = ndx + 1;
                                     }
                                 }
                             }
+
+                            // we now have the start end end of the argument
+                            // if the start and end character are the same delimiter characters, trim them off
+                            // otherwise just use what's between them
+                            if (sb != null)
+                            {
+                                // add what we have left (if any)
+                                if (ndx > start)
+                                {
+                                    sb.Append(commandLine.Substring(start, ndx - start));
+                                }
+
+                                // and send the whole shebang to the list
+                                args.Add(sb.ToString());
+                            }
                             else
                             {
-                                // not in delimiter mode.
-                                // if it's a whitespace, stop looping -- we found the end
-                                if (char.IsWhiteSpace(ch))
-                                {
-                                    break;
-                                }
-                                else if (ch == '"')
-                                {
-                                    // we found a start delimiter
-                                    inDelimiter = true;
-
-                                    // create the string builder now if we haven't already
-                                    if (sb == null)
-                                    {
-                                        sb = new StringBuilder();
-                                    }
-
-                                    // add what we have up to the start delimiter into the string builder
-                                    // because we're going to have to add this escaped string to it WITHOUT
-                                    // the double-quotes
-                                    sb.Append(commandLine.Substring(start, ndx - start));
-
-                                    // and start this one at the next character -- not counting the quote
-                                    start = ndx + 1;
-                                }
+                                // no double-quotes encountered, so just pull the substring
+                                // directly from the command line
+                                args.Add(commandLine.Substring(start, ndx - start));
                             }
                         }
-
-                        // we now have the start end end of the argument
-                        // if the start and end character are the same delimiter characters, trim them off
-                        // otherwise just use what's between them
-                        if (sb != null)
-                        {
-                            // add what we have left (if any)
-                            if (ndx > start)
-                            {
-                                sb.Append(commandLine.Substring(start, ndx - start));
-                            }
-
-                            // and send the whole shebang to the list
-                            args.Add(sb.ToString());
-                        }
-                        else
-                        {
-                            // no double-quotes encountered, so just pull the substring
-                            // directly from the command line
-                            args.Add(commandLine.Substring(start, ndx - start));
-                        }
+                    }
+                    finally
+                    {
+                        sb.Release();
                     }
                 }
             }

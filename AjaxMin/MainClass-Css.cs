@@ -16,7 +16,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -81,7 +80,6 @@ namespace Microsoft.Ajax.Utilities
                     var crunchedStyles = parser.Parse(inputGroup.Source);
                     if (!string.IsNullOrEmpty(crunchedStyles))
                     {
-                        Debug.WriteLine(crunchedStyles);
                         if (!m_echoInput)
                         {
                             if (ndx++ > 0)
@@ -92,11 +90,6 @@ namespace Microsoft.Ajax.Utilities
 
                             writer.Write(crunchedStyles);
                         }
-                    }
-                    else
-                    {
-                        // resulting code is null or empty
-                        Debug.WriteLine(AjaxMin.OutputEmpty);
                     }
                 }
             }

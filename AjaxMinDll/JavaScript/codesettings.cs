@@ -293,20 +293,27 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
-                foreach (var entry in m_identifierReplacementMap)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var entry in m_identifierReplacementMap)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+
+                        sb.Append(entry.Key);
+                        sb.Append('=');
+                        sb.Append(entry.Value);
                     }
 
-                    sb.Append(entry.Key);
-                    sb.Append('=');
-                    sb.Append(entry.Value);
+                    return sb.ToString();
                 }
-
-                return sb.ToString();
+                finally
+                {
+                    sb.Release();
+                }
             }
 
             set
@@ -379,16 +386,23 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
-                foreach (var noRename in m_noRenameSet)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var noRename in m_noRenameSet)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(noRename);
                     }
-                    sb.Append(noRename);
+                    return sb.ToString();
                 }
-                return sb.ToString();
+                finally
+                {
+                    sb.Release();
+                }
             }
 
             set
@@ -459,17 +473,24 @@ namespace Microsoft.Ajax.Utilities
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
-                foreach (var knownGlobal in m_knownGlobals)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var knownGlobal in m_knownGlobals)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(knownGlobal);
                     }
-                    sb.Append(knownGlobal);
-                }
 
-                return sb.ToString();
+                    return sb.ToString();
+                }
+                finally
+                {
+                    sb.Release();
+                }
             }
 
             set
@@ -562,17 +583,24 @@ namespace Microsoft.Ajax.Utilities
             {
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
-                var sb = new StringBuilder();
-                foreach (var debugLookup in m_debugLookups)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var debugLookup in m_debugLookups)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(debugLookup);
                     }
-                    sb.Append(debugLookup);
-                }
 
-                return sb.ToString();
+                    return sb.ToString();
+                }
+                finally
+                {
+                    sb.Release();
+                }
             }
             set
             {

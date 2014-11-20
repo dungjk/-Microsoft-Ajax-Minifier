@@ -3619,44 +3619,51 @@ namespace Microsoft.Ajax.Utilities
             if (m_settings.AlwaysEscapeNonAscii)
             {
                 StringBuilder sb = null;
-                var runStart = 0;
-                for (var ndx = 0; ndx < text.Length; ++ndx)
+                try
                 {
-                    // if the character is over the ASCII range, we'll need to escape it
-                    if (text[ndx] > '\u007f')
+                    var runStart = 0;
+                    for (var ndx = 0; ndx < text.Length; ++ndx)
                     {
-                        // if we haven't yet created the builder, create it now
-                        if (sb == null)
+                        // if the character is over the ASCII range, we'll need to escape it
+                        if (text[ndx] > '\u007f')
                         {
-                            sb = new StringBuilder();
+                            // if we haven't yet created the builder, create it now
+                            if (sb == null)
+                            {
+                                sb = StringBuilderPool.Acquire();
+                            }
+
+                            // if there's a run of unescaped characters waiting to be
+                            // output, output it now
+                            if (ndx > runStart)
+                            {
+                                sb.Append(text, runStart, ndx - runStart);
+                            }
+
+                            // format the current character in \uXXXX, and start the next
+                            // run at the NEXT character.
+                            sb.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:x4}".FormatInvariant((int)text[ndx]));
+                            runStart = ndx + 1;
+                        }
+                    }
+
+                    // if nothing needed escaping, the builder will still be null and we
+                    // have nothing else to do (just use the string as-is)
+                    if (sb != null)
+                    {
+                        // if there is an unescaped run at the end still left, add it now
+                        if (runStart < text.Length)
+                        {
+                            sb.Append(text, runStart, text.Length - runStart);
                         }
 
-                        // if there's a run of unescaped characters waiting to be
-                        // output, output it now
-                        if (ndx > runStart)
-                        {
-                            sb.Append(text, runStart, ndx - runStart);
-                        }
-
-                        // format the current character in \uXXXX, and start the next
-                        // run at the NEXT character.
-                        sb.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:x4}".FormatInvariant((int)text[ndx]));
-                        runStart = ndx + 1;
+                        // and use the fully-escaped string going forward.
+                        text = sb.ToString();
                     }
                 }
-
-                // if nothing needed escaping, the builder will still be null and we
-                // have nothing else to do (just use the string as-is)
-                if (sb != null)
+                finally
                 {
-                    // if there is an unescaped run at the end still left, add it now
-                    if (runStart < text.Length)
-                    {
-                        sb.Append(text, runStart, text.Length - runStart);
-                    }
-
-                    // and use the fully-escaped string going forward.
-                    text = sb.ToString();
+                    sb.Release();
                 }
             }
 
@@ -4275,116 +4282,68 @@ namespace Microsoft.Ajax.Utilities
             // we also don't want to build a new string builder object if we don't have to.
             // and we only need to if we end up escaping characters. 
             var rawStart = 0;
-            StringBuilder sb = null;
             string escapedText = string.Empty;
-
-            if (!string.IsNullOrEmpty(text))
+            StringBuilder sb = null;
+            try
             {
-                // check each character of the string
-                for (var index = 0; index < text.Length; ++index)
+                if (!string.IsNullOrEmpty(text))
                 {
-                    var ch = text[index];
-                    switch (ch)
+                    // check each character of the string
+                    for (var index = 0; index < text.Length; ++index)
                     {
-                        case '\'':
-                        case '"':
-                            // we only need to escape whichever one we chose as our delimiter
-                            if (ch == delimiter[0])
-                            {
-                                // need to escape instances of the delimiter character
+                        var ch = text[index];
+                        switch (ch)
+                        {
+                            case '\'':
+                            case '"':
+                                // we only need to escape whichever one we chose as our delimiter
+                                if (ch == delimiter[0])
+                                {
+                                    // need to escape instances of the delimiter character
+                                    goto case '\\';
+                                }
+
+                                break;
+
+                            case '\b':
+                                // output "\b"
+                                ch = 'b';
                                 goto case '\\';
-                            }
 
-                            break;
+                            case '\t':
+                                // output "\t"
+                                ch = 't';
+                                goto case '\\';
 
-                        case '\b':
-                            // output "\b"
-                            ch = 'b';
-                            goto case '\\';
+                            case '\n':
+                                // output "\n"
+                                ch = 'n';
+                                goto case '\\';
 
-                        case '\t':
-                            // output "\t"
-                            ch = 't';
-                            goto case '\\';
+                            case '\v':
+                                // w3c-strict can encode this character as a \v escape. 
+                                // BUT... IE<9 doesn't recognize that escape sequence,
+                                // so encode is as hex for maximum compatibility.
+                                // if the source actually had "\v" in it, it wouldn't been
+                                // marked as having issues and not get encoded anyway.
+                                goto default;
 
-                        case '\n':
-                            // output "\n"
-                            ch = 'n';
-                            goto case '\\';
+                            case '\f':
+                                // output "\f"
+                                ch = 'f';
+                                goto case '\\';
 
-                        case '\v':
-                            // w3c-strict can encode this character as a \v escape. 
-                            // BUT... IE<9 doesn't recognize that escape sequence,
-                            // so encode is as hex for maximum compatibility.
-                            // if the source actually had "\v" in it, it wouldn't been
-                            // marked as having issues and not get encoded anyway.
-                            goto default;
+                            case '\r':
+                                // output "\r"
+                                ch = 'r';
+                                goto case '\\';
 
-                        case '\f':
-                            // output "\f"
-                            ch = 'f';
-                            goto case '\\';
-
-                        case '\r':
-                            // output "\r"
-                            ch = 'r';
-                            goto case '\\';
-
-                        case '\\':
-                            // we need to output an escape, so create the string builder
-                            // if we haven't already
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder();
-                            }
-
-                            // output the block of raw characters we have since the last time
-                            if (rawStart < index)
-                            {
-                                sb.Append(text, rawStart, index - rawStart);
-                            }
-
-                            // set raw start to the next character
-                            rawStart = index + 1;
-
-                            // output the escape character, then the escaped character
-                            sb.Append('\\');
-                            sb.Append(ch);
-                            break;
-
-                        case '\x2028':
-                        case '\x2029':
-                            // issue #14398 - unescaped, these characters (Unicode LineSeparator and ParagraphSeparator)
-                            // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
-                            // no matter what output encoding we may use.
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder();
-                            }
-
-                            // output the block of raw characters we have since the last time
-                            if (rawStart < index)
-                            {
-                                sb.Append(text.Substring(rawStart, index - rawStart));
-                            }
-
-                            // set raw start to the next character
-                            rawStart = index + 1;
-
-                            // output the escape character, a "u", then the four-digit escaped character
-                            sb.Append(@"\u");
-                            sb.Append(((int)ch).ToStringInvariant("x4"));
-                            break;
-
-                        default:
-                            if (ch < ' ')
-                            {
-                                // need to escape control codes that aren't handled
-                                // by the single-letter escape codes
-                                // create the string builder if we haven't already
+                            case '\\':
+                                // we need to output an escape, so create the string builder
+                                // if we haven't already
                                 if (sb == null)
                                 {
-                                    sb = new StringBuilder();
+                                    sb = StringBuilderPool.Acquire();
                                 }
 
                                 // output the block of raw characters we have since the last time
@@ -4396,56 +4355,110 @@ namespace Microsoft.Ajax.Utilities
                                 // set raw start to the next character
                                 rawStart = index + 1;
 
-                                // strict ECMA-262 does not support octal escapes, but octal will
-                                // crunch down a full character more here than hexadecimal. Plus, if we do
-                                // octal, we'll still need to escape these characters to hex for RexExp
-                                // constructor strings so they don't get confused with back references.
-                                // minifies smaller, but octal is too much trouble.
-                                int intValue = ch;
-                                //if (noOctalEscapes)
+                                // output the escape character, then the escaped character
+                                sb.Append('\\');
+                                sb.Append(ch);
+                                break;
+
+                            case '\x2028':
+                            case '\x2029':
+                                // issue #14398 - unescaped, these characters (Unicode LineSeparator and ParagraphSeparator)
+                                // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
+                                // no matter what output encoding we may use.
+                                if (sb == null)
                                 {
-                                    // output the hex escape sequence
-                                    sb.Append(@"\x");
-                                    sb.Append(intValue.ToStringInvariant("x2"));
+                                    sb = StringBuilderPool.Acquire();
                                 }
-                                //else
-                                //{
-                                //    // octal representation of 0 through 31 are \0 through \37
-                                //    sb.Append('\\');
-                                //    if (intValue < 8)
-                                //    {
-                                //        // single octal digit
-                                //        sb.Append(intValue.ToStringInvariant());
-                                //    }
-                                //    else
-                                //    {
-                                //        // two octal digits
-                                //        sb.Append((intValue / 8).ToStringInvariant());
-                                //        sb.Append((intValue % 8).ToStringInvariant());
-                                //    }
-                                //}
-                            }
 
-                            break;
+                                // output the block of raw characters we have since the last time
+                                if (rawStart < index)
+                                {
+                                    sb.Append(text.Substring(rawStart, index - rawStart));
+                                }
+
+                                // set raw start to the next character
+                                rawStart = index + 1;
+
+                                // output the escape character, a "u", then the four-digit escaped character
+                                sb.Append(@"\u");
+                                sb.Append(((int)ch).ToStringInvariant("x4"));
+                                break;
+
+                            default:
+                                if (ch < ' ')
+                                {
+                                    // need to escape control codes that aren't handled
+                                    // by the single-letter escape codes
+                                    // create the string builder if we haven't already
+                                    if (sb == null)
+                                    {
+                                        sb = StringBuilderPool.Acquire();
+                                    }
+
+                                    // output the block of raw characters we have since the last time
+                                    if (rawStart < index)
+                                    {
+                                        sb.Append(text, rawStart, index - rawStart);
+                                    }
+
+                                    // set raw start to the next character
+                                    rawStart = index + 1;
+
+                                    // strict ECMA-262 does not support octal escapes, but octal will
+                                    // crunch down a full character more here than hexadecimal. Plus, if we do
+                                    // octal, we'll still need to escape these characters to hex for RexExp
+                                    // constructor strings so they don't get confused with back references.
+                                    // minifies smaller, but octal is too much trouble.
+                                    int intValue = ch;
+                                    //if (noOctalEscapes)
+                                    {
+                                        // output the hex escape sequence
+                                        sb.Append(@"\x");
+                                        sb.Append(intValue.ToStringInvariant("x2"));
+                                    }
+                                    //else
+                                    //{
+                                    //    // octal representation of 0 through 31 are \0 through \37
+                                    //    sb.Append('\\');
+                                    //    if (intValue < 8)
+                                    //    {
+                                    //        // single octal digit
+                                    //        sb.Append(intValue.ToStringInvariant());
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        // two octal digits
+                                    //        sb.Append((intValue / 8).ToStringInvariant());
+                                    //        sb.Append((intValue % 8).ToStringInvariant());
+                                    //    }
+                                    //}
+                                }
+
+                                break;
+                        }
                     }
-                }
 
-                if (sb != null)
-                {
-                    // we had escapes; use the string builder
-                    // but first make sure the last batch of raw text is output
-                    if (rawStart < text.Length)
+                    if (sb != null)
                     {
-                        sb.Append(text.Substring(rawStart));
-                    }
+                        // we had escapes; use the string builder
+                        // but first make sure the last batch of raw text is output
+                        if (rawStart < text.Length)
+                        {
+                            sb.Append(text.Substring(rawStart));
+                        }
 
-                    escapedText = sb.ToString();
+                        escapedText = sb.ToString();
+                    }
+                    else
+                    {
+                        // no escaped needed; just use the text as-is
+                        escapedText = text;
+                    }
                 }
-                else
-                {
-                    // no escaped needed; just use the text as-is
-                    escapedText = text;
-                }
+            }
+            finally
+            {
+                sb.Release();
             }
 
             return delimiter + escapedText + delimiter;

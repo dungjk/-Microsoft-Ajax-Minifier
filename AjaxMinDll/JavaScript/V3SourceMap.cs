@@ -335,31 +335,38 @@ namespace Microsoft.Ajax.Utilities
 
         private string GenerateMappings(IList<string> fileList, IList<string> nameList)
         {
-            var sb = new StringBuilder();
-            var currentLine = 1;
-            foreach (var segment in m_segments)
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                if (currentLine < segment.DestinationLine)
+                var currentLine = 1;
+                foreach (var segment in m_segments)
                 {
-                    // we've jumped forward at least one line in the minified file.
-                    // add a semicolon for each line we've advanced
-                    do
+                    if (currentLine < segment.DestinationLine)
                     {
-                        sb.Append(';');
+                        // we've jumped forward at least one line in the minified file.
+                        // add a semicolon for each line we've advanced
+                        do
+                        {
+                            sb.Append(';');
+                        }
+                        while (++currentLine < segment.DestinationLine);
                     }
-                    while (++currentLine < segment.DestinationLine);
-                }
-                else if (sb.Length > 0)
-                {
-                    // same line; separate segments by comma. But only
-                    // if we've already output something
-                    sb.Append(',');
+                    else if (sb.Length > 0)
+                    {
+                        // same line; separate segments by comma. But only
+                        // if we've already output something
+                        sb.Append(',');
+                    }
+
+                    EncodeNumbers(sb, segment, fileList, nameList);
                 }
 
-                EncodeNumbers(sb, segment, fileList, nameList);
+                return sb.ToString();
             }
-
-            return sb.ToString();
+            finally
+            {
+                sb.Release();
+            }
         }
 
         private void EncodeNumbers(StringBuilder sb, Segment segment, IList<string> files, IList<string> names)

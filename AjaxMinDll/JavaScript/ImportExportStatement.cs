@@ -166,19 +166,26 @@ namespace Microsoft.Ajax.Utilities
 
         public override string ToString()
         {
-            var sb = new StringBuilder();
-            if (m_list.Count > 0)
+            var sb = StringBuilderPool.Acquire();
+            try
             {
-                // output the first one; then all subsequent, each prefaced with a comma
-                sb.Append(m_list[0].ToString());
-                for (var ndx = 1; ndx < m_list.Count; ++ndx)
+                if (m_list.Count > 0)
                 {
-                    sb.Append(" , ");
-                    sb.Append(m_list[ndx].ToString());
+                    // output the first one; then all subsequent, each prefaced with a comma
+                    sb.Append(m_list[0].ToString());
+                    for (var ndx = 1; ndx < m_list.Count; ++ndx)
+                    {
+                        sb.Append(" , ");
+                        sb.Append(m_list[ndx].ToString());
+                    }
                 }
-            }
 
-            return sb.ToString();
+                return sb.ToString();
+            }
+            finally
+            {
+                sb.Release();
+            }
         }
 
         #region IEnumerable<AstNode> Members

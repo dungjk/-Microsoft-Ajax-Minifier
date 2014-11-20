@@ -308,7 +308,7 @@ namespace Microsoft.Ajax.Utilities
             // if we haven't yet created the string builder, do it now
             if (sb == null)
             {
-                sb = new StringBuilder();
+                sb = StringBuilderPool.Acquire();
             }
 
             // add the run of unescaped text (if any), followed by the escaped text
@@ -322,150 +322,156 @@ namespace Microsoft.Ajax.Utilities
             // see which kind of delimiter we need.
             // if it's okay to use double-quotes, use them. Otherwise use single-quotes
             char delimiter = (OkayToDoubleQuote(text) ? '"' : '\'');
+            string escapedString;
 
             // don't create the string builder until we actually need it
             StringBuilder sb = null;
-
-            int startOfStretch = 0;
-            if (!string.IsNullOrEmpty(text))
+            try
             {
-                for (int ndx = 0; ndx < text.Length; ++ndx)
+                int startOfStretch = 0;
+                if (!string.IsNullOrEmpty(text))
                 {
-                    char c = text[ndx];
-                    switch (c)
+                    for (int ndx = 0; ndx < text.Length; ++ndx)
                     {
-                        // explicit escape sequences
-                        // if this is for a string parameter to a RegExp object, then we want to use
-                        // explicit hex-values, not the escape sequences
-                        case '\b':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x08" : @"\b", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\t':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x09" : @"\t", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\n':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0a" : @"\n", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\v':
-                            if (!useW3Strict)
-                            {
-                                goto default;
-                            }
-
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0b" : @"\v", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\f':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0c" : @"\f", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\r':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0d" : @"\r", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\\':
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), @"\\", ref sb);
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        case '\'':
-                        case '"':
-                            // whichever character we're using as the delimiter, we need
-                            // to escape inside the string
-                            if (delimiter == c)
-                            {
-                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\", ref sb);
-                                sb.Append(c);
+                        char c = text[ndx];
+                        switch (c)
+                        {
+                            // explicit escape sequences
+                            // if this is for a string parameter to a RegExp object, then we want to use
+                            // explicit hex-values, not the escape sequences
+                            case '\b':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x08" : @"\b", ref sb);
                                 startOfStretch = ndx + 1;
-                            }
-
-                            // otherwise, we're going to output the character as-is, so just keep going
-                            break;
-
-                        case '\x2028':
-                        case '\x2029':
-                            // issue #14398 - unescaped, these characters (Unicode LineSeparator and ParagraphSeparator)
-                            // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
-                            // no matter what output encoding we may use.
-                            AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), @"\u", ref sb);
-                            sb.Append("{0:x}".FormatInvariant((int)c));
-                            startOfStretch = ndx + 1;
-                            break;
-
-                        default:
-                            if (' ' <= c && c <= 0x7e)
-                            {
-                                // regular ascii character
                                 break;
-                            }
 
-                            if (c < ' ')
-                            {
-                                // ECMA strict mode can't use octal, either
-                                if (isRegularExpression || useStrict)
+                            case '\t':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x09" : @"\t", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\n':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0a" : @"\n", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\v':
+                                if (!useW3Strict)
                                 {
-                                    // for regular expression strings, \1 through \9 are always backreferences, 
-                                    // and \10 through \40 are backreferences if they correspond to existing 
-                                    // backreference groups. So we can't use octal for the characters with values
-                                    // between 0 and 31. encode with a hexadecimal escape sequence
-                                    AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\x{0:x2}".FormatInvariant((int)c), ref sb);
+                                    goto default;
+                                }
+
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0b" : @"\v", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\f':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0c" : @"\f", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\r':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), isRegularExpression ? @"\x0d" : @"\r", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\\':
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), @"\\", ref sb);
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            case '\'':
+                            case '"':
+                                // whichever character we're using as the delimiter, we need
+                                // to escape inside the string
+                                if (delimiter == c)
+                                {
+                                    AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\", ref sb);
+                                    sb.Append(c);
                                     startOfStretch = ndx + 1;
                                 }
-                                else
+
+                                // otherwise, we're going to output the character as-is, so just keep going
+                                break;
+
+                            case '\x2028':
+                            case '\x2029':
+                                // issue #14398 - unescaped, these characters (Unicode LineSeparator and ParagraphSeparator)
+                                // would introduce a line-break in the string.  they ALWAYS need to be escaped, 
+                                // no matter what output encoding we may use.
+                                AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), @"\u", ref sb);
+                                sb.Append("{0:x}".FormatInvariant((int)c));
+                                startOfStretch = ndx + 1;
+                                break;
+
+                            default:
+                                if (' ' <= c && c <= 0x7e)
                                 {
-                                    // we're not a regular expression string. And character with a value between 
-                                    // 0 and 31 can be represented in octal with two to three characters (\0 - \37),
-                                    // whereas it would always take four characters to do it in hex: \x00 - \x1f.
-                                    // so let's go with octal since we aren't in strict mode
-                                    AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\", ref sb);
-                                    int intValue = (int)c;
-                                    if (intValue < 8)
+                                    // regular ascii character
+                                    break;
+                                }
+
+                                if (c < ' ')
+                                {
+                                    // ECMA strict mode can't use octal, either
+                                    if (isRegularExpression || useStrict)
                                     {
-                                        // single octal digit
-                                        sb.Append(intValue.ToStringInvariant());
+                                        // for regular expression strings, \1 through \9 are always backreferences, 
+                                        // and \10 through \40 are backreferences if they correspond to existing 
+                                        // backreference groups. So we can't use octal for the characters with values
+                                        // between 0 and 31. encode with a hexadecimal escape sequence
+                                        AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\x{0:x2}".FormatInvariant((int)c), ref sb);
+                                        startOfStretch = ndx + 1;
                                     }
                                     else
                                     {
-                                        // two octal digits
-                                        sb.Append((intValue / 8).ToStringInvariant());
-                                        sb.Append((intValue % 8).ToStringInvariant());
+                                        // we're not a regular expression string. And character with a value between 
+                                        // 0 and 31 can be represented in octal with two to three characters (\0 - \37),
+                                        // whereas it would always take four characters to do it in hex: \x00 - \x1f.
+                                        // so let's go with octal since we aren't in strict mode
+                                        AddEscape(text.Substring(startOfStretch, ndx - startOfStretch), "\\", ref sb);
+                                        int intValue = (int)c;
+                                        if (intValue < 8)
+                                        {
+                                            // single octal digit
+                                            sb.Append(intValue.ToStringInvariant());
+                                        }
+                                        else
+                                        {
+                                            // two octal digits
+                                            sb.Append((intValue / 8).ToStringInvariant());
+                                            sb.Append((intValue % 8).ToStringInvariant());
+                                        }
+
+                                        startOfStretch = ndx + 1;
                                     }
-
-                                    startOfStretch = ndx + 1;
                                 }
-                            }
 
-                            break;
+                                break;
+                        }
                     }
                 }
-            }
 
-            string escapedString;
-            if (sb == null || string.IsNullOrEmpty(text))
-            {
-                // didn't escape any characters -- can use the string unchanged
-                escapedString = text ?? string.Empty;
-            }
-            else
-            {
-                // escaped characters. If there are still unescaped characters left at the
-                // end of the string, add them to the builder now
-                if (startOfStretch < text.Length)
+                if (sb == null || string.IsNullOrEmpty(text))
                 {
-                    sb.Append(text.Substring(startOfStretch));
+                    // didn't escape any characters -- can use the string unchanged
+                    escapedString = text ?? string.Empty;
                 }
+                else
+                {
+                    // escaped characters. If there are still unescaped characters left at the
+                    // end of the string, add them to the builder now
+                    if (startOfStretch < text.Length)
+                    {
+                        sb.Append(text.Substring(startOfStretch));
+                    }
 
-                // get the escaped string
-                escapedString = sb.ToString();
+                    // get the escaped string
+                    escapedString = sb.ToString();
+                }
+            }
+            finally
+            {
+                sb.Release();
             }
 
             // close the delimiter and return the fully-escaped string

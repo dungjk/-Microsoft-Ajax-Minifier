@@ -257,17 +257,24 @@ namespace Microsoft.Ajax.Utilities
             {
                 // createa string builder and add each of the debug lookups to it
                 // one-by-one, separating them with a comma
-                var sb = new StringBuilder();
-                foreach (var errorCode in IgnoreErrorCollection)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var errorCode in IgnoreErrorCollection)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+                        sb.Append(errorCode);
                     }
-                    sb.Append(errorCode);
-                }
 
-                return sb.ToString();
+                    return sb.ToString();
+                }
+                finally
+                {
+                    sb.Release();
+                }
             }
             set
             {
@@ -359,25 +366,32 @@ namespace Microsoft.Ajax.Utilities
             {
                 // createa string builder and add each of the defined names to it
                 // one-by-one, separating them with a comma
-                var sb = new StringBuilder();
-                foreach (var defined in PreprocessorValues)
+                var sb = StringBuilderPool.Acquire();
+                try
                 {
-                    if (sb.Length > 0)
+                    foreach (var defined in PreprocessorValues)
                     {
-                        sb.Append(',');
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(',');
+                        }
+
+                        sb.Append(defined.Key);
+                        if (!string.IsNullOrEmpty(defined.Value))
+                        {
+                            sb.Append('=');
+
+                            // TODO: how can I escape any commas?
+                            sb.Append(defined.Value);
+                        }
                     }
 
-                    sb.Append(defined.Key);
-                    if (!string.IsNullOrEmpty(defined.Value))
-                    {
-                        sb.Append('=');
-
-                        // TODO: how can I escape any commas?
-                        sb.Append(defined.Value);
-                    }
+                    return sb.ToString();
                 }
-
-                return sb.ToString();
+                finally
+                {
+                    sb.Release();
+                }
             }
             set
             {
