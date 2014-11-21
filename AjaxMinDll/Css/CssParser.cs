@@ -2774,6 +2774,13 @@ namespace Microsoft.Ajax.Utilities
                 // hash values as we are parsing our parameters
                 m_noColorAbbreviation = true;
 
+                // comma-separated lists of progid expressions should have a space after
+                // the comma, or IE will ignore all but the last
+                if (m_lastOutputString == ",")
+                {
+                    Append(" ");
+                }
+
                 // append the progid and opening paren
                 AppendCurrent();
                 SkipSpace();

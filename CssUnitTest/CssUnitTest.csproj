@@ -81,6 +81,7 @@
     <Content Include="TestData\CSS\Expected\Selectors\Any.css" />
     <Content Include="TestData\CSS\Expected\Selectors\CSS3_all.css" />
     <Content Include="TestData\CSS\Expected\Selectors\CSS3_pretty.css" />
+    <Content Include="TestData\CSS\Expected\Values\progid.css" />
     <Content Include="TestData\CSS\Input\Selectors\Any.css" />
     <Content Include="TestData\CSS\Input\Switches\EchoInput.css" />
     <Compile Include="Values.cs" />
@@ -270,6 +271,7 @@
     <Content Include="TestData\CSS\Input\Syntax\Important.css" />
     <Content Include="TestData\CSS\Input\Errors\ParsingErrors.css" />
     <Content Include="TestData\CSS\Input\Syntax\PointZeroEms.css" />
+    <Content Include="TestData\CSS\Input\Values\progid.css" />
     <Content Include="TestData\CSS\Input\Syntax\Strings.css" />
     <Content Include="TestData\CSS\Input\Syntax\AlphaHash.css" />
     <Content Include="TestData\CSS\Input\Syntax\Term.css" />

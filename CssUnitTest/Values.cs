@@ -31,6 +31,12 @@ namespace CssUnitTest
         }
 
         [TestMethod]
+        public void ProgID()
+        {
+            TestHelper.Instance.RunTest();
+        }
+
+        [TestMethod]
         public void Grids()
         {
             var retValue = TestHelper.Instance.RunTest();
