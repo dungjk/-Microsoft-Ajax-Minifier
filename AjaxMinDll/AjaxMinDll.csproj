@@ -237,6 +237,7 @@
     <Compile Include="JavaScript\opprec.cs" />
     <Compile Include="JavaScript\OutputVisitor.cs" />
     <Compile Include="JavaScript\parameterdeclaration.cs" />
+    <Compile Include="JavaScript\ReferencesVisitor.cs" />
     <Compile Include="JavaScript\regexpliteral.cs" />
     <Compile Include="JavaScript\ReorderScopeVisitor.cs" />
     <Compile Include="JavaScript\RequiresSeparatorVisitor.cs" />

@@ -112,6 +112,7 @@
     <Content Include="TestData\JS\Expected\ArrayHandling\Array.js" />
     <Content Include="TestData\JS\Expected\AstMods\amd.js" />
     <Content Include="TestData\JS\Expected\AstMods\amd_amd.js" />
+    <Content Include="TestData\JS\Expected\AstMods\opAssignCombine.js" />
     <Content Include="TestData\JS\Expected\Classes\ClassDecl.js" />
     <Content Include="TestData\JS\Expected\Classes\ClassErrors.js" />
     <Content Include="TestData\JS\Expected\Classes\ClassExpr.js" />
@@ -502,6 +503,7 @@
     <Content Include="TestData\JS\Expected\XmlInput\SecondOutputFile.xml" />
     <Content Include="TestData\JS\Input\ArrayHandling\Array.js" />
     <Content Include="TestData\JS\Input\AstMods\amd.js" />
+    <Content Include="TestData\JS\Input\AstMods\opAssignCombine.js" />
     <Content Include="TestData\JS\Input\Classes\ClassDecl.js" />
     <Content Include="TestData\JS\Input\Classes\ClassErrors.js" />
     <Content Include="TestData\JS\Input\Classes\ClassExpr.js" />

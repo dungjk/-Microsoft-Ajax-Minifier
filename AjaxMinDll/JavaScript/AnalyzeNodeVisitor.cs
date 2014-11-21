@@ -313,9 +313,11 @@ namespace Microsoft.Ajax.Utilities
                 && (lookup = curBinary.Operand1 as Lookup) != null
                 && prevBinary.Operand1.IsEquivalentTo(curBinary.Operand1))
             {
-                if (prevBinary.OperatorToken == JSToken.Assign)
+                if (prevBinary.OperatorToken == JSToken.Assign
+                    && !ReferencesVisitor.References(curBinary.Operand2, lookup))
                 {
                     // transform: lookup=expr1;lookup[OP]=expr2;  ==>  lookup=expr1[OP]expr2
+                    // BUT NOT IF expr2 contains a reference to lookup!
                     var binOp = new BinaryOperator(prevBinary.Operand2.Context.CombineWith(curBinary.Operand2.Context))
                     {
                         Operand1 = prevBinary.Operand2,
@@ -544,13 +546,13 @@ namespace Microsoft.Ajax.Utilities
                 && binaryOp.IsAssign
                 && (lookup = binaryOp.Operand1 as Lookup) != null
                 && lookup.VariableField != null
-                && !ContainsReference(binaryOp.Operand2, lookup.VariableField)
+                && !ReferencesVisitor.References(binaryOp.Operand2, lookup)
                 && (bindingIdentifier = varDecl.Binding as BindingIdentifier) != null
                 && bindingIdentifier.VariableField == lookup.VariableField)
             {
                 // the current statement is a binary operator assignment with a lookup on the left-hand side.
                 // the previous statement is a var, the last vardecl is a simple binding identifier, and that identifier
-                // is the same as the left-hand side ofhte assignment. 
+                // is the same as the left-hand side of the assignment. 
                 if (varDecl.Initializer != null)
                 {
                     if (binaryOp.OperatorToken == JSToken.Assign)
@@ -601,38 +603,6 @@ namespace Microsoft.Ajax.Utilities
                     // leave it alone???? we could make var name=undefined[OP]expr1, if we have a good undefined value.
                 }
             }
-        }
-
-        private static bool ContainsReference(AstNode node, JSVariableField targetField)
-        {
-            // if this is a lookup to the target field, return true and be done
-            var lookup = node as Lookup;
-            if (lookup != null)
-            {
-                if (lookup.VariableField != null)
-                {
-                    // see if the fields are the same
-                    return lookup.VariableField == targetField;
-                }
-                else
-                {
-                    // no variable field -- match the name, just in case
-                    return string.CompareOrdinal(lookup.Name, targetField.Name) == 0;
-                }
-            }
-
-            // recurse through each child (if any). If any one returns true,
-            // then stop processing and return true.
-            foreach (var child in node.Children)
-            {
-                if (ContainsReference(child, targetField))
-                {
-                    return true;
-                }
-            }
-
-            // if we get here, there were no matches
-            return false;
         }
 
         private static AstNode FindLastStatement(Block node)

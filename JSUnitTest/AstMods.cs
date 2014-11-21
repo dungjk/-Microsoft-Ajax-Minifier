@@ -222,5 +222,11 @@ namespace JSUnitTest
         {
             TestHelper.Instance.RunTest("-amd");
         }
+
+        [TestMethod]
+        public void OpAssignCombine()
+        {
+            TestHelper.Instance.RunTest();
+        }
     }
 }
