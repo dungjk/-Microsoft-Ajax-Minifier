@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -76,8 +77,35 @@ namespace Microsoft.Ajax.Utilities
                         writer.Write(switchParser.CssSettings.LineTerminator);
                     }
 
+                    // if we want to time this, start a stopwatch now
+                    Stopwatch stopwatch = null;
+                    if (m_outputTimer)
+                    {
+                        stopwatch = new Stopwatch();
+                        stopwatch.Start();
+                    }
+
                     // crunch the source and output to the string builder we were passed
                     var crunchedStyles = parser.Parse(inputGroup.Source);
+
+                    if (stopwatch != null)
+                    {
+                        var ticks = stopwatch.ElapsedTicks;
+                        stopwatch.Stop();
+
+                        // frequency is ticks per second, so if we divide by 1000.0, then we will have a
+                        // double-precision value indicating the ticks per millisecond. Divide this into the
+                        // number of ticks we measure, and we'll get the milliseconds in double-precision.
+                        var frequency = Stopwatch.Frequency / 1000.0;
+                        var timerMessage = string.Format(CultureInfo.CurrentCulture, AjaxMin.TimerFormat, 0, ticks / frequency);
+
+                        Debug.WriteLine(timerMessage);
+                        Debug.WriteLine(string.Empty);
+                        WriteProgress(timerMessage);
+                        WriteProgress();
+                    }
+
+                    // if there is output, send it where it needs to go
                     if (!string.IsNullOrEmpty(crunchedStyles))
                     {
                         if (!m_echoInput)
