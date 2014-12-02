@@ -71,7 +71,7 @@ namespace Microsoft.Ajax.Utilities
             m_globalFunctions = new HashSet<string> {
                 "ActiveXObject", "Array", "ArrayBuffer", "ArrayBufferView", 
                 "Boolean", 
-                "DataView", "Date", "Debug", "DOMParser", 
+                "DataView", "Date", "Debug", "DocumentTouch", "DOMParser", 
                 "Error", "EvalError", "EventSource", 
                 "File", "FileList", "FileReader", "Float32Array", "Float64Array", "Function", 
                 "Image", "Int16Array", "Int32Array", "Int8Array", "Iterator", 
