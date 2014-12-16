@@ -2108,6 +2108,10 @@ namespace Microsoft.Ajax.Utilities
                 {
                     isEscape = false;
                 }
+                else if (c == '\\')
+                {
+                    isEscape = true;
+                }
                 else if (c == '[')
                 {
                     isInSet = true;
@@ -2129,10 +2133,6 @@ namespace Microsoft.Ajax.Utilities
 
                     // found one! 
                     return JSToken.RegularExpression;
-                }
-                else if (c == '\\')
-                {
-                    isEscape = true;
                 }
             }
 

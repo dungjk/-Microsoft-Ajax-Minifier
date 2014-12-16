@@ -23,3 +23,5 @@ function test2(text)
     }
     return count;
 }
+
+var foo = location.href.replace(/[\s?!@#$%^&*()_=+,.<>'":;\[\]/|]/g, '-');
