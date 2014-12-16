@@ -61,6 +61,12 @@ namespace CssUnitTest
       }
 
       [TestMethod]
+      public void ColorNames_noswap()
+      {
+          TestHelper.Instance.RunTest("-colors:noswap");
+      }
+
+      [TestMethod]
       public void CssReplacementTokens()
       {
           TestHelper.Instance.RunTest();

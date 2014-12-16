@@ -515,6 +515,10 @@ namespace Microsoft.Ajax.Utilities
                                 {
                                     CssSettings.ColorNames = CssColor.Major;
                                 }
+                                else if (paramPartUpper == "NOSWAP")
+                                {
+                                    CssSettings.ColorNames = CssColor.NoSwap;
+                                }
                                 else
                                 {
                                     OnInvalidSwitch(switchPart, paramPart);

@@ -35,4 +35,4 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 
-[assembly: AssemblyVersion("5.13.*")]
+[assembly: AssemblyVersion("5.14.*")]

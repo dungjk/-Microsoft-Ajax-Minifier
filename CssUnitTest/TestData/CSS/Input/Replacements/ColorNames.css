@@ -12,7 +12,7 @@
     /* HEX to NAME */
     color: #A0522D; /* changes to sienna if Major, not Strict or Hex */
     color: #808080; /* changes to gray if Strict or Major, not Hex */
-    color: #F00;  /* changes to red when Strict or Major, not Hex */
+    color: #FF0000;  /* changes to red when Strict or Major, not Hex */
     color: #f0f; /* NEVER gets changed to fuchsia because #f0f is smaller */
 
 }

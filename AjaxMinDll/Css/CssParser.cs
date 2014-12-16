@@ -4382,6 +4382,10 @@ namespace Microsoft.Ajax.Utilities
                                     nameConvertedToHex = true;
                                 }
                                 break;
+
+                            case CssColor.NoSwap:
+                                // nope; leave it a name and don't swap it with the equivalent hex value
+                                break;
                         }
 
                         // if we didn't convert the color name to hex, let's see if it is a color
@@ -4590,7 +4594,7 @@ namespace Microsoft.Ajax.Utilities
                 hexColor = s_rrggbb.Replace(hexColor, "#${r}${g}${b}").ToLowerInvariant();
             }
 
-            if (colorNames != CssColor.Hex)
+            if (colorNames == CssColor.Strict || colorNames == CssColor.Major)
             {
                 // check for the hex values that can be swapped with the W3C color names to save bytes?
                 //      #808080 - gray

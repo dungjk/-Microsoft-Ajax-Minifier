@@ -77,7 +77,12 @@ namespace Microsoft.Ajax.Utilities
         /// Convert known hex values to major-browser color names if shorter; and known major-browser color
         /// names to hex if shorter.
         /// </summary>
-        Major
+        Major,
+
+        /// <summary>
+        /// Don't swap names for hex or hex for names, whether or not one is shorter.
+        /// </summary>
+        NoSwap,
     }
 
     #endregion
