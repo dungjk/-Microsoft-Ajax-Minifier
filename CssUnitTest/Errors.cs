@@ -75,7 +75,7 @@ namespace CssUnitTest
         [TestMethod]
         public void ParsingErrors()
         {
-            TestHelper.Instance.RunTest();
+            TestHelper.Instance.RunTest("-colors:strict");
         }
 
         [TestMethod]

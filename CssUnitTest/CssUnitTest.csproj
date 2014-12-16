@@ -155,7 +155,7 @@
     <Content Include="TestData\CSS\Expected\Errors\InvalidClassName.css" />
     <Content Include="TestData\CSS\Expected\Errors\UnterminatedString.css" />
     <Content Include="TestData\CSS\Expected\Hacks\IEhacks.css" />
-    <Content Include="TestData\CSS\Expected\Replacements\ColorNames.css" />
+    <Content Include="TestData\CSS\Expected\Replacements\ColorNames_strict.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_hex.css" />
     <Content Include="TestData\CSS\Expected\Replacements\ColorNames_major.css" />
     <Content Include="TestData\CSS\Expected\Replacements\CssReplacementTokens.css" />

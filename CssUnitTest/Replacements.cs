@@ -43,7 +43,7 @@ namespace CssUnitTest
       }
 
       [TestMethod]
-      public void ColorNames()
+      public void ColorNames_strict()
       {
           TestHelper.Instance.RunTest("-colors:strict");
       }
@@ -63,6 +63,7 @@ namespace CssUnitTest
       [TestMethod]
       public void ColorNames_noswap()
       {
+          // noswap
           TestHelper.Instance.RunTest("-colors:noswap");
       }
 

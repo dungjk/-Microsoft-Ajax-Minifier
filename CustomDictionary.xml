@@ -30,6 +30,7 @@
       <Word>noeval</Word>
       <Word>noforce</Word>
       <Word>norename</Word>
+      <Word>noswap</Word>
       <Word>onlyref</Word>
       <Word>progid</Word>
       <Word>renameable</Word>

@@ -97,7 +97,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         public CssSettings()
         {
-            ColorNames = CssColor.Strict;
+            ColorNames = CssColor.Hex;
             CommentMode = CssComment.Important;
             MinifyExpressions = true;
             CssType = CssType.FullStyleSheet;

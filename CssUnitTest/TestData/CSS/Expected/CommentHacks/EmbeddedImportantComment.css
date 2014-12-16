@@ -7,6 +7,6 @@ body{background:#fff}
  *  another important comment -- this should always start on a new line,
  *  but the next statement should not if this is single-line mode
  */
-a:hover{color:red}a:active{
+a:hover{color:#f00}a:active{
 /*! this is an important comment */
-color:blue}
+color:#00f}

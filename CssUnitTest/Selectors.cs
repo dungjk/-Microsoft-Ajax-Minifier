@@ -39,7 +39,7 @@ namespace CssUnitTest
     [TestMethod]
     public void PseudoClass_utf8()
     {
-        TestHelper.Instance.RunTest("-enc:out utf-8");
+        TestHelper.Instance.RunTest("-enc:out utf-8 -colors:strict");
     }
 
     [TestMethod]
@@ -99,7 +99,7 @@ namespace CssUnitTest
     [TestMethod]
     public void Namespace()
     {
-        TestHelper.Instance.RunTest("-css:full");
+        TestHelper.Instance.RunTest("-css:full -colors:strict");
     }
 
     [TestMethod]

@@ -375,9 +375,10 @@ Valid CSSOPTS are zero or more of:
   -comments:(none|all|hacks|important) &gt; whether to keep all comments, 
         remove all, keep only the set of supported comment-based hacks, or
         keep only important comments. Default is important.
-  -colors:(hex|strict|major) &gt; how to treat color names: always convert to
-        hexadecimal values, use strict color names if shorter, or use major-
-        browser color names if shorter. Default is strict.
+  -colors:(hex|strict|major|noswap) &gt; how to treat color names: always
+        convert to hexadecimal values, use strict color names if shorter, or 
+        use major-browser color names if shorter, or never swap names for hex.
+        Default is hex.
   -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw),
         or minify them as JavaScript expressions (minify). Default is minify.
   -unused:(remove|keep) &gt; whether to keep or remove rules or directives that 

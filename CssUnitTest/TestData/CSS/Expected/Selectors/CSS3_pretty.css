@@ -104,7 +104,7 @@ E:nth-of-type(2n+1)
 {}
 *:target
 {
-    color: red
+    color: #f00
 }
 *:target::before
 {
@@ -112,7 +112,7 @@ E:nth-of-type(2n+1)
 }
 foo|h1
 {
-    color: blue
+    color: #00f
 }
 foo|*
 {
@@ -120,13 +120,13 @@ foo|*
 }
 |h1
 {
-    color: red
+    color: #f00
 }
 *|h1
 {
-    color: green
+    color: #008000
 }
 h1
 {
-    color: green
+    color: #008000
 }

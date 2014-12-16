@@ -12,10 +12,10 @@ body
  */
 a:hover
 {
-    color: red
+    color: #f00
 }
 a:active
 {
     /*! this is an important comment */
-    color: blue
+    color: #00f
 }

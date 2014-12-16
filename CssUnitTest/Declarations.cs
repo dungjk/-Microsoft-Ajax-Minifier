@@ -33,7 +33,7 @@ namespace CssUnitTest
         [TestMethod]
         public void TrailingSemicolon_Term()
         {
-            TestHelper.Instance.RunTest("-css:decls -term");
+            TestHelper.Instance.RunTest("-css:decls -term -colors:strict");
         }
 
         [TestMethod]
@@ -45,7 +45,7 @@ namespace CssUnitTest
         [TestMethod]
         public void NoTrailingSemicolon_Term()
         {
-            TestHelper.Instance.RunTest("-css:decls -term:1");
+            TestHelper.Instance.RunTest("-css:decls -term:1 -colors:strict");
         }
     }
 }
