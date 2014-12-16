@@ -380,6 +380,9 @@
     <Compile Include="..\AjaxMinDll\JavaScript\parameterdeclaration.cs">
       <Link>JavaScript\parameterdeclaration.cs</Link>
     </Compile>
+    <Compile Include="..\AjaxMinDll\JavaScript\ReferencesVisitor.cs">
+      <Link>JavaScript\ReferencesVisitor.cs</Link>
+    </Compile>
     <Compile Include="..\AjaxMinDll\JavaScript\regexpliteral.cs">
       <Link>JavaScript\regexpliteral.cs</Link>
     </Compile>
@@ -457,6 +460,9 @@
     </Compile>
     <Compile Include="..\AjaxMinDll\ResourceStrings.cs">
       <Link>ResourceStrings.cs</Link>
+    </Compile>
+    <Compile Include="..\AjaxMinDll\StringBuilderPool.cs">
+      <Link>StringBuilderPool.cs</Link>
     </Compile>
     <Compile Include="..\AjaxMinDll\SwitchParser.cs">
       <Link>SwitchParser.cs</Link>
