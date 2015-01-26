@@ -4117,22 +4117,19 @@ namespace Microsoft.Ajax.Utilities
             if (m_currentToken.Is(JSToken.RegularExpression))
             {
                 var regexContext = m_currentToken.Clone();
-
-                // don't include the leading or trailing slash in the code
-                var pattern = m_currentToken.Code;
-                pattern = pattern.Substring(1, pattern.Length - 2);
                 GetNextToken();
 
-                string flags = null;
-                if (m_currentToken.Is(JSToken.Identifier))
-                {
-                    regexContext.UpdateWith(m_currentToken);
-                    flags = m_scanner.Identifier;
-                    GetNextToken();
-                }
+                var literal = regexContext.Code;
+                var lastSlash = literal.LastIndexOf('/');
+
+                // flags are everything AFTER the last slash
+                var flags = literal.Substring(lastSlash + 1);
+
+                // don't include the leading or trailing slash in the pattern
+                var pattern = literal.Substring(1, lastSlash - 1);
 
                 // create the regexp node. 
-                regExp = new RegExpLiteral(m_currentToken.Clone())
+                regExp = new RegExpLiteral(regexContext)
                 {
                     Pattern = pattern,
                     PatternSwitches = flags

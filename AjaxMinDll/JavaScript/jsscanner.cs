@@ -2131,6 +2131,13 @@ namespace Microsoft.Ajax.Utilities
                         break;
                     }
 
+                    // pull in the flags, which are simply letter characters
+                    while (!IsEndLineOrEOF(c = GetChar(m_currentPosition), 0)
+                        && IsValidIdentifierPart(c))
+                    {
+                        ++m_currentPosition;
+                    }
+
                     // found one! 
                     return JSToken.RegularExpression;
                 }

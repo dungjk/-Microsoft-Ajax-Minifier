@@ -25,3 +25,8 @@ function test2(text)
 }
 
 var foo = location.href.replace(/[\s?!@#$%^&*()_=+,.<>'":;\[\]/|]/g, '-');
+
+// the regular expression doesn't have a closing semicolon, so
+// it should end at the end of the line and not keep parsing.
+var re = /\w+/
+alert("hi")
