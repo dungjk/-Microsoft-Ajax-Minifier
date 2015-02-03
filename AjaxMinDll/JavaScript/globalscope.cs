@@ -45,7 +45,7 @@ namespace Microsoft.Ajax.Utilities
             m_globalProperties = new HashSet<string> { 
                 "__proto__", 
                 "Crypto", 
-                "Infinity", 
+                "Infinity", "Intl",
                 "JSON", 
                 "Math",
                 "NaN", 
