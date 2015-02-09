@@ -426,25 +426,38 @@ namespace Microsoft.Ajax.Utilities
         /// <returns>string representation of all parsed text</returns>
         private string UnwindStackCompletely()
         {
-            var output = string.Empty;
-            while(m_builders.Count > 0)
+            if (m_builders == null || m_builders.Count == 0)
             {
-                // pop the topmost builder from the stack and get the text that
-                // has been built up inside it.
-                var topBuilder = m_builders.Pop();
-                output = topBuilder.ToString();
-                topBuilder.Release();
-
-                // if there are still builders on the stack, push the previously
-                // topmost text onto the builder that is now topmost, and we'll loop
-                // around again
-                if (m_builders.Count > 0)
-                {
-                    m_builders.Peek().Append(output);
-                }
+                // no builders - return an empty string
+                return string.Empty;
             }
 
-            return output;
+            if (m_builders.Count == 1)
+            {
+                // just one builder - return it's string after releasing it.
+                var topBuilder = m_builders.Pop();
+                var code = topBuilder.ToString();
+                topBuilder.Release();
+                return code;
+            }
+
+            // multiple builders in the stack. Rather than unwinding the stack and
+            // pushing each builder onto the previous one, which could add take extra 
+            // buffer allocations for each one, instead create an array (we know how big it should be),
+            // and stuff each builder's string into the array in reverse order. Then use 
+            // string.concat for a single new string allocation.
+            var codeList = new string[m_builders.Count];
+            var ndx = codeList.Length - 1;
+            while(ndx >= 0)
+            {
+                // pop the topmost builder from the stack and get the text that
+                // has been built up inside it and add it to the array in reverse order.
+                var topBuilder = m_builders.Pop();
+                codeList[ndx--] = topBuilder.ToString();
+                topBuilder.Release();
+            }
+
+            return string.Concat(codeList);
         }
 
         #endregion

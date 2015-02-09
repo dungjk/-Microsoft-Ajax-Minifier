@@ -43,6 +43,7 @@
       <Term>ajaxmin</Term>
       <Term>aspnet</Term>
       <Term>norename</Term>
+      <Term>noswap</Term>
       <Term>progid</Term>
     </DiscreteExceptions>
   </Words>
