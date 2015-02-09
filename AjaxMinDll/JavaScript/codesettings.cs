@@ -782,7 +782,6 @@ namespace Microsoft.Ajax.Utilities
 
                 // opposite properties
                 this.PreserveFunctionNames = !m_minify;
-                this.PreserveImportantComments = !m_minify;
 
                 // dependent switches
                 this.LocalRenaming = m_minify ? LocalRenaming.CrunchAll : LocalRenaming.KeepAll;
