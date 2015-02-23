@@ -72,5 +72,11 @@ namespace CssUnitTest
       {
           TestHelper.Instance.RunTest();
       }
+
+      [TestMethod]
+      public void Ie8Eot()
+      {
+          TestHelper.Instance.RunTest();
+      }
   }
 }

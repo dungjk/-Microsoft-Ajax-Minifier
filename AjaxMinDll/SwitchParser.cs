@@ -899,6 +899,18 @@ namespace Microsoft.Ajax.Utilities
                                 OnJSOnlyParameter();
                                 break;
 
+                            case "IE8FIX":
+                                if (BooleanSwitch(paramPartUpper, true, out parameterFlag))
+                                {
+                                    CssSettings.FixIE8Fonts = parameterFlag;
+                                }
+                                else
+                                {
+                                    OnInvalidSwitch(switchPart, paramPart);
+                                }
+                                OnCssOnlyParameter();
+                                break;
+
                             case "IGNORE":
                                 // list of error codes to ignore (not report)
                                 // the parts can be a comma-separate list of identifiers
@@ -1415,6 +1427,31 @@ namespace Microsoft.Ajax.Utilities
 
                                 // this is a JS-only switch
                                 OnJSOnlyParameter();
+                                break;
+
+                            case "NOVENDER":
+                                if (string.IsNullOrEmpty(paramPartUpper))
+                                {
+                                    // if there's no param part, then we are being asked to clear the collection
+                                    CssSettings.ExcludeVendorPrefixes.Clear();
+                                }
+                                else
+                                {
+                                    var vendorPrefixes = paramPart.Split(listSeparators, StringSplitOptions.RemoveEmptyEntries);
+                                    foreach(var prefix in vendorPrefixes)
+                                    {
+                                        if (CssScanner.IsValidVendorPrefix(prefix))
+                                        {
+                                            CssSettings.ExcludeVendorPrefixes.Add(prefix);
+                                        }
+                                        else
+                                        {
+                                            OnInvalidSwitch(switchPart, paramPart);
+                                        }
+                                    }
+                                }
+
+                                OnCssOnlyParameter();
                                 break;
 
                             case "OBJ":

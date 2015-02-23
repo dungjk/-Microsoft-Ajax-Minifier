@@ -381,7 +381,17 @@ Valid CSSOPTS are zero or more of:
         Default is hex.
   -expr:(minify|raw) &gt; how to treat CSS expressions: leave them as-is (raw),
         or minify them as JavaScript expressions (minify). Default is minify.
-  -unused:(remove|keep) &gt; whether to keep or remove rules or directives that 
+  -ie8fix[:BOOL] &gt; whether or not to add a question-mark (query string) to
+        .EOT font URLs (if a query string isn't already present) in order to 
+        fix an IE8 client request bug. Default is true.
+   -novendor[:IDENT[,IDENT]*] &t; list of vendor-specific prefixes to exclude 
+        from the output. For example, specifying "webkit" would remove all
+        -webkit-PROPERTY identifiers from the output. Do not include hyphens
+        in the prefix identifiers. Multiple -novendor switches are additive; 
+        if no identifiers are supplied, any existing excluded vendors will be
+        cleared. Currently only works on properties; vendor-specific functions
+        or at-keywords that match are not excluded at this time.
+  -unused:(remove|keep) &gt; whether to keep or remove rules or directives that
         have empty blocks. Default is remove.
 
 CSSTYP can be full (full style sheet) or decls (just a declaration list).

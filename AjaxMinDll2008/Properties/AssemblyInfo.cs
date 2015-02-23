@@ -33,9 +33,9 @@ using System.Security;
 [assembly: SecurityCritical(SecurityCriticalScope.Explicit)]
 [assembly: AllowPartiallyTrustedCallers]
 
-// we are compliant and not visible to COM by default
+// .NET 3.5 version is compliant and visible to COM
 [assembly: System.CLSCompliant(true)]
-[assembly: System.Runtime.InteropServices.ComVisible(false)]
+[assembly: System.Runtime.InteropServices.ComVisible(true)]
 
 // Set neutral resources language for assembly.
 [assembly: NeutralResourcesLanguage("en")]

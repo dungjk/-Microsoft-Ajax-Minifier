@@ -1283,14 +1283,82 @@ namespace Microsoft.Ajax.Utilities
             return (128 <= ch && ch <= 65535);
         }
 
+        internal static bool IsNmStart(char ch)
+        {
+            return (ch == '_')
+                || ('a' <= ch && ch <= 'z')
+                || ('A' <= ch && ch <= 'Z')
+                || IsNonAscii(ch);
+        }
+
         internal static bool IsNmChar(char ch)
         {
-            return IsNonAscii(ch)
-                  || (ch == '-')
-                  || (ch == '_')
-                  || ('0' <= ch && ch <= '9')
-                  || ('a' <= ch && ch <= 'z')
-                  || ('A' <= ch && ch <= 'Z');
+            return (ch == '-')
+                || (ch == '_')
+                || ('0' <= ch && ch <= '9')
+                || ('a' <= ch && ch <= 'z')
+                || ('A' <= ch && ch <= 'Z')
+                || IsNonAscii(ch);
+        }
+
+        /* MIGHT be useful later 
+        internal static bool IsValidIdentifier(string ident)
+        {
+            if (ident.IsNullOrWhiteSpace())
+            {
+                return false;
+            }
+
+            // if there is an initial hyphen, then we need to skip it
+            var index = ident[0] == '-' ? 1 : 0;
+
+            // must start with a "start" character
+            if (!IsNmStart(ident[index++]))
+            {
+                return false;
+            }
+
+            // from here on out, it needs to be filled in with valid char characters
+            while(index < ident.Length)
+            {
+                if (!IsNmChar(ident[index++]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }*/
+
+        /// <summary>
+        /// Determines whether a given string is a valid vendor prefix. No hyphens allowed.
+        /// </summary>
+        /// <param name="prefix"></param>
+        /// <returns></returns>
+        internal static bool IsValidVendorPrefix(string prefix)
+        {
+            if (prefix.IsNullOrWhiteSpace())
+            {
+                return false;
+            }
+
+            // first letter has to be an identifier start character
+            if (!IsNmStart(prefix[0]))
+            {
+                return false;
+            }
+
+            // the rest have to be regular name characters, but NOT a hyphen
+            for (var index = 1; index < prefix.Length; ++index)
+            {
+                var ch = prefix[index];
+                if (ch == '-' || !IsNmChar(ch))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion

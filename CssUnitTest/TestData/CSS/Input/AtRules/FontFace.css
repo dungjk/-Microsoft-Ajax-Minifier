@@ -33,3 +33,14 @@
 }
 
 h1 { font-family: "Robson Celtic", serif; }
+
+/* IE8 malformed HTTP request issue */
+@font-face {
+    font-family: 'MyFont';
+    src:url('path/to/myfont.eot');
+    src:url('path/to/myfont.eot?#iefix') format('embedded-opentype'),
+        url('path/to/myfont.woff') format('woff'),
+        url('path/to/myfont.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}

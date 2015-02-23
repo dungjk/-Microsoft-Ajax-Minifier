@@ -16,6 +16,8 @@
 
 namespace Microsoft.Ajax.Utilities
 {
+    using System.Collections.Generic;
+
     #region public enums
 
     /// <summary>
@@ -102,6 +104,8 @@ namespace Microsoft.Ajax.Utilities
             MinifyExpressions = true;
             CssType = CssType.FullStyleSheet;
             RemoveEmptyBlocks = true;
+            FixIE8Fonts = true;
+            ExcludeVendorPrefixes = new List<string>();
         }
 
         public CssSettings Clone()
@@ -113,6 +117,7 @@ namespace Microsoft.Ajax.Utilities
                 AllowEmbeddedAspNetBlocks = this.AllowEmbeddedAspNetBlocks,
                 ColorNames = this.ColorNames,
                 CommentMode = this.CommentMode,
+                FixIE8Fonts = this.FixIE8Fonts,
                 IgnoreAllErrors = this.IgnoreAllErrors,
                 IgnoreErrorList = this.IgnoreErrorList,
                 IndentSize = this.IndentSize,
@@ -138,6 +143,11 @@ namespace Microsoft.Ajax.Utilities
             foreach (var item in this.ReplacementFallbacks)
             {
                 newSettings.ReplacementTokens.Add(item);
+            }
+
+            foreach (var item in this.ExcludeVendorPrefixes)
+            {
+                newSettings.ExcludeVendorPrefixes.Add(item);
             }
 
             return newSettings;
@@ -183,6 +193,26 @@ namespace Microsoft.Ajax.Utilities
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether IE8 .EOT fonts should get a question-mark appended to the URL
+        /// (if not there already) to prevent the browser from generating invalid HTTP requests to the server. Default is true.
+        /// </summary>
+        public bool FixIE8Fonts
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a list of vendor-specific prefixes ("ms", "webkit", "moz") that will be omitted from the output.
+        /// Default is no exclusions.
+        /// </summary>
+        public IList<string> ExcludeVendorPrefixes
+        {
+            get;
+            private set;
         }
     }
 }

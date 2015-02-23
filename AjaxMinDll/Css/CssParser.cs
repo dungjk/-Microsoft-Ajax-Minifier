@@ -92,7 +92,16 @@ namespace Microsoft.Ajax.Utilities
 
         private static Regex s_vendorSpecific = new Regex(
             @"^(\-(?<vendor>[^\-]+)\-)?(?<root>.+)$",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
+
+        // IE8 @font-face directive has an issue with src properties that are URLs ending with .EOT
+        // that don't have any querystring. They end up sending a malformed HTTP request to the server,
+        // which is bad for the server. So we want to automatically fix this for developers: if ANY URL
+        // ends in .EOT without a querystring parameters, just add a question mark in the appropriate 
+        // location. This fixes the IE8 issue.
+        private static Regex s_eotIE8Fix = new Regex(
+            @"\.eot([^?\\/\w])",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         #region Comment-related fields
 
@@ -100,9 +109,9 @@ namespace Microsoft.Ajax.Utilities
         /// regular expression for matching css comments
         /// Format: /*(anything or nothing inside)*/
         /// </summary>
-        //private static Regex s_regexComments = new Regex(
-        //    @"/\*([^*]|(\*+[^*/]))*\*+/",
-        //    RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        ////private static Regex s_regexComments = new Regex(
+        ////    @"/\*([^*]|(\*+[^*/]))*\*+/",
+        ////    RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// regular expression for matching first comment hack
@@ -110,7 +119,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack1 = new Regex(
             @"/\*([^*]|(\*+[^*/]))*\**\\\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching second comment hack
@@ -119,7 +128,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack2 = new Regex(
             @"/\*/\*//\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching third comment hack
@@ -128,7 +137,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack3 = new Regex(
             @"/\*/\*/(?<inner>.*?)/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching fourth comment hack
@@ -141,7 +150,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack4 = new Regex(
             @"(?<=\w\s+)/\*([^*]|(\*+[^*/]))*\*+/\s*(?=:)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching fifth comment hack
@@ -154,7 +163,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack5 = new Regex(
             @"(?<=[\w/]\s*:)\s*/\*([^*]|(\*+[^*/]))*\*+/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for matching sixth comment hack -- although not a real hack
@@ -169,7 +178,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack6 = new Regex(
             @"(?<=\w)/\*([^*]|(\*+[^*/]))*\*+/\s*(?=:)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// Regular expression for empty comments
@@ -180,7 +189,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_regexHack7 = new Regex(
             @"/\*(\s?)\*/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         #endregion
 
@@ -194,7 +203,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_rrggbb = new Regex(
             @"^\#(?<r>[0-9a-fA-F])\k<r>(?<g>[0-9a-fA-F])\k<g>(?<b>[0-9a-fA-F])\k<b>$",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         // whether we are currently parsing the value for a property that might
         // use color names
@@ -211,7 +220,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_valueReplacement = new Regex(
             @"/\*\s*\[(?<id>\w+)\]\s*\*/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         // this variable will be set whenever we encounter a value-replacement comment
         // and have a string to replace it with
@@ -230,7 +239,7 @@ namespace Microsoft.Ajax.Utilities
         /// </summary>
         private static Regex s_sharepointReplacement = new Regex(
             @"/\*\s*\[(ReplaceBGImage|((ReplaceColor|ReplaceFont|RecolorImage)\([^\]]*))\]\s*\*/",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         #endregion
 
@@ -553,6 +562,24 @@ namespace Microsoft.Ajax.Utilities
             }
 
             return string.Concat(initialSourceDirective, source);
+        }
+
+        /// <summary>
+        /// Returns true if the given property is vendor-specific and the vendor prefix
+        /// is in the list of excluded prefixes.
+        /// </summary>
+        /// <param name="propertyName">The property name</param>
+        /// <returns>true if excluded; false otherwise</returns>
+        private bool IsExcludedVendorPrefix(string propertyName)
+        {
+            bool isExcluded = false;
+            var match = s_vendorSpecific.Match(propertyName);
+            if (match.Success)
+            {
+                isExcluded = Settings.ExcludeVendorPrefixes.Contains(match.Result("$vendor"));
+            }
+
+            return isExcluded;
         }
 
         #endregion
@@ -2364,6 +2391,14 @@ namespace Microsoft.Ajax.Utilities
                 // save the property name
                 string propertyName = CurrentTokenText;
 
+                // if this is an excluded property name, then set the no-output flag
+                // so the declaration is not outputted (we'll always reset this flag at
+                // the end of the function)
+                if (Settings.ExcludeVendorPrefixes.Count > 0 && IsExcludedVendorPrefix(propertyName))
+                {
+                    m_noOutput = true;
+                }
+
                 NewLine();
                 if (prefix != null)
                 {
@@ -2400,9 +2435,10 @@ namespace Microsoft.Ajax.Utilities
 
                     // set the no-output flag, parse the value, the reset the flag.
                     // we don't care if it actually finds a value or not
+                    var notOutputting = m_noOutput;
                     m_noOutput = true;
                     ParseExpr();
-                    m_noOutput = false;
+                    m_noOutput = notOutputting;
                 }
                 else 
                 {
@@ -2422,6 +2458,7 @@ namespace Microsoft.Ajax.Utilities
                 ParsePrio();
 
                 parsed = Parsed.True;
+                m_noOutput = false;
             }
             return parsed;
         }
@@ -3896,6 +3933,9 @@ namespace Microsoft.Ajax.Utilities
                     m_skippedSpace = true;
                 }
             }
+
+            // make sure we reset this flag
+            m_noOutput = false;
         }
 
         private void SkipToClose()
@@ -4253,6 +4293,15 @@ namespace Microsoft.Ajax.Utilities
                     {
                         sb.Release();
                     }
+                }
+                else if (tokenType == TokenType.Uri && Settings.FixIE8Fonts)
+                {
+                    // IE8 @font-face directive has an issue with src properties that are URLs ending with .EOT
+                    // that don't have any querystring. They end up sending a malformed HTTP request to the server,
+                    // which is bad for the server. So we want to automatically fix this for developers: if ANY URL
+                    // ends in .EOT without a querystring parameters, just add a question mark in the appropriate 
+                    // location. This fixes the IE8 issue.
+                    text = s_eotIE8Fix.Replace(text, ".eot?$1");
                 }
 
                 // if it's not a comment, we're going to output it.
@@ -4736,9 +4785,9 @@ namespace Microsoft.Ajax.Utilities
         /// <summary>
         /// regular expression for matching newline characters
         /// </summary>
-//        private static Regex s_regexNewlines = new Regex(
-//            @"\r\n|\f|\r|\n",
-//            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        ////private static Regex s_regexNewlines = new Regex(
+        ////    @"\r\n|\f|\r|\n",
+        ////    RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
 
         static string NormalizedValueReplacementComment(string source)
         {
